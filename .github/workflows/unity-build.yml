@@ -1,0 +1,192 @@
+name: Unity build (iOS + Android)
+
+on:
+  push:
+    paths:
+      - "unity/**"
+      - ".github/workflows/unity-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: unity-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  license:
+    name: Check Unity license secrets
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.check.outputs.ok }}
+    steps:
+      - id: check
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -n "$UNITY_LICENSE" ] && [ -n "$UNITY_EMAIL" ] && [ -n "$UNITY_PASSWORD" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Unity secrets missing. Add UNITY_LICENSE, UNITY_EMAIL and UNITY_PASSWORD under Settings → Secrets and variables → Actions (see README)."
+          fi
+
+  android:
+    name: Android APK
+    needs: license
+    if: needs.license.outputs.ok == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free disk space (Unity images are large)
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          large-packages: false
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: unity/Library
+          key: Library-Android-${{ hashFiles('unity/Packages/**', 'unity/ProjectSettings/**', 'unity/Assets/**') }}
+          restore-keys: Library-Android-
+
+      - uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: unity
+          targetPlatform: Android
+          buildName: Eonward
+          buildMethod: EonwardEditor.BuildScript.BuildAndroid
+
+      - name: Collect APK
+        run: |
+          APK=$(find build/Android -name '*.apk' | head -n 1)
+          test -n "$APK"
+          cp "$APK" Eonward.apk
+          ls -lh Eonward.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Eonward-apk
+          path: Eonward.apk
+          if-no-files-found: error
+
+  ios-export:
+    name: iOS Xcode project
+    needs: license
+    if: needs.license.outputs.ok == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free disk space (Unity images are large)
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          large-packages: false
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: unity/Library
+          key: Library-iOS-${{ hashFiles('unity/Packages/**', 'unity/ProjectSettings/**', 'unity/Assets/**') }}
+          restore-keys: Library-iOS-
+
+      - uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: unity
+          targetPlatform: iOS
+          buildName: Eonward
+          buildMethod: EonwardEditor.BuildScript.BuildIOS
+
+      # tar keeps the executable bits of Unity's Xcode build-phase scripts.
+      - name: Pack Xcode project
+        run: |
+          sudo chown -R "$USER" build
+          tar -czf xcode-project.tgz -C build/iOS Eonward
+          ls -lh xcode-project.tgz
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xcode-project
+          path: xcode-project.tgz
+          if-no-files-found: error
+          retention-days: 3
+
+  ios-ipa:
+    name: iOS IPA (unsigned)
+    needs: ios-export
+    runs-on: macos-15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: xcode-project
+
+      - name: Xcode version
+        run: xcodebuild -version
+
+      - name: Build for device (no signing)
+        run: |
+          tar -xzf xcode-project.tgz
+          cd Eonward
+          xcodebuild -quiet \
+            -project Unity-iPhone.xcodeproj \
+            -scheme Unity-iPhone \
+            -configuration Release \
+            -sdk iphoneos \
+            -destination 'generic/platform=iOS' \
+            -derivedDataPath ../dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
+            build
+
+      - name: Package Eonward.ipa
+        run: |
+          APP=$(find dd/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' | head -n 1)
+          test -n "$APP"
+          mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry Eonward.ipa Payload
+          ls -lh Eonward.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Eonward-ipa
+          path: Eonward.ipa
+          if-no-files-found: error
+
+  publish:
+    name: Publish "unity-latest" pre-release
+    needs: [android, ios-ipa]
+    if: github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: Eonward-*
+          merge-multiple: true
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: unity-latest
+          name: Unity build (unsigned IPA + APK)
+          prerelease: true
+          target_commitish: ${{ github.sha }}
+          body: |
+            Unity build from `${{ github.ref_name }}` @ ${{ github.sha }}.
+            - **Eonward.ipa**: sign and install with Feather or Sideloadly (iPhone).
+            - **Eonward.apk**: install directly on Android (allow "Install unknown apps").
+          files: |
+            Eonward.ipa
+            Eonward.apk

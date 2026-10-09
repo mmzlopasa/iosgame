@@ -6,6 +6,23 @@ Mobilna strategija za iPhone: mala prapovijesna zajednica uz rijeku postaje stal
 
 **Stanje:** prvi igrivi vertikalni presjek (Epoha 1: kamp → stabilno selo). Radi offline, bez računa i bez mreže.
 
+## Unity verzija (iPhone + Android) — novo
+
+Igra se seli na **Unity 6.3 LTS (6000.3.26f1)**. Plan i faze: [`UNITY_PLAN.md`](UNITY_PLAN.md). Projekt je u mapi `unity/`.
+
+**Preuzimanje buildova:** Releases → **„Unity build (unsigned IPA + APK)”** (tag `unity-latest`):
+- iPhone: https://github.com/mmzlopasa/iosgame/releases/download/unity-latest/Eonward.ipa (Feather / Sideloadly)
+- Android: https://github.com/mmzlopasa/iosgame/releases/download/unity-latest/Eonward.apk
+
+**Jednokratno postavljanje licence (na računalu):**
+1. Unity račun (id.unity.com) → Unity Hub → *Preferences → Licenses → Add → Get a free personal license*.
+2. U Hubu instaliraj editor **6000.3.26f1** (Installs → Install Editor → Archive) s modulom *iOS Build Support* (i *Android Build Support* po želji).
+3. Sadržaj `C:\ProgramData\Unity\Unity_lic.ulf` spremi kao GitHub secret `UNITY_LICENSE`, uz `UNITY_EMAIL` i `UNITY_PASSWORD` (Settings → Secrets and variables → Actions).
+
+Bez tih secreta Unity workflow samo javlja upozorenje i ništa ne gradi.
+
+Swift verzija (`Core/`, `App/`) ostaje kao referenca dok se pravila ne prenesu u C#.
+
 ## Struktura
 
 | Mapa | Sadržaj |
