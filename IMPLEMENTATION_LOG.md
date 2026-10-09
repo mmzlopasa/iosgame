@@ -39,3 +39,24 @@
 **Provjereno na samoj IPA datoteci:** `Payload/Eonward.app` sadrži Mach-O arm64 izvršnu datoteku, `Info.plist` (bundle id `com.eonward.prototype`, verzija 0.1.0, MinimumOSVersion 16.0), ikone, `Assets.car` i `EonwardCore_EonwardCore.bundle/content.json`.
 
 **I dalje nije provjereno:** pokretanje na stvarnom iPhoneu (instalacija, prikaz, safe area, dodir, haptika). To je sljedeći korak preko Sideloadlyja ili Feathera.
+
+## 2026-10-09 — Sesija 2b: prelazak na Unity (EONWARD, ne kopija druge igre)
+
+**Odluka:** korisnik je odabrao Unity radi Androida, 3D grafike, Asset Storea i rasta (DECISIONS D10). Igra ostaje EONWARD. Kratki pokušaj „frozen settlement” scene je uklonjen.
+
+**Napravljeno:**
+- `unity/Assets/Scripts/Core/`: C# port cijelog `EonwardCore` (1:1 pravila, isti `content.json`, isti save format i validacija).
+- `unity/CoreTests/`: 45 Swift testova preneseno u NUnit.
+- Unity prikaz: karta 16×16 iz `content.json` (trava, šuma, stijene, rijeka, pijesak), magla nad neistraženim regijama, 10 proceduralnih 3D modela zgrada, ghost postavljanje (zeleno/crveno), odabir, staze sela, seljani, vatra sa svjetlom, dimom i iskrama, kamera (povlačenje, pinch, tap).
+- `Hud.cs`: svi ekrani iz SwiftUI verzije (IMGUI).
+- `scripts/unity-compile-check.sh`: kompajlira sve Unity skripte prema pravim Unity 6000.3.26f1 DLL-ovima (iz javnog GameCI imagea), bez instalacije Unityja i bez licence.
+
+**Stvarno pokrenute provjere (Linux cloud sesija, .NET 8):**
+- `dotnet test unity/CoreTests`: **45/45 prolazi** iz prvog pokušaja.
+- Scripted igrač: selo nakon **17 min 10 s**, 8/8 ciljeva (identično Swift verziji).
+- Core se kompajlira kao .NET Standard 2.1 / C# 9 (Unityjev target).
+- `scripts/unity-compile-check.sh`: sve Unity skripte (igra, UI, editor build skripta) kompajliraju se **bez grešaka i upozorenja**. Namjerno pogrešan poziv u kontrolnoj datoteci pravilno javlja grešku, dakle provjera je stvarna.
+
+**Nije provjereno:**
+- Unity build (APK/IPA) još nije pokrenut: čeka `UNITY_LICENSE`, `UNITY_EMAIL` i `UNITY_PASSWORD` secrete.
+- Ponašanje u igri (izgled, dodir, performanse) nije viđeno ni u editoru ni na uređaju.

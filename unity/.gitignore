@@ -24,3 +24,5 @@
 # .NET test output
 /CoreTests/**/bin/
 /CoreTests/**/obj/
+/CompileCheck/bin/
+/CompileCheck/obj/
