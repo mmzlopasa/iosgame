@@ -26,3 +26,8 @@
 /CoreTests/**/obj/
 /CompileCheck/bin/
 /CompileCheck/obj/
+
+# Our own .NET projects (Unity-generated ones above stay ignored)
+!/CoreTests/**/*.csproj
+!/CoreTests/*.csproj
+!/CompileCheck/*.csproj

@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!-- Compile-only check of the Unity scripts against the real UnityEngine/UnityEditor reference DLLs. -->
+  <PropertyGroup>
+    <TargetFramework>netstandard2.1</TargetFramework>
+    <LangVersion>9.0</LangVersion>
+    <Nullable>disable</Nullable>
+    <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
+    <DefineConstants>$(DefineConstants);ENABLE_LEGACY_INPUT_MANAGER;UNITY_EDITOR;UNITY_6000_0_OR_NEWER</DefineConstants>
+    <NoWarn>CS0414;CS0649;CS0169</NoWarn>
+    <Repo>$(MSBuildThisFileDirectory)../Assets</Repo>
+    <Managed>$(UnityManaged)</Managed>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="$(Repo)/Scripts/**/*.cs" />
+    <Compile Include="$(Repo)/Editor/**/*.cs" />
+    <Reference Include="$(Managed)/UnityEngine/*.dll" Private="false" />
+  </ItemGroup>
+</Project>
