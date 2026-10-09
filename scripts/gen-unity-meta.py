@@ -43,6 +43,15 @@ TextScriptImporter:
   assetBundleVariant: 
 """
 
+ASMDEF = """fileFormatVersion: 2
+guid: {guid}
+AssemblyDefinitionImporter:
+  externalObjects: {{}}
+  userData: 
+  assetBundleName: 
+  assetBundleVariant: 
+"""
+
 DEFAULT = """fileFormatVersion: 2
 guid: {guid}
 DefaultImporter:
@@ -59,6 +68,8 @@ def template(path):
     ext = os.path.splitext(path)[1].lower()
     if ext == ".cs":
         return SCRIPT
+    if ext == ".asmdef":
+        return ASMDEF
     if ext in (".json", ".txt", ".md", ".csv", ".xml", ".bytes"):
         return TEXT
     return DEFAULT

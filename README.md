@@ -8,7 +8,7 @@ Mobilna strategija za iPhone: mala prapovijesna zajednica uz rijeku postaje stal
 
 ## Unity verzija (iPhone + Android) — novo
 
-Igra se seli na **Unity 6.3 LTS (6000.3.26f1)**. Plan i faze: [`UNITY_PLAN.md`](UNITY_PLAN.md). Projekt je u mapi `unity/`.
+Ista igra (EONWARD, Epoha 1) prelazi na **Unity 6.3 LTS (6000.3.26f1)** radi Androida, 3D grafike i Asset Storea. Pravila su prenesena u C# i testirana (`unity/CoreTests`, 45/45), a prikaz i sučelje su u `unity/Assets/Scripts`. Plan i faze: [`UNITY_PLAN.md`](UNITY_PLAN.md).
 
 **Preuzimanje buildova:** Releases → **„Unity build (unsigned IPA + APK)”** (tag `unity-latest`):
 - iPhone: https://github.com/mmzlopasa/iosgame/releases/download/unity-latest/Eonward.ipa (Feather / Sideloadly)

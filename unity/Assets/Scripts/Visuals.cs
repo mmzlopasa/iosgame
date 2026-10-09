@@ -35,26 +35,49 @@ namespace Eonward
 
         public static readonly Spec[] All =
         {
-            new Spec("Snow", new Color(0.90f, 0.94f, 0.99f), 0.35f),
-            new Spec("SnowTrodden", new Color(0.74f, 0.77f, 0.83f), 0.2f),
-            new Spec("Ice", new Color(0.62f, 0.82f, 0.96f), 0.85f),
-            new Spec("Wood", new Color(0.46f, 0.31f, 0.19f)),
-            new Spec("DarkWood", new Color(0.28f, 0.19f, 0.12f)),
-            new Spec("Stone", new Color(0.52f, 0.54f, 0.58f), 0.1f),
-            new Spec("DarkStone", new Color(0.30f, 0.31f, 0.34f), 0.1f),
-            new Spec("Metal", new Color(0.30f, 0.32f, 0.36f), 0.55f, 0.7f),
-            new Spec("Rust", new Color(0.50f, 0.27f, 0.16f), 0.25f, 0.4f),
-            new Spec("Canvas", new Color(0.76f, 0.66f, 0.50f)),
-            new Spec("Roof", new Color(0.36f, 0.24f, 0.19f)),
-            new Spec("Pine", new Color(0.13f, 0.30f, 0.24f)),
-            new Spec("Coal", new Color(0.09f, 0.09f, 0.10f), 0.4f),
-            new Spec("Meat", new Color(0.62f, 0.22f, 0.20f), 0.3f),
-            new Spec("Coat", new Color(0.55f, 0.24f, 0.18f)),
-            new Spec("CoatBlue", new Color(0.20f, 0.30f, 0.48f)),
-            new Spec("Skin", new Color(0.93f, 0.76f, 0.62f)),
-            new Spec("Ember", new Color(1.00f, 0.45f, 0.12f)) { Emission = new Color(1.0f, 0.42f, 0.08f) * 2.5f },
-            new Spec("Window", new Color(1.00f, 0.80f, 0.45f)) { Emission = new Color(1.0f, 0.70f, 0.30f) * 1.5f },
-            new Spec("Snowflake", Color.white) { Particle = true },
+            // Terrain
+            new Spec("Grass", new Color(0.47f, 0.62f, 0.32f)),
+            new Spec("Grass2", new Color(0.43f, 0.59f, 0.30f)),
+            new Spec("Grass3", new Color(0.51f, 0.65f, 0.35f)),
+            new Spec("ForestFloor", new Color(0.30f, 0.45f, 0.25f)),
+            new Spec("Sand", new Color(0.81f, 0.73f, 0.53f)),
+            new Spec("Water", new Color(0.27f, 0.50f, 0.66f), 0.85f),
+            new Spec("RockGround", new Color(0.55f, 0.53f, 0.49f)),
+            new Spec("Boulder", new Color(0.60f, 0.58f, 0.54f), 0.1f),
+            new Spec("DarkRock", new Color(0.42f, 0.40f, 0.37f), 0.1f),
+            new Spec("Dirt", new Color(0.43f, 0.33f, 0.23f)),
+            new Spec("Path", new Color(0.66f, 0.55f, 0.38f)),
+            new Spec("FarGround", new Color(0.33f, 0.46f, 0.26f)),
+            new Spec("Fog", new Color(0.13f, 0.15f, 0.15f)),
+            // Nature
+            new Spec("Bark", new Color(0.36f, 0.25f, 0.16f)),
+            new Spec("Leaves", new Color(0.25f, 0.47f, 0.24f)),
+            new Spec("Leaves2", new Color(0.31f, 0.53f, 0.26f)),
+            new Spec("Pine", new Color(0.18f, 0.37f, 0.25f)),
+            new Spec("Berry", new Color(0.69f, 0.18f, 0.27f), 0.4f),
+            // Materials of the camp
+            new Spec("Wood", new Color(0.48f, 0.34f, 0.21f)),
+            new Spec("DarkWood", new Color(0.34f, 0.24f, 0.15f)),
+            new Spec("Hide", new Color(0.70f, 0.55f, 0.38f)),
+            new Spec("Weave", new Color(0.77f, 0.65f, 0.44f)),
+            new Spec("Thatch", new Color(0.72f, 0.60f, 0.33f)),
+            new Spec("Stone", new Color(0.62f, 0.60f, 0.56f), 0.1f),
+            new Spec("Basket", new Color(0.66f, 0.50f, 0.28f)),
+            new Spec("Ash", new Color(0.24f, 0.22f, 0.21f)),
+            new Spec("Ember", new Color(1.00f, 0.50f, 0.15f)) { Emission = new Color(1.0f, 0.45f, 0.10f) * 2.5f },
+            new Spec("Flame", new Color(1.00f, 0.80f, 0.35f)) { Emission = new Color(1.0f, 0.75f, 0.30f) * 2.5f },
+            // People
+            new Spec("Skin", new Color(0.80f, 0.60f, 0.45f)),
+            new Spec("Tunic", new Color(0.55f, 0.40f, 0.26f)),
+            new Spec("Tunic2", new Color(0.45f, 0.36f, 0.30f)),
+            new Spec("Hair", new Color(0.20f, 0.14f, 0.10f)),
+            // Feedback
+            new Spec("GhostOk", new Color(0.30f, 0.90f, 0.40f)) { Emission = new Color(0.15f, 0.6f, 0.2f) },
+            new Spec("GhostBad", new Color(0.95f, 0.25f, 0.20f)) { Emission = new Color(0.6f, 0.12f, 0.1f) },
+            new Spec("Select", new Color(1.00f, 0.85f, 0.30f)) { Emission = new Color(0.7f, 0.55f, 0.15f) },
+            new Spec("BarBack", new Color(0.08f, 0.07f, 0.06f)),
+            new Spec("BarFill", new Color(1.00f, 0.80f, 0.30f)) { Emission = new Color(0.8f, 0.6f, 0.2f) },
+            // Particles
             new Spec("Smoke", new Color(0.55f, 0.55f, 0.58f, 0.6f)) { Particle = true },
             new Spec("Spark", new Color(1f, 0.6f, 0.2f)) { Particle = true },
         };
@@ -190,7 +213,7 @@ namespace Eonward
             return prism = FromTriangles("Prism", t);
         }
 
-        /// <summary>Lumpy low-poly rock / snow drift (deformed octahedron sphere), radius ~0.5.</summary>
+        /// <summary>Lumpy low-poly rock (deformed octahedron sphere), radius ~0.5.</summary>
         public static Mesh Rock()
         {
             if (rock != null) return rock;

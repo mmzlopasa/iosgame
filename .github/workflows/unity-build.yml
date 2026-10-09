@@ -15,6 +15,19 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  core-tests:
+    name: Core rules tests (C#)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: Compile core as .NET Standard 2.1 / C# 9 (Unity's target)
+        run: dotnet build unity/CoreTests/LibCheck -nologo
+      - name: dotnet test
+        run: dotnet test unity/CoreTests -nologo --logger "console;verbosity=normal"
+
   license:
     name: Check Unity license secrets
     runs-on: ubuntu-latest
@@ -36,7 +49,7 @@ jobs:
 
   android:
     name: Android APK
-    needs: license
+    needs: [license, core-tests]
     if: needs.license.outputs.ok == 'true'
     runs-on: ubuntu-latest
     steps:
@@ -81,7 +94,7 @@ jobs:
 
   ios-export:
     name: iOS Xcode project
-    needs: license
+    needs: [license, core-tests]
     if: needs.license.outputs.ok == 'true'
     runs-on: ubuntu-latest
     steps:

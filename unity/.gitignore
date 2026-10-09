@@ -20,3 +20,7 @@
 # Created by Eonward/Editor/BuildScript.cs (scene + materials are generated from code)
 /Assets/Generated/
 /Assets/Generated.meta
+
+# .NET test output
+/CoreTests/**/bin/
+/CoreTests/**/obj/

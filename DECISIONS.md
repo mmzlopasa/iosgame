@@ -29,3 +29,9 @@ CI gradi s `CODE_SIGNING_ALLOWED=NO` i pakira `Payload/Eonward.app` u zip (.ipa)
 
 ## D9 — UI: SwiftUI preko SpriteKita
 SwiftUI za touch-heavy panele (safe area, Dynamic Type, sheetovi s detentima), a `SpriteView` za scenu. Scena dobiva tapove i javlja ih `GameStore`-u. Ne mijenja stanje sama.
+
+## D10 — Prelazak na Unity 6.3 LTS (2026-10-09)
+**Kontekst:** korisnik želi Android uz iPhone, 3D i bogatiju grafiku, Asset Store te standardni engine za zvuk, efekte i multiplayer. Swift verzija radi samo na iOS-u.
+**Odluka (odabrao korisnik):** Unity 6.3 LTS (6000.3.26f1). Igra i dizajn ostaju isti (EONWARD, Epoha 1).
+**Kako:** pravila su prenesena 1:1 u C# (`unity/Assets/Scripts/Core`) bez ovisnosti o Unityju, pa se testiraju običnim `dotnet test` (45 testova, isti scenariji i brojke kao u Swiftu). Scena, materijali i UI nastaju iz koda (`BuildScript.cs`, IMGUI), pa se igra može razvijati iz cloud sesije bez otvaranja editora. GitHub Actions (GameCI) gradi Android APK i iOS Xcode projekt, a macOS runner pravi nepotpisanu IPA.
+**Posljedice:** Unity build traži besplatnu Personal licencu kao GitHub secret. IMGUI je privremen i kasnije prelazi na uGUI ili UI Toolkit s pravim dizajnom. GPLv3 licenca repozitorija nije kompatibilna s distribucijom igre na zatvorenom engineu, pa je treba promijeniti prije objave.

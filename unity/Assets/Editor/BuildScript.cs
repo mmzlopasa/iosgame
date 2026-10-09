@@ -23,7 +23,7 @@ namespace EonwardEditor
         const string ScenePath = GeneratedRoot + "/Main.unity";
 
         public const string ProductName = "EONWARD";
-        public const string BundleId = "com.eonward.frozen";
+        public const string BundleId = "com.eonward.game";
         public const string Version = "0.2.0";
 
         [MenuItem("EONWARD/Generate scene and materials")]
