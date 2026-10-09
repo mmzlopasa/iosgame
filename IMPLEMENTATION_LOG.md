@@ -27,3 +27,15 @@
 - Grafika je proceduralni placeholder.
 - Nema zvuka.
 - iPad koristi isti layout (radi, ali nije posebno prilagođen).
+
+## 2026-10-09 — Sesija 2 (Claude Cloud)
+
+**Prvi CI build (GitHub Actions, run [#1](https://github.com/mmzlopasa/iosgame/actions/runs/37992205677), commit `f869e11`, macos-15):**
+- `swift test` za EonwardCore na macOS-u: **uspjeh**.
+- `xcodegen generate` + nepotpisani `xcodebuild` (Release, iphoneos): **uspjeh iz prvog pokušaja**, bez ijedne izmjene koda u `App/`.
+- `Eonward.ipa` (≈560 KB) objavljena u pre-releaseu **„Latest build (unsigned)”**:
+  https://github.com/mmzlopasa/iosgame/releases/download/latest-build/Eonward.ipa
+
+**Provjereno na samoj IPA datoteci:** `Payload/Eonward.app` sadrži Mach-O arm64 izvršnu datoteku, `Info.plist` (bundle id `com.eonward.prototype`, verzija 0.1.0, MinimumOSVersion 16.0), ikone, `Assets.car` i `EonwardCore_EonwardCore.bundle/content.json`.
+
+**I dalje nije provjereno:** pokretanje na stvarnom iPhoneu (instalacija, prikaz, safe area, dodir, haptika). To je sljedeći korak preko Sideloadlyja ili Feathera.
