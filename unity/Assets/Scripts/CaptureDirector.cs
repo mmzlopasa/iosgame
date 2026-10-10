@@ -37,7 +37,9 @@ namespace Founders
             hud.Hidden = !ui;
             for (int i = 0; i < 20; i++) yield return null; // let camera moves, particles and LOD settle
             yield return new WaitForSeconds(0.8f);
-            ScreenCapture.CaptureScreenshot(Path.Combine(outDir, name + ".png"));
+            // On iOS/Android the path is relative to the persistent data folder.
+            bool mobile = Application.platform == RuntimePlatform.IPhonePlayer || Application.platform == RuntimePlatform.Android;
+            ScreenCapture.CaptureScreenshot(mobile ? "captures/" + name + ".png" : Path.Combine(outDir, name + ".png"));
             yield return null;
             yield return new WaitForSeconds(0.6f);
             Debug.Log($"[FOUNDERS] captured {name}");
