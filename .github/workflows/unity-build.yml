@@ -1,4 +1,4 @@
-name: Unity build (iOS + Android)
+name: Unity build (iOS)
 
 on:
   push:
@@ -46,51 +46,6 @@ jobs:
             echo "ok=false" >> "$GITHUB_OUTPUT"
             echo "::warning::Unity secrets missing. Add UNITY_LICENSE, UNITY_EMAIL and UNITY_PASSWORD under Settings → Secrets and variables → Actions (see README)."
           fi
-
-  android:
-    name: Android APK
-    needs: [license, core-tests]
-    if: needs.license.outputs.ok == 'true'
-    runs-on: ubuntu-latest
-    steps:
-      - name: Free disk space (Unity images are large)
-        uses: jlumbroso/free-disk-space@v1.3.1
-        with:
-          tool-cache: false
-          android: true
-          large-packages: false
-
-      - uses: actions/checkout@v4
-
-      - uses: actions/cache@v4
-        with:
-          path: unity/Library
-          key: Library-Android-${{ hashFiles('unity/Packages/**', 'unity/ProjectSettings/**', 'unity/Assets/**') }}
-          restore-keys: Library-Android-
-
-      - uses: game-ci/unity-builder@v4
-        env:
-          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
-          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
-          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
-        with:
-          projectPath: unity
-          targetPlatform: Android
-          buildName: Founders
-          buildMethod: FoundersEditor.BuildScript.BuildAndroid
-
-      - name: Collect APK
-        run: |
-          APK=$(find build/Android -name '*.apk' | head -n 1)
-          test -n "$APK"
-          cp "$APK" Founders.apk
-          ls -lh Founders.apk
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: Founders-apk
-          path: Founders.apk
-          if-no-files-found: error
 
   ios-export:
     name: iOS Xcode project
@@ -181,25 +136,21 @@ jobs:
 
   publish:
     name: Publish "unity-latest" pre-release
-    needs: [android, ios-ipa]
+    needs: [ios-ipa]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: Founders-*
-          merge-multiple: true
+          name: Founders-ipa
 
       - uses: softprops/action-gh-release@v2
         with:
           tag_name: unity-latest
-          name: Unity build (unsigned IPA + APK)
+          name: Unity build (unsigned IPA)
           prerelease: true
           target_commitish: ${{ github.sha }}
           body: |
             Unity build from `${{ github.ref_name }}` @ ${{ github.sha }}.
             - **Founders.ipa**: sign and install with Feather or Sideloadly (iPhone).
-            - **Founders.apk**: install directly on Android (allow "Install unknown apps").
-          files: |
-            Founders.ipa
-            Founders.apk
+          files: Founders.ipa
