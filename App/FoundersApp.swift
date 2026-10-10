@@ -1,7 +1,7 @@
 import SwiftUI
 
 @main
-struct EonwardApp: App {
+struct FoundersApp: App {
     @StateObject private var store = GameStore()
     @Environment(\.scenePhase) private var scenePhase
 

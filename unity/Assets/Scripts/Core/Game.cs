@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Eonward.Core
+namespace Founders.Core
 {
     /// <summary>
     /// Owns the settlement state and applies the rules to it. Rules are split by topic into

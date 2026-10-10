@@ -1,5 +1,5 @@
 import XCTest
-@testable import EonwardCore
+@testable import FoundersCore
 
 final class SaveTests: XCTestCase {
     func testRoundTripPreservesState() throws {
@@ -29,7 +29,7 @@ final class SaveTests: XCTestCase {
     }
 
     func testFileStoreWritesAndReadsAndRecoversFromCorruption() throws {
-        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("eonward-tests-\(UUID().uuidString)")
+        let dir = FileManager.default.temporaryDirectory.appendingPathComponent("founders-tests-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(at: dir) }
         let store = FileSaveStore(directory: dir)
         let (game, clock) = Fixtures.newGame()

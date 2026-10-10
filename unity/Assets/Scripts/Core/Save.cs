@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 
-namespace Eonward.Core
+namespace Founders.Core
 {
     public enum LoadResult { Loaded, NoSave, Corrupt, UnsupportedVersion }
 
@@ -112,7 +112,7 @@ namespace Eonward.Core
     {
         public readonly string FilePath;
 
-        public FileSaveStore(string directory, string fileName = "eonward_save.json")
+        public FileSaveStore(string directory, string fileName = "founders_save.json")
         {
             FilePath = Path.Combine(directory, fileName);
         }

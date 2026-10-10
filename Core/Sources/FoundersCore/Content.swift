@@ -303,7 +303,7 @@ public enum ContentError: Error, CustomStringConvertible {
 
     public var description: String {
         switch self {
-        case .missingBundledFile: return "content.json was not found in the EonwardCore bundle."
+        case .missingBundledFile: return "content.json was not found in the FoundersCore bundle."
         case .invalid(let problems): return "Content is invalid:\n- " + problems.joined(separator: "\n- ")
         }
     }

@@ -1,5 +1,5 @@
 import XCTest
-@testable import EonwardCore
+@testable import FoundersCore
 
 final class ContentTests: XCTestCase {
     func testBundledContentIsValid() {

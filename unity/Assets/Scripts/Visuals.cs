@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-namespace Eonward
+namespace Founders
 {
     /// <summary>
     /// Shared look of the game. Materials are generated as assets by the editor build

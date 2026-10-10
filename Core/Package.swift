@@ -1,22 +1,22 @@
 // swift-tools-version:5.9
 import PackageDescription
 
-// EonwardCore: pure gameplay domain (no UIKit/SpriteKit) so it can be unit tested
+// FoundersCore: pure gameplay domain (no UIKit/SpriteKit) so it can be unit tested
 // on macOS, Linux and Windows. The iOS app depends on this package.
 let package = Package(
-    name: "EonwardCore",
+    name: "FoundersCore",
     platforms: [.iOS(.v16), .macOS(.v13)],
     products: [
-        .library(name: "EonwardCore", targets: ["EonwardCore"])
+        .library(name: "FoundersCore", targets: ["FoundersCore"])
     ],
     targets: [
         .target(
-            name: "EonwardCore",
+            name: "FoundersCore",
             resources: [.copy("Resources/content.json")]
         ),
         .testTarget(
-            name: "EonwardCoreTests",
-            dependencies: ["EonwardCore"]
+            name: "FoundersCoreTests",
+            dependencies: ["FoundersCore"]
         )
     ]
 )

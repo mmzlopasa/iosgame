@@ -1,9 +1,9 @@
 using System;
 using System.Linq;
-using Eonward.Core;
+using Founders.Core;
 using NUnit.Framework;
 
-namespace Eonward.Tests
+namespace Founders.Tests
 {
     /// <summary>A scripted player that uses only public commands. Proves the first session can
     /// be completed and reports how long it takes (balance smoke test).</summary>

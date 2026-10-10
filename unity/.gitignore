@@ -17,7 +17,7 @@
 .vs/
 .idea/
 
-# Created by Eonward/Editor/BuildScript.cs (scene + materials are generated from code)
+# Created by Founders/Editor/BuildScript.cs (scene + materials are generated from code)
 /Assets/Generated/
 /Assets/Generated.meta
 

@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 
-namespace Eonward.Core
+namespace Founders.Core
 {
     /// <summary>
     /// Minimal JSON reader/writer. Objects are Dictionary&lt;string, object&gt;, arrays are

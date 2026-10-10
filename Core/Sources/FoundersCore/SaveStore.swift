@@ -85,7 +85,7 @@ public enum SaveCodec {
 public final class FileSaveStore: SaveStore {
     public let fileURL: URL
 
-    public init(directory: URL, fileName: String = "eonward_save.json") {
+    public init(directory: URL, fileName: String = "founders_save.json") {
         self.fileURL = directory.appendingPathComponent(fileName)
     }
 

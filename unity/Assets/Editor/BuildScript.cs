@@ -1,7 +1,7 @@
 using System;
 using System.IO;
 using System.Linq;
-using Eonward;
+using Founders;
 using UnityEditor;
 using UnityEditor.Build;
 using UnityEditor.Build.Reporting;
@@ -9,11 +9,11 @@ using UnityEditor.SceneManagement;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 
-namespace EonwardEditor
+namespace FoundersEditor
 {
     /// <summary>
     /// Headless build entry points used by GitHub Actions (GameCI) and the
-    /// "EONWARD" editor menu. The scene and materials are generated here so the
+    /// "FOUNDERS" editor menu. The scene and materials are generated here so the
     /// project never depends on hand-edited scene files.
     /// </summary>
     public static class BuildScript
@@ -22,11 +22,11 @@ namespace EonwardEditor
         const string MaterialFolder = GeneratedRoot + "/Resources/" + Palette.ResourceFolder;
         const string ScenePath = GeneratedRoot + "/Main.unity";
 
-        public const string ProductName = "EONWARD";
-        public const string BundleId = "com.eonward.game";
+        public const string ProductName = "Founders";
+        public const string BundleId = "com.founders.longrise";
         public const string Version = "0.2.0";
 
-        [MenuItem("EONWARD/Generate scene and materials")]
+        [MenuItem("FOUNDERS/Generate scene and materials")]
         public static void Generate()
         {
             ConfigurePlayer();
@@ -36,11 +36,11 @@ namespace EonwardEditor
             AssetDatabase.Refresh();
         }
 
-        [MenuItem("EONWARD/Build iOS (Xcode project)")]
-        public static void BuildIOS() => BuildFor(BuildTarget.iOS, "build/iOS/Eonward");
+        [MenuItem("FOUNDERS/Build iOS (Xcode project)")]
+        public static void BuildIOS() => BuildFor(BuildTarget.iOS, "build/iOS/Founders");
 
-        [MenuItem("EONWARD/Build Android (APK)")]
-        public static void BuildAndroid() => BuildFor(BuildTarget.Android, "build/Android/Eonward.apk");
+        [MenuItem("FOUNDERS/Build Android (APK)")]
+        public static void BuildAndroid() => BuildFor(BuildTarget.Android, "build/Android/Founders.apk");
 
         static void BuildFor(BuildTarget target, string defaultPath)
         {
@@ -60,15 +60,15 @@ namespace EonwardEditor
                 targetGroup = BuildPipeline.GetBuildTargetGroup(target),
                 options = BuildOptions.None,
             };
-            Debug.Log($"[EONWARD] Building {target} -> {path}");
+            Debug.Log($"[FOUNDERS] Building {target} -> {path}");
             var report = BuildPipeline.BuildPlayer(options);
             var summary = report.summary;
-            Debug.Log($"[EONWARD] Build result: {summary.result}, size {summary.totalSize} bytes, errors {summary.totalErrors}, {summary.totalTime}");
+            Debug.Log($"[FOUNDERS] Build result: {summary.result}, size {summary.totalSize} bytes, errors {summary.totalErrors}, {summary.totalTime}");
             if (summary.result != BuildResult.Succeeded)
             {
                 foreach (var step in report.steps)
                     foreach (var m in step.messages.Where(m => m.type == LogType.Error || m.type == LogType.Exception))
-                        Debug.LogError($"[EONWARD] {step.name}: {m.content}");
+                        Debug.LogError($"[FOUNDERS] {step.name}: {m.content}");
                 if (Application.isBatchMode) EditorApplication.Exit(1);
             }
         }
@@ -83,7 +83,7 @@ namespace EonwardEditor
 
         static void ConfigurePlayer()
         {
-            PlayerSettings.companyName = "Eonward";
+            PlayerSettings.companyName = "Founders";
             PlayerSettings.productName = ProductName;
             PlayerSettings.bundleVersion = Version;
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;

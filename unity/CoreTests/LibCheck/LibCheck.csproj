@@ -5,7 +5,7 @@
     <LangVersion>9.0</LangVersion>
     <Nullable>disable</Nullable>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
-    <AssemblyName>Eonward.Core</AssemblyName>
+    <AssemblyName>Founders.Core</AssemblyName>
   </PropertyGroup>
   <ItemGroup>
     <Compile Include="../../Assets/Scripts/Core/**/*.cs" />

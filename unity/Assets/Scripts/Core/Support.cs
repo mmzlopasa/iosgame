@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace Eonward.Core
+namespace Founders.Core
 {
     // MARK: - Time
 

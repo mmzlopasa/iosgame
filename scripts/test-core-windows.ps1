@@ -1,4 +1,4 @@
-# Runs the EonwardCore unit tests on Windows (Swift toolchain + VS Build Tools required).
+# Runs the FoundersCore unit tests on Windows (Swift toolchain + VS Build Tools required).
 # The package is copied to a short temp path because SwiftPM on Windows struggles with long paths.
 param([string]$Command = "test")
 

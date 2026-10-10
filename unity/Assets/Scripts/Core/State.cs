@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Eonward.Core
+namespace Founders.Core
 {
     public enum BuildingStatus { Constructing, Complete, Upgrading }
 

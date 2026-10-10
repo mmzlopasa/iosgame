@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 
-namespace Eonward.Core
+namespace Founders.Core
 {
     /// <summary>A condition with a player-facing description and whether it is met.</summary>
     public struct RequirementStatus

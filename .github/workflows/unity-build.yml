@@ -76,20 +76,20 @@ jobs:
         with:
           projectPath: unity
           targetPlatform: Android
-          buildName: Eonward
-          buildMethod: EonwardEditor.BuildScript.BuildAndroid
+          buildName: Founders
+          buildMethod: FoundersEditor.BuildScript.BuildAndroid
 
       - name: Collect APK
         run: |
           APK=$(find build/Android -name '*.apk' | head -n 1)
           test -n "$APK"
-          cp "$APK" Eonward.apk
-          ls -lh Eonward.apk
+          cp "$APK" Founders.apk
+          ls -lh Founders.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Eonward-apk
-          path: Eonward.apk
+          name: Founders-apk
+          path: Founders.apk
           if-no-files-found: error
 
   ios-export:
@@ -121,14 +121,14 @@ jobs:
         with:
           projectPath: unity
           targetPlatform: iOS
-          buildName: Eonward
-          buildMethod: EonwardEditor.BuildScript.BuildIOS
+          buildName: Founders
+          buildMethod: FoundersEditor.BuildScript.BuildIOS
 
       # tar keeps the executable bits of Unity's Xcode build-phase scripts.
       - name: Pack Xcode project
         run: |
           sudo chown -R "$USER" build
-          tar -czf xcode-project.tgz -C build/iOS Eonward
+          tar -czf xcode-project.tgz -C build/iOS Founders
           ls -lh xcode-project.tgz
 
       - uses: actions/upload-artifact@v4
@@ -153,7 +153,7 @@ jobs:
       - name: Build for device (no signing)
         run: |
           tar -xzf xcode-project.tgz
-          cd Eonward
+          cd Founders
           xcodebuild -quiet \
             -project Unity-iPhone.xcodeproj \
             -scheme Unity-iPhone \
@@ -164,19 +164,19 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             build
 
-      - name: Package Eonward.ipa
+      - name: Package Founders.ipa
         run: |
           APP=$(find dd/Build/Products/Release-iphoneos -maxdepth 1 -name '*.app' | head -n 1)
           test -n "$APP"
           mkdir Payload
           cp -R "$APP" Payload/
-          zip -qry Eonward.ipa Payload
-          ls -lh Eonward.ipa
+          zip -qry Founders.ipa Payload
+          ls -lh Founders.ipa
 
       - uses: actions/upload-artifact@v4
         with:
-          name: Eonward-ipa
-          path: Eonward.ipa
+          name: Founders-ipa
+          path: Founders.ipa
           if-no-files-found: error
 
   publish:
@@ -187,7 +187,7 @@ jobs:
     steps:
       - uses: actions/download-artifact@v4
         with:
-          pattern: Eonward-*
+          pattern: Founders-*
           merge-multiple: true
 
       - uses: softprops/action-gh-release@v2
@@ -198,8 +198,8 @@ jobs:
           target_commitish: ${{ github.sha }}
           body: |
             Unity build from `${{ github.ref_name }}` @ ${{ github.sha }}.
-            - **Eonward.ipa**: sign and install with Feather or Sideloadly (iPhone).
-            - **Eonward.apk**: install directly on Android (allow "Install unknown apps").
+            - **Founders.ipa**: sign and install with Feather or Sideloadly (iPhone).
+            - **Founders.apk**: install directly on Android (allow "Install unknown apps").
           files: |
-            Eonward.ipa
-            Eonward.apk
+            Founders.ipa
+            Founders.apk

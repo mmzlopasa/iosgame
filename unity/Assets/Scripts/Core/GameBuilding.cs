@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Eonward.Core
+namespace Founders.Core
 {
     public enum PlacementIssueKind
     {

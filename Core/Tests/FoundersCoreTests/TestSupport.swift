@@ -1,6 +1,6 @@
 import Foundation
 import XCTest
-@testable import EonwardCore
+@testable import FoundersCore
 
 enum Fixtures {
     static let content: GameContent = {

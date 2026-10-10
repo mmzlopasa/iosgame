@@ -1,5 +1,5 @@
 import XCTest
-@testable import EonwardCore
+@testable import FoundersCore
 
 final class ConstructionTests: XCTestCase {
     func testConstructionCompletesOnceWithFeedback() {

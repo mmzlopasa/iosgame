@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Eonward.Core
+namespace Founders.Core
 {
     /// <summary>Per-second production/consumption at one moment. Used by the simulation and shown by the UI.</summary>
     public sealed class EconomySnapshot

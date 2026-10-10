@@ -1,6 +1,6 @@
 {
-    "name": "Eonward.Core",
-    "rootNamespace": "Eonward.Core",
+    "name": "Founders.Core",
+    "rootNamespace": "Founders.Core",
     "references": [],
     "includePlatforms": [],
     "excludePlatforms": [],

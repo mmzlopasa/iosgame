@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
-namespace Eonward
+namespace Founders
 {
     /// <summary>Fire light flicker.</summary>
     public class Flicker : MonoBehaviour

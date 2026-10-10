@@ -1,6 +1,6 @@
 import SpriteKit
 import UIKit
-import EonwardCore
+import FoundersCore
 
 /// Draws the settlement and turns touches into grid taps. It never changes game
 /// state itself: it reads `store.game` and reports taps back to the store.

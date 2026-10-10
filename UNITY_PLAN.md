@@ -1,12 +1,12 @@
-# EONWARD na Unityju — plan
+# FOUNDERS na Unityju — plan
 
-Ista igra kao Swift prototip (*EONWARD — Rise Through the Ages*): prapovijesna zajednica uz rijeku postaje stalno selo, a isto naselje i iste odluke trebaju trajati kroz sve buduće epohe. Unity donosi **iPhone + Android**, 3D prikaz, Asset Store i standardni engine za zvuk, efekte i kasniji multiplayer (DECISIONS D10).
+Ista igra kao Swift prototip (*FOUNDERS — The Long Rise*): prapovijesna zajednica uz rijeku postaje stalno selo, a isto naselje i iste odluke trebaju trajati kroz sve buduće epohe. Unity donosi **iPhone + Android**, 3D prikaz, Asset Store i standardni engine za zvuk, efekte i kasniji multiplayer (DECISIONS D10).
 
 ## Kako je projekt složen
 
 | Dio | Mapa | Napomena |
 |---|---|---|
-| Pravila igre (EonwardCore) | `unity/Assets/Scripts/Core/` | C# port Swift paketa `Core/`, 1:1. Ne ovisi o Unityju (`noEngineReferences`). |
+| Pravila igre (FoundersCore) | `unity/Assets/Scripts/Core/` | C# port Swift paketa `Core/`, 1:1. Ne ovisi o Unityju (`noEngineReferences`). |
 | Sadržaj i balans | `unity/Assets/Resources/content.json` | Ista datoteka kao u Swift verziji: zgrade, tehnologije, eventi, ciljevi, regije, karta. |
 | Testovi pravila | `unity/CoreTests/` | 45 testova prenesenih iz Swifta, rade s `dotnet test` (bez Unityja i licence). |
 | Prikaz | `unity/Assets/Scripts/*.cs` | 3D karta 16×16 iz `content.json`, magla, zgrade, ghost postavljanje, seljani, kamera. |

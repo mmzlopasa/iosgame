@@ -1,5 +1,5 @@
 <Project Sdk="Microsoft.NET.Sdk">
-  <!-- Runs the EonwardCore rules (unity/Assets/Scripts/Core) outside Unity: dotnet test unity/CoreTests -->
+  <!-- Runs the FoundersCore rules (unity/Assets/Scripts/Core) outside Unity: dotnet test unity/CoreTests -->
   <PropertyGroup>
     <TargetFramework>net8.0</TargetFramework>
     <LangVersion>9.0</LangVersion>

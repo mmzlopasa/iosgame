@@ -5,7 +5,7 @@ Legenda: ✅ gotovo i provjereno · 🟡 napisano, čeka provjeru (CI ili uređa
 ## Milestone 0 — Okruženje
 - ✅ Inspekcija: Windows 11, prazna mapa, nema Unityja, Gita ni Maca.
 - ✅ Odluka o tehnologiji (DECISIONS D1) i build putu (.ipa preko GitHub Actions).
-- ✅ Swift 6.4 + VS Build Tools instalirani; `EonwardCore` se kompajlira i testira na Windowsu.
+- ✅ Swift 6.4 + VS Build Tools instalirani; `FoundersCore` se kompajlira i testira na Windowsu.
 - 🟡 Prvi CI run na GitHubu (korisnik mora pushati repo).
 
 ## Milestone 1 — Funkcionalno naselje

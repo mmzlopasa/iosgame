@@ -1,6 +1,6 @@
 import SwiftUI
 import UIKit
-import EonwardCore
+import FoundersCore
 
 enum Panel: String, Identifiable {
     case build, people, research, objectives, map, settings
@@ -47,12 +47,12 @@ final class GameStore: ObservableObject {
         do {
             loadedContent = try GameContent.loadBundled()
         } catch {
-            fatalError("EONWARD content failed to load: \(error)")
+            fatalError("FOUNDERS content failed to load: \(error)")
         }
         let clock = SystemClock()
         let support = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first
             ?? FileManager.default.temporaryDirectory
-        let saveStore = FileSaveStore(directory: support.appendingPathComponent("Eonward", isDirectory: true))
+        let saveStore = FileSaveStore(directory: support.appendingPathComponent("Founders", isDirectory: true))
 
         var message: String?
         let game: Game
@@ -62,12 +62,12 @@ final class GameStore: ObservableObject {
         case .noSave:
             game = Game.newGame(content: loadedContent, clock: clock)
         case .corrupt(let reason):
-            print("[EONWARD] Corrupt save moved aside: \(reason)")
+            print("[FOUNDERS] Corrupt save moved aside: \(reason)")
             message = "Your previous save could not be read, so a new camp was started. A backup was kept."
             game = Game.newGame(content: loadedContent, clock: clock)
         case .unsupportedVersion(let version):
-            print("[EONWARD] Save version \(version) is newer than this build supports.")
-            message = "Your save is from a newer version of EONWARD (v\(version)). Started a temporary new camp; the save was not changed."
+            print("[FOUNDERS] Save version \(version) is newer than this build supports.")
+            message = "Your save is from a newer version of FOUNDERS (v\(version)). Started a temporary new camp; the save was not changed."
             game = Game.newGame(content: loadedContent, clock: clock)
         }
 
@@ -159,12 +159,12 @@ final class GameStore: ObservableObject {
             saveStatus = "Saved \(Date().formatted(date: .omitted, time: .standard))"
         } catch {
             saveStatus = "Save failed: \(error.localizedDescription)"
-            print("[EONWARD] Save failed: \(error)")
+            print("[FOUNDERS] Save failed: \(error)")
         }
     }
 
     func resetPrototype() {
-        do { try saveStore.reset() } catch { print("[EONWARD] Reset failed: \(error)") }
+        do { try saveStore.reset() } catch { print("[FOUNDERS] Reset failed: \(error)") }
         game = Game.newGame(content: content, clock: clock)
         placingBuildingId = nil
         ghostCell = nil

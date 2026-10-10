@@ -1,9 +1,9 @@
 using System;
 using System.Collections.Generic;
-using Eonward.Core;
+using Founders.Core;
 using UnityEngine;
 
-namespace Eonward
+namespace Founders
 {
     public enum Panel { None, Build, People, Research, Objectives, Map, Settings }
 
@@ -44,7 +44,7 @@ namespace Eonward
             World = world;
 
             var asset = Resources.Load<TextAsset>("content");
-            if (asset == null) throw new InvalidOperationException("EONWARD content.json is missing from Resources.");
+            if (asset == null) throw new InvalidOperationException("FOUNDERS content.json is missing from Resources.");
             Content = GameContent.Load(asset.text);
             SaveStore = new FileSaveStore(Application.persistentDataPath);
 
@@ -56,13 +56,13 @@ namespace Eonward
                     Game = new Game(Content, outcome.State, clock);
                     break;
                 case LoadResult.Corrupt:
-                    Debug.LogWarning($"[EONWARD] Corrupt save moved aside: {outcome.Reason}");
+                    Debug.LogWarning($"[FOUNDERS] Corrupt save moved aside: {outcome.Reason}");
                     message = "Your previous save could not be read, so a new camp was started. A backup was kept.";
                     Game = Game.NewGame(Content, clock);
                     break;
                 case LoadResult.UnsupportedVersion:
-                    Debug.LogWarning($"[EONWARD] Save version {outcome.Version} is newer than this build supports.");
-                    message = $"Your save is from a newer version of EONWARD (v{outcome.Version}). Started a temporary new camp; the save was not changed.";
+                    Debug.LogWarning($"[FOUNDERS] Save version {outcome.Version} is newer than this build supports.");
+                    message = $"Your save is from a newer version of FOUNDERS (v{outcome.Version}). Started a temporary new camp; the save was not changed.";
                     Game = Game.NewGame(Content, clock);
                     break;
                 default:
@@ -170,14 +170,14 @@ namespace Eonward
             catch (Exception e)
             {
                 SaveStatus = $"Save failed: {e.Message}";
-                Debug.LogError($"[EONWARD] Save failed: {e}");
+                Debug.LogError($"[FOUNDERS] Save failed: {e}");
             }
         }
 
         public void ResetPrototype()
         {
             try { SaveStore.Reset(); }
-            catch (Exception e) { Debug.LogError($"[EONWARD] Reset failed: {e}"); }
+            catch (Exception e) { Debug.LogError($"[FOUNDERS] Reset failed: {e}"); }
             Game = Game.NewGame(Content, clock);
             PlacingBuildingId = null;
             GhostCell = null;

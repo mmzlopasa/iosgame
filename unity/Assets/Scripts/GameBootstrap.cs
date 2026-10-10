@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Eonward
+namespace Founders
 {
     /// <summary>
     /// Entry point. The only scene contains one object with this component; the world,

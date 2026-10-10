@@ -1,10 +1,10 @@
 using System;
 using System.IO;
 using System.Linq;
-using Eonward.Core;
+using Founders.Core;
 using NUnit.Framework;
 
-namespace Eonward.Tests
+namespace Founders.Tests
 {
     static class Fixtures
     {

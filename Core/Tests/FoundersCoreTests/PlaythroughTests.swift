@@ -1,5 +1,5 @@
 import XCTest
-@testable import EonwardCore
+@testable import FoundersCore
 
 /// A simple scripted player that uses only public commands. It proves the first
 /// session can be completed and reports how long it takes (balance smoke test).

@@ -1,4 +1,4 @@
-# EONWARD — Rise Through the Ages
+# FOUNDERS — The Long Rise
 
 *Build a world that outlives you.* (radni naziv, nije pravno provjeren)
 
@@ -8,11 +8,11 @@ Mobilna strategija za iPhone: mala prapovijesna zajednica uz rijeku postaje stal
 
 ## Unity verzija (iPhone + Android) — novo
 
-Ista igra (EONWARD, Epoha 1) prelazi na **Unity 6.3 LTS (6000.3.26f1)** radi Androida, 3D grafike i Asset Storea. Pravila su prenesena u C# i testirana (`unity/CoreTests`, 45/45), a prikaz i sučelje su u `unity/Assets/Scripts`. Plan i faze: [`UNITY_PLAN.md`](UNITY_PLAN.md).
+Ista igra (FOUNDERS, Epoha 1) prelazi na **Unity 6.3 LTS (6000.3.26f1)** radi Androida, 3D grafike i Asset Storea. Pravila su prenesena u C# i testirana (`unity/CoreTests`, 45/45), a prikaz i sučelje su u `unity/Assets/Scripts`. Plan i faze: [`UNITY_PLAN.md`](UNITY_PLAN.md).
 
 **Preuzimanje buildova:** Releases → **„Unity build (unsigned IPA + APK)”** (tag `unity-latest`):
-- iPhone: https://github.com/mmzlopasa/iosgame/releases/download/unity-latest/Eonward.ipa (Feather / Sideloadly)
-- Android: https://github.com/mmzlopasa/iosgame/releases/download/unity-latest/Eonward.apk
+- iPhone: https://github.com/mmzlopasa/iosgame/releases/download/unity-latest/Founders.ipa (Feather / Sideloadly)
+- Android: https://github.com/mmzlopasa/iosgame/releases/download/unity-latest/Founders.apk
 
 **Jednokratno postavljanje licence (na računalu):**
 1. Unity račun (id.unity.com) → Unity Hub → *Preferences → Licenses → Add → Get a free personal license*.
@@ -27,12 +27,12 @@ Swift verzija (`Core/`, `App/`) ostaje kao referenca dok se pravila ne prenesu u
 
 | Mapa | Sadržaj |
 |---|---|
-| `Core/` | Swift paket **EonwardCore**: sva pravila igre (ekonomija, gradnja, poslovi, istraživanje, eventi, ciljevi, milestone, istraživanje karte, save). Bez UIKit/SpriteKit, testira se na Windowsu, macOS-u i Linuxu. |
-| `Core/Sources/EonwardCore/Resources/content.json` | **Sav sadržaj i balans**: zgrade, tehnologije, eventi, ciljevi, regije, karta, brojke. |
+| `Core/` | Swift paket **FoundersCore**: sva pravila igre (ekonomija, gradnja, poslovi, istraživanje, eventi, ciljevi, milestone, istraživanje karte, save). Bez UIKit/SpriteKit, testira se na Windowsu, macOS-u i Linuxu. |
+| `Core/Sources/FoundersCore/Resources/content.json` | **Sav sadržaj i balans**: zgrade, tehnologije, eventi, ciljevi, regije, karta, brojke. |
 | `Core/Tests/` | 45 unit testova, uključujući skriptiranog igrača koji odigra cijeli tutorial. |
 | `App/` | iOS aplikacija: SwiftUI sučelje + SpriteKit izometrijska scena. |
 | `project.yml` | XcodeGen specifikacija. Xcode projekt se generira na CI-ju, nije u gitu. |
-| `.github/workflows/build-ipa.yml` | GitHub Actions: testovi + nepotpisana `Eonward.ipa`. |
+| `.github/workflows/build-ipa.yml` | GitHub Actions: testovi + nepotpisana `Founders.ipa`. |
 | `scripts/` | `test-core-windows.ps1` (testovi na Windowsu), `make-icon.ps1` (placeholder ikona). |
 
 ## Kako dobiti .ipa (bez Maca)
@@ -42,16 +42,16 @@ Na Windowsu nije moguće izgraditi iOS aplikaciju. To radi GitHub Actions na bes
 1. Napravi **novi repozitorij** na GitHubu (preporuka: javni, jer javni repozitoriji imaju neograničene macOS minute).
 2. Pushaj ovu mapu u njega na granu `main` (vidi „Git” niže).
 3. Na GitHubu otvori **Actions → Build iOS IPA** i pričekaj zeleni rezultat (~5–10 min).
-4. Preuzmi `Eonward.ipa`:
-   - **Releases → „Latest build (unsigned)”** → `Eonward.ipa`. Ovaj URL možeš zalijepiti izravno u **Feather**.
-   - ili **Actions → zadnji run → Artifacts → Eonward-ipa** (zip u kojem je .ipa).
+4. Preuzmi `Founders.ipa`:
+   - **Releases → „Latest build (unsigned)”** → `Founders.ipa`. Ovaj URL možeš zalijepiti izravno u **Feather**.
+   - ili **Actions → zadnji run → Artifacts → Founders-ipa** (zip u kojem je .ipa).
 5. Instalacija:
-   - **Sideloadly** (Windows): spoji iPhone, povuci `Eonward.ipa` u Sideloadly, upiši svoj Apple ID i klikni Start. Na iPhoneu zatim: *Postavke → Općenito → VPN i upravljanje uređajima → vjeruj developeru*. Ako se traži, uključi i *Developer Mode*.
+   - **Sideloadly** (Windows): spoji iPhone, povuci `Founders.ipa` u Sideloadly, upiši svoj Apple ID i klikni Start. Na iPhoneu zatim: *Postavke → Općenito → VPN i upravljanje uređajima → vjeruj developeru*. Ako se traži, uključi i *Developer Mode*.
    - **Feather** (na iPhoneu): uvezi .ipa (URL ili datoteka), potpiši svojim certifikatom i instaliraj.
 
 .ipa je namjerno **nepotpisana**. Sideloadly i Feather je potpisuju tvojim Apple ID-jem ili certifikatom. S besplatnim Apple ID-jem aplikacija istječe nakon 7 dana i treba je ponovno potpisati. Save ostaje sačuvan ako se ne briše aplikacija.
 
-Bundle ID je `com.eonward.prototype` (mijenja se u `project.yml`).
+Bundle ID je `com.founders.prototype` (mijenja se u `project.yml`).
 
 ## Git (prvi put)
 
@@ -70,10 +70,10 @@ git init -b main
 git add .
 ```
 ```bash
-git commit -m "EONWARD vertical slice"
+git commit -m "FOUNDERS vertical slice"
 ```
 ```bash
-git remote add origin https://github.com/<tvoj-račun>/eonward.git
+git remote add origin https://github.com/<tvoj-račun>/founders.git
 ```
 ```bash
 git push -u origin main
@@ -112,4 +112,4 @@ Kontrole: tap za odabir i postavljanje, povlačenje za pomicanje kamere, pinch z
 
 Kod i sadržaj su **vlasnički, sva prava pridržana** (vidi `LICENSE`). Repozitorij je javan samo radi pregleda i besplatnih GitHub buildova. Zamijenjena je prijašnja GPLv3 licenca, koja se ne slaže s Unityjem ni s objavom u trgovinama.
 
-Naziv „EONWARD” je radni naziv i nije provjeren kao žig. Prije javne objave treba provjeriti App Store, EUIPO, WIPO, USPTO i domene.
+Naziv „FOUNDERS” je radni naziv i nije provjeren kao žig. Prije javne objave treba provjeriti App Store, EUIPO, WIPO, USPTO i domene.

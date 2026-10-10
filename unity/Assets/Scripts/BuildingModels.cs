@@ -1,6 +1,6 @@
 using UnityEngine;
 
-namespace Eonward
+namespace Founders
 {
     /// <summary>
     /// PLACEHOLDER ART: low-poly models assembled from primitives, one per building "sprite"

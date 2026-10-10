@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 
-namespace Eonward.Core
+namespace Founders.Core
 {
     /// <summary>Checks content for broken references, duplicate IDs and impossible chains.
     /// Returns human readable problems; an empty list means the content is usable.</summary>

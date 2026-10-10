@@ -40,8 +40,8 @@ jobs:
       - name: Build for device (no signing)
         run: |
           xcodebuild -quiet \
-            -project Eonward.xcodeproj \
-            -scheme Eonward \
+            -project Founders.xcodeproj \
+            -scheme Founders \
             -configuration Release \
             -sdk iphoneos \
             -destination 'generic/platform=iOS' \
@@ -49,21 +49,21 @@ jobs:
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" \
             build
 
-      - name: Package Eonward.ipa
+      - name: Package Founders.ipa
         run: |
-          APP="build/Build/Products/Release-iphoneos/Eonward.app"
+          APP="build/Build/Products/Release-iphoneos/Founders.app"
           test -d "$APP"
-          rm -rf Payload Eonward.ipa
+          rm -rf Payload Founders.ipa
           mkdir Payload
           cp -R "$APP" Payload/
-          zip -qry Eonward.ipa Payload
-          ls -lh Eonward.ipa
+          zip -qry Founders.ipa Payload
+          ls -lh Founders.ipa
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: Eonward-ipa
-          path: Eonward.ipa
+          name: Founders-ipa
+          path: Founders.ipa
           if-no-files-found: error
 
       # Rolling download link for Feather / Sideloadly (updated on every push to main).
@@ -75,10 +75,10 @@ jobs:
           name: Latest build (unsigned)
           prerelease: true
           body: "Unsigned IPA built from ${{ github.sha }}. Sign and install with Sideloadly or Feather."
-          files: Eonward.ipa
+          files: Founders.ipa
 
       - name: Versioned release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: Eonward.ipa
+          files: Founders.ipa

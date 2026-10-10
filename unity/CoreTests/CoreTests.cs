@@ -1,12 +1,12 @@
 using System;
 using System.IO;
 using System.Linq;
-using Eonward.Core;
+using Founders.Core;
 using NUnit.Framework;
 
-namespace Eonward.Tests
+namespace Founders.Tests
 {
-    // Port of Core/Tests/EonwardCoreTests (Swift). Same scenarios, same numbers.
+    // Port of Core/Tests/FoundersCoreTests (Swift). Same scenarios, same numbers.
 
     public class ContentTests
     {
@@ -528,7 +528,7 @@ namespace Eonward.Tests
         [Test]
         public void FileStoreWritesAndReadsAndRecoversFromCorruption()
         {
-            var dir = Path.Combine(Path.GetTempPath(), "eonward-tests-" + Guid.NewGuid());
+            var dir = Path.Combine(Path.GetTempPath(), "founders-tests-" + Guid.NewGuid());
             try
             {
                 var store = new FileSaveStore(dir);

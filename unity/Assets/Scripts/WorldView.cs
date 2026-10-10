@@ -1,9 +1,9 @@
 using System.Collections.Generic;
 using System.Linq;
-using Eonward.Core;
+using Founders.Core;
 using UnityEngine;
 
-namespace Eonward
+namespace Founders
 {
     /// <summary>Lighting and sky. Applied at build time (so fog shader variants ship) and at runtime.</summary>
     public static class SceneEnvironment

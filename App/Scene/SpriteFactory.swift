@@ -1,6 +1,6 @@
 import UIKit
 import SpriteKit
-import EonwardCore
+import FoundersCore
 
 // PLACEHOLDER ART: every texture here is drawn procedurally at runtime.
 // Replace with licensed/final art later (see README "Art placeholders").

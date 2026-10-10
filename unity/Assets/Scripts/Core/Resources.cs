@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 
-namespace Eonward.Core
+namespace Founders.Core
 {
     /// <summary>The four primary resources of the first epoch.</summary>
     public enum ResourceType { Food, Wood, Stone, Knowledge }
