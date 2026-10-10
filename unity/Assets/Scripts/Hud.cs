@@ -53,6 +53,9 @@ namespace Founders
                   texToastInfo, texToastSuccess, texToastWarning, texToastMilestone, texSelected, texTrack;
         int stylesForSize = -1;
 
+        /// <summary>Hides all UI (used for clean screenshots).</summary>
+        public bool Hidden;
+
         public void Init(GameStore owner) { store = owner; }
 
         // MARK: - Pointer blocking (for the camera)
@@ -258,6 +261,7 @@ namespace Founders
         void OnGUI()
         {
             if (store == null || store.Game == null) return;
+            if (Hidden) { modal = false; blockers.Clear(); return; }
             EnsureStyles();
             if (Event.current.type == EventType.Layout) blockers.Clear();
             GUI.skin.settings.cursorColor = Accent;

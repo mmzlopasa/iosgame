@@ -13,6 +13,7 @@
   <ItemGroup>
     <Compile Include="$(Repo)/Scripts/**/*.cs" />
     <Compile Include="$(Repo)/Editor/**/*.cs" />
+    <Compile Include="UrpStubs.cs" />
     <Reference Include="$(Managed)/UnityEngine/*.dll" Private="false" />
   </ItemGroup>
 </Project>

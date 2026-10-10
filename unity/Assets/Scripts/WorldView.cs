@@ -5,32 +5,32 @@ using UnityEngine;
 
 namespace Founders
 {
-    /// <summary>Lighting and sky. Applied at build time (so fog shader variants ship) and at runtime.</summary>
+    /// <summary>Lighting and atmosphere. Applied at build time (so fog variants ship) and at runtime.</summary>
     public static class SceneEnvironment
     {
-        public static readonly Color SkyColor = new Color(0.62f, 0.74f, 0.80f);
+        public static readonly Color FogColor = new Color(0.66f, 0.73f, 0.80f);
 
         public static void Apply()
         {
             RenderSettings.fog = true;
             RenderSettings.fogMode = FogMode.Linear;
-            RenderSettings.fogStartDistance = 45f;
-            RenderSettings.fogEndDistance = 110f;
-            RenderSettings.fogColor = SkyColor;
-            RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
-            RenderSettings.ambientLight = new Color(0.55f, 0.56f, 0.60f);
+            RenderSettings.fogStartDistance = 70f;
+            RenderSettings.fogEndDistance = 230f;
+            RenderSettings.fogColor = FogColor;
         }
 
         public static Light CreateSun()
         {
             var go = new GameObject("Sun");
-            go.transform.rotation = Quaternion.Euler(48f, -20f, 0f);
+            go.transform.rotation = Quaternion.Euler(38f, -62f, 0f);
             var sun = go.AddComponent<Light>();
             sun.type = LightType.Directional;
-            sun.color = new Color(1f, 0.93f, 0.82f);
-            sun.intensity = 1.1f;
+            sun.color = new Color(1f, 0.92f, 0.80f);
+            sun.intensity = 2.1f;
             sun.shadows = LightShadows.Soft;
-            sun.shadowStrength = 0.6f;
+            sun.shadowStrength = 0.85f;
+            sun.shadowBias = 0.05f;
+            sun.shadowNormalBias = 0.4f;
             return sun;
         }
     }
@@ -50,25 +50,30 @@ namespace Founders
     }
 
     /// <summary>
-    /// Draws the settlement from the game state: terrain from the content map, fog over
-    /// unexplored regions, buildings with construction progress, placement ghost, selection,
-    /// village paths and villagers. It never changes game state itself.
+    /// Draws the settlement from the game state: textured terrain with the river, water,
+    /// forests and rocks, mist over unexplored regions, buildings with construction
+    /// progress, placement preview, selection, trodden paths and villagers.
+    /// It never changes game state itself.
     /// </summary>
     public class WorldView : MonoBehaviour
     {
         GameStore store;
-        Transform terrainRoot, objectRoot, overlayRoot, pathRoot, peopleRoot;
+        public WorldTerrain Ground { get; private set; }
+        Transform natureRoot, objectRoot, overlayRoot, peopleRoot;
 
-        readonly Dictionary<(int, int), GameObject> fog = new Dictionary<(int, int), GameObject>();
+        ParticleSystem mist;
         readonly Dictionary<(int, int), GameObject> cellProps = new Dictionary<(int, int), GameObject>();
-        readonly List<(Transform t, float started)> fading = new List<(Transform, float)>();
         readonly Dictionary<int, BuildingView> buildings = new Dictionary<int, BuildingView>();
         readonly List<GameObject> selection = new List<GameObject>();
         readonly List<GameObject> ghost = new List<GameObject>();
         readonly List<Villager> villagers = new List<Villager>();
         string ghostKey = "";
         int selectionKey = -1;
-        string pathsKey;
+        string splatKey;
+        string lastStage;
+        string fogKey;
+
+        static readonly string[] Pines = { "PineA", "PineB", "PineC" };
 
         class BuildingView
         {
@@ -89,152 +94,184 @@ namespace Founders
         public void RebuildAll()
         {
             foreach (Transform child in transform) Destroy(child.gameObject);
-            fog.Clear();
             cellProps.Clear();
-            fading.Clear();
             buildings.Clear();
             selection.Clear();
             ghost.Clear();
             villagers.Clear();
             ghostKey = "";
             selectionKey = -1;
-            pathsKey = null;
+            splatKey = null;
+            fogKey = null;
 
-            terrainRoot = Parts.Group("Terrain", transform, Vector3.zero).transform;
+            Ground = new WorldTerrain(store.Game.Content.Map, transform);
+            natureRoot = Parts.Group("Nature", transform, Vector3.zero).transform;
             objectRoot = Parts.Group("Buildings", transform, Vector3.zero).transform;
             overlayRoot = Parts.Group("Overlay", transform, Vector3.zero).transform;
-            pathRoot = Parts.Group("Paths", transform, Vector3.zero).transform;
             peopleRoot = Parts.Group("People", transform, Vector3.zero).transform;
-            BuildTerrain();
+            BuildWater();
+            BuildNature();
+            BuildMist();
             Sync(true);
         }
 
-        // MARK: - Terrain
+        // MARK: - Water
 
-        void BuildTerrain()
+        void BuildWater()
+        {
+            var center = Grid.CellCenter((store.Game.Content.Map.Width - 1) * 0.5f, (store.Game.Content.Map.Height - 1) * 0.5f);
+            var water = Parts.Prim(PrimitiveType.Quad, transform, new Vector3(center.x, WorldTerrain.WaterLevel, center.z),
+                                   new Vector3(WorldTerrain.Size, WorldTerrain.Size, 1f), Palette.Get("Water"), new Vector3(90, 0, 0), false);
+            water.name = "Water";
+            water.GetComponent<Renderer>().receiveShadows = true;
+        }
+
+        // MARK: - Nature
+
+        void BuildNature()
         {
             var game = store.Game;
             var map = game.Content.Map;
-            float s = Grid.CellSize;
-            var staticRoot = Parts.Group("Static", terrainRoot, Vector3.zero);
-
-            // Land beyond the map edge so the world does not end in a void.
-            Parts.Prim(PrimitiveType.Cube, staticRoot.transform,
-                       Grid.CellCenter((map.Width - 1) * 0.5f, (map.Height - 1) * 0.5f) + new Vector3(0, -0.45f, 0),
-                       new Vector3(map.Width * s + 120f, 0.5f, map.Height * s + 120f), "FarGround");
-
-            for (int y = 0; y < map.Height; y++)
+            int margin = 20;
+            for (int cy = -margin; cy < map.Height + margin; cy++)
             {
-                for (int x = 0; x < map.Width; x++)
+                for (int cx = -margin; cx < map.Width + margin; cx++)
                 {
-                    var terrain = map.Terrain(x, y);
-                    if (terrain == null) continue;
-                    var c = Grid.CellCenter(x, y);
-                    int variant = (x * 7 + y * 13) % 3;
-                    string mat;
-                    float top = 0f;
-                    switch (terrain.Value)
+                    bool inside = cx >= 0 && cy >= 0 && cx < map.Width && cy < map.Height;
+                    var type = Ground.CellType(cx, cy);
+                    var rng = new System.Random(cx * 73856093 ^ cy * 19349663 ^ 0x5bd1e995);
+                    var c = Grid.CellCenter(cx, cy);
+                    var props = Parts.Group($"Cell_{cx}_{cy}", natureRoot, Vector3.zero).transform;
+                    // Outside the map only every other far cell gets props, to keep the draw count sane.
+                    if (!inside && (cx + cy) % 2 != 0 && type != TerrainType.Forest) { Destroy(props.gameObject); continue; }
+                    PopulateCell(props, type, c, rng, inside);
+                    if (props.childCount == 0) { Destroy(props.gameObject); continue; }
+                    if (inside)
                     {
-                        case TerrainType.Water: mat = "Water"; top = -0.28f; break;
-                        case TerrainType.Sand: mat = "Sand"; top = -0.04f; break;
-                        case TerrainType.Forest: mat = "ForestFloor"; break;
-                        case TerrainType.Rock: mat = "RockGround"; break;
-                        default: mat = variant == 0 ? "Grass" : variant == 1 ? "Grass2" : "Grass3"; break;
-                    }
-                    Parts.Prim(PrimitiveType.Cube, staticRoot.transform, new Vector3(c.x, top - 0.3f, c.z), new Vector3(s, 0.6f, s), mat);
-
-                    // Trees and boulders live in their own group so they can stay hidden under fog.
-                    var props = Parts.Group($"Props_{x}_{y}", terrainRoot, c);
-                    var rng = new System.Random(x * 73856093 ^ y * 19349663);
-                    if (terrain == TerrainType.Forest)
-                    {
-                        int trees = 2 + rng.Next(2);
-                        for (int i = 0; i < trees; i++)
-                        {
-                            var p = new Vector3((float)rng.NextDouble() * 1.3f - 0.65f, 0, (float)rng.NextDouble() * 1.3f - 0.65f);
-                            Tree(props.transform, p, 0.75f + (float)rng.NextDouble() * 0.5f, rng.Next(3));
-                        }
-                    }
-                    else if (terrain == TerrainType.Rock)
-                    {
-                        Parts.Shape(Meshes.Rock(), props.transform, new Vector3(-0.2f, 0.3f, 0.1f), new Vector3(1.3f, 0.9f, 1.1f), "Boulder",
-                                    new Vector3(0, rng.Next(360), 0));
-                        Parts.Shape(Meshes.Rock(), props.transform, new Vector3(0.45f, 0.15f, -0.45f), new Vector3(0.6f, 0.4f, 0.6f), "DarkRock",
-                                    new Vector3(0, rng.Next(360), 0));
-                    }
-                    else if (terrain == TerrainType.Grass && rng.Next(5) == 0)
-                    {
-                        Parts.Prim(PrimitiveType.Sphere, props.transform, new Vector3((float)rng.NextDouble() - 0.5f, 0.05f, (float)rng.NextDouble() - 0.5f),
-                                   new Vector3(0.35f, 0.15f, 0.35f), "Leaves2");
-                    }
-                    if (props.transform.childCount == 0) Destroy(props);
-                    else cellProps[(x, y)] = props;
-
-                    if (!store.Game.IsRevealed(x, y))
-                    {
-                        var f = Parts.Prim(PrimitiveType.Cube, overlayRoot, c + new Vector3(0, 0.9f, 0),
-                                           new Vector3(s * 1.01f, 1.8f + variant * 0.15f, s * 1.01f), "Fog");
-                        fog[(x, y)] = f;
-                        if (cellProps.TryGetValue((x, y), out var hidden)) hidden.SetActive(false);
+                        cellProps[(cx, cy)] = props.gameObject;
+                        if (!game.IsRevealed(cx, cy)) props.gameObject.SetActive(false);
                     }
                 }
             }
-
-            // A distant tree line around the map edge.
-            var rngEdge = new System.Random(5);
-            var edge = Parts.Group("TreeLine", staticRoot.transform, Vector3.zero).transform;
-            for (int i = 0; i < 140; i++)
-            {
-                float gx = (float)rngEdge.NextDouble() * (map.Width + 16) - 8;
-                float gy = (float)rngEdge.NextDouble() * (map.Height + 16) - 8;
-                if (gx > -1.5f && gx < map.Width + 0.5f && gy > -1.5f && gy < map.Height + 0.5f) continue;
-                Tree(edge, Grid.CellCenter(gx, gy) + new Vector3(0, -0.2f, 0), 0.9f + (float)rngEdge.NextDouble() * 0.6f, rngEdge.Next(3));
-            }
-
-            StaticBatchingUtility.Combine(staticRoot);
         }
 
-        static void Tree(Transform parent, Vector3 p, float scale, int kind)
+        Vector3 Jitter(Vector3 c, System.Random rng, float amount) =>
+            Ground.OnGround(c + new Vector3(((float)rng.NextDouble() - 0.5f) * amount, 0, ((float)rng.NextDouble() - 0.5f) * amount));
+
+        void PopulateCell(Transform t, TerrainType type, Vector3 c, System.Random rng, bool inside)
         {
-            var t = Parts.Group("Tree", parent, p, p.x * 53f + p.z * 17f).transform;
-            t.localScale = Vector3.one * scale;
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0, 0.5f, 0), new Vector3(0.22f, 0.5f, 0.22f), "Bark");
-            if (kind == 0)
+            float yaw() => (float)rng.NextDouble() * 360f;
+            switch (type)
             {
-                Parts.Shape(Meshes.Cone(), t, new Vector3(0, 0.7f, 0), new Vector3(1.3f, 1.5f, 1.3f), "Pine");
-                Parts.Shape(Meshes.Cone(), t, new Vector3(0, 1.5f, 0), new Vector3(1.0f, 1.3f, 1.0f), "Pine");
+                case TerrainType.Forest:
+                {
+                    int trees = inside ? 1 + rng.Next(2) : 1 + (rng.Next(3) == 0 ? 1 : 0);
+                    for (int i = 0; i < trees; i++)
+                    {
+                        bool pine = rng.Next(3) != 0;
+                        string kind = pine ? Pines[rng.Next(Pines.Length)] : "LeafTree";
+                        float h = pine ? 8f + (float)rng.NextDouble() * 5f : 5.5f + (float)rng.NextDouble() * 2.5f;
+                        ModelLibrary.Tree(kind, t, Jitter(c, rng, 1.6f), h, yaw());
+                    }
+                    if (inside && rng.Next(2) == 0) ModelLibrary.Place("fern_02", t, Jitter(c, rng, 1.6f), 0.8f, yaw());
+                    if (inside && rng.Next(4) == 0) ModelLibrary.Place("dry_branches_medium_01", t, Jitter(c, rng, 1.6f), 1f, yaw());
+                    if (rng.Next(6) == 0) ModelLibrary.Place("tree_stump_01", t, Jitter(c, rng, 1.4f), 0.6f, yaw());
+                    break;
+                }
+                case TerrainType.Rock:
+                {
+                    if (rng.Next(2) == 0)
+                        ModelLibrary.Place("rock_moss_set_01", t, Jitter(c, rng, 0.8f), 0.24f + (float)rng.NextDouble() * 0.08f, yaw());
+                    else
+                        ModelLibrary.Place("namaqualand_boulder_02", t, Jitter(c, rng, 0.8f), 0.7f + (float)rng.NextDouble() * 0.4f, yaw());
+                    if (rng.Next(2) == 0) ModelLibrary.Place("boulder_01", t, Jitter(c, rng, 1.6f), 0.45f, yaw());
+                    break;
+                }
+                case TerrainType.Sand:
+                {
+                    if (rng.Next(3) == 0) ModelLibrary.Place("stone_01", t, Jitter(c, rng, 1.6f), 3.5f, yaw());
+                    if (rng.Next(4) == 0) ModelLibrary.Place("nettle_plant", t, Jitter(c, rng, 1.4f), 0.9f, yaw());
+                    break;
+                }
+                case TerrainType.Grass:
+                {
+                    int r = rng.Next(10);
+                    if (r == 0) ModelLibrary.Place("shrub_03", t, Jitter(c, rng, 1.4f), 1f, yaw());
+                    else if (r == 1) ModelLibrary.Place("shrub_04", t, Jitter(c, rng, 1.4f), 1.4f, yaw());
+                    else if (r == 2 && !inside) ModelLibrary.Tree("LeafTree", t, Jitter(c, rng, 1.4f), 5f, yaw());
+                    else if (r == 3 && inside) ModelLibrary.Tree("FirSapling", t, Jitter(c, rng, 1.4f), 1.6f, yaw());
+                    break;
+                }
             }
-            else
+        }
+
+        // MARK: - Mist over unexplored land
+
+        void BuildMist()
+        {
+            var go = new GameObject("Mist");
+            go.transform.SetParent(transform, false);
+            mist = go.AddComponent<ParticleSystem>();
+            mist.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
+            var main = mist.main;
+            main.loop = false;
+            main.playOnAwake = false;
+            main.startLifetime = 1e6f;
+            main.startSpeed = 0f;
+            main.maxParticles = 4000;
+            main.simulationSpace = ParticleSystemSimulationSpace.World;
+            var emission = mist.emission;
+            emission.enabled = false;
+            var shape = mist.shape;
+            shape.enabled = false;
+            var r = go.GetComponent<ParticleSystemRenderer>();
+            r.sharedMaterial = Palette.Get("Mist");
+            r.renderMode = ParticleSystemRenderMode.Billboard;
+            r.sortingFudge = -10f;
+            r.minParticleSize = 0f;
+            r.maxParticleSize = 5f;
+        }
+
+        void UpdateMist(Game game)
+        {
+            var map = game.Content.Map;
+            var hidden = new List<(int, int)>();
+            for (int y = 0; y < map.Height; y++)
+                for (int x = 0; x < map.Width; x++)
+                    if (!game.IsRevealed(x, y)) hidden.Add((x, y));
+            string key = string.Join(";", game.State.ExploredRegions);
+            if (key == fogKey) return;
+            fogKey = key;
+            mist.Clear();
+            var ep = new ParticleSystem.EmitParams();
+            foreach (var (x, y) in hidden)
             {
-                string leaves = kind == 1 ? "Leaves" : "Leaves2";
-                Parts.Prim(PrimitiveType.Sphere, t, new Vector3(0, 1.45f, 0), new Vector3(1.3f, 1.1f, 1.3f), leaves);
-                Parts.Prim(PrimitiveType.Sphere, t, new Vector3(0.3f, 1.9f, 0.1f), new Vector3(0.8f, 0.7f, 0.8f), leaves);
+                var rng = new System.Random(x * 9176 + y * 131);
+                for (int k = 0; k < 3; k++)
+                {
+                    var c = Grid.CellCenter(x + ((float)rng.NextDouble() - 0.5f), y + ((float)rng.NextDouble() - 0.5f));
+                    ep.position = new Vector3(c.x, 2.5f + (float)rng.NextDouble() * 4f, c.z);
+                    ep.startSize = 6f + (float)rng.NextDouble() * 4f;
+                    ep.rotation = (float)rng.NextDouble() * 360f;
+                    float shade = 0.82f + (float)rng.NextDouble() * 0.18f;
+                    ep.startColor = new Color(shade, shade, shade * 1.02f, 0.9f);
+                    ep.startLifetime = 1e6f;
+                    mist.Emit(ep, 1);
+                }
             }
+            foreach (var kv in cellProps)
+                kv.Value.SetActive(game.IsRevealed(kv.Key.Item1, kv.Key.Item2));
         }
 
         // MARK: - Sync
 
         void Update()
         {
-            // Fog fade-out and building pop-in animations.
-            for (int i = fading.Count - 1; i >= 0; i--)
-            {
-                var (t, started) = fading[i];
-                float k = (Time.time - started) / 0.8f;
-                if (t == null || k >= 1f)
-                {
-                    if (t != null) Destroy(t.gameObject);
-                    fading.RemoveAt(i);
-                    continue;
-                }
-                var sc = t.localScale;
-                t.localScale = new Vector3(sc.x, Mathf.Lerp(t.localScale.y, 0.01f, k), sc.z);
-            }
             foreach (var view in buildings.Values)
             {
                 if (view.PopUntil <= 0f) continue;
-                float k = 1f - Mathf.Clamp01((view.PopUntil - Time.time) / 0.3f);
-                view.Root.transform.localScale = Vector3.one * Mathf.Lerp(0.6f, 1f, Mathf.SmoothStep(0, 1, k));
+                float k = 1f - Mathf.Clamp01((view.PopUntil - Time.time) / 0.35f);
+                view.Root.transform.localScale = Vector3.one * Mathf.Lerp(0.7f, 1f, Mathf.SmoothStep(0, 1, k));
                 if (k >= 1f) view.PopUntil = 0f;
             }
         }
@@ -244,17 +281,8 @@ namespace Founders
         {
             if (store == null) return;
             var game = store.Game;
+            UpdateMist(game);
 
-            // Fog of war
-            foreach (var key in fog.Keys.ToList())
-            {
-                if (!game.IsRevealed(key.Item1, key.Item2)) continue;
-                fading.Add((fog[key].transform, Time.time));
-                fog.Remove(key);
-                if (cellProps.TryGetValue(key, out var props)) props.SetActive(true);
-            }
-
-            // Buildings
             var seen = new HashSet<int>();
             foreach (var b in game.State.Buildings)
             {
@@ -271,7 +299,7 @@ namespace Founders
                 if (view != null) Destroy(view.Root);
                 view = CreateBuilding(b, def, key);
                 buildings[b.Id] = view;
-                if (!initial && (wasThere || b.Status == BuildingStatus.Constructing)) view.PopUntil = Time.time + 0.3f;
+                if (!initial && (wasThere || b.Status == BuildingStatus.Constructing)) view.PopUntil = Time.time + 0.35f;
             }
             foreach (var id in buildings.Keys.Where(id => !seen.Contains(id)).ToList())
             {
@@ -279,7 +307,7 @@ namespace Founders
                 buildings.Remove(id);
             }
 
-            DrawVillagePaths(game, initial);
+            RepaintGround(game, initial);
             UpdateSelection();
             UpdateGhost();
             UpdateVillagers(game);
@@ -287,11 +315,13 @@ namespace Founders
 
         BuildingView CreateBuilding(PlacedBuilding b, BuildingDefinition def, string key)
         {
-            var root = Parts.Group($"Building_{b.Id}", objectRoot, Grid.FootprintCenter(b.X, b.Y, def.Footprint));
-            var model = BuildingModels.Create(def.Sprite, root.transform, Mathf.Max(def.Footprint.Width, def.Footprint.Height));
-            var bar = Parts.Group("Progress", root.transform, new Vector3(0, 2.2f, 0), CameraRig.Yaw);
-            Parts.Prim(PrimitiveType.Cube, bar.transform, Vector3.zero, new Vector3(1.3f, 0.16f, 0.06f), "BarBack");
-            var fill = Parts.Prim(PrimitiveType.Cube, bar.transform, new Vector3(0, 0, -0.04f), new Vector3(1.2f, 0.1f, 0.06f), "BarFill").transform;
+            var center = Ground.OnGround(Grid.FootprintCenter(b.X, b.Y, def.Footprint));
+            var root = Parts.Group($"Building_{b.Id}", objectRoot, center, (b.Id * 47) % 360);
+            var model = BuildingModels.Create(def.Sprite, root.transform, null);
+            var bar = Parts.Group("Progress", root.transform, new Vector3(0, 2.6f, 0));
+            bar.transform.rotation = Quaternion.Euler(0, CameraRig.Yaw, 0);
+            Parts.Prim(PrimitiveType.Cube, bar.transform, Vector3.zero, new Vector3(1.4f, 0.16f, 0.06f), "BarBack");
+            var fill = Parts.Prim(PrimitiveType.Cube, bar.transform, new Vector3(0, 0, -0.04f), new Vector3(1.3f, 0.1f, 0.06f), "BarFill").transform;
             var view = new BuildingView { Key = key, Root = root, Model = model.transform, Bar = bar, BarFill = fill };
             SetProgress(view, b);
             return view;
@@ -302,41 +332,48 @@ namespace Founders
             bool active = b.Status != BuildingStatus.Complete;
             view.Bar.SetActive(active);
             float p = Mathf.Clamp01((float)b.Progress);
-            // Under construction the model rises from the ground; upgrades keep the full model.
-            float h = b.Status == BuildingStatus.Constructing ? Mathf.Lerp(0.25f, 1f, p) : 1f;
+            float h = b.Status == BuildingStatus.Constructing ? Mathf.Lerp(0.2f, 1f, p) : 1f;
             view.Model.localScale = new Vector3(1f, h, 1f);
             if (active)
             {
-                float w = Mathf.Max(0.02f, p) * 1.2f;
+                float w = Mathf.Max(0.02f, p) * 1.3f;
                 view.BarFill.localScale = new Vector3(w, 0.1f, 0.06f);
-                view.BarFill.localPosition = new Vector3(-0.6f + w * 0.5f, 0, -0.04f);
+                view.BarFill.localPosition = new Vector3(-0.65f + w * 0.5f, 0, -0.04f);
             }
         }
 
-        void DrawVillagePaths(Game game, bool initial)
+        /// <summary>Trodden ground around buildings and, in the village stage, paths to the hearth.</summary>
+        void RepaintGround(Game game, bool initial)
         {
-            string stage = game.State.StageId;
-            string key = $"{stage}#{game.State.Buildings.Count}";
-            if (stage == game.Content.StartStage || pathsKey == key) return;
-            bool firstTime = pathsKey == null && !initial;
-            pathsKey = key;
-            foreach (Transform child in pathRoot) Destroy(child.gameObject);
-            var hearth = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "village_hearth");
-            if (hearth == null) return;
-            var start = Grid.CellCenter(hearth.X, hearth.Y);
+            string key = game.State.StageId + "#" + string.Join(",", game.State.Buildings.Select(b => $"{b.X}:{b.Y}:{b.DefinitionId}"));
+            if (key == splatKey) return;
+            bool firstVillage = !initial && lastStage == game.Content.StartStage && game.State.StageId != game.Content.StartStage;
+            lastStage = game.State.StageId;
+            splatKey = key;
+            var around = new List<(Vector3, float)>();
+            var paths = new List<(Vector3, Vector3)>();
             foreach (var b in game.State.Buildings)
             {
-                if (b.Id == hearth.Id) continue;
                 var def = game.Content.Building(b.DefinitionId);
                 if (def == null) continue;
-                var end = Grid.FootprintCenter(b.X, b.Y, def.Footprint);
-                var mid = (start + end) * 0.5f;
-                var dir = end - start;
-                float yaw = Mathf.Atan2(dir.x, dir.z) * Mathf.Rad2Deg;
-                Parts.Prim(PrimitiveType.Cube, pathRoot, new Vector3(mid.x, 0.015f, mid.z), new Vector3(0.55f, 0.02f, dir.magnitude), "Path",
-                           new Vector3(0, yaw, 0));
+                around.Add((Grid.FootprintCenter(b.X, b.Y, def.Footprint), 0.9f * Mathf.Max(def.Footprint.Width, def.Footprint.Height)));
             }
-            if (firstTime && store.Rig != null) store.Rig.SetFocus(start, zoom: 22f);
+            if (game.State.StageId != game.Content.StartStage)
+            {
+                var hearth = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "village_hearth");
+                if (hearth != null)
+                {
+                    var start = Grid.CellCenter(hearth.X, hearth.Y);
+                    foreach (var b in game.State.Buildings)
+                    {
+                        if (b.Id == hearth.Id) continue;
+                        var def = game.Content.Building(b.DefinitionId);
+                        if (def != null) paths.Add((start, Grid.FootprintCenter(b.X, b.Y, def.Footprint)));
+                    }
+                    if (firstVillage && store.Rig != null) store.Rig.SetFocus(start, zoom: 22f);
+                }
+            }
+            Ground.PaintSplat(around, paths);
         }
 
         // MARK: - Selection & placement ghost
@@ -354,19 +391,19 @@ namespace Founders
             if (def == null) return;
             for (int dy = 0; dy < def.Footprint.Height; dy++)
                 for (int dx = 0; dx < def.Footprint.Width; dx++)
-                    selection.Add(Marker(b.X + dx, b.Y + dy, "Select", 0.02f));
+                    selection.Add(Marker(b.X + dx, b.Y + dy, "Select"));
         }
 
-        GameObject Marker(int x, int y, string material, float height)
+        GameObject Marker(int x, int y, string material)
         {
-            var c = Grid.CellCenter(x, y);
-            var frame = Parts.Group("Marker", overlayRoot, new Vector3(c.x, height, c.z)).transform;
+            var c = Ground.OnGround(Grid.CellCenter(x, y));
+            var frame = Parts.Group("Marker", overlayRoot, c + new Vector3(0, 0.06f, 0)).transform;
             float s = Grid.CellSize;
-            // Four edge bars make a frame; the ground stays visible inside it.
-            Parts.Prim(PrimitiveType.Cube, frame, new Vector3(0, 0, s * 0.46f), new Vector3(s * 0.96f, 0.05f, 0.1f), material);
-            Parts.Prim(PrimitiveType.Cube, frame, new Vector3(0, 0, -s * 0.46f), new Vector3(s * 0.96f, 0.05f, 0.1f), material);
-            Parts.Prim(PrimitiveType.Cube, frame, new Vector3(s * 0.46f, 0, 0), new Vector3(0.1f, 0.05f, s * 0.96f), material);
-            Parts.Prim(PrimitiveType.Cube, frame, new Vector3(-s * 0.46f, 0, 0), new Vector3(0.1f, 0.05f, s * 0.96f), material);
+            var m = Palette.Get(material);
+            Parts.Prim(PrimitiveType.Cube, frame, new Vector3(0, 0, s * 0.46f), new Vector3(s * 0.96f, 0.06f, 0.1f), m, default, false);
+            Parts.Prim(PrimitiveType.Cube, frame, new Vector3(0, 0, -s * 0.46f), new Vector3(s * 0.96f, 0.06f, 0.1f), m, default, false);
+            Parts.Prim(PrimitiveType.Cube, frame, new Vector3(s * 0.46f, 0, 0), new Vector3(0.1f, 0.06f, s * 0.96f), m, default, false);
+            Parts.Prim(PrimitiveType.Cube, frame, new Vector3(-s * 0.46f, 0, 0), new Vector3(0.1f, 0.06f, s * 0.96f), m, default, false);
             return frame.gameObject;
         }
 
@@ -388,16 +425,14 @@ namespace Founders
             foreach (var go in ghost) Destroy(go);
             ghost.Clear();
 
+            string mat = valid ? "GhostOk" : "GhostBad";
             for (int dy = 0; dy < def.Footprint.Height; dy++)
                 for (int dx = 0; dx < def.Footprint.Width; dx++)
-                    ghost.Add(Marker(cell.Value.x + dx, cell.Value.y + dy, valid ? "GhostOk" : "GhostBad", 0.06f));
-            var preview = Parts.Group("GhostModel", overlayRoot, Grid.FootprintCenter(cell.Value.x, cell.Value.y, def.Footprint));
-            BuildingModels.Create(def.Sprite, preview.transform, Mathf.Max(def.Footprint.Width, def.Footprint.Height));
-            if (!valid)
-            {
-                // Sink the invalid preview a little and tint it with a red marker pillar.
-                preview.transform.localScale = new Vector3(1f, 0.6f, 1f);
-            }
+                    ghost.Add(Marker(cell.Value.x + dx, cell.Value.y + dy, mat));
+            var center = Ground.OnGround(Grid.FootprintCenter(cell.Value.x, cell.Value.y, def.Footprint));
+            var preview = Parts.Group("GhostModel", overlayRoot, center);
+            BuildingModels.Create(def.Sprite, preview.transform, valid ? null : Palette.Get("GhostBad"));
+            if (!valid) preview.transform.localScale = new Vector3(1f, 0.6f, 1f);
             ghost.Add(preview);
         }
 
@@ -408,9 +443,9 @@ namespace Founders
             int wanted = Mathf.Min(game.State.Population, 24);
             while (villagers.Count < wanted)
             {
-                var spot = RandomSpot(game);
-                var v = Villager.Spawn(peopleRoot, spot, villagers.Count);
+                var v = Villager.Spawn(peopleRoot, RandomSpot(game), villagers.Count);
                 v.PickSpot = () => RandomSpot(store.Game);
+                v.Ground = Ground;
                 villagers.Add(v);
             }
             while (villagers.Count > wanted)
@@ -420,16 +455,15 @@ namespace Founders
             }
         }
 
-        static Vector3 RandomSpot(Game game)
+        Vector3 RandomSpot(Game game)
         {
             var list = game.State.Buildings;
             if (list.Count == 0) return Vector3.zero;
             var b = list[Random.Range(0, list.Count)];
             var def = game.Content.Building(b.DefinitionId);
             var center = def == null ? Grid.CellCenter(b.X, b.Y) : Grid.FootprintCenter(b.X, b.Y, def.Footprint);
-            // Stand next to the building, not inside it.
-            var offset = Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward * (Grid.CellSize * 0.75f);
-            return center + offset;
+            var offset = Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward * (Grid.CellSize * 0.8f);
+            return Ground.OnGround(center + offset);
         }
     }
 }

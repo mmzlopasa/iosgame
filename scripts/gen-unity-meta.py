@@ -10,6 +10,7 @@ import uuid
 
 ROOT = os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "unity", "Assets")
 SKIP = {"Generated"}
+BINARY = {".png", ".jpg", ".jpeg", ".tga", ".hdr", ".exr", ".fbx", ".obj", ".wav", ".ogg", ".mp3"}
 
 FOLDER = """fileFormatVersion: 2
 guid: {guid}
@@ -82,6 +83,8 @@ def main():
         for name in dirnames + filenames:
             if name.endswith(".meta") or name.startswith("."):
                 continue
+            if os.path.splitext(name)[1].lower() in BINARY:
+                continue  # Unity creates the right importer (texture/model) itself
             path = os.path.join(dirpath, name)
             meta = path + ".meta"
             if not os.path.exists(meta):

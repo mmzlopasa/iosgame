@@ -19,25 +19,38 @@ namespace FoundersEditor
     public static class BuildScript
     {
         const string GeneratedRoot = "Assets/Generated";
-        const string MaterialFolder = GeneratedRoot + "/Resources/" + Palette.ResourceFolder;
         const string ScenePath = GeneratedRoot + "/Main.unity";
 
         public const string ProductName = "Founders";
         public const string BundleId = "com.founders.longrise";
-        public const string Version = "0.2.0";
+        public const string Version = "0.3.0";
 
         [MenuItem("FOUNDERS/Generate scene and materials")]
         public static void Generate()
         {
             ConfigurePlayer();
-            GenerateMaterials();
+            AssetDatabase.Refresh();
+            ArtSetup.Run();
             GenerateScene();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
         }
 
         [MenuItem("FOUNDERS/Build iOS (Xcode project)")]
-        public static void BuildIOS() => BuildFor(BuildTarget.iOS, "build/iOS/Founders");
+        public static void BuildIOS()
+        {
+            PlayerSettings.iOS.sdkVersion = iOSSdkVersion.DeviceSDK;
+            BuildFor(BuildTarget.iOS, "build/iOS/Founders");
+        }
+
+        /// <summary>iOS Simulator build (arm64) for automated screenshots in CI.</summary>
+        [MenuItem("FOUNDERS/Build iOS Simulator (Xcode project)")]
+        public static void BuildIOSSimulator()
+        {
+            PlayerSettings.iOS.sdkVersion = iOSSdkVersion.SimulatorSDK;
+            PlayerSettings.iOS.simulatorSdkArchitecture = AppleMobileArchitectureSimulator.ARM64;
+            BuildFor(BuildTarget.iOS, "build/iOS/Founders");
+        }
 
         [MenuItem("FOUNDERS/Build Android (APK)")]
         public static void BuildAndroid() => BuildFor(BuildTarget.Android, "build/Android/Founders.apk");
@@ -129,31 +142,13 @@ namespace FoundersEditor
             AssetDatabase.CreateFolder(parent, Path.GetFileName(path));
         }
 
-        static void GenerateMaterials()
-        {
-            EnsureFolder(MaterialFolder);
-            foreach (var spec in Palette.All)
-            {
-                var path = $"{MaterialFolder}/{spec.Name}.mat";
-                var material = Palette.Create(spec);
-                var existing = AssetDatabase.LoadAssetAtPath<Material>(path);
-                if (existing != null)
-                {
-                    EditorUtility.CopySerialized(material, existing);
-                }
-                else
-                {
-                    AssetDatabase.CreateAsset(material, path);
-                }
-            }
-        }
-
         static void GenerateScene()
         {
             EnsureFolder(GeneratedRoot);
             var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
             SceneEnvironment.Apply();
             SceneEnvironment.CreateSun();
+            ArtSetup.PopulateScene();
             new GameObject("Game").AddComponent<GameBootstrap>();
             EditorSceneManager.SaveScene(scene, ScenePath);
             EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene(ScenePath, true) };

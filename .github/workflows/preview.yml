@@ -1,0 +1,129 @@
+name: Preview screenshots (iOS Simulator)
+
+# Builds the game for the iOS Simulator, runs it on a macOS runner in capture mode
+# (see unity/Assets/Scripts/CaptureDirector.cs) and publishes the screenshots.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "unity/**"
+      - ".github/workflows/preview.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: preview-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sim-export:
+    name: Unity → iOS Simulator project
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free disk space (Unity images are large)
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          large-packages: false
+
+      - uses: actions/checkout@v4
+
+      - uses: actions/cache@v4
+        with:
+          path: unity/Library
+          key: Library-iOSSim-${{ hashFiles('unity/Packages/**', 'unity/ProjectSettings/**', 'unity/Assets/**') }}
+          restore-keys: |
+            Library-iOSSim-
+            Library-iOS-
+
+      - uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: unity
+          targetPlatform: iOS
+          buildName: Founders
+          buildMethod: FoundersEditor.BuildScript.BuildIOSSimulator
+
+      - name: Pack Xcode project
+        run: |
+          sudo chown -R "$USER" build
+          tar -czf xcode-sim.tgz -C build/iOS Founders
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: xcode-sim
+          path: xcode-sim.tgz
+          retention-days: 2
+
+  screenshots:
+    name: Run in Simulator and capture
+    needs: sim-export
+    runs-on: macos-15
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: xcode-sim
+
+      - name: Build for Simulator
+        run: |
+          tar -xzf xcode-sim.tgz
+          cd Founders
+          xcodebuild -quiet \
+            -project Unity-iPhone.xcodeproj \
+            -scheme Unity-iPhone \
+            -configuration Release \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath ../dd \
+            CODE_SIGNING_ALLOWED=NO ARCHS=arm64 \
+            build
+
+      - name: Boot simulator, run capture mode
+        run: |
+          set -x
+          APP=$(find dd/Build/Products -maxdepth 2 -name '*.app' | head -n 1)
+          test -n "$APP"
+          xcrun simctl list devicetypes | grep -i iphone | tail -5
+          TYPE=$(xcrun simctl list devicetypes -j | python3 -c "import json,sys;t=[d['identifier'] for d in json.load(sys.stdin)['devicetypes'] if 'iPhone' in d['name'] and 'Pro' in d['name'] and 'Max' not in d['name']];print(t[-1])")
+          UDID=$(xcrun simctl create ShotPhone "$TYPE")
+          xcrun simctl boot "$UDID"
+          xcrun simctl bootstatus "$UDID" -b
+          xcrun simctl install "$UDID" "$APP"
+          BUNDLE=$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$APP/Info.plist")
+          DATA=$(xcrun simctl get_app_container "$UDID" "$BUNDLE" data)
+          mkdir -p "$DATA/Documents"
+          touch "$DATA/Documents/capture.flag"
+          mkdir -p shots
+          xcrun simctl launch --console-pty "$UDID" "$BUNDLE" > shots/player.log 2>&1 &
+          for i in $(seq 1 90); do
+            sleep 10
+            if [ -f "$DATA/Documents/captures/done.txt" ]; then echo "capture done"; break; fi
+            if [ $((i % 6)) -eq 0 ]; then xcrun simctl io "$UDID" screenshot "shots/sim_$i.png" || true; fi
+          done
+          cp "$DATA"/Documents/captures/*.png shots/ 2>/dev/null || true
+          ls -la shots
+          xcrun simctl spawn "$UDID" log show --last 15m --predicate 'process == "Founders"' --style compact > shots/os.log 2>/dev/null || true
+          tail -n 80 shots/player.log || true
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: shots
+
+      - name: Publish to "screenshots" pre-release
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: screenshots
+          name: Screenshots (iOS Simulator)
+          prerelease: true
+          body: |
+            Automatic screenshots from `${{ github.ref_name }}` @ ${{ github.sha }} (iOS Simulator, capture mode).
+          files: shots/*.png

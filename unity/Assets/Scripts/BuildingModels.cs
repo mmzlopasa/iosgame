@@ -3,198 +3,257 @@ using UnityEngine;
 namespace Founders
 {
     /// <summary>
-    /// PLACEHOLDER ART: low-poly models assembled from primitives, one per building "sprite"
-    /// key in content.json. The origin is the centre of the footprint on the ground;
-    /// one grid cell is <see cref="Grid.CellSize"/> metres wide.
+    /// Buildings assembled from photo-scanned CC0 models (Poly Haven) and photo-textured
+    /// shapes, one per building "sprite" key in content.json. The origin is the centre of the
+    /// footprint on the ground; one grid cell is <see cref="Grid.CellSize"/> metres wide.
+    /// With a <c>tint</c> material every part uses it (placement preview).
     /// </summary>
     public static class BuildingModels
     {
-        public static GameObject Create(string sprite, Transform parent, int footprint)
+        public static GameObject Create(string sprite, Transform parent, Material tint)
         {
             var root = new GameObject("Model_" + sprite);
             root.transform.SetParent(parent, false);
-            var t = root.transform;
+            var b = new Builder(root.transform, tint, tint == null);
             switch (sprite)
             {
-                case "campfire": Campfire(t); break;
-                case "village_hearth": Hearth(t); break;
-                case "shelter": Shelter(t); break;
-                case "woven_shelter": WovenShelter(t); break;
-                case "foraging_camp": ForagingCamp(t); break;
-                case "wood_camp": WoodCamp(t); break;
-                case "stone_site": StoneSite(t); break;
-                case "storage_pit": StoragePit(t); break;
-                case "toolmaker": Toolmaker(t); break;
-                case "community_circle": CommunityCircle(t); break;
-                default:
-                    Parts.Shape(Meshes.Prism(), t, Vector3.zero, new Vector3(1.2f, 1.2f, 1.2f), "GhostBad");
-                    break;
+                case "campfire": Campfire(b); break;
+                case "village_hearth": Hearth(b); break;
+                case "shelter": Shelter(b); break;
+                case "woven_shelter": WovenShelter(b); break;
+                case "foraging_camp": ForagingCamp(b); break;
+                case "wood_camp": WoodCamp(b); break;
+                case "stone_site": StoneSite(b); break;
+                case "storage_pit": StoragePit(b); break;
+                case "toolmaker": Toolmaker(b); break;
+                case "community_circle": CommunityCircle(b); break;
+                default: b.Model("boulder_01", Vector3.zero, 0.5f); break;
             }
             return root;
         }
 
-        static void StoneRing(Transform t, float radius, int count, float size, string material = "Stone")
+        sealed class Builder
         {
-            for (int i = 0; i < count; i++)
+            public readonly Transform T;
+            readonly Material tint;
+            public readonly bool Effects;
+
+            public Builder(Transform t, Material tint, bool effects) { T = t; this.tint = tint; Effects = effects; }
+
+            Material Surface(string texture) => tint ?? ModelLibrary.Surface(texture);
+            Material Color(string name) => tint ?? Palette.Get(name);
+
+            public GameObject Model(string id, Vector3 pos, float scale, float yaw = 0f, Vector3? axis = null, Vector3? euler = null)
             {
-                float a = i / (float)count * Mathf.PI * 2f;
-                Parts.Shape(Meshes.Rock(), t, new Vector3(Mathf.Cos(a) * radius, size * 0.3f, Mathf.Sin(a) * radius),
-                            new Vector3(size, size * 0.7f, size), material, new Vector3(0, i * 47f, 0));
+                var go = ModelLibrary.Place(id, T, pos, scale, yaw, axis, tint);
+                if (euler.HasValue) go.transform.localRotation = Quaternion.Euler(euler.Value);
+                return go;
+            }
+
+            /// <summary>A wooden pole (scanned log) from a to b.</summary>
+            public void Pole(Vector3 a, Vector3 b, float thickness = 0.12f)
+            {
+                var dir = b - a;
+                float len = dir.magnitude;
+                var size = ModelLibrary.Size("dead_tree_trunk"); // lies along X: length x, thickness y/z
+                float k = len / Mathf.Max(0.01f, size.x);
+                float t = thickness / Mathf.Max(0.01f, size.y * k);
+                var go = ModelLibrary.Place("dead_tree_trunk", T, Vector3.zero, k, 0f, new Vector3(1f, t, t), tint);
+                // Model pivot is bottom centre: lift by half thickness, then orient along a→b.
+                go.transform.localRotation = Quaternion.FromToRotation(Vector3.right, dir.normalized);
+                go.transform.localPosition = (a + b) * 0.5f - go.transform.localRotation * new Vector3(0, size.y * k * t * 0.5f, 0);
+            }
+
+            public GameObject Shape(Mesh mesh, Vector3 pos, Vector3 scale, string texture, Vector3 euler = default) =>
+                Parts.Shape(mesh, T, pos, scale, Surface(texture), euler);
+
+            public GameObject Prim(PrimitiveType type, Vector3 pos, Vector3 scale, string texture, Vector3 euler = default) =>
+                Parts.Prim(type, T, pos, scale, Surface(texture), euler);
+
+            public GameObject PrimColor(PrimitiveType type, Vector3 pos, Vector3 scale, string colorMaterial, Vector3 euler = default) =>
+                Parts.Prim(type, T, pos, scale, Color(colorMaterial), euler);
+
+            public void Fire(Vector3 at, float scale)
+            {
+                if (!Effects) return;
+                Founders.Effects.Fire(T, at, scale);
             }
         }
 
-        /// <summary>Fire with flickering light, smoke and sparks.</summary>
-        static void Fire(Transform t, Vector3 at, float scale)
-        {
-            Parts.Shape(Meshes.Cone(), t, at, new Vector3(0.45f, 0.75f, 0.45f) * scale, "Ember");
-            Parts.Shape(Meshes.Cone(), t, at + new Vector3(0.05f, 0, 0.04f), new Vector3(0.25f, 0.95f, 0.25f) * scale, "Flame");
-            var lightGo = Parts.Group("FireLight", t, at + new Vector3(0, 0.8f, 0));
-            var light = lightGo.AddComponent<Light>();
-            light.type = LightType.Point;
-            light.color = new Color(1f, 0.6f, 0.25f);
-            light.range = 6f * scale;
-            light.intensity = 1.6f;
-            lightGo.AddComponent<Flicker>();
-            var top = Parts.Group("FireTop", t, at + new Vector3(0, 0.7f * scale, 0)).transform;
-            Effects.Smoke(top, scale);
-            Effects.Sparks(top);
-        }
+        // MARK: - Buildings
 
-        static void Campfire(Transform t)
+        static void LogsInFire(Builder b, Vector3 at, float r)
         {
-            StoneRing(t, 0.55f, 9, 0.28f);
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0, 0.02f, 0), new Vector3(0.9f, 0.02f, 0.9f), "Ash");
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0, 0.12f, 0), new Vector3(0.12f, 0.45f, 0.12f), "DarkWood", new Vector3(0, 30, 80));
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0, 0.12f, 0), new Vector3(0.12f, 0.45f, 0.12f), "DarkWood", new Vector3(0, 150, 80));
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0, 0.12f, 0), new Vector3(0.12f, 0.45f, 0.12f), "DarkWood", new Vector3(0, 270, 80));
-            Fire(t, new Vector3(0, 0.08f, 0), 1f);
-            // Log seats
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(-0.2f, 0.12f, 0.85f), new Vector3(0.22f, 0.4f, 0.22f), "Wood", new Vector3(0, 0, 90));
-        }
-
-        static void Hearth(Transform t)
-        {
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0, 0.12f, 0), new Vector3(1.6f, 0.12f, 1.6f), "Stone");
-            StoneRing(t, 0.7f, 12, 0.3f, "DarkRock");
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0, 0.26f, 0), new Vector3(1.0f, 0.03f, 1.0f), "Ash");
-            Fire(t, new Vector3(0, 0.28f, 0), 1.35f);
-            // Paved ring around the hearth
-            for (int i = 0; i < 8; i++)
+            for (int i = 0; i < 3; i++)
             {
-                float a = i / 8f * Mathf.PI * 2f;
-                Parts.Prim(PrimitiveType.Cube, t, new Vector3(Mathf.Cos(a) * 0.95f, 0.02f, Mathf.Sin(a) * 0.95f),
-                           new Vector3(0.35f, 0.05f, 0.25f), "Stone", new Vector3(0, -a * Mathf.Rad2Deg, 0));
+                float a = i * 120f * Mathf.Deg2Rad;
+                var outer = at + new Vector3(Mathf.Cos(a) * r, 0.02f, Mathf.Sin(a) * r);
+                b.Pole(outer, at + new Vector3(0, 0.18f, 0), 0.09f);
             }
         }
 
-        static void Shelter(Transform t)
+        static void Campfire(Builder b)
         {
-            // Lean-to: a sloped hide roof on a ridge pole.
-            Parts.Shape(Meshes.Prism(), t, new Vector3(0, 0, 0), new Vector3(1.5f, 1.25f, 1.5f), "Hide", new Vector3(0, 45, 0));
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0, 1.25f, 0), new Vector3(0.06f, 1.0f, 0.06f), "DarkWood", new Vector3(90, 45, 0));
-            Parts.Prim(PrimitiveType.Cube, t, new Vector3(0.36f, 0.32f, -0.36f), new Vector3(0.4f, 0.64f, 0.03f), "Ash", new Vector3(0, 45, 0));
+            b.Model("stone_fire_pit", Vector3.zero, 0.85f);
+            LogsInFire(b, new Vector3(0, 0.04f, 0), 0.38f);
+            b.Fire(new Vector3(0, 0.1f, 0), 1f);
+            // A log to sit on and a bowl.
+            b.Pole(new Vector3(-0.7f, 0.08f, 0.85f), new Vector3(0.5f, 0.08f, 1.05f), 0.22f);
+            b.Model("wooden_bowl_01", new Vector3(0.75f, 0f, -0.55f), 1f, 30f);
         }
 
-        static void WovenShelter(Transform t)
+        static void Hearth(Builder b)
         {
-            StoneRing(t, 0.72f, 10, 0.22f);
-            Parts.Prim(PrimitiveType.Sphere, t, new Vector3(0, 0.15f, 0), new Vector3(1.4f, 1.6f, 1.4f), "Weave");
-            Parts.Prim(PrimitiveType.Sphere, t, new Vector3(0, 0.85f, 0), new Vector3(0.6f, 0.35f, 0.6f), "Thatch");
-            for (int i = 1; i <= 3; i++)
-                Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0, 0.25f * i, 0), new Vector3(1.42f - i * 0.12f, 0.015f, 1.42f - i * 0.12f), "Basket");
-            Parts.Prim(PrimitiveType.Cube, t, new Vector3(0.43f, 0.3f, -0.43f), new Vector3(0.4f, 0.6f, 0.05f), "Ash", new Vector3(0, 45, 0));
-        }
-
-        static void Bush(Transform t, Vector3 at, float s)
-        {
-            Parts.Prim(PrimitiveType.Sphere, t, at + new Vector3(0, 0.3f * s, 0), new Vector3(0.8f, 0.6f, 0.8f) * s, "Leaves2");
-            for (int i = 0; i < 5; i++)
+            b.Model("stone_fire_pit", Vector3.zero, 1.15f);
+            for (int i = 0; i < 9; i++)
             {
-                float a = i * 1.3f;
-                Parts.Prim(PrimitiveType.Sphere, t, at + new Vector3(Mathf.Cos(a) * 0.32f * s, (0.35f + (i % 2) * 0.12f) * s, Mathf.Sin(a) * 0.32f * s),
-                           Vector3.one * 0.11f * s, "Berry");
+                float a = i / 9f * Mathf.PI * 2f;
+                b.Model("stone_01", new Vector3(Mathf.Cos(a) * 1.05f, 0f, Mathf.Sin(a) * 1.05f), 3.2f, i * 40f);
+            }
+            LogsInFire(b, new Vector3(0, 0.05f, 0), 0.45f);
+            b.Fire(new Vector3(0, 0.12f, 0), 1.35f);
+        }
+
+        /// <summary>A hide tent: A-frame of poles covered with stitched hides.</summary>
+        static void HideTent(Builder b, Vector3 at, float width, float height, float depth, float yaw)
+        {
+            var g = Parts.Group("Tent", b.T, at, yaw).transform;
+            var tb = new BuilderAt(b, g);
+            tb.Shape(Meshes.Prism(), Vector3.zero, new Vector3(width, height, depth), "Hide");
+            float hw = width * 0.5f, hd = depth * 0.5f;
+            foreach (float z in new[] { -hd - 0.05f, hd + 0.05f })
+            {
+                tb.Pole(new Vector3(-hw - 0.1f, 0, z), new Vector3(0.12f, height + 0.25f, z), 0.07f);
+                tb.Pole(new Vector3(hw + 0.1f, 0, z), new Vector3(-0.12f, height + 0.25f, z), 0.07f);
+            }
+            tb.Pole(new Vector3(0, height + 0.02f, -hd - 0.3f), new Vector3(0, height + 0.02f, hd + 0.3f), 0.08f);
+        }
+
+        /// <summary>Lets helpers build into a sub-transform with the same tint/effects.</summary>
+        sealed class BuilderAt
+        {
+            readonly Builder parent;
+            readonly Transform t;
+            public BuilderAt(Builder parent, Transform t) { this.parent = parent; this.t = t; }
+
+            public void Shape(Mesh mesh, Vector3 pos, Vector3 scale, string texture)
+            {
+                var go = parent.Shape(mesh, pos, scale, texture);
+                go.transform.SetParent(t, false);
+            }
+
+            public void Pole(Vector3 a, Vector3 b, float thickness)
+            {
+                int before = parent.T.childCount;
+                parent.Pole(a, b, thickness);
+                for (int i = parent.T.childCount - 1; i >= before; i--) parent.T.GetChild(i).SetParent(t, false);
             }
         }
 
-        static void ForagingCamp(Transform t)
+        static void Shelter(Builder b)
         {
-            Bush(t, new Vector3(-0.45f, 0, -0.35f), 1f);
-            Bush(t, new Vector3(0.45f, 0, 0.4f), 0.85f);
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0.25f, 0.18f, -0.3f), new Vector3(0.4f, 0.18f, 0.4f), "Basket");
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(-0.3f, 0.14f, 0.45f), new Vector3(0.32f, 0.14f, 0.32f), "Basket");
-            Parts.Prim(PrimitiveType.Sphere, t, new Vector3(0.25f, 0.34f, -0.3f), new Vector3(0.32f, 0.12f, 0.32f), "Berry");
+            HideTent(b, Vector3.zero, 1.6f, 1.35f, 1.9f, 0f);
+            b.Model("wicker_basket_01", new Vector3(0.95f, 0f, 0.6f), 1.2f, 20f);
+            b.Model("dry_branches_medium_01", new Vector3(-0.95f, 0f, -0.7f), 0.7f, 70f);
+        }
+
+        static void WovenShelter(Builder b)
+        {
+            b.Shape(Meshes.Dome(), Vector3.zero, new Vector3(1.9f, 1.75f, 1.9f), "Thatch");
+            b.Shape(Meshes.Cone(), new Vector3(0, 0.78f, 0), new Vector3(0.7f, 0.35f, 0.7f), "Thatch");
+            for (int i = 0; i < 14; i++)
+            {
+                float a = i / 14f * Mathf.PI * 2f;
+                b.Model("stone_01", new Vector3(Mathf.Cos(a) * 0.98f, 0f, Mathf.Sin(a) * 0.98f), 2.6f, i * 33f);
+            }
+            // Doorway with a hide flap.
+            b.PrimColor(PrimitiveType.Cube, new Vector3(0, 0.4f, -0.86f), new Vector3(0.5f, 0.8f, 0.1f), "Ash");
+            b.Prim(PrimitiveType.Cube, new Vector3(0.18f, 0.38f, -0.92f), new Vector3(0.25f, 0.76f, 0.03f), "Hide", new Vector3(0, -20, 0));
+            b.Model("ceramic_pot", new Vector3(0.9f, 0f, -0.6f), 0.6f, 15f);
+        }
+
+        static void ForagingCamp(Builder b)
+        {
             // Drying rack
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0.7f, 0.4f, -0.6f), new Vector3(0.05f, 0.4f, 0.05f), "DarkWood");
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(-0.1f, 0.4f, -0.85f), new Vector3(0.05f, 0.4f, 0.05f), "DarkWood");
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0.3f, 0.78f, -0.72f), new Vector3(0.04f, 0.45f, 0.04f), "DarkWood", new Vector3(0, 72, 90));
+            b.Pole(new Vector3(-0.7f, 0f, -0.55f), new Vector3(-0.7f, 1.1f, -0.55f), 0.07f);
+            b.Pole(new Vector3(0.7f, 0f, -0.55f), new Vector3(0.7f, 1.1f, -0.55f), 0.07f);
+            b.Pole(new Vector3(-0.85f, 1.08f, -0.55f), new Vector3(0.85f, 1.08f, -0.55f), 0.06f);
+            b.Prim(PrimitiveType.Cube, new Vector3(-0.25f, 0.8f, -0.55f), new Vector3(0.35f, 0.5f, 0.02f), "Hide");
+            b.Prim(PrimitiveType.Cube, new Vector3(0.3f, 0.82f, -0.55f), new Vector3(0.3f, 0.45f, 0.02f), "Hide");
+            // Gathered food
+            b.Model("wicker_basket_01", new Vector3(-0.35f, 0f, 0.35f), 1.5f, 10f);
+            b.Model("wicker_basket_01", new Vector3(0.35f, 0f, 0.5f), 1.3f, 75f);
+            b.Model("ceramic_pot", new Vector3(0.75f, 0f, 0.05f), 0.55f);
+            b.Model("wooden_bowl_01", new Vector3(-0.8f, 0f, 0.1f), 1.1f);
+            b.Model("shrub_04", new Vector3(0f, 0f, 0.95f), 1.6f, 40f);
         }
 
-        static void WoodCamp(Transform t)
+        static void WoodCamp(Builder b)
         {
+            // Stacked woodpile
             for (int row = 0; row < 3; row++)
-            {
                 for (int i = 0; i < 4 - row; i++)
                 {
-                    Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(-0.2f + i * 0.28f + row * 0.14f, 0.13f + row * 0.24f, -0.2f),
-                               new Vector3(0.26f, 0.6f, 0.26f), "Wood", new Vector3(90, 0, 0));
+                    float z = -0.45f + i * 0.24f + row * 0.12f;
+                    float y = 0.07f + row * 0.18f;
+                    b.Pole(new Vector3(-0.7f, y, z), new Vector3(0.6f, y, z), 0.2f);
                 }
+            b.Model("tree_stump_01", new Vector3(0.55f, 0f, 0.55f), 0.55f, 30f);
+            b.Model("wooden_axe", new Vector3(0.55f, 0.28f, 0.55f), 1f, 0f, null, new Vector3(0, 40, 20));
+            b.Model("dry_branches_medium_01", new Vector3(-0.6f, 0f, 0.6f), 0.8f, 120f);
+        }
+
+        static void StoneSite(Builder b)
+        {
+            b.Model("boulder_01", new Vector3(-0.35f, 0f, 0.2f), 0.75f, 25f);
+            b.Model("namaqualand_boulder_02", new Vector3(0.4f, 0f, -0.35f), 0.42f, 110f);
+            for (int i = 0; i < 7; i++)
+                b.Model("stone_01", new Vector3(0.55f - (i % 3) * 0.3f, 0f, 0.55f - (i / 3) * 0.25f), 2.6f, i * 51f);
+            b.Model("wicker_basket_01", new Vector3(-0.8f, 0f, -0.55f), 1.2f, 60f);
+        }
+
+        static void StoragePit(Builder b)
+        {
+            b.Prim(PrimitiveType.Cylinder, new Vector3(0, 0.05f, 0), new Vector3(1.7f, 0.06f, 1.7f), "Mud");
+            b.PrimColor(PrimitiveType.Cylinder, new Vector3(0, 0.08f, 0), new Vector3(1.15f, 0.04f, 1.15f), "Ash");
+            for (int i = 0; i < 5; i++)
+            {
+                float z = -0.42f + i * 0.21f;
+                b.Pole(new Vector3(-0.7f, 0.13f, z), new Vector3(0.7f, 0.13f, z + 0.05f), 0.12f);
             }
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(-0.6f, 0.18f, 0.5f), new Vector3(0.5f, 0.18f, 0.5f), "Bark");
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(-0.6f, 0.37f, 0.5f), new Vector3(0.45f, 0.01f, 0.45f), "Weave");
-            // Axe in the stump
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(-0.5f, 0.6f, 0.5f), new Vector3(0.04f, 0.25f, 0.04f), "DarkWood", new Vector3(0, 0, -25));
-            Parts.Shape(Meshes.Rock(), t, new Vector3(-0.6f, 0.42f, 0.5f), new Vector3(0.18f, 0.1f, 0.06f), "DarkRock");
-            Parts.Prim(PrimitiveType.Sphere, t, new Vector3(0.6f, 0.05f, 0.55f), new Vector3(0.5f, 0.08f, 0.4f), "Thatch");
+            b.Model("ceramic_pot", new Vector3(0.85f, 0f, -0.7f), 0.6f, 40f);
+            b.Model("ceramic_pot", new Vector3(-0.85f, 0f, -0.65f), 0.5f, 200f);
+            b.Model("wicker_basket_01", new Vector3(0.8f, 0f, 0.75f), 1.3f, 15f);
         }
 
-        static void StoneSite(Transform t)
+        static void Toolmaker(Builder b)
         {
-            Parts.Shape(Meshes.Rock(), t, new Vector3(-0.35f, 0.25f, 0.2f), new Vector3(0.8f, 0.6f, 0.7f), "Boulder", new Vector3(0, 20, 0));
-            Parts.Shape(Meshes.Rock(), t, new Vector3(0.35f, 0.18f, -0.3f), new Vector3(0.6f, 0.4f, 0.55f), "DarkRock", new Vector3(0, 80, 0));
-            for (int i = 0; i < 3; i++)
-                Parts.Prim(PrimitiveType.Cube, t, new Vector3(0.45f, 0.1f + i * 0.17f, 0.45f), new Vector3(0.45f, 0.16f, 0.3f), "Stone",
-                           new Vector3(0, i * 12f, 0));
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(-0.6f, 0.35f, -0.5f), new Vector3(0.04f, 0.35f, 0.04f), "DarkWood", new Vector3(0, 0, 30));
+            HideTent(b, new Vector3(-0.3f, 0f, 0.3f), 1.2f, 1.05f, 1.3f, 35f);
+            b.Model("boulder_01", new Vector3(0.55f, 0f, -0.45f), 0.38f, 80f);
+            b.Model("wooden_axe", new Vector3(0.8f, 0f, -0.1f), 0.9f, 0f, null, new Vector3(0, 30, 75));
+            b.Model("wooden_bowl_01", new Vector3(0.2f, 0f, -0.8f), 1f);
+            for (int i = 0; i < 5; i++)
+                b.Model("stone_01", new Vector3(0.75f - i * 0.12f, 0f, -0.85f + (i % 2) * 0.1f), 1.4f, i * 70f);
         }
 
-        static void StoragePit(Transform t)
+        static void CommunityCircle(Builder b)
         {
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0, 0.08f, 0), new Vector3(1.5f, 0.08f, 1.5f), "Dirt");
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0, 0.12f, 0), new Vector3(1.1f, 0.06f, 1.1f), "Ash");
-            for (int i = 0; i < 4; i++)
-                Parts.Prim(PrimitiveType.Cube, t, new Vector3(-0.3f + i * 0.2f, 0.18f, 0.05f), new Vector3(0.18f, 0.05f, 1.15f), "Wood",
-                           new Vector3(0, 8f, 0));
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0.6f, 0.2f, -0.55f), new Vector3(0.36f, 0.2f, 0.36f), "Basket");
-            Parts.Prim(PrimitiveType.Sphere, t, new Vector3(-0.65f, 0.15f, -0.5f), new Vector3(0.4f, 0.3f, 0.4f), "Hide");
-        }
-
-        static void Toolmaker(Transform t)
-        {
-            Parts.Shape(Meshes.Prism(), t, new Vector3(-0.25f, 0, 0.25f), new Vector3(1.3f, 1.1f, 1.2f), "Hide", new Vector3(0, 45, 0));
-            Parts.Shape(Meshes.Rock(), t, new Vector3(0.45f, 0.2f, -0.35f), new Vector3(0.6f, 0.4f, 0.5f), "Boulder");
-            Parts.Shape(Meshes.Rock(), t, new Vector3(0.45f, 0.43f, -0.35f), new Vector3(0.25f, 0.1f, 0.18f), "DarkRock", new Vector3(0, 30, 0));
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0.75f, 0.42f, -0.2f), new Vector3(0.04f, 0.18f, 0.04f), "DarkWood", new Vector3(0, 0, 70));
-            for (int i = 0; i < 4; i++)
-                Parts.Shape(Meshes.Rock(), t, new Vector3(0.1f + i * 0.12f, 0.03f, -0.7f + (i % 2) * 0.1f), Vector3.one * 0.1f, "Stone");
-        }
-
-        static void CommunityCircle(Transform t)
-        {
-            Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(0, 0.01f, 0), new Vector3(3.4f, 0.01f, 3.4f), "Path");
             for (int i = 0; i < 10; i++)
             {
                 float a = i / 10f * Mathf.PI * 2f;
-                float h = 0.9f + (i % 3) * 0.2f;
-                Parts.Prim(PrimitiveType.Cube, t, new Vector3(Mathf.Cos(a) * 1.5f, h * 0.5f, Mathf.Sin(a) * 1.5f),
-                           new Vector3(0.28f, h, 0.2f), i % 2 == 0 ? "Stone" : "Boulder", new Vector3(0, -a * Mathf.Rad2Deg, 0));
+                var p = new Vector3(Mathf.Cos(a) * 1.55f, 0f, Mathf.Sin(a) * 1.55f);
+                float h = 0.85f + (i % 3) * 0.18f;
+                b.Model("boulder_01", p, 1f, -a * Mathf.Rad2Deg, new Vector3(0.24f, h, 0.18f));
             }
-            StoneRing(t, 0.35f, 7, 0.18f);
-            Fire(t, new Vector3(0, 0.05f, 0), 0.7f);
+            b.Model("stone_fire_pit", Vector3.zero, 0.6f);
+            LogsInFire(b, new Vector3(0, 0.03f, 0), 0.26f);
+            b.Fire(new Vector3(0, 0.08f, 0), 0.75f);
             for (int i = 0; i < 4; i++)
             {
                 float a = (i + 0.5f) / 4f * Mathf.PI * 2f;
-                Parts.Prim(PrimitiveType.Cylinder, t, new Vector3(Mathf.Cos(a) * 0.95f, 0.12f, Mathf.Sin(a) * 0.95f),
-                           new Vector3(0.2f, 0.35f, 0.2f), "Wood", new Vector3(0, -a * Mathf.Rad2Deg, 90));
+                var c = new Vector3(Mathf.Cos(a) * 0.95f, 0.1f, Mathf.Sin(a) * 0.95f);
+                var tangent = new Vector3(-Mathf.Sin(a), 0, Mathf.Cos(a)) * 0.4f;
+                b.Pole(c - tangent, c + tangent, 0.22f);
             }
         }
     }

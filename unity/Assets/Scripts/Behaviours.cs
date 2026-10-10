@@ -40,14 +40,14 @@ namespace Founders
         public Rect Bounds = new Rect(-4, -36, 40, 40); // x/z extent the focus point may move in
 
         Vector3 focus;
-        float distance = 30f;
+        float distance = 26f;
         Vector3 moveTarget;
         float moveUntil;
         float zoomTarget = -1f;
 
-        const float MinDistance = 12f;
-        const float MaxDistance = 60f;
-        const float Pitch = 50f;
+        const float MinDistance = 9f;
+        const float MaxDistance = 55f;
+        const float Pitch = 47f;
         public const float Yaw = -45f;
         const float TapSlop = 12f; // pixels
 
@@ -60,15 +60,17 @@ namespace Founders
 
         void Awake()
         {
-            var camGo = new GameObject("Main Camera") { tag = "MainCamera" };
-            camGo.transform.SetParent(transform, false);
-            Cam = camGo.AddComponent<Camera>();
-            Cam.clearFlags = CameraClearFlags.SolidColor;
-            Cam.backgroundColor = SceneEnvironment.SkyColor;
-            Cam.fieldOfView = 38f;
-            Cam.nearClipPlane = 0.5f;
-            Cam.farClipPlane = 200f;
-            camGo.AddComponent<AudioListener>();
+            Cam = Camera.main;
+            if (Cam == null)
+            {
+                var camGo = new GameObject("Main Camera") { tag = "MainCamera" };
+                Cam = camGo.AddComponent<Camera>();
+                camGo.AddComponent<AudioListener>();
+                Cam.fieldOfView = 34f;
+                Cam.nearClipPlane = 0.5f;
+                Cam.farClipPlane = 400f;
+            }
+            Cam.transform.SetParent(transform, false);
             Apply();
         }
 
@@ -213,6 +215,7 @@ namespace Founders
     public class Villager : MonoBehaviour
     {
         public Func<Vector3> PickSpot;
+        public WorldTerrain Ground;
         Vector3 target;
         float wait;
         float speed;
@@ -240,7 +243,9 @@ namespace Founders
                 return;
             }
             var step = to.normalized * speed * Time.deltaTime;
-            transform.position += Vector3.ClampMagnitude(step, to.magnitude);
+            var next = transform.position + Vector3.ClampMagnitude(step, to.magnitude);
+            if (Ground != null) next.y = Ground.HeightAt(next);
+            transform.position = next;
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(to), 8f * Time.deltaTime);
             body.localPosition = new Vector3(0, Mathf.Abs(Mathf.Sin(Time.time * speed * 7f)) * 0.05f, 0);
         }
@@ -249,93 +254,127 @@ namespace Founders
         {
             var root = Parts.Group("Villager", parent, at).transform;
             var body = Parts.Group("Body", root, Vector3.zero).transform;
-            Parts.Prim(PrimitiveType.Capsule, body, new Vector3(0, 0.42f, 0), new Vector3(0.32f, 0.36f, 0.32f), seed % 3 == 0 ? "Tunic2" : "Tunic");
-            Parts.Prim(PrimitiveType.Sphere, body, new Vector3(0, 0.86f, 0), Vector3.one * 0.24f, "Skin");
-            Parts.Prim(PrimitiveType.Sphere, body, new Vector3(0, 0.93f, -0.02f), new Vector3(0.26f, 0.16f, 0.26f), "Hair");
+            // Placeholder figure (real character models are a later step): hide clothing, skin, hair.
+            Parts.Prim(PrimitiveType.Capsule, body, new Vector3(0, 0.55f, 0), new Vector3(0.34f, 0.5f, 0.28f), ModelLibrary.Surface("Hide"));
+            Parts.Prim(PrimitiveType.Sphere, body, new Vector3(0, 1.18f, 0), Vector3.one * 0.22f, "Skin");
+            Parts.Prim(PrimitiveType.Sphere, body, new Vector3(0, 1.24f, -0.02f), new Vector3(0.24f, 0.15f, 0.24f), "Hair");
+            Parts.Prim(PrimitiveType.Capsule, body, new Vector3(-0.08f, 0.18f, 0), new Vector3(0.11f, 0.2f, 0.11f), "Skin");
+            Parts.Prim(PrimitiveType.Capsule, body, new Vector3(0.08f, 0.18f, 0), new Vector3(0.11f, 0.2f, 0.11f), "Skin");
             return root.gameObject.AddComponent<Villager>();
         }
     }
 
-    /// <summary>Fire smoke and sparks.</summary>
+    /// <summary>Fire: additive flames, glowing embers, sparks, rising smoke and a flickering light.</summary>
     public static class Effects
     {
-        public static ParticleSystem Smoke(Transform at, float scale = 1f)
+        static ParticleSystem NewSystem(Transform parent, string name, Vector3 at, string material)
         {
-            var go = new GameObject("Smoke");
-            go.transform.SetParent(at, false);
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = at;
             go.transform.localRotation = Quaternion.Euler(-90f, 0, 0);
             var ps = go.AddComponent<ParticleSystem>();
             ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-
-            var main = ps.main;
-            main.loop = true;
-            main.prewarm = true;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(3.5f, 5f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(0.6f * scale, 1.0f * scale);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.5f * scale, 0.8f * scale);
-            main.maxParticles = 120;
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
-
-            var emission = ps.emission;
-            emission.rateOverTime = 6f;
-
-            var shape = ps.shape;
-            shape.shapeType = ParticleSystemShapeType.Cone;
-            shape.angle = 10f;
-            shape.radius = 0.15f;
-
-            var size = ps.sizeOverLifetime;
-            size.enabled = true;
-            size.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.5f, 1f, 2.6f));
-
-            var color = ps.colorOverLifetime;
-            color.enabled = true;
-            var gradient = new Gradient();
-            gradient.SetKeys(
-                new[] { new GradientColorKey(new Color(0.35f, 0.33f, 0.31f), 0f), new GradientColorKey(new Color(0.72f, 0.72f, 0.74f), 1f) },
-                new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.55f, 0.15f), new GradientAlphaKey(0f, 1f) });
-            color.color = gradient;
-
-            var velocity = ps.velocityOverLifetime;
-            velocity.enabled = true;
-            velocity.space = ParticleSystemSimulationSpace.World;
-            velocity.x = new ParticleSystem.MinMaxCurve(0.2f, 0.5f);
-            velocity.y = new ParticleSystem.MinMaxCurve(0f, 0f);
-            velocity.z = new ParticleSystem.MinMaxCurve(0.1f, 0.3f);
-
-            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = Palette.Get("Smoke");
-            ps.Play();
+            var r = go.GetComponent<ParticleSystemRenderer>();
+            r.sharedMaterial = Palette.Get(material);
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             return ps;
         }
 
-        public static ParticleSystem Sparks(Transform at)
+        public static void Fire(Transform parent, Vector3 at, float scale)
         {
-            var go = new GameObject("Sparks");
-            go.transform.SetParent(at, false);
-            go.transform.localRotation = Quaternion.Euler(-90f, 0, 0);
-            var ps = go.AddComponent<ParticleSystem>();
-            ps.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-
-            var main = ps.main;
+            // Flames
+            var flames = NewSystem(parent, "Flames", at, "Flame");
+            var main = flames.main;
             main.loop = true;
-            main.startLifetime = new ParticleSystem.MinMaxCurve(0.6f, 1.2f);
-            main.startSpeed = new ParticleSystem.MinMaxCurve(0.8f, 1.6f);
-            main.startSize = new ParticleSystem.MinMaxCurve(0.04f, 0.09f);
-            main.startColor = new Color(1f, 0.7f, 0.3f, 1f);
-            main.maxParticles = 60;
+            main.prewarm = true;
+            main.startLifetime = new ParticleSystem.MinMaxCurve(0.45f, 0.8f);
+            main.startSpeed = new ParticleSystem.MinMaxCurve(0.5f * scale, 1.1f * scale);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.35f * scale, 0.6f * scale);
+            main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.55f, 0.15f, 0.9f), new Color(1f, 0.8f, 0.35f, 0.9f));
+            main.maxParticles = 80;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
+            var em = flames.emission;
+            em.rateOverTime = 34f;
+            var sh = flames.shape;
+            sh.shapeType = ParticleSystemShapeType.Cone;
+            sh.angle = 8f;
+            sh.radius = 0.14f * scale;
+            var sz = flames.sizeOverLifetime;
+            sz.enabled = true;
+            sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 1f, 1f, 0.1f));
+            var col = flames.colorOverLifetime;
+            col.enabled = true;
+            var g = new Gradient();
+            g.SetKeys(new[] { new GradientColorKey(new Color(1f, 0.85f, 0.5f), 0f), new GradientColorKey(new Color(1f, 0.35f, 0.08f), 1f) },
+                      new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(1f, 0.15f), new GradientAlphaKey(0f, 1f) });
+            col.color = g;
+            flames.Play();
 
-            var emission = ps.emission;
-            emission.rateOverTime = 10f;
+            // Sparks
+            var sparks = NewSystem(parent, "Sparks", at + new Vector3(0, 0.2f * scale, 0), "Spark");
+            var sm = sparks.main;
+            sm.loop = true;
+            sm.startLifetime = new ParticleSystem.MinMaxCurve(0.8f, 1.6f);
+            sm.startSpeed = new ParticleSystem.MinMaxCurve(0.8f, 1.8f);
+            sm.startSize = new ParticleSystem.MinMaxCurve(0.03f, 0.06f);
+            sm.maxParticles = 40;
+            sm.simulationSpace = ParticleSystemSimulationSpace.World;
+            var se = sparks.emission;
+            se.rateOverTime = 6f * scale;
+            var ss = sparks.shape;
+            ss.shapeType = ParticleSystemShapeType.Cone;
+            ss.angle = 25f;
+            ss.radius = 0.1f;
+            var noise = sparks.noise;
+            noise.enabled = true;
+            noise.strength = 0.6f;
+            noise.frequency = 1.2f;
+            sparks.Play();
 
-            var shape = ps.shape;
-            shape.shapeType = ParticleSystemShapeType.Cone;
-            shape.angle = 20f;
-            shape.radius = 0.1f;
+            // Smoke
+            var smoke = NewSystem(parent, "Smoke", at + new Vector3(0, 0.6f * scale, 0), "Smoke");
+            var mm = smoke.main;
+            mm.loop = true;
+            mm.prewarm = true;
+            mm.startLifetime = new ParticleSystem.MinMaxCurve(4f, 6f);
+            mm.startSpeed = new ParticleSystem.MinMaxCurve(0.5f, 0.9f);
+            mm.startSize = new ParticleSystem.MinMaxCurve(0.5f * scale, 0.8f * scale);
+            mm.startRotation = new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f);
+            mm.maxParticles = 60;
+            mm.simulationSpace = ParticleSystemSimulationSpace.World;
+            var me = smoke.emission;
+            me.rateOverTime = 4f;
+            var msh = smoke.shape;
+            msh.shapeType = ParticleSystemShapeType.Cone;
+            msh.angle = 6f;
+            msh.radius = 0.1f;
+            var msz = smoke.sizeOverLifetime;
+            msz.enabled = true;
+            msz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.Linear(0f, 0.6f, 1f, 3.5f));
+            var mcol = smoke.colorOverLifetime;
+            mcol.enabled = true;
+            var mg = new Gradient();
+            mg.SetKeys(new[] { new GradientColorKey(new Color(0.3f, 0.28f, 0.27f), 0f), new GradientColorKey(new Color(0.7f, 0.7f, 0.72f), 1f) },
+                       new[] { new GradientAlphaKey(0f, 0f), new GradientAlphaKey(0.45f, 0.2f), new GradientAlphaKey(0f, 1f) });
+            mcol.color = mg;
+            var mv = smoke.velocityOverLifetime;
+            mv.enabled = true;
+            mv.space = ParticleSystemSimulationSpace.World;
+            mv.x = new ParticleSystem.MinMaxCurve(0.15f, 0.4f);
+            mv.y = new ParticleSystem.MinMaxCurve(0f, 0f);
+            mv.z = new ParticleSystem.MinMaxCurve(0.05f, 0.2f);
+            smoke.Play();
 
-            go.GetComponent<ParticleSystemRenderer>().sharedMaterial = Palette.Get("Spark");
-            ps.Play();
-            return ps;
+            // Light
+            var lightGo = Parts.Group("FireLight", parent, at + new Vector3(0, 0.6f * scale, 0));
+            var light = lightGo.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = new Color(1f, 0.55f, 0.22f);
+            light.range = 7f * scale;
+            light.intensity = 2.4f * scale;
+            light.shadows = LightShadows.None;
+            lightGo.AddComponent<Flicker>();
         }
     }
 }

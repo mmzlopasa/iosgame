@@ -31,3 +31,15 @@
 !/CoreTests/**/*.csproj
 !/CoreTests/*.csproj
 !/CompileCheck/*.csproj
+
+# Created by URP when the pipeline asset is generated
+/Assets/UniversalRenderer.asset*
+/Assets/UniversalRenderPipelineGlobalSettings.asset*
+/Assets/DefaultVolumeProfile.asset*
+/Assets/Settings/
+/Assets/Settings.meta
+# Binary art: Unity generates import settings (see Editor/ArtSetup.cs)
+/Assets/Art/**/*.png.meta
+/Assets/Art/**/*.jpg.meta
+/Assets/Art/**/*.fbx.meta
+/Assets/Art/**/*.hdr.meta

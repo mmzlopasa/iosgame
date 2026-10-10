@@ -38,8 +38,12 @@ namespace Founders
         float nextStep;
         double lastSaveWallTime;
 
-        public void Init(CameraRig rig, WorldView world)
+        /// <summary>True in capture mode: a throwaway game that never reads or writes the player's save.</summary>
+        public bool Ephemeral { get; private set; }
+
+        public void Init(CameraRig rig, WorldView world, bool ephemeral = false)
         {
+            Ephemeral = ephemeral;
             Rig = rig;
             World = world;
 
@@ -49,7 +53,7 @@ namespace Founders
             SaveStore = new FileSaveStore(Application.persistentDataPath);
 
             string message = null;
-            var outcome = SaveStore.Load(Content);
+            var outcome = ephemeral ? LoadOutcome.NoSave : SaveStore.Load(Content);
             switch (outcome.Result)
             {
                 case LoadResult.Loaded:
@@ -103,11 +107,11 @@ namespace Founders
             nextStep = Time.unscaledTime + 0.25f;
             Game.Update();
             Refresh();
-            if (clock.Now() - lastSaveWallTime > 15) Save();
+            if (!Ephemeral && clock.Now() - lastSaveWallTime > 15) Save();
         }
 
         /// <summary>Pulls notices, expires toasts, redraws.</summary>
-        void Refresh()
+        public void Refresh()
         {
             AbsorbNotices();
             float now = Time.unscaledTime;
@@ -161,6 +165,7 @@ namespace Founders
 
         public void Save()
         {
+            if (Ephemeral) return;
             try
             {
                 SaveStore.Save(Game.State, Content, clock.Now());
