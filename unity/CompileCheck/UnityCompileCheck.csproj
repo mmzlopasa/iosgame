@@ -16,4 +16,5 @@
     <Compile Include="UrpStubs.cs" />
     <Reference Include="$(Managed)/UnityEngine/*.dll" Private="false" />
   </ItemGroup>
+  <Import Project="Modules.props" Condition="Exists('Modules.props')" />
 </Project>

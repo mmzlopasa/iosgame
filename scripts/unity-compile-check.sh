@@ -24,4 +24,28 @@ if [ ! -f "$MANAGED/UnityEngine/UnityEngine.CoreModule.dll" ]; then
     | tar -xz -C "$CACHE" --wildcards '*Editor/Data/Managed/*.dll'
 fi
 
+# Like Unity, drop engine modules whose com.unity.modules.* package is not in the manifest.
+python3 - "$ROOT/unity/Packages/manifest.json" "$MANAGED/UnityEngine" "$ROOT/unity/CompileCheck/Modules.props" <<'PY'
+import json, os, sys
+manifest, managed, out = sys.argv[1:4]
+deps = json.load(open(manifest))["dependencies"]
+enabled = {k.split(".")[-1] for k in deps if k.startswith("com.unity.modules.")}
+packaged = {"accessibility", "ai", "androidjni", "animation", "assetbundle", "audio", "cloth", "director",
+            "imageconversion", "imgui", "jsonserialize", "particlesystem", "physics", "physics2d", "screencapture",
+            "terrain", "terrainphysics", "tilemap", "ui", "uielements", "umbra", "unityanalytics", "unitywebrequest",
+            "unitywebrequestassetbundle", "unitywebrequestaudio", "unitywebrequesttexture", "unitywebrequestwww",
+            "vehicles", "video", "vr", "wind", "xr", "adaptiveperformance", "nvidia", "subsystems"}
+removed = []
+for f in sorted(os.listdir(managed)):
+    if f.startswith("UnityEngine.") and f.endswith("Module.dll"):
+        name = f[len("UnityEngine."):-len("Module.dll")].lower()
+        if name in packaged and name not in enabled:
+            removed.append(os.path.join(managed, f))
+with open(out, "w") as fh:
+    fh.write("<Project><ItemGroup>\n")
+    for r in removed:
+        fh.write(f'  <Reference Remove="{r}" />\n')
+    fh.write("</ItemGroup></Project>\n")
+print(f"engine modules excluded (not in manifest): {len(removed)}")
+PY
 dotnet build "$ROOT/unity/CompileCheck" -nologo -v q -p:UnityManaged="$MANAGED"

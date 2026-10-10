@@ -43,3 +43,4 @@
 /Assets/Art/**/*.jpg.meta
 /Assets/Art/**/*.fbx.meta
 /Assets/Art/**/*.hdr.meta
+/CompileCheck/Modules.props
