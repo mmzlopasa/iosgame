@@ -34,4 +34,7 @@ SwiftUI za touch-heavy panele (safe area, Dynamic Type, sheetovi s detentima), a
 **Kontekst:** korisnik želi Android uz iPhone, 3D i bogatiju grafiku, Asset Store te standardni engine za zvuk, efekte i multiplayer. Swift verzija radi samo na iOS-u.
 **Odluka (odabrao korisnik):** Unity 6.3 LTS (6000.3.26f1). Igra i dizajn ostaju isti (EONWARD, Epoha 1).
 **Kako:** pravila su prenesena 1:1 u C# (`unity/Assets/Scripts/Core`) bez ovisnosti o Unityju, pa se testiraju običnim `dotnet test` (45 testova, isti scenariji i brojke kao u Swiftu). Scena, materijali i UI nastaju iz koda (`BuildScript.cs`, IMGUI), pa se igra može razvijati iz cloud sesije bez otvaranja editora. GitHub Actions (GameCI) gradi Android APK i iOS Xcode projekt, a macOS runner pravi nepotpisanu IPA.
-**Posljedice:** Unity build traži besplatnu Personal licencu kao GitHub secret. IMGUI je privremen i kasnije prelazi na uGUI ili UI Toolkit s pravim dizajnom. GPLv3 licenca repozitorija nije kompatibilna s distribucijom igre na zatvorenom engineu, pa je treba promijeniti prije objave.
+**Posljedice:** Unity build traži besplatnu Personal licencu kao GitHub secret. IMGUI je privremen i kasnije prelazi na uGUI ili UI Toolkit s pravim dizajnom. GPLv3 licenca je zamijenjena vlasničkom licencom „sva prava pridržana” (D11).
+
+## D11 — Licenca: sva prava pridržana (2026-10-10)
+**Odluka (odabrao korisnik):** GPLv3 je zamijenjena vlasničkom licencom. Repozitorij ostaje javan, jer javni repozitoriji imaju besplatne macOS buildove, ali korištenje i kopiranje nije dopušteno bez pisanog dopuštenja. Time nema sukoba s Unityjem ni s App Storeom i Google Playem.

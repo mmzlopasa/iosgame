@@ -110,4 +110,6 @@ Kontrole: tap za odabir i postavljanje, povlačenje za pomicanje kamere, pinch z
 
 ## Licence / pravno
 
+Kod i sadržaj su **vlasnički, sva prava pridržana** (vidi `LICENSE`). Repozitorij je javan samo radi pregleda i besplatnih GitHub buildova. Zamijenjena je prijašnja GPLv3 licenca, koja se ne slaže s Unityjem ni s objavom u trgovinama.
+
 Naziv „EONWARD” je radni naziv i nije provjeren kao žig. Prije javne objave treba provjeriti App Store, EUIPO, WIPO, USPTO i domene.
