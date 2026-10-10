@@ -1,0 +1,515 @@
+{
+ "impostors": {
+  "FirSapling": {
+   "height": 1.301,
+   "side": "Art/Textures/FirSapling_impostor_side.png",
+   "side2": "Art/Textures/FirSapling_impostor_side2.png",
+   "source": "https://polyhaven.com/a/fir_sapling",
+   "top": "Art/Textures/FirSapling_impostor_top.png",
+   "width": 0.861
+  },
+  "LeafTree": {
+   "height": 4.557,
+   "side": "Art/Textures/LeafTree_impostor_side.png",
+   "side2": "Art/Textures/LeafTree_impostor_side2.png",
+   "source": "https://polyhaven.com/a/tree_small_02",
+   "top": "Art/Textures/LeafTree_impostor_top.png",
+   "width": 4.292
+  },
+  "PineA": {
+   "height": 20.375,
+   "side": "Art/Textures/PineA_impostor_side.png",
+   "side2": "Art/Textures/PineA_impostor_side2.png",
+   "source": "https://polyhaven.com/a/pine_tree_01",
+   "top": "Art/Textures/PineA_impostor_top.png",
+   "width": 8.314
+  },
+  "PineB": {
+   "height": 14.881,
+   "side": "Art/Textures/PineB_impostor_side.png",
+   "side2": "Art/Textures/PineB_impostor_side2.png",
+   "source": "https://polyhaven.com/a/pine_tree_01",
+   "top": "Art/Textures/PineB_impostor_top.png",
+   "width": 7.597
+  },
+  "PineC": {
+   "height": 17.544,
+   "side": "Art/Textures/PineC_impostor_side.png",
+   "side2": "Art/Textures/PineC_impostor_side2.png",
+   "source": "https://polyhaven.com/a/pine_tree_01",
+   "top": "Art/Textures/PineC_impostor_top.png",
+   "width": 7.855
+  }
+ },
+ "license": "CC0 1.0 (Poly Haven)",
+ "models": {
+  "boulder_01": {
+   "materialOrder": [
+    "boulder_01"
+   ],
+   "materials": {
+    "boulder_01": {
+     "albedo": "Art/Textures/boulder_01__boulder_01_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/boulder_01__boulder_01_mask.png",
+     "normal": "Art/Textures/boulder_01__boulder_01_normal.jpg"
+    }
+   },
+   "resource": "Models/boulder_01",
+   "size": [
+    1.281,
+    0.998,
+    1.831
+   ],
+   "source": "https://polyhaven.com/a/boulder_01",
+   "triangles": 2500
+  },
+  "ceramic_pot": {
+   "materialOrder": [
+    "ceramic_pot"
+   ],
+   "materials": {
+    "ceramic_pot": {
+     "albedo": "Art/Textures/ceramic_pot__ceramic_pot_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/ceramic_pot__ceramic_pot_mask.png",
+     "normal": "Art/Textures/ceramic_pot__ceramic_pot_normal.jpg"
+    }
+   },
+   "resource": "Models/ceramic_pot",
+   "size": [
+    0.656,
+    0.372,
+    0.502
+   ],
+   "source": "https://polyhaven.com/a/ceramic_pot",
+   "triangles": 1998
+  },
+  "dead_tree_trunk": {
+   "materialOrder": [
+    "dead_tree_trunk"
+   ],
+   "materials": {
+    "dead_tree_trunk": {
+     "albedo": "Art/Textures/dead_tree_trunk__dead_tree_trunk_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/dead_tree_trunk__dead_tree_trunk_mask.png",
+     "normal": "Art/Textures/dead_tree_trunk__dead_tree_trunk_normal.jpg"
+    }
+   },
+   "resource": "Models/dead_tree_trunk",
+   "size": [
+    3.048,
+    0.288,
+    0.274
+   ],
+   "source": "https://polyhaven.com/a/dead_tree_trunk",
+   "triangles": 2500
+  },
+  "dead_tree_trunk_02": {
+   "materialOrder": [
+    "dead_tree_trunk_02"
+   ],
+   "materials": {
+    "dead_tree_trunk_02": {
+     "albedo": "Art/Textures/dead_tree_trunk_02__dead_tree_trunk_02_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/dead_tree_trunk_02__dead_tree_trunk_02_mask.png",
+     "normal": "Art/Textures/dead_tree_trunk_02__dead_tree_trunk_02_normal.jpg"
+    }
+   },
+   "resource": "Models/dead_tree_trunk_02",
+   "size": [
+    4.051,
+    1.057,
+    1.047
+   ],
+   "source": "https://polyhaven.com/a/dead_tree_trunk_02",
+   "triangles": 3500
+  },
+  "dry_branches_medium_01": {
+   "materialOrder": [
+    "dry_branches_medium_01"
+   ],
+   "materials": {
+    "dry_branches_medium_01": {
+     "albedo": "Art/Textures/dry_branches_medium_01__dry_branches_medium_01_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/dry_branches_medium_01__dry_branches_medium_01_mask.png",
+     "normal": "Art/Textures/dry_branches_medium_01__dry_branches_medium_01_normal.jpg"
+    }
+   },
+   "resource": "Models/dry_branches_medium_01",
+   "size": [
+    1.058,
+    0.34,
+    1.297
+   ],
+   "source": "https://polyhaven.com/a/dry_branches_medium_01",
+   "triangles": 2500
+  },
+  "fern_02": {
+   "materialOrder": [
+    "fern_02"
+   ],
+   "materials": {
+    "fern_02": {
+     "albedo": "Art/Textures/fern_02__fern_02_albedo.png",
+     "alphaClip": true,
+     "doubleSided": true,
+     "mask": "Art/Textures/fern_02__fern_02_mask.png",
+     "normal": "Art/Textures/fern_02__fern_02_normal.jpg"
+    }
+   },
+   "resource": "Models/fern_02",
+   "size": [
+    1.973,
+    0.426,
+    1.724
+   ],
+   "source": "https://polyhaven.com/a/fern_02",
+   "triangles": 3000
+  },
+  "namaqualand_boulder_02": {
+   "materialOrder": [
+    "boulder_02"
+   ],
+   "materials": {
+    "boulder_02": {
+     "albedo": "Art/Textures/namaqualand_boulder_02__boulder_02_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/namaqualand_boulder_02__boulder_02_mask.png",
+     "normal": "Art/Textures/namaqualand_boulder_02__boulder_02_normal.jpg"
+    }
+   },
+   "resource": "Models/namaqualand_boulder_02",
+   "size": [
+    2.517,
+    0.877,
+    1.235
+   ],
+   "source": "https://polyhaven.com/a/namaqualand_boulder_02",
+   "triangles": 2500
+  },
+  "nettle_plant": {
+   "materialOrder": [
+    "nettle_plant"
+   ],
+   "materials": {
+    "nettle_plant": {
+     "albedo": "Art/Textures/nettle_plant__nettle_plant_albedo.png",
+     "alphaClip": true,
+     "doubleSided": true,
+     "mask": "Art/Textures/nettle_plant__nettle_plant_mask.png",
+     "normal": "Art/Textures/nettle_plant__nettle_plant_normal.jpg"
+    }
+   },
+   "resource": "Models/nettle_plant",
+   "size": [
+    1.083,
+    0.217,
+    0.096
+   ],
+   "source": "https://polyhaven.com/a/nettle_plant",
+   "triangles": 3000
+  },
+  "rock_07": {
+   "materialOrder": [
+    "rock_07"
+   ],
+   "materials": {
+    "rock_07": {
+     "albedo": "Art/Textures/rock_07__rock_07_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/rock_07__rock_07_mask.png",
+     "normal": "Art/Textures/rock_07__rock_07_normal.jpg"
+    }
+   },
+   "resource": "Models/rock_07",
+   "size": [
+    0.17,
+    0.143,
+    0.321
+   ],
+   "source": "https://polyhaven.com/a/rock_07",
+   "triangles": 1499
+  },
+  "rock_moss_set_01": {
+   "materialOrder": [
+    "rock_moss_set_01"
+   ],
+   "materials": {
+    "rock_moss_set_01": {
+     "albedo": "Art/Textures/rock_moss_set_01__rock_moss_set_01_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/rock_moss_set_01__rock_moss_set_01_mask.png",
+     "normal": "Art/Textures/rock_moss_set_01__rock_moss_set_01_normal.jpg"
+    }
+   },
+   "resource": "Models/rock_moss_set_01",
+   "size": [
+    7.981,
+    1.772,
+    6.951
+   ],
+   "source": "https://polyhaven.com/a/rock_moss_set_01",
+   "triangles": 4999
+  },
+  "shrub_03": {
+   "materialOrder": [
+    "shrub_03"
+   ],
+   "materials": {
+    "shrub_03": {
+     "albedo": "Art/Textures/shrub_03__shrub_03_albedo.png",
+     "alphaClip": true,
+     "doubleSided": true,
+     "mask": "Art/Textures/shrub_03__shrub_03_mask.png",
+     "normal": "Art/Textures/shrub_03__shrub_03_normal.jpg"
+    }
+   },
+   "resource": "Models/shrub_03",
+   "size": [
+    1.367,
+    0.403,
+    0.151
+   ],
+   "source": "https://polyhaven.com/a/shrub_03",
+   "triangles": 2999
+  },
+  "shrub_04": {
+   "materialOrder": [
+    "shrub_04"
+   ],
+   "materials": {
+    "shrub_04": {
+     "albedo": "Art/Textures/shrub_04__shrub_04_albedo.png",
+     "alphaClip": true,
+     "doubleSided": true,
+     "mask": "Art/Textures/shrub_04__shrub_04_mask.png",
+     "normal": "Art/Textures/shrub_04__shrub_04_normal.jpg"
+    }
+   },
+   "resource": "Models/shrub_04",
+   "size": [
+    0.583,
+    0.219,
+    0.146
+   ],
+   "source": "https://polyhaven.com/a/shrub_04",
+   "triangles": 3000
+  },
+  "stone_01": {
+   "materialOrder": [
+    "stone_01"
+   ],
+   "materials": {
+    "stone_01": {
+     "albedo": "Art/Textures/stone_01__stone_01_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/stone_01__stone_01_mask.png",
+     "normal": "Art/Textures/stone_01__stone_01_normal.jpg"
+    }
+   },
+   "resource": "Models/stone_01",
+   "size": [
+    0.146,
+    0.071,
+    0.089
+   ],
+   "source": "https://polyhaven.com/a/stone_01",
+   "triangles": 799
+  },
+  "stone_fire_pit": {
+   "materialOrder": [
+    "stone_fire_pit"
+   ],
+   "materials": {
+    "stone_fire_pit": {
+     "albedo": "Art/Textures/stone_fire_pit__stone_fire_pit_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/stone_fire_pit__stone_fire_pit_mask.png",
+     "normal": "Art/Textures/stone_fire_pit__stone_fire_pit_normal.jpg"
+    }
+   },
+   "resource": "Models/stone_fire_pit",
+   "size": [
+    1.448,
+    0.388,
+    1.433
+   ],
+   "source": "https://polyhaven.com/a/stone_fire_pit",
+   "triangles": 3887
+  },
+  "tree_stump_01": {
+   "materialOrder": [
+    "tree_stump_01"
+   ],
+   "materials": {
+    "tree_stump_01": {
+     "albedo": "Art/Textures/tree_stump_01__tree_stump_01_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/tree_stump_01__tree_stump_01_mask.png",
+     "normal": "Art/Textures/tree_stump_01__tree_stump_01_normal.jpg"
+    }
+   },
+   "resource": "Models/tree_stump_01",
+   "size": [
+    1.425,
+    0.571,
+    1.59
+   ],
+   "source": "https://polyhaven.com/a/tree_stump_01",
+   "triangles": 2000
+  },
+  "wicker_basket_01": {
+   "materialOrder": [
+    "wicker_basket_01"
+   ],
+   "materials": {
+    "wicker_basket_01": {
+     "albedo": "Art/Textures/wicker_basket_01__wicker_basket_01_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/wicker_basket_01__wicker_basket_01_mask.png",
+     "normal": "Art/Textures/wicker_basket_01__wicker_basket_01_normal.jpg"
+    }
+   },
+   "resource": "Models/wicker_basket_01",
+   "size": [
+    0.383,
+    0.119,
+    0.293
+   ],
+   "source": "https://polyhaven.com/a/wicker_basket_01",
+   "triangles": 1999
+  },
+  "wooden_axe": {
+   "materialOrder": [
+    "wooden_axe"
+   ],
+   "materials": {
+    "wooden_axe": {
+     "albedo": "Art/Textures/wooden_axe__wooden_axe_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/wooden_axe__wooden_axe_mask.png",
+     "normal": "Art/Textures/wooden_axe__wooden_axe_normal.jpg"
+    }
+   },
+   "resource": "Models/wooden_axe",
+   "size": [
+    0.047,
+    0.63,
+    0.214
+   ],
+   "source": "https://polyhaven.com/a/wooden_axe",
+   "triangles": 1500
+  },
+  "wooden_bowl_01": {
+   "materialOrder": [
+    "wooden_bowl_01"
+   ],
+   "materials": {
+    "wooden_bowl_01": {
+     "albedo": "Art/Textures/wooden_bowl_01__wooden_bowl_01_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/wooden_bowl_01__wooden_bowl_01_mask.png",
+     "normal": "Art/Textures/wooden_bowl_01__wooden_bowl_01_normal.jpg"
+    }
+   },
+   "resource": "Models/wooden_bowl_01",
+   "size": [
+    0.313,
+    0.093,
+    0.31
+   ],
+   "source": "https://polyhaven.com/a/wooden_bowl_01",
+   "triangles": 1500
+  }
+ },
+ "sky": {
+  "hdr": "Art/Sky/Sky.hdr",
+  "source": "https://polyhaven.com/a/kloofendal_48d_partly_cloudy_puresky"
+ },
+ "textures": {
+  "Bark": {
+   "albedo": "Art/Textures/Bark_albedo.jpg",
+   "mask": "Art/Textures/Bark_mask.png",
+   "normal": "Art/Textures/Bark_normal.jpg",
+   "source": "https://polyhaven.com/a/pine_bark"
+  },
+  "DarkRock": {
+   "albedo": "Art/Textures/DarkRock_albedo.jpg",
+   "mask": "Art/Textures/DarkRock_mask.png",
+   "normal": "Art/Textures/DarkRock_normal.jpg",
+   "source": "https://polyhaven.com/a/dark_rock"
+  },
+  "ForestFloor": {
+   "albedo": "Art/Textures/ForestFloor_albedo.jpg",
+   "mask": "Art/Textures/ForestFloor_mask.png",
+   "normal": "Art/Textures/ForestFloor_normal.jpg",
+   "source": "https://polyhaven.com/a/forest_leaves_04"
+  },
+  "Grass": {
+   "albedo": "Art/Textures/Grass_albedo.jpg",
+   "mask": "Art/Textures/Grass_mask.png",
+   "normal": "Art/Textures/Grass_normal.jpg",
+   "source": "https://polyhaven.com/a/leafy_grass"
+  },
+  "Hide": {
+   "albedo": "Art/Textures/Hide_albedo.jpg",
+   "mask": "Art/Textures/Hide_mask.png",
+   "normal": "Art/Textures/Hide_normal.jpg",
+   "source": "https://polyhaven.com/a/brown_leather"
+  },
+  "Mud": {
+   "albedo": "Art/Textures/Mud_albedo.jpg",
+   "mask": "Art/Textures/Mud_mask.png",
+   "normal": "Art/Textures/Mud_normal.jpg",
+   "source": "https://polyhaven.com/a/brown_mud_leaves_01"
+  },
+  "Riverbed": {
+   "albedo": "Art/Textures/Riverbed_albedo.jpg",
+   "mask": "Art/Textures/Riverbed_mask.png",
+   "normal": "Art/Textures/Riverbed_normal.jpg",
+   "source": "https://polyhaven.com/a/river_small_rocks"
+  },
+  "RockGround": {
+   "albedo": "Art/Textures/RockGround_albedo.jpg",
+   "mask": "Art/Textures/RockGround_mask.png",
+   "normal": "Art/Textures/RockGround_normal.jpg",
+   "source": "https://polyhaven.com/a/rocky_terrain_02"
+  },
+  "RoughWood": {
+   "albedo": "Art/Textures/RoughWood_albedo.jpg",
+   "mask": "Art/Textures/RoughWood_mask.png",
+   "normal": "Art/Textures/RoughWood_normal.jpg",
+   "source": "https://polyhaven.com/a/rough_wood"
+  },
+  "Sand": {
+   "albedo": "Art/Textures/Sand_albedo.jpg",
+   "mask": "Art/Textures/Sand_mask.png",
+   "normal": "Art/Textures/Sand_normal.jpg",
+   "source": "https://polyhaven.com/a/damp_sand"
+  },
+  "Thatch": {
+   "albedo": "Art/Textures/Thatch_albedo.jpg",
+   "mask": "Art/Textures/Thatch_mask.png",
+   "normal": "Art/Textures/Thatch_normal.jpg",
+   "source": "https://polyhaven.com/a/thatch_roof_angled"
+  }
+ }
+}
