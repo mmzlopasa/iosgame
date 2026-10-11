@@ -102,7 +102,7 @@ namespace Founders.UI
         {
             videoHost = host;
             var clip = Resources.Load<VideoClip>("Video/loading");
-            if (clip == null) return;
+            if (clip == null) { Debug.LogWarning("[FOUNDERS] loading video: clip missing"); return; }
             videoTexture = new RenderTexture((int)clip.width, (int)clip.height, 0) { name = "LoadingVideo" };
             player = host.AddComponent<VideoPlayer>();
             player.playOnAwake = false;
@@ -112,8 +112,10 @@ namespace Founders.UI
             player.renderMode = VideoRenderMode.RenderTexture;
             player.targetTexture = videoTexture;
             player.audioOutputMode = VideoAudioOutputMode.None;
+            player.errorReceived += (p, message) => Debug.LogWarning("[FOUNDERS] loading video error: " + message);
             player.prepareCompleted += p =>
             {
+                Debug.Log($"[FOUNDERS] loading video ready {clip.width}x{clip.height} visible={Visible}");
                 if (!Visible) return;
                 video.style.backgroundImage = Background.FromRenderTexture(videoTexture);
                 p.Play();
@@ -131,6 +133,8 @@ namespace Founders.UI
             video.style.backgroundImage = StyleKeyword.None;
             if (videoTexture != null) { videoTexture.Release(); Object.Destroy(videoTexture); videoTexture = null; }
         }
+
+        public bool VideoPlaying => player != null && player.isPlaying;
 
         public void Show()
         {
