@@ -132,14 +132,6 @@ namespace Founders
         /// <summary>Material for a photo texture, e.g. "Bark", "Hide", "Thatch" (T_ prefix).</summary>
         public static Material Surface(string textureName) => Palette.Get("T_" + textureName);
 
-        /// <summary>Intended in-game height of a generated model (manifest "height"), or 0.</summary>
-        public static float DesignHeight(string id)
-        {
-            if (!HasModel(id)) return 0f;
-            var m = Manifest.Obj("models").Obj(id);
-            return m.Has("height") ? (float)m.Num("height") : 0f;
-        }
-
         /// <summary>Real-world height of a model in metres (from the manifest).</summary>
         public static Vector3 Size(string id)
         {
