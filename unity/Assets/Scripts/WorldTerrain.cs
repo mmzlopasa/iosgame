@@ -6,18 +6,19 @@ using UnityEngine;
 namespace Founders
 {
     /// <summary>
-    /// Builds a Unity Terrain from the content map: a carved river channel with sandy banks,
-    /// slightly raised rock outcrops, gentle hills beyond the playable area, and photo-texture
-    /// layers (grass, forest floor, mud, sand, riverbed, rock) blended per cell.
+    /// Builds a Unity Terrain from the content map: a carved river and lake with sandy banks,
+    /// stony hills (quarries), mountains with ore veins at their feet, the valley walls beyond
+    /// the playable area, and photo-texture layers (grass, forest floor, mud, sand, riverbed,
+    /// rock) blended per sample. Roads and trodden ground are painted on top.
     /// World units: metres. Cell (x, y) of the map is centred at (x·S, 0, −y·S).
     /// </summary>
     public sealed class WorldTerrain
     {
-        public const float Size = 128f;
-        const float HeightRange = 52f;
+        public const float Size = 256f;     // the 128 m valley plus 64 m of surrounding land on each side
+        const float HeightRange = 90f;
         const float BaseDepth = 5f;          // world y = 0 sits this far above the terrain bottom
-        const int HeightRes = 257;
-        const int SplatRes = 256;
+        const int HeightRes = 513;
+        const int SplatRes = 512;
         public const float WaterLevel = -0.38f;
 
         static readonly string[] LayerNames = { "Grass", "ForestFloor", "Mud", "Sand", "Riverbed", "RockGround" };
@@ -27,8 +28,11 @@ namespace Founders
         readonly MapDefinition map;
         readonly Vector3 origin;
         float[,] signedWaterDistance; // metres; negative inside water
+        float[,] mountainDepth;       // metres inside the mountains (0 outside)
+        float[,] hillDepth;           // metres inside the stony hills (0 outside)
         TerrainType[,] fine;          // terrain type per heightmap sample
         float[,] worldY;              // ground height (world y) per heightmap sample
+        float[,,] baseSplat;          // layer weights without roads and trodden ground
 
         public WorldTerrain(MapDefinition map, Transform parent)
         {
@@ -81,20 +85,22 @@ namespace Founders
         /// <summary>Terrain type of any grid cell, including the land around the playable map.</summary>
         public TerrainType CellType(int cx, int cy)
         {
-            int clampedY = Mathf.Clamp(cy, 0, map.Height - 1);
-            if (cx >= 0 && cx < map.Width)
-            {
-                var t = map.Terrain(cx, clampedY) ?? TerrainType.Grass;
-                // Beyond the north/south edges the river keeps flowing; other land turns to forest.
-                if (cy != clampedY && t != TerrainType.Water && t != TerrainType.Sand)
-                    return Noise(cx, cy, 0.3f) > 0.35f ? TerrainType.Forest : TerrainType.Grass;
-                return t;
-            }
-            if (cx < 0) return Noise(cx, cy, 0.25f) > 0.2f ? TerrainType.Forest : TerrainType.Grass;
-            // East of the map: the rocky ridge continues into wooded hills.
+            if (cx >= 0 && cy >= 0 && cx < map.Width && cy < map.Height)
+                return map.Terrain(cx, cy) ?? TerrainType.Grass;
+            // Outside the map the land continues from the nearest edge cell.
+            int ex = Mathf.Clamp(cx, 0, map.Width - 1), ey = Mathf.Clamp(cy, 0, map.Height - 1);
+            var edge = map.Terrain(ex, ey) ?? TerrainType.Grass;
+            // The river keeps flowing beyond the north and south edges.
+            if (cx == ex && (edge == TerrainType.Water || edge == TerrainType.Sand)) return edge;
+            if (edge == TerrainType.Mountain || edge == TerrainType.Ore) return TerrainType.Mountain;
             float n = Noise(cx, cy, 0.22f);
-            return n > 0.62f ? TerrainType.Rock : n > 0.3f ? TerrainType.Forest : TerrainType.Grass;
+            if (edge == TerrainType.Rock) return n > 0.5f ? TerrainType.Rock : TerrainType.Forest;
+            if (cx < 0) return Noise(cx, cy, 0.25f) > 0.2f ? TerrainType.Forest : TerrainType.Grass;
+            return n > 0.3f ? TerrainType.Forest : TerrainType.Grass;
         }
+
+        /// <summary>True for map cells and the land around them that only mountains cover.</summary>
+        public bool IsMountain(int cx, int cy) => CellType(cx, cy) == TerrainType.Mountain;
 
         static float Noise(float x, float y, float f) => Mathf.PerlinNoise(x * f + 31.7f, y * f + 12.3f);
 
@@ -108,6 +114,8 @@ namespace Founders
         {
             fine = new TerrainType[HeightRes, HeightRes];
             var water = new bool[HeightRes, HeightRes];
+            var mountain = new bool[HeightRes, HeightRes];
+            var hill = new bool[HeightRes, HeightRes];
             for (int i = 0; i < HeightRes; i++)
             {
                 for (int j = 0; j < HeightRes; j++)
@@ -116,6 +124,8 @@ namespace Founders
                     var t = CellType(cx, cy);
                     fine[i, j] = t;
                     water[i, j] = t == TerrainType.Water;
+                    mountain[i, j] = t == TerrainType.Mountain;
+                    hill[i, j] = t == TerrainType.Rock;
                 }
             }
             // Signed distance to the river edge (two-pass chamfer), in metres.
@@ -126,6 +136,8 @@ namespace Founders
             for (int i = 0; i < HeightRes; i++)
                 for (int j = 0; j < HeightRes; j++)
                     signedWaterDistance[i, j] = water[i, j] ? -inside[i, j] : outside[i, j];
+            mountainDepth = Chamfer(mountain, false, step);
+            hillDepth = Chamfer(hill, false, step);
         }
 
         /// <summary>Distance from each sample to the nearest sample where mask == target.</summary>
@@ -182,40 +194,76 @@ namespace Founders
                     }
                     // Fine ground relief.
                     y += (Mathf.PerlinNoise(w.x * 0.18f + 3f, w.y * 0.18f + 9f) - 0.5f) * 0.18f * Mathf.Clamp01(s / 3f);
-                    if (fine[i, j] == TerrainType.Rock)
-                        y += 0.25f + Mathf.PerlinNoise(w.x * 0.45f, w.y * 0.45f) * 0.5f;
+                    var t = fine[i, j];
+                    // Stony hills: rounded mounds that rise gently from their edge (quarries stay buildable).
+                    float hd = hillDepth[i, j];
+                    if (hd > 0f)
+                        y += Mathf.Min(hd, 8f) * 0.32f * (0.75f + 0.5f * Mathf.PerlinNoise(w.x * 0.07f + 4f, w.y * 0.07f + 6f))
+                             + 0.2f + Mathf.PerlinNoise(w.x * 0.45f, w.y * 0.45f) * 0.35f;
+                    if (t == TerrainType.Ore)
+                        y += 0.2f + Mathf.PerlinNoise(w.x * 0.5f + 2f, w.y * 0.5f) * 0.45f;
+                    // Mountains: steep ridged peaks that grow with the distance from their foot.
+                    float md = mountainDepth[i, j];
+                    float peaks = 0f;
+                    if (md > 0f)
+                    {
+                        float ridge = 1f - Mathf.Abs(2f * Mathf.PerlinNoise(w.x * 0.03f + 11f, w.y * 0.03f + 4f) - 1f);
+                        float detail = Mathf.PerlinNoise(w.x * 0.11f + 2f, w.y * 0.11f + 8f);
+                        peaks = (1f - Mathf.Exp(-md / 7f)) * (9f + 24f * ridge * ridge) * (0.75f + 0.5f * detail) + md * 0.12f;
+                    }
                     // Hills grow with distance from the playable area (but the river valley stays low).
                     float dx = Mathf.Max(0f, Mathf.Max(mapMin.x - w.x, w.x - mapMax.x));
                     float dz = Mathf.Max(0f, Mathf.Max(mapMin.z - w.y, w.y - mapMax.z));
                     float outsideDist = Mathf.Sqrt(dx * dx + dz * dz);
+                    float walls = 0f;
                     if (outsideDist > 0f)
                     {
                         // Rolling foothills first, then ridged mountains that wall in the valley.
                         float hills = outsideDist * 0.12f * (0.6f + Mathf.PerlinNoise(w.x * 0.035f + 5f, w.y * 0.035f + 1f));
                         float ridge = 1f - Mathf.Abs(2f * Mathf.PerlinNoise(w.x * 0.028f + 11f, w.y * 0.028f + 4f) - 1f);
                         float detail = Mathf.PerlinNoise(w.x * 0.09f + 2f, w.y * 0.09f + 8f);
-                        float rise = Mathf.Pow(Mathf.Clamp01((outsideDist - 10f) / 38f), 1.5f);
+                        float rise = Mathf.Pow(Mathf.Clamp01((outsideDist - 8f) / 40f), 1.5f);
                         float mountains = rise * (20f + 26f * ridge * ridge) * (0.75f + 0.5f * detail);
-                        y += (hills + mountains) * Mathf.Clamp01(s / 10f);
+                        walls = (hills + mountains) * Mathf.Clamp01(s / 10f);
                     }
+                    y += Mathf.Max(peaks, walls);
                     worldY[i, j] = y;
-                    h[i, j] = Mathf.Clamp01((y + BaseDepth) / HeightRange);
                 }
             }
+            // One soft pass removes the cell steps along mountain and hill edges (water stays carved).
+            var smooth = (float[,])worldY.Clone();
+            for (int i = 1; i < HeightRes - 1; i++)
+                for (int j = 1; j < HeightRes - 1; j++)
+                {
+                    if (signedWaterDistance[i, j] < 1.5f) continue;
+                    float sum = 0f;
+                    for (int a = -1; a <= 1; a++)
+                        for (int b = -1; b <= 1; b++) sum += worldY[i + a, j + b];
+                    smooth[i, j] = sum / 9f;
+                }
+            worldY = smooth;
+            for (int i = 0; i < HeightRes; i++)
+                for (int j = 0; j < HeightRes; j++)
+                    h[i, j] = Mathf.Clamp01((worldY[i, j] + BaseDepth) / HeightRange);
             return h;
         }
 
         // MARK: - Texture layers
 
-        /// <summary>
-        /// Paints the texture layers. Trodden mud appears around <paramref name="buildings"/>
-        /// (world positions with a radius) and along <paramref name="paths"/> (world segments).
-        /// </summary>
-        public void PaintSplat(List<(Vector3 center, float radius)> buildings, List<(Vector3 a, Vector3 b)> paths)
+        /// <summary>A road segment between two cell centres. Stone roads are paved, others are beaten earth.</summary>
+        public struct RoadSegment
+        {
+            public Vector3 A, B;
+            public bool Stone;
+            public RoadSegment(Vector3 a, Vector3 b, bool stone) { A = a; B = b; Stone = stone; }
+        }
+
+        void BuildBaseSplat()
         {
             int L = LayerNames.Length;
-            var maps = new float[SplatRes, SplatRes, L];
+            baseSplat = new float[SplatRes, SplatRes, L];
             float stepH = (float)(HeightRes - 1) / (SplatRes - 1);
+            var wts = new float[L];
             for (int i = 0; i < SplatRes; i++)
             {
                 for (int j = 0; j < SplatRes; j++)
@@ -227,7 +275,8 @@ namespace Founders
                     var t = fine[hi, hj];
                     float n1 = Mathf.PerlinNoise(w.x * 0.11f + 7f, w.y * 0.11f + 3f);
                     float n2 = Mathf.PerlinNoise(w.x * 0.37f + 1f, w.y * 0.37f + 5f);
-                    var wts = new float[L];
+                    System.Array.Clear(wts, 0, L);
+                    float gy = worldY[hi, hj];
 
                     if (s <= 0f) wts[LRiver] = 1f;
                     else
@@ -235,7 +284,14 @@ namespace Founders
                         switch (t)
                         {
                             case TerrainType.Forest: wts[LForest] = 1f; wts[LGrass] = 0.25f * n1; break;
-                            case TerrainType.Rock: wts[LRock] = 1f; wts[LGrass] = 0.3f * n2; break;
+                            case TerrainType.Rock: wts[LRock] = 1f; wts[LGrass] = 0.45f * n2; break;
+                            case TerrainType.Ore: wts[LRock] = 1f; wts[LMud] = 0.6f + 0.6f * n2; break;
+                            case TerrainType.Mountain:
+                                // Alpine grass on the lower slopes, bare rock above.
+                                wts[LRock] = 1f;
+                                wts[LGrass] = 0.7f * n1 * (1f - Mathf.Clamp01((gy - 4f) / 10f));
+                                wts[LForest] = 0.3f * n2;
+                                break;
                             case TerrainType.Sand: wts[LSand] = 1f; wts[LMud] = 0.3f * n2; break;
                             default:
                                 wts[LGrass] = 1f;
@@ -250,7 +306,6 @@ namespace Founders
                     }
 
                     // High ground turns to bare rock on steep faces and grass thins out on ridges.
-                    float gy = worldY[hi, hj];
                     if (gy > 2.5f)
                     {
                         float gx = worldY[hi, Mathf.Min(HeightRes - 1, hj + 1)] - worldY[hi, Mathf.Max(0, hj - 1)];
@@ -262,30 +317,91 @@ namespace Founders
                         wts[LRock] += rock * 1.5f;
                     }
 
-                    if (buildings != null)
-                    {
-                        foreach (var (c, r) in buildings)
-                        {
-                            float d = Vector2.Distance(w, new Vector2(c.x, c.z));
-                            float k = 1f - Mathf.Clamp01((d - r) / 1.6f);
-                            wts[LMud] += k * (0.8f + 0.4f * n2);
-                        }
-                    }
-                    if (paths != null)
-                    {
-                        foreach (var (a, b) in paths)
-                        {
-                            float d = DistanceToSegment(w, new Vector2(a.x, a.z), new Vector2(b.x, b.z));
-                            float k = 1f - Mathf.Clamp01((d - 0.35f) / 0.6f);
-                            wts[LMud] += k * 1.6f;
-                        }
-                    }
-
                     float sum = 0f;
                     for (int l = 0; l < L; l++) sum += wts[l];
-                    for (int l = 0; l < L; l++) maps[i, j, l] = sum > 0 ? wts[l] / sum : (l == 0 ? 1 : 0);
+                    for (int l = 0; l < L; l++) baseSplat[i, j, l] = sum > 0 ? wts[l] / sum : (l == 0 ? 1 : 0);
                 }
             }
+        }
+
+        /// <summary>
+        /// Paints the texture layers: the natural ground plus trodden mud around
+        /// <paramref name="buildings"/> (world positions with a radius), worn footpaths along
+        /// <paramref name="paths"/> and the player's <paramref name="roads"/>.
+        /// </summary>
+        public void PaintSplat(List<(Vector3 center, float radius)> buildings, List<(Vector3 a, Vector3 b)> paths,
+                               List<RoadSegment> roads = null)
+        {
+            if (baseSplat == null) BuildBaseSplat();
+            int L = LayerNames.Length;
+            var maps = (float[,,])baseSplat.Clone();
+            float px = Size / (SplatRes - 1);
+            var add = new float[L];
+
+            // Each stamp only touches the samples inside its bounding box.
+            void Stamp(Vector2 min, Vector2 max, System.Func<Vector2, int, int, bool> weights)
+            {
+                int j0 = Mathf.Clamp(Mathf.FloorToInt((min.x - origin.x) / px), 0, SplatRes - 1);
+                int j1 = Mathf.Clamp(Mathf.CeilToInt((max.x - origin.x) / px), 0, SplatRes - 1);
+                int i0 = Mathf.Clamp(Mathf.FloorToInt((min.y - origin.z) / px), 0, SplatRes - 1);
+                int i1 = Mathf.Clamp(Mathf.CeilToInt((max.y - origin.z) / px), 0, SplatRes - 1);
+                for (int i = i0; i <= i1; i++)
+                    for (int j = j0; j <= j1; j++)
+                    {
+                        System.Array.Clear(add, 0, L);
+                        if (!weights(SampleWorld(i, j, SplatRes), i, j)) continue;
+                        float sum = 0f;
+                        for (int l = 0; l < L; l++) { maps[i, j, l] += add[l]; sum += maps[i, j, l]; }
+                        for (int l = 0; l < L; l++) maps[i, j, l] /= sum;
+                    }
+            }
+
+            float N2(Vector2 w) => Mathf.PerlinNoise(w.x * 0.37f + 1f, w.y * 0.37f + 5f);
+
+            if (buildings != null)
+                foreach (var (c, r) in buildings)
+                {
+                    var c2 = new Vector2(c.x, c.z);
+                    float reach = r + 1.6f;
+                    Stamp(c2 - Vector2.one * reach, c2 + Vector2.one * reach, (w, i, j) =>
+                    {
+                        float k = 1f - Mathf.Clamp01((Vector2.Distance(w, c2) - r) / 1.6f);
+                        if (k <= 0f) return false;
+                        add[LMud] = k * (0.8f + 0.4f * N2(w));
+                        return true;
+                    });
+                }
+            if (paths != null)
+                foreach (var (a, b) in paths)
+                {
+                    var a2 = new Vector2(a.x, a.z);
+                    var b2 = new Vector2(b.x, b.z);
+                    Stamp(Vector2.Min(a2, b2) - Vector2.one, Vector2.Max(a2, b2) + Vector2.one, (w, i, j) =>
+                    {
+                        float k = 1f - Mathf.Clamp01((DistanceToSegment(w, a2, b2) - 0.35f) / 0.6f);
+                        if (k <= 0f) return false;
+                        add[LMud] = k * 1.6f;
+                        return true;
+                    });
+                }
+            if (roads != null)
+                foreach (var road in roads)
+                {
+                    var a2 = new Vector2(road.A.x, road.A.z);
+                    var b2 = new Vector2(road.B.x, road.B.z);
+                    float half = road.Stone ? 0.85f : 0.75f;
+                    Stamp(Vector2.Min(a2, b2) - Vector2.one * 1.6f, Vector2.Max(a2, b2) + Vector2.one * 1.6f, (w, i, j) =>
+                    {
+                        float d = DistanceToSegment(w, a2, b2);
+                        float k = 1f - Mathf.Clamp01((d - half) / 0.45f);
+                        if (k <= 0f) return false;
+                        // Roads replace the ground underneath instead of blending into it.
+                        for (int l = 0; l < L; l++) maps[i, j, l] *= 1f - k * 0.9f;
+                        if (road.Stone) { add[LRock] = k * 2.2f; add[LSand] = k * 0.4f * N2(w); }
+                        else { add[LMud] = k * 2f; add[LSand] = k * 0.5f * N2(w); }
+                        return true;
+                    });
+                }
             Terrain.terrainData.SetAlphamaps(0, 0, maps);
         }
 

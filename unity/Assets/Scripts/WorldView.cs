@@ -59,11 +59,13 @@ namespace Founders
     {
         GameStore store;
         public WorldTerrain Ground { get; private set; }
-        Transform natureRoot, objectRoot, overlayRoot, peopleRoot;
+        Transform objectRoot, overlayRoot, peopleRoot;
 
         GrassField grassField;
-        readonly Dictionary<(int, int), GameObject> cellProps = new Dictionary<(int, int), GameObject>();
+        NatureField nature;
         readonly Dictionary<int, BuildingView> buildings = new Dictionary<int, BuildingView>();
+        readonly Dictionary<int, (string key, GameObject go)> decorations = new Dictionary<int, (string, GameObject)>();
+        string occupancyKey;
         readonly List<GameObject> selection = new List<GameObject>();
         readonly List<GameObject> ghost = new List<GameObject>();
         readonly List<Villager> villagers = new List<Villager>();
@@ -93,9 +95,9 @@ namespace Founders
         public void RebuildAll()
         {
             foreach (Transform child in transform) Destroy(child.gameObject);
-            cellProps.Clear();
-            trees.Clear();
             buildings.Clear();
+            decorations.Clear();
+            occupancyKey = null;
             selection.Clear();
             ghost.Clear();
             villagers.Clear();
@@ -104,7 +106,6 @@ namespace Founders
             splatKey = null;
 
             Ground = new WorldTerrain(store.Game.Content.Map, transform);
-            natureRoot = Parts.Group("Nature", transform, Vector3.zero).transform;
             objectRoot = Parts.Group("Buildings", transform, Vector3.zero).transform;
             overlayRoot = Parts.Group("Overlay", transform, Vector3.zero).transform;
             peopleRoot = Parts.Group("People", transform, Vector3.zero).transform;
@@ -128,38 +129,40 @@ namespace Founders
 
         // MARK: - Nature
 
+        /// <summary>Cells of land around the map that still get trees and rocks.</summary>
+        const int NatureMargin = 30;
+
         void BuildNature()
         {
-            var game = store.Game;
-            var map = game.Content.Map;
-            int margin = 20;
-            for (int cy = -margin; cy < map.Height + margin; cy++)
+            var map = store.Game.Content.Map;
+            nature = Parts.Group("Nature", transform, Vector3.zero).AddComponent<NatureField>();
+            for (int cy = -NatureMargin; cy < map.Height + NatureMargin; cy++)
             {
-                for (int cx = -margin; cx < map.Width + margin; cx++)
+                for (int cx = -NatureMargin; cx < map.Width + NatureMargin; cx++)
                 {
                     bool inside = cx >= 0 && cy >= 0 && cx < map.Width && cy < map.Height;
                     var type = Ground.CellType(cx, cy);
+                    // Far outside the map only every other open cell gets props.
+                    if (!inside && (cx + cy) % 2 != 0 && type != TerrainType.Forest) continue;
                     var rng = new System.Random(cx * 73856093 ^ cy * 19349663 ^ 0x5bd1e995);
-                    var c = Grid.CellCenter(cx, cy);
-                    var props = Parts.Group($"Cell_{cx}_{cy}", natureRoot, Vector3.zero).transform;
-                    // Outside the map only every other far cell gets props, to keep the draw count sane.
-                    if (!inside && (cx + cy) % 2 != 0 && type != TerrainType.Forest) { Destroy(props.gameObject); continue; }
-                    PopulateCell(props, type, c, rng, inside);
-                    if (props.childCount == 0) { Destroy(props.gameObject); continue; }
-                    if (inside)
-                    {
-                        cellProps[(cx, cy)] = props.gameObject;
-                    }
+                    PopulateCell(type, cx, cy, rng, inside);
                 }
             }
+            nature.Build();
+            Debug.Log($"[FOUNDERS] nature: {nature.Count} objects");
         }
 
         Vector3 Jitter(Vector3 c, System.Random rng, float amount) =>
             Ground.OnGround(c + new Vector3(((float)rng.NextDouble() - 0.5f) * amount, 0, ((float)rng.NextDouble() - 0.5f) * amount));
 
-        void PopulateCell(Transform t, TerrainType type, Vector3 c, System.Random rng, bool inside)
+        void PopulateCell(TerrainType type, int cx, int cy, System.Random rng, bool inside)
         {
             float yaw() => (float)rng.NextDouble() * 360f;
+            var c = Grid.CellCenter(cx, cy);
+            void Model(string id, Vector3 p, float scale, bool shadows = true, Material m = null) =>
+                nature.AddModel(id, p, scale, yaw(), cx, cy, shadows, m);
+            void Tree(string kind, Vector3 p, float h) => nature.AddTree(kind, p, h, yaw(), cx, cy);
+
             switch (type)
             {
                 case TerrainType.Forest:
@@ -170,68 +173,53 @@ namespace Founders
                         bool pine = rng.Next(3) != 0;
                         string kind = pine ? Pines[rng.Next(Pines.Length)] : "LeafTree";
                         float h = pine ? 8f + (float)rng.NextDouble() * 5f : 5.5f + (float)rng.NextDouble() * 2.5f;
-                        TrackTree(ModelLibrary.Tree(kind, t, Jitter(c, rng, 1.6f), h, yaw()), h);
+                        Tree(kind, Jitter(c, rng, 1.6f), h);
                     }
-                    if (inside && rng.Next(2) == 0) ModelLibrary.Place("fern_02", t, Jitter(c, rng, 1.6f), 0.8f, yaw());
-                    if (inside && rng.Next(4) == 0) ModelLibrary.Place("dry_branches_medium_01", t, Jitter(c, rng, 1.6f), 1f, yaw());
-                    if (rng.Next(6) == 0) ModelLibrary.Place("tree_stump_01", t, Jitter(c, rng, 1.4f), 0.6f, yaw());
+                    if (inside && rng.Next(2) == 0) Model("fern_02", Jitter(c, rng, 1.6f), 0.8f, false);
+                    if (inside && rng.Next(4) == 0) Model("dry_branches_medium_01", Jitter(c, rng, 1.6f), 1f, false);
+                    if (rng.Next(6) == 0) Model("tree_stump_01", Jitter(c, rng, 1.4f), 0.6f, false);
                     break;
                 }
                 case TerrainType.Rock:
                 {
-                    if (rng.Next(2) == 0)
-                        ModelLibrary.Place("rock_moss_set_01", t, Jitter(c, rng, 0.8f), 0.24f + (float)rng.NextDouble() * 0.08f, yaw());
-                    else
-                        ModelLibrary.Place("namaqualand_boulder_02", t, Jitter(c, rng, 0.8f), 0.7f + (float)rng.NextDouble() * 0.4f, yaw());
-                    if (rng.Next(2) == 0) ModelLibrary.Place("boulder_01", t, Jitter(c, rng, 1.6f), 0.45f, yaw());
+                    if (rng.Next(2) == 0) Model("rock_moss_set_01", Jitter(c, rng, 0.8f), 0.24f + (float)rng.NextDouble() * 0.08f);
+                    else Model("namaqualand_boulder_02", Jitter(c, rng, 0.8f), 0.7f + (float)rng.NextDouble() * 0.4f);
+                    if (rng.Next(2) == 0) Model("boulder_01", Jitter(c, rng, 1.6f), 0.45f);
+                    if (rng.Next(5) == 0) Model("shrub_03", Jitter(c, rng, 1.4f), 0.9f, false);
+                    break;
+                }
+                case TerrainType.Ore:
+                {
+                    // Veins of rusty iron and green copper stone at the mountain foot.
+                    var ore = rng.Next(4) == 0 ? ModelLibrary.CopperOre : ModelLibrary.IronOre;
+                    Model("boulder_01", Jitter(c, rng, 0.9f), 0.5f + (float)rng.NextDouble() * 0.3f, true, ore);
+                    for (int i = 0; i < 3; i++) Model("stone_01", Jitter(c, rng, 1.6f), 3f + (float)rng.NextDouble() * 2f, false, ore);
+                    if (rng.Next(2) == 0) Model("rock_07", Jitter(c, rng, 1.4f), 0.3f);
+                    break;
+                }
+                case TerrainType.Mountain:
+                {
+                    var p = Jitter(c, rng, 1.6f);
+                    // Pines climb the lower slopes; boulders lie in the scree above.
+                    if (p.y < 11f && rng.Next(3) == 0) Tree(Pines[rng.Next(Pines.Length)], p, 6f + (float)rng.NextDouble() * 4f);
+                    else if (rng.Next(3) == 0) Model("namaqualand_boulder_02", p, 0.9f + (float)rng.NextDouble() * 1.2f);
                     break;
                 }
                 case TerrainType.Sand:
                 {
-                    if (rng.Next(3) == 0) ModelLibrary.Place("stone_01", t, Jitter(c, rng, 1.6f), 3.5f, yaw());
-                    if (rng.Next(4) == 0) ModelLibrary.Place("nettle_plant", t, Jitter(c, rng, 1.4f), 0.9f, yaw());
+                    if (rng.Next(3) == 0) Model("stone_01", Jitter(c, rng, 1.6f), 3.5f, false);
+                    if (rng.Next(4) == 0) Model("nettle_plant", Jitter(c, rng, 1.4f), 0.9f, false);
                     break;
                 }
                 case TerrainType.Grass:
                 {
                     int r = rng.Next(10);
-                    if (r == 0) ModelLibrary.Place("shrub_03", t, Jitter(c, rng, 1.4f), 1f, yaw());
-                    else if (r == 1) ModelLibrary.Place("shrub_04", t, Jitter(c, rng, 1.4f), 1.4f, yaw());
-                    else if (r == 2 && !inside) TrackTree(ModelLibrary.Tree("LeafTree", t, Jitter(c, rng, 1.4f), 5f, yaw()), 5f);
-                    else if (r == 3 && inside) ModelLibrary.Tree("FirSapling", t, Jitter(c, rng, 1.4f), 1.6f, yaw());
+                    if (r == 0) Model("shrub_03", Jitter(c, rng, 1.4f), 1f);
+                    else if (r == 1) Model("shrub_04", Jitter(c, rng, 1.4f), 1.4f);
+                    else if (r == 2 && !inside) Tree("LeafTree", Jitter(c, rng, 1.4f), 5f);
+                    else if (r == 3 && inside) Tree("FirSapling", Jitter(c, rng, 1.4f), 1.6f);
                     break;
                 }
-            }
-        }
-
-
-        // MARK: - Trees near the camera
-
-        sealed class TreeView { public Transform T; public float Height; public Renderer[] Renderers; public bool Hidden; }
-        readonly List<TreeView> trees = new List<TreeView>();
-        float nextTreeCheck;
-
-        void TrackTree(GameObject tree, float height) =>
-            trees.Add(new TreeView { T = tree.transform, Height = height, Renderers = tree.GetComponentsInChildren<Renderer>() });
-
-        /// <summary>Hides trees whose crown would fill the screen when the camera flies low over them.</summary>
-        void UpdateTreeFade()
-        {
-            if (Time.unscaledTime < nextTreeCheck) return;
-            nextTreeCheck = Time.unscaledTime + 0.15f;
-            var cam = Camera.main;
-            if (cam == null) return;
-            var c = cam.transform.position;
-            foreach (var tv in trees)
-            {
-                if (tv.T == null) continue;
-                var p = tv.T.position;
-                var crown = p + Vector3.up * tv.Height * 0.6f;
-                float horizontal = new Vector2(c.x - p.x, c.z - p.z).magnitude;
-                bool hide = (c - crown).magnitude < tv.Height * 0.55f + 3f || (c.y < p.y + tv.Height + 1.5f && horizontal < 4f);
-                if (hide == tv.Hidden) continue;
-                tv.Hidden = hide;
-                foreach (var r in tv.Renderers) if (r != null) r.enabled = !hide;
             }
         }
 
@@ -239,7 +227,6 @@ namespace Founders
 
         void Update()
         {
-            UpdateTreeFade();
             foreach (var view in buildings.Values)
             {
                 if (view.PopUntil <= 0f) continue;
@@ -261,7 +248,7 @@ namespace Founders
                 var def = game.Content.Building(b.DefinitionId);
                 if (def == null) continue;
                 seen.Add(b.Id);
-                string key = $"{b.DefinitionId}|{b.Status}";
+                string key = $"{b.DefinitionId}|{b.Status}|{b.Rotation}";
                 if (buildings.TryGetValue(b.Id, out var view) && view.Key == key)
                 {
                     SetProgress(view, b);
@@ -279,6 +266,8 @@ namespace Founders
                 buildings.Remove(id);
             }
 
+            SyncDecorations(game);
+            UpdateOccupancy(game);
             RepaintGround(game, initial);
             UpdateSelection();
             UpdateGhost();
@@ -287,8 +276,8 @@ namespace Founders
 
         BuildingView CreateBuilding(PlacedBuilding b, BuildingDefinition def, string key)
         {
-            var center = Ground.OnGround(Grid.FootprintCenter(b.X, b.Y, def.Footprint));
-            var root = Parts.Group($"Building_{b.Id}", objectRoot, center, (b.Id * 47) % 360);
+            var center = Ground.OnGround(Grid.FootprintCenter(b.X, b.Y, store.Game.FootprintOf(b)));
+            var root = Parts.Group($"Building_{b.Id}", objectRoot, center, b.Rotation * 90f);
             var model = BuildingModels.Create(def.Sprite, root.transform, null, Grid.CellSize * Mathf.Min(def.Footprint.Width, def.Footprint.Height));
             var bar = Parts.Group("Progress", root.transform, new Vector3(0, 2.6f, 0));
             bar.transform.rotation = Quaternion.Euler(0, CameraRig.Yaw, 0);
@@ -317,12 +306,12 @@ namespace Founders
         /// <summary>Trodden ground around buildings and, in the village stage, paths to the hearth.</summary>
         void RepaintGround(Game game, bool initial)
         {
-            string key = game.State.StageId + "#" + string.Join(",", game.State.Buildings.Select(b => $"{b.X}:{b.Y}:{b.DefinitionId}"));
+            string key = game.State.StageId + "#" + string.Join(",", game.State.Buildings.Select(b => $"{b.X}:{b.Y}:{b.DefinitionId}")) +
+                         "#" + string.Join(",", game.State.Decorations.Select(d => $"{d.X}:{d.Y}:{d.DefinitionId}"));
             if (key == splatKey) return;
             bool firstVillage = !initial && lastStage == game.Content.StartStage && game.State.StageId != game.Content.StartStage;
             lastStage = game.State.StageId;
             splatKey = key;
-            if (!initial && grassField != null) grassField.Rebuild();
             var around = new List<(Vector3, float)>();
             var paths = new List<(Vector3, Vector3)>();
             foreach (var b in game.State.Buildings)
@@ -346,7 +335,96 @@ namespace Founders
                     if (firstVillage && store.Rig != null) store.Rig.SetFocus(start, zoom: 22f);
                 }
             }
-            Ground.PaintSplat(around, paths);
+            Ground.PaintSplat(around, paths, RoadSegments(game));
+        }
+
+        /// <summary>Road cells joined to their road neighbours (a lone cell becomes a short stub).</summary>
+        static List<WorldTerrain.RoadSegment> RoadSegments(Game game)
+        {
+            var roads = new Dictionary<(int, int), bool>();
+            foreach (var d in game.State.Decorations)
+            {
+                var def = game.Content.Decoration(d.DefinitionId);
+                if (def != null && def.IsRoad) roads[(d.X, d.Y)] = d.DefinitionId != "dirt_path";
+            }
+            var list = new List<WorldTerrain.RoadSegment>();
+            foreach (var kv in roads)
+            {
+                var (x, y) = kv.Key;
+                var c = Grid.CellCenter(x, y);
+                bool any = false;
+                foreach (var (dx, dy) in new[] { (1, 0), (0, 1), (-1, 0), (0, -1) })
+                {
+                    if (!roads.TryGetValue((x + dx, y + dy), out bool stone)) continue;
+                    any = true;
+                    // Each joint is drawn once, from the cell with the smaller coordinates.
+                    if (dx < 0 || dy < 0) continue;
+                    list.Add(new WorldTerrain.RoadSegment(c, Grid.CellCenter(x + dx, y + dy), kv.Value && stone));
+                }
+                if (!any) list.Add(new WorldTerrain.RoadSegment(c + new Vector3(-0.5f, 0, 0), c + new Vector3(0.5f, 0, 0), kv.Value));
+                else list.Add(new WorldTerrain.RoadSegment(c, c, kv.Value));
+            }
+            return list;
+        }
+
+        // MARK: - Decorations
+
+        static readonly (int dx, int dy, int bit)[] Neighbours =
+        {
+            (0, -1, BuildingModels.North), (1, 0, BuildingModels.East), (0, 1, BuildingModels.South), (-1, 0, BuildingModels.West),
+        };
+
+        void SyncDecorations(Game game)
+        {
+            var at = new Dictionary<(int, int), string>();
+            foreach (var d in game.State.Decorations) at[(d.X, d.Y)] = d.DefinitionId;
+            var seen = new HashSet<int>();
+            foreach (var d in game.State.Decorations)
+            {
+                var def = game.Content.Decoration(d.DefinitionId);
+                if (def == null || def.IsRoad) continue;
+                seen.Add(d.Id);
+                int connect = 0;
+                foreach (var (dx, dy, bit) in Neighbours)
+                    if (at.TryGetValue((d.X + dx, d.Y + dy), out var other) && other == d.DefinitionId) connect |= bit;
+                string key = $"{d.DefinitionId}|{d.Rotation}|{connect}";
+                if (decorations.TryGetValue(d.Id, out var view) && view.key == key) continue;
+                if (view.go != null) Destroy(view.go);
+                var go = BuildingModels.Decoration(def.Sprite, objectRoot, null, d.Rotation, connect);
+                go.transform.position = Ground.OnGround(Grid.CellCenter(d.X, d.Y));
+                decorations[d.Id] = (key, go);
+            }
+            foreach (var id in decorations.Keys.Where(id => !seen.Contains(id)).ToList())
+            {
+                Destroy(decorations[id].go);
+                decorations.Remove(id);
+            }
+        }
+
+        public static HashSet<(int, int)> OccupiedCells(Game game)
+        {
+            var used = new HashSet<(int, int)>();
+            foreach (var b in game.State.Buildings)
+            {
+                var fp = game.FootprintOf(b);
+                for (int dy = 0; dy < fp.Height; dy++)
+                    for (int dx = 0; dx < fp.Width; dx++) used.Add((b.X + dx, b.Y + dy));
+            }
+            foreach (var d in game.State.Decorations) used.Add((d.X, d.Y));
+            return used;
+        }
+
+        /// <summary>Trees, rocks and grass disappear from cells the player builds on.</summary>
+        void UpdateOccupancy(Game game)
+        {
+            string key = string.Join(",", game.State.Buildings.Select(b => $"{b.X}:{b.Y}:{b.Rotation}")) + "#" +
+                         string.Join(",", game.State.Decorations.Select(d => $"{d.X}:{d.Y}"));
+            if (key == occupancyKey) return;
+            bool first = occupancyKey == null;
+            occupancyKey = key;
+            var used = OccupiedCells(game);
+            nature.SetBlocked((x, y) => used.Contains((x, y)));
+            if (!first && grassField != null) grassField.Rebuild();
         }
 
         // MARK: - Selection & placement ghost
@@ -362,8 +440,9 @@ namespace Founders
             foreach (var go in selection) Destroy(go);
             selection.Clear();
             if (def == null) return;
-            for (int dy = 0; dy < def.Footprint.Height; dy++)
-                for (int dx = 0; dx < def.Footprint.Width; dx++)
+            var fp = store.Game.FootprintOf(b);
+            for (int dy = 0; dy < fp.Height; dy++)
+                for (int dx = 0; dx < fp.Width; dx++)
                     selection.Add(Marker(b.X + dx, b.Y + dy, "Select"));
         }
 
@@ -436,7 +515,7 @@ namespace Founders
         {
             [JobType.Foraging] = "Gather", [JobType.Farming] = "Gather", [JobType.Woodcutting] = "Work",
             [JobType.Stonecutting] = "Work", [JobType.Crafting] = "Work", [JobType.Construction] = "Work",
-            [JobType.Research] = "Talk",
+            [JobType.Research] = "Talk", [JobType.Fishing] = "Work", [JobType.Hunting] = "Gather", [JobType.Mining] = "Work",
         };
 
         /// <summary>The job of villager #index, from the current assignments (in job order), or null if idle.</summary>
@@ -500,7 +579,7 @@ namespace Founders
                 return task;
             }
 
-            task.Action = JobAction[job.Value];
+            task.Action = JobAction.TryGetValue(job.Value, out var action) ? action : "Work";
             task.Duration = Random.Range(5f, 10f);
             PlacedBuilding site = null;
             if (job == JobType.Construction)
@@ -524,6 +603,12 @@ namespace Founders
                 task.Spot = Around(forest, Random.Range(0.6f, 1.4f));
             else if (job == JobType.Stonecutting && NearestTerrain(center, TerrainType.Rock) is Vector3 rock && Random.value < 0.7f)
                 task.Spot = Around(rock, Random.Range(0.6f, 1.2f));
+            else if (job == JobType.Mining && NearestTerrain(center, TerrainType.Ore) is Vector3 ore && Random.value < 0.75f)
+                task.Spot = Around(ore, Random.Range(0.5f, 1.0f));
+            else if (job == JobType.Fishing && NearestTerrain(center, TerrainType.Water, 3) is Vector3 water)
+                task.Spot = Around(Vector3.Lerp(water, center, 0.55f), Random.Range(0.1f, 0.5f));
+            else if (job == JobType.Hunting && NearestTerrain(center, TerrainType.Forest, 9) is Vector3 woods && Random.value < 0.8f)
+                task.Spot = Around(woods, Random.Range(1f, 4f));
             else if (job == JobType.Farming)
                 task.Spot = Ground.OnGround(center + new Vector3(Random.Range(-1.5f, 1.5f), 0, Random.Range(-1.5f, 1.5f)));
             else

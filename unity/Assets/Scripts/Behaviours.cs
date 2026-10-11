@@ -5,9 +5,10 @@ using Random = UnityEngine.Random;
 
 namespace Founders
 {
-    /// <summary>Fire light flicker.</summary>
+    /// <summary>Fire light flicker. Lamps (<see cref="NightOnly"/>) only shine after dusk.</summary>
     public class Flicker : MonoBehaviour
     {
+        public bool NightOnly;
         Light lightSource;
         float baseIntensity;
         float seed;
@@ -22,7 +23,9 @@ namespace Founders
         void Update()
         {
             float n = Mathf.PerlinNoise(seed, Time.time * 3.2f);
-            lightSource.intensity = baseIntensity * (0.75f + 0.5f * n);
+            float night = NightOnly ? Mathf.Lerp(0.15f, 1f, Atmosphere.Nightness) : 1f;
+            lightSource.intensity = baseIntensity * (0.75f + 0.5f * n) * night;
+            lightSource.enabled = night > 0.2f;
         }
     }
 
@@ -38,6 +41,8 @@ namespace Founders
         public Action<Vector2> OnTap;
         public Func<Vector2, bool> IsBlocked = _ => false;
         public Rect Bounds = new Rect(-4, -36, 40, 40); // x/z extent the focus point may move in
+        /// <summary>Ground height at a world position (hills and mountains); null means flat ground at y = 0.</summary>
+        public Func<Vector3, float> HeightAt;
 
         Vector3 focus;
         float distance = 26f;
@@ -46,7 +51,7 @@ namespace Founders
         float zoomTarget = -1f;
 
         const float MinDistance = 9f;
-        const float MaxDistance = 55f;
+        const float MaxDistance = 80f;
         float Pitch => Mathf.Lerp(52f, 40f, Mathf.InverseLerp(MinDistance, MaxDistance, distance));
         public const float Yaw = -45f;
         const float TapSlop = 12f; // pixels
@@ -97,14 +102,23 @@ namespace Founders
                 focus = Vector3.Lerp(focus, moveTarget, k);
                 if (zoomTarget > 0) distance = Mathf.Lerp(distance, zoomTarget, k);
             }
+            // The focus rides over hills and mountains.
+            if (HeightAt != null)
+            {
+                float ground = Mathf.Max(HeightAt(focus), WorldTerrain.WaterLevel);
+                focus.y = Mathf.Lerp(focus.y, ground, 1f - Mathf.Exp(-6f * Time.deltaTime));
+            }
             Apply();
         }
 
         void Apply()
         {
             var rotation = Quaternion.Euler(Pitch, Yaw, 0f);
-            Cam.transform.position = focus + rotation * new Vector3(0, 0, -distance);
-            Cam.transform.rotation = rotation;
+            var position = focus + rotation * new Vector3(0, 0, -distance);
+            // Never inside a mountain between the camera and the focus.
+            if (HeightAt != null) position.y = Mathf.Max(position.y, HeightAt(position) + 2.5f);
+            Cam.transform.position = position;
+            Cam.transform.rotation = Quaternion.LookRotation(focus - position);
         }
 
         void Pan(Vector2 screenDelta)
@@ -124,10 +138,29 @@ namespace Founders
             distance = Mathf.Clamp(distance * factor, MinDistance, MaxDistance);
         }
 
-        /// <summary>Point on the ground plane (y = 0) under a screen position.</summary>
+        /// <summary>Point on the ground (the terrain, or the plane y = 0) under a screen position.</summary>
         public bool GroundPoint(Vector2 screen, out Vector3 point)
         {
             var ray = Cam.ScreenPointToRay(screen);
+            if (HeightAt != null)
+            {
+                // March along the ray until it dips below the terrain, then refine.
+                float prev = 0f;
+                for (float t = 0.5f; t < 420f; t += 0.5f)
+                {
+                    var p = ray.GetPoint(t);
+                    if (p.y > Mathf.Max(HeightAt(p), WorldTerrain.WaterLevel)) { prev = t; continue; }
+                    float lo = prev, hi = t;
+                    for (int i = 0; i < 12; i++)
+                    {
+                        float mid = (lo + hi) * 0.5f;
+                        var m = ray.GetPoint(mid);
+                        if (m.y > Mathf.Max(HeightAt(m), WorldTerrain.WaterLevel)) lo = mid; else hi = mid;
+                    }
+                    point = ray.GetPoint(hi);
+                    return true;
+                }
+            }
             var plane = new Plane(Vector3.up, Vector3.zero);
             if (plane.Raycast(ray, out float enter))
             {
@@ -422,6 +455,42 @@ namespace Founders
             r.sharedMaterial = Palette.Get(material);
             r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
             return ps;
+        }
+
+        /// <summary>A small flame on a torch or in a lantern, with a warm light that comes on at night.</summary>
+        public static void Torch(Transform parent, Vector3 at, float scale, bool lantern)
+        {
+            if (!lantern)
+            {
+                var flames = NewSystem(parent, "TorchFlame", at, "Flame");
+                var main = flames.main;
+                main.loop = true;
+                main.prewarm = true;
+                main.startLifetime = new ParticleSystem.MinMaxCurve(0.3f, 0.5f);
+                main.startSpeed = new ParticleSystem.MinMaxCurve(0.4f, 0.7f);
+                main.startSize = new ParticleSystem.MinMaxCurve(0.6f * scale, 0.9f * scale);
+                main.startColor = new ParticleSystem.MinMaxGradient(new Color(1f, 0.55f, 0.15f, 0.9f), new Color(1f, 0.8f, 0.35f, 0.9f));
+                main.maxParticles = 30;
+                main.simulationSpace = ParticleSystemSimulationSpace.World;
+                var em = flames.emission;
+                em.rateOverTime = 22f;
+                var sh = flames.shape;
+                sh.shapeType = ParticleSystemShapeType.Cone;
+                sh.angle = 6f;
+                sh.radius = 0.04f;
+                var sz = flames.sizeOverLifetime;
+                sz.enabled = true;
+                sz.size = new ParticleSystem.MinMaxCurve(1f, AnimationCurve.EaseInOut(0f, 1f, 1f, 0.1f));
+                flames.Play();
+            }
+            var lightGo = Parts.Group("LampLight", parent, at + new Vector3(0, 0.15f, 0));
+            var light = lightGo.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = lantern ? new Color(1f, 0.7f, 0.38f) : new Color(1f, 0.58f, 0.25f);
+            light.range = 7f;
+            light.intensity = 2.2f;
+            light.shadows = LightShadows.None;
+            lightGo.AddComponent<Flicker>().NightOnly = true;
         }
 
         public static void Fire(Transform parent, Vector3 at, float scale)

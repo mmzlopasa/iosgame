@@ -38,6 +38,8 @@ namespace Founders
                 case "pottery_kiln": PotteryKiln(b); break;
                 case "copper_smelter": CopperSmelter(b); break;
                 case "bronze_workshop": BronzeWorkshop(b); break;
+                case "hunters_lodge": HuntersLodge(b); break;
+                case "mine": Mine(b); break;
                 default: b.Model("boulder_01", Vector3.zero, 0.5f); break;
             }
             return root;
@@ -75,6 +77,10 @@ namespace Founders
                 go.transform.localPosition = (a + b) * 0.5f - go.transform.localRotation * new Vector3(0, size.y * k * t * 0.5f, 0);
             }
 
+            /// <summary>A model drawn with one special material (the placement preview keeps its tint).</summary>
+            public GameObject ModelWith(string id, Vector3 pos, float scale, float yaw, Material material, Vector3? axis = null) =>
+                ModelLibrary.Place(id, T, pos, scale, yaw, axis, tint ?? material);
+
             public GameObject Shape(Mesh mesh, Vector3 pos, Vector3 scale, string texture, Vector3 euler = default) =>
                 Parts.Shape(mesh, T, pos, scale, Surface(texture), euler);
 
@@ -88,6 +94,12 @@ namespace Founders
             {
                 if (!Effects) return;
                 Founders.Effects.Fire(T, at, scale);
+            }
+
+            public void Torch(Vector3 at, float scale, bool lantern = false)
+            {
+                if (!Effects) return;
+                Founders.Effects.Torch(T, at, scale, lantern);
             }
         }
 
@@ -524,5 +536,203 @@ namespace Founders
             b.Model("ceramic_pot", new Vector3(0.55f, 0f, 0.5f), 0.5f);
             b.Model("wooden_bowl_01", new Vector3(-0.6f, 0f, -0.55f), 1.1f);
         }
-}
+
+        // MARK: - Workplaces of the valley
+
+        static void HuntersLodge(Builder b)
+        {
+            // A lean-to of hides against the forest edge, a frame of stretched pelts and spears.
+            HideTent(b, new Vector3(-0.2f, 0f, 0.35f), 1.5f, 1.25f, 1.3f, 0f);
+            foreach (float x in new[] { 0.55f, 1.0f })
+                b.Pole(new Vector3(x, 0f, -0.55f), new Vector3(x, 1.25f, -0.55f), 0.05f);
+            b.Pole(new Vector3(0.45f, 1.18f, -0.55f), new Vector3(1.1f, 1.18f, -0.55f), 0.04f);
+            b.Prim(PrimitiveType.Cube, new Vector3(0.78f, 0.78f, -0.55f), new Vector3(0.4f, 0.62f, 0.02f), "Hide", new Vector3(0, 0, 4f));
+            // Spears leaning on a crossbar
+            for (int i = 0; i < 3; i++)
+            {
+                float x = -0.95f + i * 0.14f;
+                b.Pole(new Vector3(x, 0f, -0.75f), new Vector3(x + 0.05f, 1.6f, -0.45f), 0.025f);
+            }
+            b.Pole(new Vector3(-1.0f, 0.95f, -0.58f), new Vector3(-0.6f, 0.95f, -0.58f), 0.035f);
+            // Game brought in: a pelt on the ground and a basket.
+            b.Prim(PrimitiveType.Cube, new Vector3(0.45f, 0.02f, 0.75f), new Vector3(0.7f, 0.02f, 0.45f), "Hide", new Vector3(0, 20, 0));
+            b.Model("wicker_basket_01", new Vector3(0.85f, 0f, 0.2f), 1.1f, 40f);
+            b.Model("stone_fire_pit", new Vector3(-0.55f, 0f, -0.75f), 0.3f);
+            b.Fire(new Vector3(-0.55f, 0.04f, -0.75f), 0.3f);
+        }
+
+        static void Mine(Builder b)
+        {
+            // The shaft: a timber frame cut into a rocky mound, with ore heaped outside.
+            b.Model("namaqualand_boulder_02", new Vector3(0f, -0.1f, 0.55f), 1.25f, 15f);
+            b.Model("boulder_01", new Vector3(-0.7f, 0f, 0.35f), 0.7f, 60f);
+            b.Model("boulder_01", new Vector3(0.75f, 0f, 0.4f), 0.6f, 140f);
+            b.PrimColor(PrimitiveType.Cube, new Vector3(0f, 0.55f, -0.08f), new Vector3(0.75f, 1.05f, 0.35f), "Ash");
+            b.Pole(new Vector3(-0.42f, 0f, -0.28f), new Vector3(-0.38f, 1.2f, -0.28f), 0.11f);
+            b.Pole(new Vector3(0.42f, 0f, -0.28f), new Vector3(0.38f, 1.2f, -0.28f), 0.11f);
+            b.Pole(new Vector3(-0.58f, 1.2f, -0.3f), new Vector3(0.58f, 1.2f, -0.3f), 0.12f);
+            // Ore heaps: rusty iron and green copper
+            for (int i = 0; i < 6; i++)
+                b.ModelWith("stone_01", new Vector3(-0.7f + (i % 3) * 0.2f, (i / 3) * 0.08f, -0.7f + (i % 2) * 0.1f), 3f, i * 61f,
+                            i % 3 == 2 ? ModelLibrary.CopperOre : ModelLibrary.IronOre);
+            b.ModelWith("boulder_01", new Vector3(0.65f, 0f, -0.65f), 0.22f, 30f, ModelLibrary.IronOre);
+            b.Model("wicker_basket_01", new Vector3(0.35f, 0f, -0.85f), 1.2f, 10f);
+            b.Torch(new Vector3(0.5f, 1.25f, -0.4f), 0.35f);
+        }
+
+        // MARK: - Decorations (roads are painted on the ground, not modelled)
+
+        /// <summary>Bits of <c>connect</c>: neighbours of the same kind (1 = north, 2 = east, 4 = south, 8 = west).</summary>
+        public const int North = 1, East = 2, South = 4, West = 8;
+
+        static readonly (int bit, Vector3 dir)[] Sides =
+        {
+            (North, Vector3.forward), (East, Vector3.right), (South, Vector3.back), (West, Vector3.left),
+        };
+
+        /// <summary>
+        /// A decoration: fences and walls join their neighbours of the same kind, everything else
+        /// stands in the middle of its cell, turned by <paramref name="rotation"/> quarter turns.
+        /// </summary>
+        public static GameObject Decoration(string sprite, Transform parent, Material tint, int rotation, int connect)
+        {
+            var root = new GameObject("Decoration_" + sprite);
+            root.transform.SetParent(parent, false);
+            var b = new Builder(root.transform, tint, tint == null);
+            float yaw = rotation * 90f;
+            switch (sprite)
+            {
+                case "wattle_fence":
+                case "palisade":
+                case "stone_wall":
+                    Fence(b, sprite, rotation, connect);
+                    break;
+                case "torch_post":
+                    b.Pole(Vector3.zero, new Vector3(0f, 1.7f, 0f), 0.08f);
+                    b.Prim(PrimitiveType.Cylinder, new Vector3(0f, 1.72f, 0f), new Vector3(0.11f, 0.08f, 0.11f), "Hide");
+                    b.Torch(new Vector3(0f, 1.8f, 0f), 0.3f);
+                    break;
+                case "oil_lantern":
+                {
+                    var g = Parts.Group("Lantern", b.T, Vector3.zero, yaw).transform;
+                    var lb = new Builder(g, tint, tint == null);
+                    lb.Pole(Vector3.zero, new Vector3(0f, 2.1f, 0f), 0.08f);
+                    lb.Pole(new Vector3(0f, 2.0f, 0f), new Vector3(0.45f, 2.05f, 0f), 0.05f);
+                    lb.Model("ceramic_pot", new Vector3(0.45f, 1.62f, 0f), 0.42f);
+                    lb.PrimColor(PrimitiveType.Sphere, new Vector3(0.45f, 1.74f, 0f), Vector3.one * 0.13f, "Ember");
+                    lb.Torch(new Vector3(0.45f, 1.74f, 0f), 0.2f, lantern: true);
+                    break;
+                }
+                case "bush":
+                    b.Model((rotation & 1) == 0 ? "shrub_03" : "shrub_04", Vector3.zero, 1.25f, yaw + 20f);
+                    break;
+                case "young_tree":
+                    if (b.Effects) ModelLibrary.Tree("LeafTree", b.T, Vector3.zero, 4.2f, yaw + 15f);
+                    else b.PrimColor(PrimitiveType.Cylinder, new Vector3(0f, 1.5f, 0f), new Vector3(0.6f, 1.5f, 0.6f), "Earth");
+                    b.Model("stone_01", new Vector3(0.35f, 0f, 0.2f), 2f, 30f);
+                    break;
+                case "flower_bed":
+                    b.Prim(PrimitiveType.Cylinder, new Vector3(0f, 0.02f, 0f), new Vector3(1.5f, 0.02f, 1.5f), "Mud");
+                    for (int i = 0; i < 12; i++)
+                    {
+                        float a = i / 12f * Mathf.PI * 2f;
+                        b.Model("stone_01", new Vector3(Mathf.Cos(a) * 0.8f, 0f, Mathf.Sin(a) * 0.8f), 1.8f, i * 47f);
+                    }
+                    if (b.Effects)
+                        for (int i = 0; i < 9; i++)
+                        {
+                            float a = i * 2.4f, r = 0.15f + (i % 3) * 0.2f;
+                            ModelLibrary.Tree("Wildflowers", b.T, new Vector3(Mathf.Cos(a) * r, 0.02f, Mathf.Sin(a) * r), 0.45f, i * 40f);
+                        }
+                    break;
+                case "well":
+                    for (int ring = 0; ring < 2; ring++)
+                        for (int i = 0; i < 12; i++)
+                        {
+                            float a = (i + ring * 0.5f) / 12f * Mathf.PI * 2f;
+                            b.Model("stone_01", new Vector3(Mathf.Cos(a) * 0.6f, ring * 0.2f, Mathf.Sin(a) * 0.6f), 3.4f, i * 37f + ring * 11f);
+                        }
+                    b.PrimColor(PrimitiveType.Cylinder, new Vector3(0f, 0.3f, 0f), new Vector3(0.95f, 0.02f, 0.95f), "Water");
+                    b.Pole(new Vector3(-0.7f, 0f, 0f), new Vector3(-0.7f, 1.45f, 0f), 0.08f);
+                    b.Pole(new Vector3(0.7f, 0f, 0f), new Vector3(0.7f, 1.45f, 0f), 0.08f);
+                    b.Pole(new Vector3(-0.8f, 1.38f, 0f), new Vector3(0.8f, 1.38f, 0f), 0.07f);
+                    b.Model("wooden_bowl_01", new Vector3(0f, 0.95f, 0f), 1.2f);
+                    break;
+                case "totem":
+                    b.Pole(Vector3.zero, new Vector3(0f, 3.2f, 0f), 0.34f);
+                    b.Pole(new Vector3(-0.7f, 2.55f, 0f), new Vector3(0.7f, 2.55f, 0f), 0.14f);
+                    b.Prim(PrimitiveType.Cube, new Vector3(0f, 2.9f, -0.17f), new Vector3(0.3f, 0.35f, 0.03f), "Hide");
+                    b.Model("boulder_01", new Vector3(0f, 3.15f, 0f), 0.12f, 20f);
+                    for (int i = 0; i < 6; i++)
+                    {
+                        float a = i / 6f * Mathf.PI * 2f;
+                        b.Model("stone_01", new Vector3(Mathf.Cos(a) * 0.45f, 0f, Mathf.Sin(a) * 0.45f), 2.6f, i * 53f);
+                    }
+                    break;
+                case "standing_stone":
+                    b.Model("boulder_01", Vector3.zero, 1f, yaw + 10f, new Vector3(0.38f, 2.1f, 0.26f));
+                    b.Model("stone_01", new Vector3(0.45f, 0f, 0.3f), 2.4f, 40f);
+                    b.Model("stone_01", new Vector3(-0.4f, 0f, -0.35f), 2f, 140f);
+                    break;
+                default:
+                    break; // roads
+            }
+            return root;
+        }
+
+        static void Fence(Builder b, string kind, int rotation, int connect)
+        {
+            var dirs = new System.Collections.Generic.List<Vector3>();
+            foreach (var (bit, dir) in Sides)
+                if ((connect & bit) != 0) dirs.Add(dir);
+            if (dirs.Count == 0)
+            {
+                // A lone piece runs across the cell, along its rotation.
+                var along = (rotation & 1) == 0 ? Vector3.right : Vector3.forward;
+                dirs.Add(along);
+                dirs.Add(-along);
+            }
+            const float half = Grid.CellSize * 0.5f;
+            foreach (var dir in dirs) FenceRun(b, kind, Vector3.zero, dir * half);
+            // A post (or a corner stone) covers the joint in the middle.
+            if (kind == "stone_wall") b.Prim(PrimitiveType.Cube, new Vector3(0f, 0.5f, 0f), new Vector3(0.62f, 1.0f, 0.62f), "DarkRock");
+            else b.Pole(Vector3.zero, new Vector3(0f, kind == "palisade" ? 2.3f : 1.0f, 0f), kind == "palisade" ? 0.22f : 0.08f);
+        }
+
+        static void FenceRun(Builder b, string kind, Vector3 from, Vector3 to)
+        {
+            var d = to - from;
+            float len = d.magnitude;
+            var mid = (from + to) * 0.5f;
+            float yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+            switch (kind)
+            {
+                case "wattle_fence":
+                    b.Pole(to, to + new Vector3(0f, 0.95f, 0f), 0.07f);
+                    b.Pole(mid, mid + new Vector3(0f, 0.9f, 0f), 0.05f);
+                    b.Prim(PrimitiveType.Cube, mid + new Vector3(0f, 0.5f, 0f), new Vector3(0.05f, 0.7f, len), "Bark", new Vector3(0f, yaw, 0f));
+                    break;
+                case "palisade":
+                {
+                    int n = Mathf.Max(2, Mathf.RoundToInt(len / 0.22f));
+                    for (int i = 1; i <= n; i++)
+                    {
+                        var p = Vector3.Lerp(from, to, i / (float)n);
+                        float h = 1.9f + 0.35f * Mathf.PerlinNoise(p.x * 3.1f + 7f, p.z * 3.1f);
+                        b.Pole(p, p + new Vector3(0f, h, 0f), 0.2f);
+                    }
+                    b.Pole(from + new Vector3(0f, 1.3f, 0f), to + new Vector3(0f, 1.3f, 0f), 0.07f);
+                    break;
+                }
+                case "stone_wall":
+                    b.Prim(PrimitiveType.Cube, mid + new Vector3(0f, 0.45f, 0f), new Vector3(0.55f, 0.9f, len + 0.05f), "DarkRock", new Vector3(0f, yaw, 0f));
+                    for (int i = 0; i < 3; i++)
+                    {
+                        var p = Vector3.Lerp(from, to, (i + 0.5f) / 3f);
+                        b.Model("stone_01", p + new Vector3(0f, 0.88f, 0f), 2.8f, i * 67f + yaw);
+                    }
+                    break;
+            }
+        }
+    }
 }

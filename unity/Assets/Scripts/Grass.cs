@@ -16,17 +16,14 @@ namespace Founders
         {
             public Material Material;
             public Material Top;
-            public RenderParams TopParams;
             public float Aspect = 1f;
-            public readonly List<Matrix4x4[]> Batches = new List<Matrix4x4[]>();
-            public readonly List<int> Counts = new List<int>();
+            public InstanceSet Side, TopSet;
         }
 
-        const int BatchSize = 1023;
-        const float Radius = 58f;
+        const float Radius = 96f;   // covers the whole valley (64 m half-width, corners at ~91 m)
+        const float Step = 0.66f;
         Mesh mesh, flat;
         Layer grass, flowers;
-        RenderParams grassParams, flowerParams;
         WorldTerrain ground;
         Game game;
 
@@ -44,39 +41,33 @@ namespace Founders
         Layer NewLayer(string impostor)
         {
             var layer = new Layer { Material = Palette.Get($"I_{impostor}_side"), Top = Palette.Get($"I_{impostor}_top") };
-            if (layer.Top != null) layer.Top.enableInstancing = true;
             if (ModelLibrary.HasImpostor(impostor))
             {
                 var info = ModelLibrary.Manifest.Obj("impostors").Obj(impostor);
                 layer.Aspect = (float)(info.Num("width") / Mathf.Max(0.01f, (float)info.Num("height")));
             }
-            // Shared materials (so the season tint reaches the grass and the farm crops alike).
-            if (layer.Material != null) layer.Material.enableInstancing = true;
             return layer;
         }
 
-        static RenderParams Params(Material m) => new RenderParams(m)
-        {
-            shadowCastingMode = ShadowCastingMode.Off,
-            receiveShadows = true,
-            worldBounds = new Bounds(Vector3.zero, Vector3.one * 400f),
-            layer = 0,
-        };
-
-        /// <summary>Re-scatters grass (call when buildings are placed or removed).</summary>
+        /// <summary>Re-scatters grass (call when buildings, roads or decorations change).</summary>
         public void Rebuild()
         {
             if (grass.Material == null) return;
-            var center = Grid.CellCenter((game.Content.Map.Width - 1) * 0.5f, (game.Content.Map.Height - 1) * 0.5f);
-            var g = new List<Matrix4x4>();
-            var f = new List<Matrix4x4>();
-            var rng = new System.Random(4242);
-            const float step = 0.62f;
-            for (float z = -Radius; z <= Radius; z += step)
+            // Shared materials, so the season tint reaches the grass and the farm crops alike.
+            foreach (var layer in new[] { grass, flowers })
             {
-                for (float x = -Radius; x <= Radius; x += step)
+                layer.Side = layer.Material != null ? new InstanceSet(mesh, 0, layer.Material, false) : null;
+                layer.TopSet = layer.Top != null ? new InstanceSet(flat, 0, layer.Top, false) : null;
+            }
+            var used = WorldView.OccupiedCells(game);
+            var center = Grid.CellCenter((game.Content.Map.Width - 1) * 0.5f, (game.Content.Map.Height - 1) * 0.5f);
+            var rng = new System.Random(4242);
+            int index = 0;
+            for (float z = -Radius; z <= Radius; z += Step)
+            {
+                for (float x = -Radius; x <= Radius; x += Step)
                 {
-                    float jx = ((float)rng.NextDouble() - 0.5f) * step, jz = ((float)rng.NextDouble() - 0.5f) * step;
+                    float jx = ((float)rng.NextDouble() - 0.5f) * Step, jz = ((float)rng.NextDouble() - 0.5f) * Step;
                     double roll = rng.NextDouble();
                     float size = 0.75f + (float)rng.NextDouble() * 0.6f;
                     float yaw = (float)rng.NextDouble() * 180f;
@@ -90,61 +81,42 @@ namespace Founders
                     {
                         TerrainType.Grass => 0.8f,
                         TerrainType.Forest => 0.25f,
+                        TerrainType.Rock => 0.12f,
+                        TerrainType.Mountain => 0.1f,
                         _ => 0f,
                     };
-                    // Thin out with distance (it is barely visible there) and on high slopes.
-                    density *= Mathf.Lerp(1f, 0.35f, Mathf.InverseLerp(30f, Radius, d));
+                    // Thinner far from the valley centre (it is barely visible there).
+                    density *= Mathf.Lerp(1f, 0.45f, Mathf.InverseLerp(64f, Radius, d));
                     if (roll > density) continue;
-                    bool inside = cx >= 0 && cy >= 0 && cx < game.Content.Map.Width && cy < game.Content.Map.Height;
-                    if (inside && game.BuildingIdAt(cx, cy) != null) continue;
+                    if (used.Contains((cx, cy))) continue;
                     float y = ground.HeightAt(p);
-                    if (y < WorldTerrain.WaterLevel + 0.12f || y > 7f) continue;
+                    if (y < WorldTerrain.WaterLevel + 0.12f || y > 14f) continue;
                     p.y = y - 0.02f;
 
                     bool flower = roll < density * 0.05f;
                     var layer = flower ? flowers : grass;
                     float h = flower ? 0.32f * size : 0.3f * size;
-                    var s = new Vector3(h * layer.Aspect, h, h * layer.Aspect);
-                    (flower ? f : g).Add(Matrix4x4.TRS(p, Quaternion.Euler(0, yaw, 0), s));
+                    var m = Matrix4x4.TRS(p, Quaternion.Euler(0, yaw, 0), new Vector3(h * layer.Aspect, h, h * layer.Aspect));
+                    layer.Side?.Add(m, index);
+                    layer.TopSet?.Add(m, index);
+                    index++;
                 }
             }
-            Fill(grass, g);
-            Fill(flowers, f);
-            grassParams = Params(grass.Material);
-            if (flowers.Material != null) flowerParams = Params(flowers.Material);
-            if (grass.Top != null) grass.TopParams = Params(grass.Top);
-            if (flowers.Top != null) flowers.TopParams = Params(flowers.Top);
-        }
-
-        static void Fill(Layer layer, List<Matrix4x4> all)
-        {
-            layer.Batches.Clear();
-            layer.Counts.Clear();
-            for (int i = 0; i < all.Count; i += BatchSize)
+            foreach (var layer in new[] { grass, flowers })
             {
-                int n = Mathf.Min(BatchSize, all.Count - i);
-                var arr = new Matrix4x4[n];
-                all.CopyTo(i, arr, 0, n);
-                layer.Batches.Add(arr);
-                layer.Counts.Add(n);
+                layer.Side?.Build();
+                layer.TopSet?.Build();
             }
         }
 
         void Update()
         {
-            if (mesh == null || grass?.Material == null) return;
-            Draw(grass, grassParams);
-            if (flowers.Material != null) Draw(flowers, flowerParams);
-        }
-
-        void Draw(Layer layer, RenderParams side)
-        {
+            if (mesh == null || grass?.Side == null) return;
             // The strategy camera looks down, so each tuft is a top-view card plus two crossed side cards.
-            for (int i = 0; i < layer.Batches.Count; i++)
-            {
-                if (layer.Top != null) Graphics.RenderMeshInstanced(layer.TopParams, flat, 0, layer.Batches[i], layer.Counts[i]);
-                Graphics.RenderMeshInstanced(side, mesh, 0, layer.Batches[i], layer.Counts[i]);
-            }
+            grass.TopSet?.Draw();
+            grass.Side?.Draw();
+            flowers.TopSet?.Draw();
+            flowers.Side?.Draw();
         }
 
         /// <summary>Horizontal unit card a little above the ground (seen from the strategy camera).</summary>

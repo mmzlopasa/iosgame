@@ -92,6 +92,7 @@ namespace Founders
             AbsorbNotices();
             World.Init(this);
             Rig.Bounds = MapBounds();
+            Rig.HeightAt = World.Ground.HeightAt;
             FocusOnSettlement(true);
             Save();
         }

@@ -203,7 +203,7 @@ namespace Founders.Tests
             var (game, _) = Fixtures.NewGame();
             Assert.That(game.PlacementIssues("shelter", 13, 8), Does.Contain(PlacementIssue.Unexplored));
             Assert.That(game.PlacementIssues("shelter", -1, 0), Does.Contain(PlacementIssue.OutOfBounds));
-            Assert.That(game.PlacementIssues("shelter", 21, 3), Does.Contain(PlacementIssue.OutOfBounds));
+            Assert.That(game.PlacementIssues("shelter", 64, 3), Does.Contain(PlacementIssue.OutOfBounds));
         }
 
         [Test]

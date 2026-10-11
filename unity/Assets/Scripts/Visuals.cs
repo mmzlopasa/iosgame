@@ -179,7 +179,7 @@ namespace Founders
             return go;
         }
 
-        static GameObject Prefab(string id)
+        public static GameObject Prefab(string id)
         {
             if (prefabs.TryGetValue(id, out var p)) return p;
             p = HasModel(id) ? Resources.Load<GameObject>(Manifest.Obj("models").Obj(id).Str("resource")) : null;
@@ -187,7 +187,7 @@ namespace Founders
             return p;
         }
 
-        static Material[] Materials(string id)
+        public static Material[] Materials(string id)
         {
             if (modelMaterials.TryGetValue(id, out var m)) return m;
             var model = Manifest.Obj("models").Obj(id);
@@ -197,6 +197,22 @@ namespace Founders
             modelMaterials[id] = m;
             return m;
         }
+
+        static readonly Dictionary<string, Material> tinted = new Dictionary<string, Material>();
+
+        /// <summary>A model's first material recoloured (e.g. rusty iron ore or green copper ore on a scanned boulder).</summary>
+        public static Material Tinted(string modelId, string key, Color color)
+        {
+            if (tinted.TryGetValue(key, out var m) && m != null) return m;
+            var mats = HasModel(modelId) ? Materials(modelId) : null;
+            var src = mats != null && mats.Length > 0 && mats[0] != null ? mats[0] : Palette.Get("Earth");
+            m = new Material(src) { name = key, enableInstancing = true };
+            if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", color);
+            return tinted[key] = m;
+        }
+
+        public static Material IronOre => Tinted("boulder_01", "IronOre", new Color(0.95f, 0.58f, 0.42f));
+        public static Material CopperOre => Tinted("boulder_01", "CopperOre", new Color(0.62f, 0.85f, 0.7f));
 
         /// <summary>
         /// A tree drawn as three crossed photo billboards plus a top-down canopy card: rendered from
@@ -237,7 +253,7 @@ namespace Founders
         }
 
         /// <summary>Unit quad standing on its bottom edge (pivot at bottom centre).</summary>
-        static Mesh Quad()
+        public static Mesh Quad()
         {
             if (quads.TryGetValue("q", out var q)) return q;
             q = new Mesh { name = "BillboardQuad" };
