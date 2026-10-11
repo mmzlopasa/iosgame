@@ -113,6 +113,9 @@ namespace Founders.UI
                 var n = E.Text(type.DisplayName(), 12.5f, Theme.Body).NoWrap();
                 n.style.marginLeft = 6;
                 l.Grow();
+                l.style.overflow = Overflow.Hidden;
+                l.style.marginRight = 6;
+                n.Grow();
                 l.Add(n);
                 cell.Add(l);
                 cell.Add(E.Mono(Fmt.Signed(v), 12.5f, v < -0.5 ? Theme.Error : type == ResourceType.Knowledge ? Theme.Lavender : Theme.Mint));
