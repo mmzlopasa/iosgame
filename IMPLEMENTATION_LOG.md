@@ -150,3 +150,30 @@ Korisnik je odabrao besplatne (CC0) modele ljudi.
 **Provjereno:**
 - `dotnet test unity/CoreTests` prolazi 45/45 (očekivani brojevi u testovima ažurirani za novu mapu i sadržaj). Scripted igrač i dalje stiže do sela za 17 min 10 s.
 - Compile check prolazi.
+
+## 2026-10-11 — Godišnja doba, zadovoljstvo, ogrjev, Era II, dan/noć, zvuk
+
+Na zahtjev „napravi još to” (nova era, zvuk, godišnja doba i dan/noć) uz sustave po uzoru na Foundation i Manor Lords. Pregled je u `docs/GAMEPLAY_SYSTEMS.md`.
+
+**Logika igre (`Founders.Core`):**
+- Četiri godišnja doba po 6 minuta mijenjaju skupljanje hrane, farme i rast.
+- Jesen i zima troše ogrjev po osobi. Prazna hrpa drva znači smrzavanje.
+- Zadovoljstvo (approval, 0–100) mijenja brzinu rada (0,85–1,15) i rast. Ispod 30 % nema novih ljudi.
+- Novi posao Farming. Milestone sada može otvoriti novu eru: „The Bronze Dawn” vodi u First Civilizations.
+- Nova istraživanja: Agriculture, Animal Husbandry, Pottery, Copper Smelting, Bronze Working.
+- Nove zgrade: Farm Field, Animal Pen, Granary, Pottery Kiln, Copper Smelter, Bronze Workshop, Daub House.
+- Novi događaj: The First Harvest.
+- Testovi: 51/51 prolazi. Testovi pravila rade bez godišnjih doba i bez učinka zadovoljstva, radi točnih brojki. Playthrough ima sve uključeno i stiže do sela za 18 min 25 s.
+
+**Prikaz:**
+- Dan od 150 s s kratkom noći.
+- Jesen boji travu i lišće zlatno, zima ih čini blijedima i pada snijeg.
+- Seljaci idu na svoja radna mjesta (polja, šuma, stijene, gradilišta), a noću sjede oko vatre.
+- Modeli za sve zgrade Ere II (farma sa žitom, tor s kozama, žitnica na stupovima, peć, talionica, radionica).
+
+**UI:**
+- Kartica godišnjeg doba i zadovoljstva na HUD-u.
+- Raščlamba zadovoljstva i učinci godišnjeg doba u panelu People.
+- Prekidači za glazbu i zvuk.
+
+**Zvuk:** CC0 ambijent (vatra, rijeka, ptice, vjetar), dvije glazbene teme i zvuk klika. Izvori su u `Art/Audio/CREDITS.txt`.
