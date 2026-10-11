@@ -289,7 +289,7 @@ namespace Founders
         {
             var center = Ground.OnGround(Grid.FootprintCenter(b.X, b.Y, def.Footprint));
             var root = Parts.Group($"Building_{b.Id}", objectRoot, center, (b.Id * 47) % 360);
-            var model = BuildingModels.Create(def.Sprite, root.transform, null);
+            var model = BuildingModels.Create(def.Sprite, root.transform, null, Grid.CellSize * Mathf.Min(def.Footprint.Width, def.Footprint.Height));
             var bar = Parts.Group("Progress", root.transform, new Vector3(0, 2.6f, 0));
             bar.transform.rotation = Quaternion.Euler(0, CameraRig.Yaw, 0);
             Parts.Prim(PrimitiveType.Cube, bar.transform, Vector3.zero, new Vector3(1.4f, 0.16f, 0.06f), "BarBack");
@@ -404,7 +404,7 @@ namespace Founders
                     ghost.Add(Marker(cell.Value.x + dx, cell.Value.y + dy, mat));
             var center = Ground.OnGround(Grid.FootprintCenter(cell.Value.x, cell.Value.y, def.Footprint));
             var preview = Parts.Group("GhostModel", overlayRoot, center);
-            BuildingModels.Create(def.Sprite, preview.transform, valid ? null : Palette.Get("GhostBad"));
+            BuildingModels.Create(def.Sprite, preview.transform, valid ? null : Palette.Get("GhostBad"), Grid.CellSize * Mathf.Min(def.Footprint.Width, def.Footprint.Height));
             if (!valid) preview.transform.localScale = new Vector3(1f, 0.6f, 1f);
             ghost.Add(preview);
         }

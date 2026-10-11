@@ -10,11 +10,17 @@ namespace Founders
     /// </summary>
     public static class BuildingModels
     {
-        public static GameObject Create(string sprite, Transform parent, Material tint)
+        public static GameObject Create(string sprite, Transform parent, Material tint, float footprintMetres = 2f)
         {
             var root = new GameObject("Model_" + sprite);
             root.transform.SetParent(parent, false);
             var b = new Builder(root.transform, tint, tint == null);
+            // An AI-generated model (tools/assets/tripo_generate.py) replaces the assembled one when present.
+            if (ModelLibrary.HasModel("ai_" + sprite) && PlaceGenerated(b, "ai_" + sprite, footprintMetres))
+            {
+                if (sprite == "campfire" || sprite == "village_hearth") b.Fire(new Vector3(0, 0.1f, 0), sprite == "campfire" ? 1f : 1.35f);
+                return root;
+            }
             switch (sprite)
             {
                 case "campfire": Campfire(b); break;
@@ -41,6 +47,20 @@ namespace Founders
                 default: b.Model("boulder_01", Vector3.zero, 0.5f); break;
             }
             return root;
+        }
+
+        /// <summary>Scales a generated model to its design height, never wider than the footprint.</summary>
+        static bool PlaceGenerated(Builder b, string id, float footprintMetres)
+        {
+            var size = ModelLibrary.Size(id);
+            if (size.y <= 0.001f) return false;
+            float height = ModelLibrary.DesignHeight(id);
+            float k = height > 0 ? height / size.y : 1f;
+            float widest = Mathf.Max(size.x, size.z) * k;
+            float limit = footprintMetres * 0.98f;
+            if (widest > limit) k *= limit / widest;
+            b.Model(id, Vector3.zero, k);
+            return true;
         }
 
         sealed class Builder

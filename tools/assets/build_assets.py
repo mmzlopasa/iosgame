@@ -138,7 +138,11 @@ def build_model(spec, manifest):
     gltf_path = download(g["url"], os.path.join(cache, os.path.basename(g["url"])))
     for rel, inc in g["include"].items():
         download(inc["url"], os.path.join(cache, rel))
+    build_model_from_gltf(mid, gltf_path, cache, target, f"https://polyhaven.com/a/{mid}", manifest)
 
+
+def build_model_from_gltf(mid, gltf_path, cache, target, source, manifest):
+    """Decimates a glTF (external textures) into an FBX and registers it in the manifest."""
     os.makedirs(OUT_MODELS, exist_ok=True)
     fbx_out = os.path.join(OUT_MODELS, f"{mid}.fbx")
     info_out = os.path.join(cache, "blender_info.json")
@@ -184,7 +188,7 @@ def build_model(spec, manifest):
         mats[mname] = entry
 
     manifest["models"][mid] = {
-        "source": f"https://polyhaven.com/a/{mid}",
+        "source": source,
         "resource": f"Models/{mid}",
         "triangles": info["triangles"],
         "size": info["size"],
