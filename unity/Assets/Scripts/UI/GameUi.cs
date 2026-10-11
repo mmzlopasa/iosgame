@@ -290,18 +290,10 @@ namespace Founders.UI
             var names = E.Div().Col().Grow().Ignore();
             names.style.marginLeft = 10;
             names.Add(E.Text(G.State.SettlementName, 17, Theme.Ink, Theme.F.Display).NoWrap());
-            var sub = E.Eyebrow($"Era {Fmt.Roman(era)} · {G.EpochName}", Theme.Gold, 9.5f).NoWrap();
+            var sub = E.Eyebrow($"{G.StageName} · Era {Fmt.Roman(era)}", Theme.Gold, 9.5f).NoWrap();
             sub.style.marginTop = 2;
             names.Add(sub);
             row.Add(names);
-
-            var stage = E.Div().Row().Radius(999).Pad(5, 10).Bg(new Color(0.05f, 0.06f, 0.08f, 0.55f)).Border(Theme.Edge).Ignore();
-            stage.Add(E.Icon("home", 12, Theme.GoldLight));
-            var st = E.Text(G.StageName, 11, Theme.GoldLight, Theme.F.TextBold).NoWrap();
-            st.style.marginLeft = 5;
-            stage.Add(st);
-            stage.style.marginRight = 8;
-            row.Add(stage);
 
             var gear = E.IconButton("settings", Act(() => store.ActivePanel = Panel.Settings), 38, Theme.Ink, true);
             row.Add(gear);

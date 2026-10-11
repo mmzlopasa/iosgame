@@ -352,6 +352,8 @@ namespace FoundersEditor
             }
             var terrainMat = new Material(Shader.Find("Universal Render Pipeline/Terrain/Lit")) { name = "TerrainLit" };
             terrainMat.EnableKeyword("_NORMALMAP");
+            // Keep the instancing variants in the build (they are stripped unless a material asks for them).
+            terrainMat.enableInstancing = true;
             Save(terrainMat, $"{Materials}/TerrainLit.mat");
         }
 

@@ -22,7 +22,7 @@ namespace Founders.UI
             Tap(scrim, () => store.ActivePanel = Panel.None);
             sheetLayer.Add(scrim);
 
-            sheet = E.Div("sheet").Abs(0, 90, 0, 0).Col().Radius(28, 0).BgImage(Theme.SheetFill);
+            sheet = E.Div("sheet").Abs(0, 90, 0, 0).Col().Radius(28, 0).BgImage(Theme.SheetFill).Bg(Theme.Hex("#0F1117"));
             sheet.style.borderTopWidth = 1;
             sheet.style.borderTopColor = new Color(1, 1, 1, 0.2f);
             sheet.style.overflow = Overflow.Hidden;
@@ -117,7 +117,7 @@ namespace Founders.UI
             {
                 var chip = E.Div().Row().Radius(999).Pad(6, 10).Bg(Theme.Fill).Border(new Color(1, 1, 1, 0.1f)).Ignore();
                 chip.style.marginRight = 8;
-                chip.Add(E.Text("Building ", 12, Theme.Body));
+                chip.Add(E.Text("Building", 12, Theme.Body).Margin(0, 6));
                 chip.Add(Live(() => $"{G.ActiveConstructionCount()}", 12, Theme.Ink, Theme.F.Mono));
                 row.Add(chip);
             }
@@ -553,7 +553,7 @@ namespace Founders.UI
             hero.Add(Avatar(96, 34));
             hero.Add(E.Text(G.State.SettlementName, 22, Theme.Ink, Theme.F.Display).Margin(12));
             var id = E.Div().Row().Radius(999).Pad(5, 10).Bg(Theme.Fill).Border(new Color(1, 1, 1, 0.1f)).Margin(8).Ignore();
-            id.Add(E.Text("Founder ID ", 11, Theme.Muted));
+            id.Add(E.Text("Founder ID", 11, Theme.Muted).Margin(0, 6));
             id.Add(E.Mono(FounderId(), 11, Theme.Body));
             hero.Add(id);
             host.Add(hero);

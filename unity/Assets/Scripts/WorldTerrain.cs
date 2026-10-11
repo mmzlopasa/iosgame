@@ -56,7 +56,9 @@ namespace Founders
             if (mat != null) Terrain.materialTemplate = mat;
             Terrain.heightmapPixelError = 4f;
             Terrain.basemapDistance = 300f;
-            Terrain.drawInstanced = true;
+            // Per-instance terrain drawing needs shader variants Unity strips from player builds;
+            // the classic path renders with the variants the material keeps.
+            Terrain.drawInstanced = false;
             var col = go.GetComponent<Collider>();
             if (col != null) Object.Destroy(col);
 

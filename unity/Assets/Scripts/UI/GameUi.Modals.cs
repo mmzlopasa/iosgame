@@ -51,6 +51,7 @@ namespace Founders.UI
         {
             var c = E.Div("dialog").Col().Radius(28).BgImage(Theme.SheetFill).Border(Theme.Edge);
             c.style.borderTopColor = new Color(1, 1, 1, 0.24f);
+            c.style.backgroundColor = Theme.Hex("#101218");
             c.style.overflow = Overflow.Hidden;
             c.style.width = Length.Percent(100);
             c.style.maxWidth = 420;
@@ -109,11 +110,12 @@ namespace Founders.UI
                 cell.style.width = Length.Percent(48.5f);
                 var l = E.Div().Row().Ignore();
                 l.Add(E.Icon(IconFor(type), 14, TintFor(type)));
-                var n = E.Text(type.DisplayName(), 12.5f, Theme.Body);
+                var n = E.Text(type.DisplayName(), 12.5f, Theme.Body).NoWrap();
                 n.style.marginLeft = 6;
+                l.Grow();
                 l.Add(n);
                 cell.Add(l);
-                cell.Add(E.Mono(Fmt.Signed(v), 13.5f, v < -0.5 ? Theme.Error : type == ResourceType.Knowledge ? Theme.Lavender : Theme.Mint));
+                cell.Add(E.Mono(Fmt.Signed(v), 12.5f, v < -0.5 ? Theme.Error : type == ResourceType.Knowledge ? Theme.Lavender : Theme.Mint));
                 grid.Add(cell);
             }
             gathered.Add(grid);
