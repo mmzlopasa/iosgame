@@ -31,6 +31,7 @@ namespace FoundersEditor
             ConfigurePlayer();
             AssetDatabase.Refresh();
             ArtSetup.Run();
+            UiSetup.Run();
             GenerateScene();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();

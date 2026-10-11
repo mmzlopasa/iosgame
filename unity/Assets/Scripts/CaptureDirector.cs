@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using Founders.Core;
+using Founders.UI;
 using UnityEngine;
 
 namespace Founders
@@ -16,17 +17,17 @@ namespace Founders
     public class CaptureDirector : MonoBehaviour
     {
         GameStore store;
-        Hud hud;
+        GameUi ui;
         string outDir;
 
         public static bool Requested =>
             File.Exists(Path.Combine(Application.persistentDataPath, "capture.flag")) ||
             System.Environment.GetCommandLineArgs().Contains("-capture");
 
-        public void Begin(GameStore store, Hud hud)
+        public void Begin(GameStore store, GameUi ui)
         {
             this.store = store;
-            this.hud = hud;
+            this.ui = ui;
             outDir = Path.Combine(Application.persistentDataPath, "captures");
             Directory.CreateDirectory(outDir);
             StartCoroutine(Run());
@@ -34,7 +35,7 @@ namespace Founders
 
         IEnumerator Shot(string name, bool ui)
         {
-            hud.Hidden = !ui;
+            this.ui.Hidden = !ui;
             for (int i = 0; i < 20; i++) yield return null; // let camera moves, particles and LOD settle
             yield return new WaitForSeconds(0.8f);
             // On iOS/Android the path is relative to the persistent data folder.
@@ -80,10 +81,24 @@ namespace Founders
             game.DebugFastForward(70);
         }
 
+        IEnumerator ShowPanel(string name, Panel panel)
+        {
+            store.ActivePanel = panel;
+            yield return Shot(name, true);
+            store.ActivePanel = Founders.Panel.None;
+        }
+
         IEnumerator Run()
         {
             var game = store.Game;
             yield return new WaitForSeconds(2f);
+
+            // 0. The loading screen.
+            ui.Loading.Show();
+            ui.Loading.Set(0.64f, "Kindling the hearth…");
+            yield return Shot("00_loading", true);
+            ui.Loading.Hide();
+            yield return new WaitForSeconds(0.6f);
 
             // 1. The starting camp as a new player sees it.
             Focus(Camp(), 26f);
@@ -99,6 +114,7 @@ namespace Founders
                 yield return null;
             }
             game.SetWorkers(JobType.Research, 1);
+            bool eventShot = false;
             foreach (var tech in new[] { "improved_stone_tools", "food_preservation", "structural_weaving", "shared_labor", "permanent_settlement" })
             {
                 game.DebugGrant(new ResourceBundle(0, 0, 0, 60));
@@ -107,13 +123,21 @@ namespace Founders
                 var ev = game.PendingEvent;
                 if (ev != null)
                 {
+                    if (!eventShot)
+                    {
+                        eventShot = true;
+                        store.Refresh();
+                        store.EventMinimized = false;
+                        Focus(Camp(), 22f);
+                        yield return Shot("03_event", true);
+                    }
                     var option = ev.Options.FirstOrDefault(o => game.OptionBlocker(o) == null);
                     if (option != null) game.ResolveEvent(option.Id);
                 }
             }
             store.Refresh();
             Focus(Camp(), 24f);
-            yield return Shot("03_camp_grown", false);
+            yield return Shot("04_camp_grown", false);
 
             // 3. Village milestone (population grows over time).
             for (int i = 0; i < 12 && !game.CanClaimMilestone("stable_village"); i++)
@@ -122,26 +146,45 @@ namespace Founders
                 game.DebugFastForward(120);
             }
             if (game.CanClaimMilestone("stable_village")) game.ClaimMilestone("stable_village");
-            store.Celebration = null;
             store.Refresh();
-            yield return new WaitForSeconds(0.5f);
             Focus(Camp(), 22f);
-            yield return Shot("04_village", false);
+            yield return Shot("05_milestone", true);
+            store.Celebration = null;
+            store.Toasts.Clear();
+            yield return Shot("06_village", false);
 
             // 4. Landscape views: the river and the forest edge.
             var map = game.Content.Map;
             Focus(Grid.CellCenter(9.5f, 9f), 16f);
-            yield return Shot("05_river", false);
+            yield return Shot("07_river", false);
             Focus(Grid.CellCenter(3f, 6f), 14f);
-            yield return Shot("06_forest_edge", false);
+            yield return Shot("08_forest_edge", false);
             Focus(Grid.CellCenter((map.Width - 1) * 0.5f, (map.Height - 1) * 0.5f), 48f);
-            yield return Shot("07_overview", true);
+            yield return Shot("09_overview", true);
 
-            // 5. UI.
+            // 5. UI screens.
             Focus(Camp(), 24f);
-            store.ActivePanel = Panel.Build;
-            yield return Shot("08_build_panel", true);
-            store.ActivePanel = Panel.None;
+            store.EventMinimized = true;
+            yield return ShowPanel("10_build_panel", Founders.Panel.Build);
+            yield return ShowPanel("11_people", Founders.Panel.People);
+            yield return ShowPanel("12_research", Founders.Panel.Research);
+            yield return ShowPanel("13_goals", Founders.Panel.Objectives);
+            yield return ShowPanel("14_world", Founders.Panel.Map);
+            yield return ShowPanel("15_profile", Founders.Panel.Profile);
+            yield return ShowPanel("16_settings", Founders.Panel.Settings);
+
+            var hut = game.State.Buildings.FirstOrDefault(b => game.Content.Building(b.DefinitionId)?.UpgradesTo != null) ?? game.State.Buildings.First();
+            store.FocusBuilding(hut.Id);
+            yield return Shot("17_building", true);
+            store.SelectedBuildingId = null;
+
+            var report = new OfflineReport { Seconds = 5 * 3600 + 24 * 60, Gained = new ResourceBundle(226, 1944, 291, 1166) };
+            report.Events.Add("Hide Shelter finished");
+            report.Events.Add("Research complete: Improved Stone Tools");
+            report.Events.Add("2 newcomers joined the camp");
+            store.Offline = report;
+            yield return Shot("18_welcome_back", true);
+            store.Offline = null;
 
             File.WriteAllText(Path.Combine(outDir, "done.txt"), "ok");
             Debug.Log("[FOUNDERS] capture finished");

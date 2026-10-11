@@ -1,3 +1,5 @@
+using System.Collections;
+using Founders.UI;
 using UnityEngine;
 
 namespace Founders
@@ -11,24 +13,49 @@ namespace Founders
     {
         void Awake()
         {
-            Application.targetFrameRate = 60;
+            Prefs.Apply();
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
+            var ui = GameUi.Create(gameObject);
+            ui.Loading.Show();
+            ui.Loading.Set(0.08f, "Kindling the hearth…");
+            StartCoroutine(Boot(ui));
+        }
+
+        IEnumerator Boot(GameUi ui)
+        {
+            // Two frames so the loading screen is on screen before the heavy work starts.
+            yield return null;
+            yield return null;
+
             SceneEnvironment.Apply();
             if (FindAnyObjectByType<Light>() == null) SceneEnvironment.CreateSun();
             // Ambient light from the HDRI sky (the scene is generated headless, so nothing is baked).
             DynamicGI.UpdateEnvironment();
+            ui.Loading.Set(0.22f, "Shaping the valley…");
+            yield return null;
 
             bool capture = CaptureDirector.Requested;
             var rig = new GameObject("CameraRig").AddComponent<CameraRig>();
             var world = new GameObject("World").AddComponent<WorldView>();
             var store = gameObject.AddComponent<GameStore>();
-            var hud = gameObject.AddComponent<Hud>();
-
-            rig.IsBlocked = hud.BlocksPointer;
+            rig.IsBlocked = ui.BlocksPointer;
             rig.OnTap = store.HandleTap;
             store.Init(rig, world, capture);
-            hud.Init(store);
-            if (capture) gameObject.AddComponent<CaptureDirector>().Begin(store, hud);
+            ui.Loading.Set(0.78f, "Gathering the people…");
+            yield return null;
+
+            ui.Init(store);
+            // Let the first frames of the world render (shaders, terrain) under the loading screen.
+            for (float t = 0; t < 0.6f; t += Time.unscaledDeltaTime)
+            {
+                ui.Loading.Set(Mathf.Lerp(0.78f, 1f, t / 0.6f), "Raising the camp…");
+                yield return null;
+            }
+            ui.Loading.Set(1f, "Welcome, Founder");
+            yield return new WaitForSecondsRealtime(0.2f);
+            ui.Loading.Hide();
+
+            if (capture) gameObject.AddComponent<CaptureDirector>().Begin(store, ui);
         }
     }
 }

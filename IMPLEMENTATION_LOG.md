@@ -60,3 +60,33 @@
 **Nije provjereno:**
 - Unity build (APK/IPA) još nije pokrenut: čeka `UNITY_LICENSE`, `UNITY_EMAIL` i `UNITY_PASSWORD` secrete.
 - Ponašanje u igri (izgled, dodir, performanse) nije viđeno ni u editoru ni na uređaju.
+
+## 2026-10-11 — Novi UI (UI Toolkit), loading screen, ikona aplikacije
+
+**Dizajn:** odobren dizajn (Design canvas „Founders — UI dizajn”, 10 ekrana, stil scyhost: noćna navy pozadina, stakleni paneli, zlatni akcenti, fontovi Sora / Geist / Geist Mono).
+
+**Napravljeno:**
+- `Hud.cs` (IMGUI) zamijenjen s `Scripts/UI/` (UI Toolkit, sve iz koda):
+  - HUD: avatar, naselje i era, 5 resursa, kartica cilja, brzi gumbi, mjerači vremena (istraživanje, gradnja, izviđanje), toastovi, donji izbornik.
+  - Kartice: postavljanje zgrade, odabrana zgrada (radnici, nadogradnja).
+  - Sheetovi: Gradnja (kategorije), Ljudi i rad, Istraživanje, Ciljevi, Svijet i Legacy Timeline, Profil, Postavke (kvaliteta grafike, štednja baterije, haptika, alati za razvoj).
+  - Dijalozi: događaj (odluka), milestone, „dok te nije bilo” (offline izvještaj iz stvarne simulacije).
+  - Loading screen dok se svijet generira.
+- `tools/ui/build_ui_assets.py`:
+  - 28 ikona, logo, pozadina za loading, zlatni prsten avatara i ikona aplikacije 1024×1024, iscrtani headless Chromiumom iz SVG-a.
+  - Fontovi (SIL OFL) izrezani na statične težine pomoću fontToolsa.
+- `Editor/UiSetup.cs`:
+  - Tema i PanelSettings.
+  - iOS ikona za sve veličine.
+  - Launch screen.
+  - Unity splash isključen.
+- MSAA 4× je zamijenjen SMAA-om, zbog RenderPass greške na Metalu.
+- Capture mode sada snima i nove ekrane (00–18).
+- `GameStore`: `OfflineReport`, `FocusBuilding`.
+- Dijagnostički log terena.
+
+**Provjereno:**
+- `scripts/unity-compile-check.sh` prolazi bez grešaka.
+- `dotnet test unity/CoreTests` prolazi 45/45.
+
+**Nije provjereno:** izgled u simulatoru. Provjerit će se kad se završe CI preview snimke.

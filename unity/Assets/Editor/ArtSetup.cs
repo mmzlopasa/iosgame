@@ -19,6 +19,20 @@ namespace FoundersEditor
             if (!assetPath.StartsWith("Assets/Art/") && !assetPath.StartsWith("Assets/Generated/")) return;
             var ti = (TextureImporter)assetImporter;
             string file = Path.GetFileNameWithoutExtension(assetPath);
+            if (assetPath.StartsWith("Assets/Art/UI/"))
+            {
+                // UI art: pixel-exact, no mips, no power-of-two rescale; only the big backdrop is compressed.
+                ti.textureType = TextureImporterType.Default;
+                ti.mipmapEnabled = false;
+                ti.npotScale = TextureImporterNPOTScale.None;
+                ti.alphaSource = TextureImporterAlphaSource.FromInput;
+                ti.alphaIsTransparency = true;
+                ti.wrapMode = TextureWrapMode.Clamp;
+                ti.filterMode = FilterMode.Bilinear;
+                ti.maxTextureSize = 4096;
+                ti.textureCompression = file == "loading_bg" ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Uncompressed;
+                return;
+            }
             ti.mipmapEnabled = true;
             ti.anisoLevel = 4;
             ti.maxTextureSize = 1024;
@@ -158,7 +172,7 @@ namespace FoundersEditor
             }
 
             asset.supportsHDR = true;
-            asset.msaaSampleCount = 4;
+            asset.msaaSampleCount = 1; // MSAA on Metal tile memory triggered RenderPass sample-count errors; SMAA runs in post instead
             asset.renderScale = 1f;
             asset.supportsCameraDepthTexture = true;
             asset.mainLightShadowmapResolution = 2048;
@@ -439,7 +453,7 @@ namespace FoundersEditor
             camGo.AddComponent<AudioListener>();
             var data = camGo.AddComponent<UniversalAdditionalCameraData>();
             data.renderPostProcessing = true;
-            data.antialiasing = AntialiasingMode.None; // MSAA 4x on the pipeline asset
+            data.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
             data.renderShadows = true;
 
             var volumeGo = new GameObject("PostProcessing");

@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using Founders.Core;
 using UnityEngine;
 
@@ -60,6 +61,11 @@ namespace Founders
             if (col != null) Object.Destroy(col);
 
             PaintSplat(null, null);
+
+            var shader = Terrain.materialTemplate != null ? Terrain.materialTemplate.shader : null;
+            Debug.Log($"[FOUNDERS] terrain: material={(mat != null ? mat.name : "none")} shader={(shader != null ? shader.name : "none")} " +
+                      $"supported={(shader != null && shader.isSupported)} layers={string.Join(",", data.terrainLayers.Select(l => l != null && l.diffuseTexture != null ? l.diffuseTexture.name : "null"))} " +
+                      $"height(center)={HeightAt(center):0.00} water={WaterLevel}");
         }
 
         /// <summary>Ground height (world y) at a world position.</summary>

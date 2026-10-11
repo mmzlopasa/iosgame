@@ -29,7 +29,7 @@ namespace Founders
     /// <summary>
     /// Isometric-style strategy camera. One finger drags the map, two fingers pinch to zoom,
     /// a short tap selects a cell. In the editor: left mouse drags/taps, wheel zooms.
-    /// Touches that start on the UI are ignored (see <see cref="Hud.BlocksPointer"/>).
+    /// Touches that start on the UI are ignored (see <see cref="UI.GameUi.BlocksPointer"/>).
     /// </summary>
     public class CameraRig : MonoBehaviour
     {

@@ -1,11 +1,20 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using Founders.Core;
 using UnityEngine;
 
 namespace Founders
 {
-    public enum Panel { None, Build, People, Research, Objectives, Map, Settings }
+    public enum Panel { None, Build, People, Research, Objectives, Map, Profile, Settings }
+
+    /// <summary>What happened while the player was away (shown once on launch).</summary>
+    public sealed class OfflineReport
+    {
+        public double Seconds;
+        public ResourceBundle Gained;
+        public readonly List<string> Events = new List<string>();
+    }
 
     public sealed class Toast
     {
@@ -32,6 +41,7 @@ namespace Founders
         public readonly List<Toast> Toasts = new List<Toast>();
         public bool EventMinimized;
         public string Celebration;
+        public OfflineReport Offline;
         public string SaveStatus { get; private set; } = "Not saved yet";
 
         readonly SystemClock clock = new SystemClock();
@@ -74,13 +84,49 @@ namespace Founders
                     break;
             }
 
-            Game.Update(); // simulate time spent away since the last save (capped, never duplicated)
+            // Simulate the time spent away since the last save (capped, never duplicated).
+            var before = Game.State.Clone();
+            Game.Update();
+            if (!ephemeral && outcome.Result == LoadResult.Loaded) Offline = Report(before, Game.State);
             if (message != null) AddToast(new GameNotice(NoticeKind.Warning, message));
             AbsorbNotices();
             World.Init(this);
             Rig.Bounds = MapBounds();
             FocusOnSettlement(true);
             Save();
+        }
+
+        OfflineReport Report(GameState before, GameState after)
+        {
+            double seconds = after.SimTime - before.SimTime;
+            if (seconds < 90) return null;
+            var r = new OfflineReport { Seconds = seconds, Gained = after.Resources - before.Resources };
+            foreach (var b in after.Buildings)
+            {
+                var old = before.Building(b.Id);
+                if (b.Status == BuildingStatus.Complete && (old == null || old.Status != BuildingStatus.Complete))
+                    r.Events.Add($"{Content.Building(b.DefinitionId)?.Name ?? b.DefinitionId} finished");
+            }
+            foreach (var t in after.Researched.Except(before.Researched))
+                r.Events.Add($"Research complete: {Content.Technology(t)?.Name ?? t}");
+            int born = after.Population - before.Population;
+            if (born > 0) r.Events.Add(born == 1 ? "A newcomer joined the camp" : $"{born} newcomers joined the camp");
+            foreach (var e in after.ExploredRegions.Except(before.ExploredRegions))
+                r.Events.Add($"Scouts returned from {Content.Regions.FirstOrDefault(x => x.Id == e)?.Name ?? e}");
+            return r;
+        }
+
+        /// <summary>Selects a building and moves the camera to it.</summary>
+        public void FocusBuilding(int id)
+        {
+            var b = Game.State.Building(id);
+            if (b == null) return;
+            ActivePanel = Panel.None;
+            PlacingBuildingId = null;
+            GhostCell = null;
+            SelectedBuildingId = id;
+            Rig.SetFocus(Grid.CellCenter(b.X, b.Y));
+            Refresh();
         }
 
         Rect MapBounds()
@@ -142,7 +188,7 @@ namespace Founders
         static void Vibrate()
         {
 #if UNITY_IOS || UNITY_ANDROID
-            Handheld.Vibrate();
+            if (UI.Prefs.Haptics) Handheld.Vibrate();
 #endif
         }
 
@@ -188,6 +234,7 @@ namespace Founders
             GhostCell = null;
             SelectedBuildingId = null;
             Celebration = null;
+            Offline = null;
             Toasts.Clear();
             ActivePanel = Panel.None;
             World.RebuildAll();
