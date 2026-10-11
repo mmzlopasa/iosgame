@@ -78,6 +78,8 @@ namespace FoundersEditor
                 mi.generateAnimations = ModelImporterGenerateAnimations.GenerateAnimations;
                 mi.animationCompression = ModelImporterAnimationCompression.KeyframeReductionAndCompression;
                 mi.optimizeGameObjects = false;
+                // Keep the material names (Skin / Hide / Hair): the game maps its own materials by name.
+                mi.materialImportMode = ModelImporterMaterialImportMode.ImportStandard;
             }
             mi.importCameras = false;
             mi.importLights = false;

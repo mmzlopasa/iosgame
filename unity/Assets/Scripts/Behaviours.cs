@@ -331,18 +331,26 @@ namespace Founders
                 var hair = HairColors[rng.Next(HairColors.Length)];
                 foreach (var r in body.GetComponentsInChildren<SkinnedMeshRenderer>())
                 {
-                    r.sharedMaterials = new[] { Palette.Get("Skin"), ModelLibrary.Surface("Hide"), Palette.Get("Hair") };
+                    // Submesh order is up to the FBX importer, so materials are matched by name.
+                    var source = r.sharedMaterials;
+                    var mats = new Material[source.Length];
+                    var tints = new Color[source.Length];
+                    for (int i = 0; i < source.Length; i++)
+                    {
+                        string n = source[i] != null ? source[i].name : "";
+                        if (n.StartsWith("Hide")) { mats[i] = ModelLibrary.Surface("Hide"); tints[i] = hide; }
+                        else if (n.StartsWith("Hair")) { mats[i] = Palette.Get("Hair"); tints[i] = hair; }
+                        else { mats[i] = Palette.Get("Skin"); tints[i] = skin; }
+                    }
+                    r.sharedMaterials = mats;
                     r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
                     r.updateWhenOffscreen = false;
-                    var block = new MaterialPropertyBlock();
-                    block.SetColor("_BaseColor", skin);
-                    r.SetPropertyBlock(block, 0);
-                    block = new MaterialPropertyBlock();
-                    block.SetColor("_BaseColor", hide);
-                    r.SetPropertyBlock(block, 1);
-                    block = new MaterialPropertyBlock();
-                    block.SetColor("_BaseColor", hair);
-                    r.SetPropertyBlock(block, 2);
+                    for (int i = 0; i < mats.Length; i++)
+                    {
+                        var block = new MaterialPropertyBlock();
+                        block.SetColor("_BaseColor", tints[i]);
+                        r.SetPropertyBlock(block, i);
+                    }
                 }
                 return root.gameObject.AddComponent<Villager>();
             }
