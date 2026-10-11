@@ -145,7 +145,7 @@ namespace Founders.UI
                     return buildTab + "|" + string.Join(",", G.Content.Buildings.Where(b => b.Buildable).Select(d =>
                         $"{G.State.Resources.Covers(d.Cost)}{G.IsUnlocked(d)}{G.Count(d.Id, true)}"));
                 case Panel.People:
-                    return $"{G.IdleWorkers}|{G.State.Population}|{G.HousingCapacity()}|{G.State.FoodShortage}|" +
+                    return $"{G.SeasonIndex}|{G.Freezing}|{string.Join(",", G.ApprovalFactors().Select(f => f.Label + f.Points))}|{G.IdleWorkers}|{G.State.Population}|{G.HousingCapacity()}|{G.State.FoodShortage}|" +
                            string.Join(",", Enums.Jobs.Select(j => $"{G.State.Assignments[j]}/{G.JobCapacity(j)}"));
                 case Panel.Research:
                     return $"{G.State.ActiveResearch?.TechId}|" + string.Join(",", G.Content.Technologies.Select(t =>
@@ -268,6 +268,7 @@ namespace Founders.UI
 
         void BuildPeoplePanel(VisualElement host)
         {
+            BuildWellbeing(host);
             var summary = Card();
             var row = E.Div().Row().Ignore();
             row.Add(Stat("Population", () => $"{G.State.Population}/{G.HousingCapacity()}", Theme.Ink));
@@ -305,6 +306,71 @@ namespace Founders.UI
             r2.Add(Live(() => Fmt.PerMinute(-econ.Spoilage), 13, Theme.Error, Theme.F.Mono));
             up.Add(r2);
             host.Add(up);
+        }
+
+        /// <summary>Approval with its causes, and what the season asks of the settlement.</summary>
+        void BuildWellbeing(VisualElement host)
+        {
+            var card = Card();
+            var head = E.Div().Row().Ignore();
+            head.Add(E.Icon("approval", 18, Theme.Gold));
+            var t = E.Text("Approval", 15, Theme.Ink, Theme.F.Display).Grow();
+            t.style.marginLeft = 8;
+            head.Add(t);
+            var pct = E.Mono("", 18);
+            Bind(() => { int a = G.Approval; pct.text = a + "%"; pct.style.color = ApprovalColor(a); });
+            head.Add(pct);
+            card.Add(head);
+            var bar = E.Bar(out var fill, 6, null, Theme.Gold);
+            fill.style.backgroundImage = StyleKeyword.None;
+            Bind(() => { int a = G.Approval; E.SetFill(fill, a / 100.0); fill.style.backgroundColor = ApprovalColor(a); });
+            bar.style.marginTop = 10;
+            card.Add(bar);
+            var effect = Live(() =>
+            {
+                int a = G.Approval;
+                int work = (int)Math.Round((G.ApprovalProductivity(a) - 1) * 100);
+                string growth = a < 30 ? "no newcomers" : $"growth ×{G.ApprovalGrowth(a):0.0}";
+                return $"Work {(work >= 0 ? "+" : "")}{work}% · {growth}";
+            }, 11.5f, Theme.Body);
+            effect.style.marginTop = 6;
+            card.Add(effect);
+            card.Add(E.Div().Size(null, 1).Bg(new Color(1, 1, 1, 0.07f)).Margin(10).Ignore());
+            var baseRow = E.Div().Row().Between().Margin(8).Ignore();
+            baseRow.Add(E.Text("Base", 12.5f, Theme.Muted));
+            baseRow.Add(E.Mono(Game.ApprovalBase.ToString(CultureInfo.InvariantCulture), 12.5f, Theme.Muted));
+            card.Add(baseRow);
+            foreach (var f in G.ApprovalFactors())
+            {
+                var r = E.Div().Row().Between().Margin(6).Ignore();
+                r.Add(E.Text(f.Label, 12.5f, Theme.Ink).Grow());
+                r.Add(E.Mono((f.Points > 0 ? "+" : f.Points < 0 ? "−" : "") + Math.Abs(f.Points), 12.5f, f.Points > 0 ? Theme.Mint : f.Points < 0 ? Theme.Error : Theme.Muted));
+                card.Add(r);
+            }
+            host.Add(card);
+
+            var season = G.Season;
+            if (season != null)
+            {
+                var sc = Card();
+                var sh = E.Div().Row().Ignore();
+                sh.Add(E.Icon(SeasonIcon(season.Id), 18, SeasonTint(season.Id)));
+                var st = E.Text($"{season.Name} · Year {G.Year}", 15, Theme.Ink, Theme.F.Display).Grow();
+                st.style.marginLeft = 8;
+                sh.Add(st);
+                sh.Add(Live(() => Fmt.Clock(G.SecondsUntilNextSeason), 12, Theme.Muted, Theme.F.Mono));
+                sc.Add(sh);
+                if (!string.IsNullOrEmpty(season.Description)) sc.Add(E.Text(season.Description, 12, Theme.Body).Margin(6));
+                var chips = E.Div().Row().Margin(10).Ignore();
+                chips.style.flexWrap = Wrap.Wrap;
+                chips.Add(StatChip("food", $"Foraging ×{season.Foraging:0.##}"));
+                chips.Add(StatChip("spring", season.Farming <= 0 ? "No farming" : $"Farming ×{season.Farming:0.##}"));
+                if (season.FuelPerPersonPerSecond > 0)
+                    chips.Add(StatChip("flame", $"Firewood {G.FuelPerSecond * 60:0.#}/m"));
+                sc.Add(chips);
+                if (G.Freezing) sc.Add(Notice("alert", "The woodpile is empty and people are freezing. Put more people on Wood Gathering.", Theme.Error));
+                host.Add(sc);
+            }
         }
 
         VisualElement Stat(string label, Func<string> value, Color color)

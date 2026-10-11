@@ -478,11 +478,58 @@ namespace Founders.UI
             var r = G.State.ActiveResearch;
             var e = G.State.ActiveExpedition;
             var builds = string.Join(",", G.State.Buildings.Where(b => b.Status != BuildingStatus.Complete).Select(b => b.Id));
-            return $"{r?.TechId}|{e?.RegionId}|{builds}";
+            return $"{r?.TechId}|{e?.RegionId}|{builds}|{G.SeasonIndex}|{G.Freezing}";
+        }
+
+        static string SeasonIcon(string id) => id switch { "summer" => "summer", "autumn" => "autumn", "winter" => "winter", _ => "spring" };
+
+        static Color SeasonTint(string id) => id switch
+        {
+            "summer" => Theme.Gold,
+            "autumn" => Theme.Hex("#F0A35E"),
+            "winter" => Theme.Hex("#A9D8FF"),
+            _ => Theme.Mint,
+        };
+
+        static Color ApprovalColor(int a) => a >= 65 ? Theme.Mint : a >= 40 ? Theme.Gold : Theme.Error;
+
+        /// <summary>Season, year and approval at a glance (tap: People & wellbeing).</summary>
+        VisualElement SeasonCard()
+        {
+            var season = G.Season;
+            var c = E.Div("season").Col().Glass(16, G.Freezing ? Theme.Alpha(Theme.Error, 0.5f) : (Color?)null).Pad(10).Margin(0, 0, 8);
+            if (season != null)
+            {
+                var head = E.Div().Row().Ignore();
+                head.Add(E.Icon(SeasonIcon(season.Id), 14, SeasonTint(season.Id)));
+                var name = E.Text(season.Name, 12.5f, Theme.Ink, Theme.F.TextBold);
+                name.style.marginLeft = 5;
+                head.Add(name);
+                head.Add(E.Div().Grow().Ignore());
+                head.Add(Live(() => $"Y{G.Year}", 10, Theme.Muted, Theme.F.Mono));
+                c.Add(head);
+                var bar = LiveBar(() => G.SeasonProgress, 3, Theme.Gradient("season" + season.Id, false, SeasonTint(season.Id), Theme.Alpha(SeasonTint(season.Id), 0.7f)));
+                bar.style.marginTop = 6;
+                c.Add(bar);
+            }
+            var row = E.Div().Row().Margin(7).Ignore();
+            row.Add(E.Icon("approval", 13, Theme.Body));
+            var label = E.Text("Approval", 10.5f, Theme.Body);
+            label.style.marginLeft = 5;
+            row.Add(label);
+            row.Add(E.Div().Grow().Ignore());
+            var value = E.Mono("", 12);
+            Bind(() => { int a = G.Approval; value.text = a + "%"; value.style.color = ApprovalColor(a); });
+            row.Add(value);
+            c.Add(row);
+            if (G.Freezing) c.Add(E.Text("Freezing! Gather wood.", 10.5f, Theme.Error, Theme.F.TextBold).Margin(5));
+            Tap(c, () => store.ActivePanel = Panel.People);
+            return c;
         }
 
         void BuildRightRail(VisualElement host)
         {
+            host.Add(SeasonCard());
             var r = G.State.ActiveResearch;
             if (r != null)
             {
@@ -574,7 +621,7 @@ namespace Founders.UI
         {
             switch (p)
             {
-                case Panel.People: return G.IdleWorkers > 0;
+                case Panel.People: return G.IdleWorkers > 0 || G.Freezing;
                 case Panel.Research:
                     return G.State.ActiveResearch == null && G.Content.Technologies.Any(t =>
                         G.GetResearchStatus(t.Id).State == ResearchState.Available && G.State.Resources.Covers(t.Cost));
@@ -787,7 +834,7 @@ namespace Founders.UI
         static string Category(BuildingDefinition d)
         {
             if (d.HousingValue > 0) return "Shelter";
-            if (d.JobSlots != null && d.JobSlots.Any(s => s.Job == JobType.Foraging)) return "Food";
+            if (d.JobSlots != null && d.JobSlots.Any(s => s.Job == JobType.Foraging || s.Job == JobType.Farming)) return "Food";
             if (d.StorageValue > 0 || d.ProtectedFoodValue > 0) return "Storage";
             return "Work";
         }
@@ -806,7 +853,8 @@ namespace Founders.UI
             var look = TileLook[cat];
             var t = E.Div().Size(size, size).Radius(size * 0.3f).Center().Border(new Color(1, 1, 1, 0.12f)).Ignore();
             t.BgImage(Theme.Gradient("tile" + cat, true, look.a, look.b));
-            string icon = def.Id.Contains("fire") ? "flame" : def.Id.Contains("stone") ? "stone" : def.Id.Contains("wood") ? "wood" : look.icon;
+            string icon = def.Id.Contains("farm") ? "spring" : def.Id.Contains("fire") || def.Id.Contains("kiln") || def.Id.Contains("smelter") ? "flame"
+                : def.Id.Contains("stone") ? "stone" : def.Id.Contains("wood") ? "wood" : look.icon;
             t.Add(E.Icon(icon, size * 0.46f, Theme.Alpha(Theme.GoldPale, 0.95f)));
             return t;
         }
