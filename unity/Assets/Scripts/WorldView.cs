@@ -51,7 +51,7 @@ namespace Founders
 
     /// <summary>
     /// Draws the settlement from the game state: textured terrain with the river, water,
-    /// forests and rocks, mist over unexplored regions, buildings with construction
+    /// forests and rocks, buildings with construction
     /// progress, placement preview, selection, trodden paths and villagers.
     /// It never changes game state itself.
     /// </summary>
@@ -61,7 +61,6 @@ namespace Founders
         public WorldTerrain Ground { get; private set; }
         Transform natureRoot, objectRoot, overlayRoot, peopleRoot;
 
-        ParticleSystem mist;
         GrassField grassField;
         readonly Dictionary<(int, int), GameObject> cellProps = new Dictionary<(int, int), GameObject>();
         readonly Dictionary<int, BuildingView> buildings = new Dictionary<int, BuildingView>();
@@ -72,7 +71,6 @@ namespace Founders
         int selectionKey = -1;
         string splatKey;
         string lastStage;
-        string fogKey;
 
         static readonly string[] Pines = { "PineA", "PineB", "PineC" };
 
@@ -103,7 +101,6 @@ namespace Founders
             ghostKey = "";
             selectionKey = -1;
             splatKey = null;
-            fogKey = null;
 
             Ground = new WorldTerrain(store.Game.Content.Map, transform);
             natureRoot = Parts.Group("Nature", transform, Vector3.zero).transform;
@@ -114,7 +111,6 @@ namespace Founders
             BuildNature();
             grassField = Parts.Group("Grass", transform, Vector3.zero).AddComponent<GrassField>();
             grassField.Init(Ground, store.Game);
-            BuildMist();
             Sync(true);
         }
 
@@ -207,63 +203,6 @@ namespace Founders
             }
         }
 
-        // MARK: - Mist over unexplored land
-
-        void BuildMist()
-        {
-            var go = new GameObject("Mist");
-            go.transform.SetParent(transform, false);
-            mist = go.AddComponent<ParticleSystem>();
-            mist.Stop(true, ParticleSystemStopBehavior.StopEmittingAndClear);
-            var main = mist.main;
-            main.loop = false;
-            main.playOnAwake = false;
-            main.startLifetime = 1e6f;
-            main.startSpeed = 0f;
-            main.maxParticles = 4000;
-            main.simulationSpace = ParticleSystemSimulationSpace.World;
-            var emission = mist.emission;
-            emission.enabled = false;
-            var shape = mist.shape;
-            shape.enabled = false;
-            var r = go.GetComponent<ParticleSystemRenderer>();
-            r.sharedMaterial = Palette.Get("Mist");
-            r.renderMode = ParticleSystemRenderMode.Billboard;
-            r.sortingFudge = -10f;
-            r.minParticleSize = 0f;
-            r.maxParticleSize = 5f;
-        }
-
-        void UpdateMist(Game game)
-        {
-            var map = game.Content.Map;
-            var hidden = new List<(int, int)>();
-            for (int y = 0; y < map.Height; y++)
-                for (int x = 0; x < map.Width; x++)
-                    if (!game.IsRevealed(x, y)) hidden.Add((x, y));
-            string key = string.Join(";", game.State.ExploredRegions);
-            if (key == fogKey) return;
-            fogKey = key;
-            mist.Clear();
-            var ep = new ParticleSystem.EmitParams();
-            foreach (var (x, y) in hidden)
-            {
-                var rng = new System.Random(x * 9176 + y * 131);
-                for (int k = 0; k < 2; k++)
-                {
-                    var c = Grid.CellCenter(x + ((float)rng.NextDouble() - 0.5f), y + ((float)rng.NextDouble() - 0.5f));
-                    ep.position = new Vector3(c.x, 1.6f + (float)rng.NextDouble() * 2.5f, c.z);
-                    ep.startSize = 5f + (float)rng.NextDouble() * 3.5f;
-                    ep.rotation = (float)rng.NextDouble() * 360f;
-                    float shade = 0.82f + (float)rng.NextDouble() * 0.18f;
-                    ep.startColor = new Color(shade, shade, shade * 1.02f, 0.42f);
-                    ep.startLifetime = 1e6f;
-                    mist.Emit(ep, 1);
-                }
-            }
-            // Unexplored land stays visible as a silhouette under the mist.
-            foreach (var kv in cellProps) kv.Value.SetActive(true);
-        }
 
         // MARK: - Sync
 
@@ -283,7 +222,6 @@ namespace Founders
         {
             if (store == null) return;
             var game = store.Game;
-            UpdateMist(game);
 
             var seen = new HashSet<int>();
             foreach (var b in game.State.Buildings)

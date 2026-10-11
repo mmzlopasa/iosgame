@@ -48,6 +48,7 @@ namespace Founders
             new Spec("Tunic", new Color(0.42f, 0.30f, 0.20f), 0.2f),
             new Spec("Tunic2", new Color(0.36f, 0.30f, 0.24f), 0.2f),
             new Spec("Hair", new Color(0.12f, 0.09f, 0.07f), 0.4f),
+            new Spec("Fish", new Color(0.52f, 0.53f, 0.50f), 0.65f),
             // Fire
             new Spec("Ember", new Color(1.00f, 0.42f, 0.10f)) { Emission = new Color(1.0f, 0.38f, 0.08f) * 4f },
             // Feedback
@@ -286,6 +287,158 @@ namespace Founders
                 uv.Add(new Vector2((i + 1f) / n * 3f, 0)); uv.Add(new Vector2((float)i / n * 3f, 0)); uv.Add(new Vector2((i + 0.5f) / n * 3f, 2f));
             }
             return cone = FromTriangles("Cone", t, uv);
+        }
+
+        static readonly Dictionary<string, Mesh> cache = new Dictionary<string, Mesh>();
+
+        static Mesh Indexed(string name, List<Vector3> v, List<Vector2> uv, List<int> tris)
+        {
+            var mesh = new Mesh { name = name };
+            mesh.SetVertices(v);
+            mesh.SetUVs(0, uv);
+            mesh.SetTriangles(tris, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateTangents();
+            mesh.RecalculateBounds();
+            return mesh;
+        }
+
+        /// <summary>
+        /// Hide tent over a ring of poles (radius 0.5 at the base, height 1): the cover sags between
+        /// poles, leaves a smoke hole at the top and a door gap at the front (−z). Both sides are
+        /// built so the dark interior shows through the doorway.
+        /// </summary>
+        public static Mesh Tipi(int poles = 9)
+        {
+            string key = "tipi" + poles;
+            if (cache.TryGetValue(key, out var m)) return m;
+            const int perPole = 4, rings = 6;
+            int seg = poles * perPole;
+            var v = new List<Vector3>();
+            var uv = new List<Vector2>();
+            var tris = new List<int>();
+            const float top = 0.9f;
+            for (int j = 0; j <= rings; j++)
+            {
+                float h = top * j / rings;
+                for (int i = 0; i <= seg; i++)
+                {
+                    float a = -Mathf.PI * 0.5f + (i + 0.5f) * Mathf.PI * 2f / seg;
+                    float between = Mathf.Abs(Mathf.Sin((i % perPole) / (float)perPole * Mathf.PI));
+                    float r = 0.5f * (1f - h) * (1f - 0.06f * between);
+                    v.Add(new Vector3(Mathf.Cos(a) * r, h, Mathf.Sin(a) * r));
+                    uv.Add(new Vector2(i / (float)seg * 3.2f, h * 2.2f));
+                }
+            }
+            int row = seg + 1;
+            for (int j = 0; j < rings; j++)
+                for (int i = 0; i < seg; i++)
+                {
+                    // Door: the two segments facing −z, in the lower half.
+                    if (j < rings / 2 && (i == 0 || i == seg - 1)) continue;
+                    int a = j * row + i, b = a + 1, c = a + row, d = c + 1;
+                    tris.AddRange(new[] { a, c, b, b, c, d });
+                }
+            int n = v.Count, count = tris.Count;
+            v.AddRange(v.GetRange(0, n));
+            uv.AddRange(uv.GetRange(0, n));
+            for (int k = 0; k < count; k += 3)
+                tris.AddRange(new[] { tris[k] + n, tris[k + 2] + n, tris[k + 1] + n });
+            return cache[key] = Indexed("Tipi", v, uv, tris);
+        }
+
+        /// <summary>Open cylinder wall (radius 0.5, height 1) with a door gap at −z; double sided.</summary>
+        public static Mesh Wall(float doorFraction = 0.12f)
+        {
+            string key = "wall" + doorFraction;
+            if (cache.TryGetValue(key, out var m)) return m;
+            const int seg = 28;
+            var v = new List<Vector3>();
+            var uv = new List<Vector2>();
+            var tris = new List<int>();
+            float gap = doorFraction * Mathf.PI * 2f;
+            for (int i = 0; i <= seg; i++)
+            {
+                float a = -Mathf.PI * 0.5f + gap * 0.5f + i * (Mathf.PI * 2f - gap) / seg;
+                var p = new Vector3(Mathf.Cos(a) * 0.5f, 0, Mathf.Sin(a) * 0.5f);
+                v.Add(p); v.Add(p + Vector3.up);
+                uv.Add(new Vector2(i / (float)seg * 4f, 0)); uv.Add(new Vector2(i / (float)seg * 4f, 1));
+            }
+            for (int i = 0; i < seg; i++)
+            {
+                int a = i * 2;
+                tris.AddRange(new[] { a, a + 1, a + 2, a + 2, a + 1, a + 3 });
+            }
+            int n = v.Count, count = tris.Count;
+            v.AddRange(v.GetRange(0, n));
+            uv.AddRange(uv.GetRange(0, n));
+            for (int k = 0; k < count; k += 3)
+                tris.AddRange(new[] { tris[k] + n, tris[k + 2] + n, tris[k + 1] + n });
+            return cache[key] = Indexed("Wall", v, uv, tris);
+        }
+
+        /// <summary>Smooth conical thatch roof (radius 0.5, height 1) with a slightly bulging profile.</summary>
+        public static Mesh Roof()
+        {
+            if (cache.TryGetValue("roof", out var m)) return m;
+            const int seg = 28, rings = 6;
+            var v = new List<Vector3>();
+            var uv = new List<Vector2>();
+            var tris = new List<int>();
+            for (int j = 0; j <= rings; j++)
+            {
+                float t = j / (float)rings;
+                float r = 0.5f * (1f - t) * (1f + 0.12f * Mathf.Sin(t * Mathf.PI));
+                for (int i = 0; i <= seg; i++)
+                {
+                    float a = i * Mathf.PI * 2f / seg;
+                    v.Add(new Vector3(Mathf.Cos(a) * r, t, Mathf.Sin(a) * r));
+                    uv.Add(new Vector2(i / (float)seg * 4f, t * 1.6f));
+                }
+            }
+            int row = seg + 1;
+            for (int j = 0; j < rings; j++)
+                for (int i = 0; i < seg; i++)
+                {
+                    int a = j * row + i, b = a + 1, c = a + row, d = c + 1;
+                    tris.AddRange(new[] { a, c, b, b, c, d });
+                }
+            // Underside so the eaves look solid from low angles.
+            int n = v.Count, count = tris.Count;
+            v.AddRange(v.GetRange(0, n));
+            uv.AddRange(uv.GetRange(0, n));
+            for (int k = 0; k < count; k += 3)
+                tris.AddRange(new[] { tris[k] + n, tris[k + 2] + n, tris[k + 1] + n });
+            return cache["roof"] = Indexed("Roof", v, uv, tris);
+        }
+
+        /// <summary>Gabled thatch roof for a longhouse: 1 wide (x), 1 high, 1 long (z), with hipped ends.</summary>
+        public static Mesh LongRoof()
+        {
+            if (cache.TryGetValue("longroof", out var m)) return m;
+            var v = new List<Vector3>
+            {
+                new Vector3(-0.5f, 0, -0.5f), new Vector3(0.5f, 0, -0.5f), new Vector3(0.5f, 0, 0.5f), new Vector3(-0.5f, 0, 0.5f),
+                new Vector3(0, 1, -0.3f), new Vector3(0, 1, 0.3f),
+            };
+            var uv = new List<Vector2>
+            {
+                new Vector2(0, 0), new Vector2(3, 0), new Vector2(3, 0), new Vector2(0, 0), new Vector2(0.6f, 1.6f), new Vector2(2.4f, 1.6f),
+            };
+            var tris = new List<int>
+            {
+                0, 4, 3, 3, 4, 5, // left slope
+                1, 2, 4, 2, 5, 4, // right slope
+                0, 1, 4,          // front hip
+                2, 3, 5,          // back hip
+            };
+            // Flat-shade by un-sharing vertices.
+            var fv = new List<Vector3>(); var fuv = new List<Vector2>(); var ft = new List<int>();
+            for (int k = 0; k < tris.Count; k++) { fv.Add(v[tris[k]]); fuv.Add(uv[tris[k]]); ft.Add(k); }
+            int n = fv.Count;
+            for (int k = 0; k < n; k++) { fv.Add(fv[k]); fuv.Add(fuv[k]); }
+            for (int k = 0; k < n; k += 3) ft.AddRange(new[] { k + n, k + 2 + n, k + 1 + n });
+            return cache["longroof"] = Indexed("LongRoof", fv, fuv, ft);
         }
 
         /// <summary>Triangular prism (lean-to roof): 1 wide (x), 1 high (y), 1 deep (z), base at y=0.</summary>

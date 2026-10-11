@@ -115,11 +115,12 @@ namespace Founders
             }
             game.SetWorkers(JobType.Research, 1);
             bool eventShot = false;
-            foreach (var tech in new[] { "improved_stone_tools", "food_preservation", "structural_weaving", "shared_labor", "permanent_settlement" })
+            foreach (var tech in new[] { "improved_stone_tools", "food_preservation", "structural_weaving", "shared_labor", "permanent_settlement",
+                                          "fishing", "hide_working", "oral_tradition", "longhouses" })
             {
                 game.DebugGrant(new ResourceBundle(0, 0, 0, 60));
                 game.StartResearch(tech);
-                game.DebugFastForward(70);
+                game.DebugFastForward(80);
                 var ev = game.PendingEvent;
                 if (ev != null)
                 {
@@ -151,6 +152,14 @@ namespace Founders
             yield return Shot("05_milestone", true);
             store.Celebration = null;
             store.Toasts.Clear();
+            // The new buildings unlocked by the later research.
+            foreach (var id in new[] { "longhouse", "elders_lodge", "drying_rack", "fishing_weir" })
+            {
+                Build(id);
+                store.Refresh();
+                yield return null;
+            }
+            store.Refresh();
             yield return Shot("06_village", false);
 
             // 4. Landscape views: the river and the forest edge.

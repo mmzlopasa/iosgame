@@ -15,8 +15,8 @@ namespace Founders.Tests
         {
             var c = Fixtures.Content();
             Assert.That(ContentValidator.Validate(c), Is.Empty);
-            Assert.That(c.Buildings.Count(b => b.Buildable), Is.EqualTo(7));
-            Assert.That(c.Technologies.Count, Is.EqualTo(5));
+            Assert.That(c.Buildings.Count(b => b.Buildable), Is.EqualTo(11));
+            Assert.That(c.Technologies.Count, Is.EqualTo(9));
         }
 
         [Test]
@@ -203,7 +203,7 @@ namespace Founders.Tests
             var (game, _) = Fixtures.NewGame();
             Assert.That(game.PlacementIssues("shelter", 13, 8), Does.Contain(PlacementIssue.Unexplored));
             Assert.That(game.PlacementIssues("shelter", -1, 0), Does.Contain(PlacementIssue.OutOfBounds));
-            Assert.That(game.PlacementIssues("shelter", 16, 3), Does.Contain(PlacementIssue.OutOfBounds));
+            Assert.That(game.PlacementIssues("shelter", 21, 3), Does.Contain(PlacementIssue.OutOfBounds));
         }
 
         [Test]

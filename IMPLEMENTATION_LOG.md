@@ -114,3 +114,39 @@ Korisnik je odabrao besplatne (CC0) modele ljudi.
 **Magla neistraženog:** prozirnija je i niža, a drveće i stijene ispod nje ostaju vidljivi kao obrisi.
 
 **Provjereno:** compile check prolazi. Izgled u igri čeka CI preview snimke.
+
+## 2026-10-11 — Veća mapa, bez magle, nove zgrade, kuće
+
+**Zahtjev:** „makni oblake i povećaj mapu za 30%, dodaj još funkcionalnosti”.
+
+**Mapa:**
+- Mapa je proširena sa 16×16 na 21×21 polje (stranica +31 %).
+- Proširenje ide prema istoku i jugu, pa postojeće koordinate i spremljene igre ostaju valjane.
+- Dvije nove regije za istraživanje: Eastern Highlands i Southern Marsh.
+
+**Magla (oblaci) nad neistraženim:** uklonjena. Neistraženo se i dalje ne može graditi, a placement to javlja.
+
+**Novi sadržaj:**
+- Istraživanja:
+  - Fishing (ribolov);
+  - Hide Working (obrada kože);
+  - Oral Tradition (usmena predaja);
+  - Longhouses (duge kuće).
+- Zgrade:
+  - Fishing Weir: uz rijeku, +2 Foraging;
+  - Drying Rack: čuva 30 hrane;
+  - Elders' Lodge: +3 Research;
+  - Longhouse: 2×2 polja, stanuje 8 ljudi.
+- Događaji:
+  - Wandering Traders: razmjena;
+  - Wolves at Night;
+  - The River Rises.
+
+**Kuće:**
+- Shelter je sada konusni šator od koža na prstenu motki, s otvorom za dim i ulazom.
+- Woven Shelter je okrugla kuća s pletenim zidom i debelim slamnatim krovom.
+- Novi modeli za Longhouse, Elders' Lodge, Drying Rack i Fishing Weir.
+
+**Provjereno:**
+- `dotnet test unity/CoreTests` prolazi 45/45 (očekivani brojevi u testovima ažurirani za novu mapu i sadržaj). Scripted igrač i dalje stiže do sela za 17 min 10 s.
+- Compile check prolazi.

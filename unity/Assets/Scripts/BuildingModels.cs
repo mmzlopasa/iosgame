@@ -27,6 +27,10 @@ namespace Founders
                 case "storage_pit": StoragePit(b); break;
                 case "toolmaker": Toolmaker(b); break;
                 case "community_circle": CommunityCircle(b); break;
+                case "fishing_weir": FishingWeir(b); break;
+                case "drying_rack": DryingRack(b); break;
+                case "elders_lodge": EldersLodge(b); break;
+                case "longhouse": Longhouse(b); break;
                 default: b.Model("boulder_01", Vector3.zero, 0.5f); break;
             }
             return root;
@@ -150,26 +154,64 @@ namespace Founders
             }
         }
 
+        /// <summary>Conical hide tent: a ring of poles crossing above a smoke hole, hides sagging between them.</summary>
+        static void Tipi(Builder b, Vector3 at, float diameter, float height, float yaw)
+        {
+            var g = Parts.Group("Tipi", b.T, at, yaw).transform;
+            var go = b.Shape(Meshes.Tipi(), Vector3.zero, new Vector3(diameter, height, diameter), "Hide");
+            go.transform.SetParent(g, false);
+            const int poles = 9;
+            var apex = new Vector3(0, height, 0);
+            int before = b.T.childCount;
+            for (int i = 0; i < poles; i++)
+            {
+                float a = -Mathf.PI * 0.5f + (i + 0.5f) * Mathf.PI * 2f / poles;
+                var foot = new Vector3(Mathf.Cos(a) * diameter * 0.5f, 0f, Mathf.Sin(a) * diameter * 0.5f);
+                var tip = apex + (apex - foot).normalized * (0.3f + 0.08f * (i % 3));
+                b.Pole(foot, tip, 0.045f);
+            }
+            for (int i = b.T.childCount - 1; i >= before; i--) b.T.GetChild(i).SetParent(g, false);
+            // Rolled-back door flap and a dark interior floor.
+            var flap = b.Prim(PrimitiveType.Cube, new Vector3(diameter * 0.12f, height * 0.22f, -diameter * 0.42f),
+                              new Vector3(diameter * 0.16f, height * 0.42f, 0.02f), "Hide", new Vector3(8f, 30f, 0));
+            flap.transform.SetParent(g, false);
+            var floor = b.PrimColor(PrimitiveType.Cylinder, new Vector3(0, 0.01f, 0), new Vector3(diameter * 0.92f, 0.01f, diameter * 0.92f), "Ash");
+            floor.transform.SetParent(g, false);
+        }
+
         static void Shelter(Builder b)
         {
-            HideTent(b, Vector3.zero, 1.6f, 1.35f, 1.9f, 0f);
-            b.Model("wicker_basket_01", new Vector3(0.95f, 0f, 0.6f), 1.2f, 20f);
-            b.Model("dry_branches_medium_01", new Vector3(-0.95f, 0f, -0.7f), 0.7f, 70f);
+            Tipi(b, new Vector3(0, 0, 0.1f), 1.75f, 2.35f, 0f);
+            b.Model("wicker_basket_01", new Vector3(0.85f, 0f, -0.65f), 1.2f, 20f);
+            b.Model("dry_branches_medium_01", new Vector3(-0.85f, 0f, -0.75f), 0.7f, 70f);
+            b.Pole(new Vector3(-0.45f, 0.06f, -0.9f), new Vector3(0.15f, 0.06f, -0.95f), 0.11f);
+        }
+
+        /// <summary>Roundhouse: wattle wall on a stone footing under a thick conical thatch roof.</summary>
+        static void Roundhouse(Builder b, float diameter, float wallHeight, float roofHeight)
+        {
+            b.Shape(Meshes.Wall(), Vector3.zero, new Vector3(diameter, wallHeight, diameter), "Bark");
+            b.Shape(Meshes.Roof(), new Vector3(0, wallHeight - 0.05f, 0), new Vector3(diameter * 1.28f, roofHeight, diameter * 1.28f), "Thatch");
+            b.PrimColor(PrimitiveType.Cylinder, new Vector3(0, 0.01f, 0), new Vector3(diameter * 0.97f, 0.01f, diameter * 0.97f), "Ash");
+            int stones = Mathf.RoundToInt(diameter * 8f);
+            for (int i = 0; i < stones; i++)
+            {
+                float a = i / (float)stones * Mathf.PI * 2f;
+                if (Mathf.Abs(Mathf.DeltaAngle(a * Mathf.Rad2Deg, -90f)) < 18f) continue; // doorway
+                b.Model("stone_01", new Vector3(Mathf.Cos(a) * diameter * 0.52f, 0f, Mathf.Sin(a) * diameter * 0.52f), 2.4f, i * 33f);
+            }
+            // Door posts and lintel.
+            float dz = -diameter * 0.5f;
+            b.Pole(new Vector3(-0.22f, 0f, dz), new Vector3(-0.22f, wallHeight + 0.05f, dz), 0.07f);
+            b.Pole(new Vector3(0.22f, 0f, dz), new Vector3(0.22f, wallHeight + 0.05f, dz), 0.07f);
+            b.Pole(new Vector3(-0.3f, wallHeight, dz), new Vector3(0.3f, wallHeight, dz), 0.07f);
         }
 
         static void WovenShelter(Builder b)
         {
-            b.Shape(Meshes.Dome(), Vector3.zero, new Vector3(1.9f, 1.75f, 1.9f), "Thatch");
-            b.Shape(Meshes.Cone(), new Vector3(0, 0.78f, 0), new Vector3(0.7f, 0.35f, 0.7f), "Thatch");
-            for (int i = 0; i < 14; i++)
-            {
-                float a = i / 14f * Mathf.PI * 2f;
-                b.Model("stone_01", new Vector3(Mathf.Cos(a) * 0.98f, 0f, Mathf.Sin(a) * 0.98f), 2.6f, i * 33f);
-            }
-            // Doorway with a hide flap.
-            b.PrimColor(PrimitiveType.Cube, new Vector3(0, 0.4f, -0.86f), new Vector3(0.5f, 0.8f, 0.1f), "Ash");
-            b.Prim(PrimitiveType.Cube, new Vector3(0.18f, 0.38f, -0.92f), new Vector3(0.25f, 0.76f, 0.03f), "Hide", new Vector3(0, -20, 0));
-            b.Model("ceramic_pot", new Vector3(0.9f, 0f, -0.6f), 0.6f, 15f);
+            Roundhouse(b, 1.75f, 0.95f, 1.35f);
+            b.Model("ceramic_pot", new Vector3(0.8f, 0f, -0.75f), 0.6f, 15f);
+            b.Model("wicker_basket_01", new Vector3(-0.8f, 0f, -0.7f), 1.1f, 60f);
         }
 
         static void ForagingCamp(Builder b)
@@ -228,7 +270,7 @@ namespace Founders
 
         static void Toolmaker(Builder b)
         {
-            HideTent(b, new Vector3(-0.3f, 0f, 0.3f), 1.2f, 1.05f, 1.3f, 35f);
+            Tipi(b, new Vector3(-0.35f, 0f, 0.35f), 1.25f, 1.7f, 35f);
             b.Model("boulder_01", new Vector3(0.55f, 0f, -0.45f), 0.38f, 80f);
             b.Model("wooden_axe", new Vector3(0.8f, 0f, -0.1f), 0.9f, 0f, null, new Vector3(0, 30, 75));
             b.Model("wooden_bowl_01", new Vector3(0.2f, 0f, -0.8f), 1f);
@@ -256,5 +298,84 @@ namespace Founders
                 b.Pole(c - tangent, c + tangent, 0.22f);
             }
         }
-    }
+    
+        static void FishingWeir(Builder b)
+        {
+            // Fish drying frame
+            b.Pole(new Vector3(-0.75f, 0f, 0.2f), new Vector3(-0.75f, 1.25f, 0.2f), 0.06f);
+            b.Pole(new Vector3(0.75f, 0f, 0.2f), new Vector3(0.75f, 1.25f, 0.2f), 0.06f);
+            b.Pole(new Vector3(-0.9f, 1.2f, 0.2f), new Vector3(0.9f, 1.2f, 0.2f), 0.05f);
+            for (int i = 0; i < 6; i++)
+            {
+                float x = -0.55f + i * 0.22f;
+                b.PrimColor(PrimitiveType.Capsule, new Vector3(x, 0.98f - (i % 2) * 0.05f, 0.2f), new Vector3(0.07f, 0.17f, 0.04f), "Fish");
+            }
+            // Fish traps and baskets
+            b.Model("wicker_basket_01", new Vector3(-0.45f, 0f, -0.45f), 1.4f, 30f);
+            b.Model("wicker_basket_01", new Vector3(0.2f, 0f, -0.6f), 1.1f, 100f, null, new Vector3(80, 100, 0));
+            // A dugout canoe pulled up on the bank
+            b.Pole(new Vector3(0.15f, 0.12f, 0.85f), new Vector3(1.0f, 0.12f, -0.75f), 0.3f);
+            // Stakes of the weir
+            for (int i = 0; i < 5; i++)
+            {
+                float x = -0.9f + i * 0.18f;
+                b.Pole(new Vector3(x, 0f, -0.95f), new Vector3(x + 0.05f, 0.75f + (i % 2) * 0.15f, -0.98f), 0.04f);
+            }
+        }
+
+        static void DryingRack(Builder b)
+        {
+            foreach (float x in new[] { -0.8f, 0.8f })
+            {
+                b.Pole(new Vector3(x, 0f, -0.45f), new Vector3(x, 1.35f, 0f), 0.06f);
+                b.Pole(new Vector3(x, 0f, 0.45f), new Vector3(x, 1.35f, 0f), 0.06f);
+            }
+            b.Pole(new Vector3(-0.95f, 1.3f, 0f), new Vector3(0.95f, 1.3f, 0f), 0.06f);
+            b.Pole(new Vector3(-0.85f, 0.85f, -0.22f), new Vector3(0.85f, 0.85f, -0.22f), 0.04f);
+            for (int i = 0; i < 7; i++)
+            {
+                float x = -0.6f + i * 0.2f;
+                b.Prim(PrimitiveType.Cube, new Vector3(x, 1.05f, 0f), new Vector3(0.1f, 0.42f, 0.015f), "Hide", new Vector3(0, i * 9f, 0));
+            }
+            b.Prim(PrimitiveType.Cube, new Vector3(0f, 0.62f, -0.22f), new Vector3(1.1f, 0.42f, 0.02f), "Hide", new Vector3(-8f, 0, 0));
+            b.Model("stone_fire_pit", new Vector3(0f, 0f, 0.6f), 0.35f);
+            b.Fire(new Vector3(0f, 0.05f, 0.6f), 0.4f);
+        }
+
+        static void EldersLodge(Builder b)
+        {
+            Roundhouse(b, 1.9f, 1.05f, 1.6f);
+            // Carved post at the door
+            b.Pole(new Vector3(0.7f, 0f, -0.85f), new Vector3(0.7f, 2.4f, -0.85f), 0.16f);
+            b.Model("boulder_01", new Vector3(0.7f, 2.32f, -0.85f), 0.14f, 20f);
+            b.Pole(new Vector3(-0.85f, 0.12f, -0.8f), new Vector3(-0.2f, 0.12f, -1.0f), 0.2f);
+        }
+
+        static void Longhouse(Builder b)
+        {
+            // Footprint 2×2 cells (4 m). Long axis along z.
+            const float len = 3.5f, wid = 2.3f, wallH = 0.85f;
+            b.Prim(PrimitiveType.Cube, new Vector3(-wid * 0.5f, wallH * 0.5f, 0), new Vector3(0.12f, wallH, len), "Bark");
+            b.Prim(PrimitiveType.Cube, new Vector3(wid * 0.5f, wallH * 0.5f, 0), new Vector3(0.12f, wallH, len), "Bark");
+            b.Prim(PrimitiveType.Cube, new Vector3(0, wallH * 0.5f, len * 0.5f), new Vector3(wid, wallH, 0.12f), "Bark");
+            b.Prim(PrimitiveType.Cube, new Vector3(-wid * 0.32f, wallH * 0.5f, -len * 0.5f), new Vector3(wid * 0.36f, wallH, 0.12f), "Bark");
+            b.Prim(PrimitiveType.Cube, new Vector3(wid * 0.32f, wallH * 0.5f, -len * 0.5f), new Vector3(wid * 0.36f, wallH, 0.12f), "Bark");
+            b.Shape(Meshes.LongRoof(), new Vector3(0, wallH - 0.05f, 0), new Vector3(wid * 1.3f, 1.9f, len * 1.15f), "Thatch");
+            // Ridge pole and gable posts
+            b.Pole(new Vector3(0, wallH + 1.85f, -len * 0.42f), new Vector3(0, wallH + 1.85f, len * 0.42f), 0.08f);
+            foreach (float z in new[] { -len * 0.5f - 0.05f, len * 0.5f + 0.05f })
+            {
+                b.Pole(new Vector3(-0.3f, 0f, z), new Vector3(-0.3f, wallH + 0.25f, z), 0.08f);
+                b.Pole(new Vector3(0.3f, 0f, z), new Vector3(0.3f, wallH + 0.25f, z), 0.08f);
+            }
+            for (int row = 0; row < 2; row++)
+                for (int i = 0; i < 3 - row; i++)
+                {
+                    float x = -1.55f, z = -0.5f + i * 0.24f + row * 0.12f;
+                    b.Pole(new Vector3(x, 0.07f + row * 0.18f, z - 0.6f), new Vector3(x, 0.07f + row * 0.18f, z + 0.6f), 0.18f);
+                }
+            b.Model("ceramic_pot", new Vector3(1.5f, 0f, -1.4f), 0.6f, 15f);
+            b.Model("wicker_basket_01", new Vector3(1.45f, 0f, 1.3f), 1.3f, 40f);
+        }
+}
 }
