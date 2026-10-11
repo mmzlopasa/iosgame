@@ -143,9 +143,10 @@ namespace Founders.UI
             {
                 case Panel.Build:
                     return buildTab + "|" + string.Join(",", G.Content.Buildings.Where(b => b.Buildable).Select(d =>
-                        $"{G.State.Resources.Covers(d.Cost)}{G.IsUnlocked(d)}{G.Count(d.Id, true)}"));
+                        $"{G.State.Resources.Covers(d.Cost)}{G.IsUnlocked(d)}{G.Count(d.Id, true)}")) + "|" +
+                        string.Join("", G.Content.Decorations.Select(d => $"{(G.State.Resources.Covers(d.Cost) ? 1 : 0)}{(DecorationUnlocked(d) ? 1 : 0)}"));
                 case Panel.People:
-                    return $"{G.SeasonIndex}|{G.Freezing}|{string.Join(",", G.ApprovalFactors().Select(f => f.Label + f.Points))}|{G.IdleWorkers}|{G.State.Population}|{G.HousingCapacity()}|{G.State.FoodShortage}|" +
+                    return string.Join(",", G.State.People.Select(p => $"{p.Job}{SkillSum(p)}")) + $"|{G.SeasonIndex}|{G.Freezing}|{string.Join(",", G.ApprovalFactors().Select(f => f.Label + f.Points))}|{G.IdleWorkers}|{G.State.Population}|{G.HousingCapacity()}|{G.State.FoodShortage}|" +
                            string.Join(",", Enums.Jobs.Select(j => $"{G.State.Assignments[j]}/{G.JobCapacity(j)}"));
                 case Panel.Research:
                     return $"{G.State.ActiveResearch?.TechId}|" + string.Join(",", G.Content.Technologies.Select(t =>
@@ -196,7 +197,8 @@ namespace Founders.UI
         void BuildBuildPanel(VisualElement host)
         {
             var defs = G.Content.Buildings.Where(b => b.Buildable).ToList();
-            var tabs = new[] { "All" }.Concat(defs.Select(Category).Distinct()).ToList();
+            var decorTabs = G.Content.Decorations.Select(d => d.Category).Distinct().ToList();
+            var tabs = new[] { "All" }.Concat(defs.Select(Category).Distinct()).Concat(decorTabs).ToList();
             var tabRow = E.Div().Row().Margin(0, 0, 12).Ignore();
             tabRow.style.flexWrap = Wrap.Wrap;
             foreach (var tab in tabs)
@@ -213,7 +215,8 @@ namespace Founders.UI
             }
             host.Add(tabRow);
 
-            foreach (var def in defs.Where(d => buildTab == "All" || Category(d) == buildTab))
+            bool decorTab = decorTabs.Contains(buildTab);
+            foreach (var def in defs.Where(d => !decorTab && (buildTab == "All" || Category(d) == buildTab)))
             {
                 bool affordable = G.State.Resources.Covers(def.Cost);
                 bool unlocked = G.IsUnlocked(def);
@@ -256,6 +259,8 @@ namespace Founders.UI
                 host.Add(card);
             }
 
+            if (buildTab == "All" || decorTab) BuildDecorations(host, decorTab ? buildTab : null);
+
             var hint = E.Div().Row().Radius(14).Pad(10, 14).Bg(Theme.Alpha(Theme.Lavender, 0.08f)).Border(Theme.Alpha(Theme.Lavender, 0.18f)).Margin(4);
             hint.Add(E.Icon("knowledge", 15, Theme.Lavender));
             var ht = E.Text("Pick a building, then tap the ground to move it. Resources are spent only when you confirm.", 12, Theme.Lavender).Grow();
@@ -263,6 +268,55 @@ namespace Founders.UI
             hint.Add(ht);
             host.Add(hint);
         }
+
+        bool DecorationUnlocked(DecorationDefinition d) => d.RequiresTech == null || G.State.Researched.Contains(d.RequiresTech);
+
+        static readonly Dictionary<string, string> DecorIcon = new Dictionary<string, string>
+        {
+            ["Roads"] = "road", ["Fences"] = "fence", ["Lights"] = "lantern", ["Nature"] = "tree", ["Monuments"] = "landmark",
+        };
+
+        /// <summary>Roads, fences, lights, plants and monuments: laid out freely like in a town builder.</summary>
+        void BuildDecorations(VisualElement host, string category)
+        {
+            host.Add(SectionLabel(category == null ? "Roads & decorations" : category));
+            var grid = E.Div().Row().Ignore();
+            grid.style.flexWrap = Wrap.Wrap;
+            grid.style.justifyContent = Justify.SpaceBetween;
+            foreach (var d in G.Content.Decorations.Where(x => category == null || x.Category == category))
+            {
+                bool unlocked = DecorationUnlocked(d);
+                bool affordable = G.State.Resources.Covers(d.Cost);
+                var card = E.Div().Col().Glass(18, affordable && unlocked ? (Color?)null : Theme.EdgeSoft).Pad(10).Margin(0, 0, 8);
+                card.style.width = Length.Percent(48.5f);
+                if (!unlocked) card.style.opacity = 0.55f;
+                var top = E.Div().Row().Ignore();
+                var tile = E.Div().Size(34, 34).Radius(11).Center().Bg(Theme.Alpha(Theme.Gold, 0.14f)).Ignore();
+                tile.Add(E.Icon(DecorIcon.TryGetValue(d.Category ?? "", out var ic) ? ic : "sparkle", 17, Theme.GoldLight));
+                top.Add(tile);
+                var names = E.Div().Col().Grow().Ignore();
+                names.style.marginLeft = 8;
+                names.Add(E.Text(d.Name, 13, Theme.Ink, Theme.F.TextBold).NoWrap());
+                names.Add(E.Text(d.Beauty > 0 ? $"Beauty +{d.Beauty}" : d.IsRoad ? "Road" : d.Category, 10.5f, Theme.Muted));
+                top.Add(names);
+                card.Add(top);
+                if (d.Cost.Entries.Any()) card.Add(CostChips(d.Cost).Margin(6));
+                else card.Add(E.Text("Free", 11, Theme.Mint).Margin(6));
+                if (!unlocked)
+                    card.Add(E.Text($"Needs {G.Content.Technology(d.RequiresTech)?.Name ?? "research"}", 10.5f, Theme.Lavender).Margin(4));
+                else
+                {
+                    string id = d.Id;
+                    Tap(card, () => store.BeginDecorating(id));
+                }
+                grid.Add(card);
+            }
+            host.Add(grid);
+            var remove = E.Button("Remove decorations", Act(() => store.BeginDecorating(GameStore.RemoveTool)), E.Kind.Ghost, 38, "trash").Margin(4);
+            host.Add(remove);
+        }
+
+        int SkillSum(Person p) => Enums.Jobs.Sum(j => G.SkillLevel(p, j));
 
         // MARK: - People
 
@@ -295,6 +349,8 @@ namespace Founders.UI
             foreach (var job in Enums.Jobs) host.Add(JobRow(job, false).Margin(0, 0, 8));
             host.Add(E.Text("Workplaces set how many people each job can take. Changes apply at once.", 11.5f, Theme.Muted).Margin(4, 4, 0, 4));
 
+            BuildVillagers(host);
+
             host.Add(SectionLabel("Upkeep"));
             var up = Card();
             var r1 = E.Div().Row().Between().Ignore();
@@ -306,6 +362,67 @@ namespace Founders.UI
             r2.Add(Live(() => Fmt.PerMinute(-econ.Spoilage), 13, Theme.Error, Theme.F.Mono));
             up.Add(r2);
             host.Add(up);
+        }
+
+        /// <summary>Every villager by name: what they do and what they are good at (skills grow with work).</summary>
+        void BuildVillagers(VisualElement host)
+        {
+            host.Add(SectionLabel($"Villagers · {G.State.People.Count}"));
+            var list = Card();
+            int shown = 0;
+            foreach (var p in G.State.People.OrderByDescending(SkillSum))
+            {
+                if (shown++ >= 40) break;
+                var row = E.Div().Row().Margin(shown == 1 ? 0 : 8).Ignore();
+                var av = E.Div().Size(32, 32).Radius(16).Center().Bg(Theme.Alpha(p.Female ? Theme.Lavender : Theme.Gold, 0.18f)).Ignore();
+                av.Add(E.Text(p.Name.Substring(0, 1), 14, p.Female ? Theme.LavenderLight : Theme.GoldLight, Theme.F.TextBold));
+                row.Add(av);
+                var col = E.Div().Col().Grow().Ignore();
+                col.style.marginLeft = 10;
+                col.Add(E.Text(p.Name, 13.5f, Theme.Ink, Theme.F.TextBold).NoWrap());
+                var job = p.Job == null ? null : Enums.Jobs.Cast<JobType?>().FirstOrDefault(j => j.Value.Id() == p.Job);
+                string doing = job == null ? "Idle" : G.Content.JobConfig(job.Value)?.Name ?? p.Job;
+                col.Add(E.Text(doing, 11, job == null ? Theme.Gold : Theme.Body));
+                row.Add(col);
+                var best = G.BestSkill(p);
+                if (best != null)
+                {
+                    int lv = G.SkillLevel(p, best.Value);
+                    var skill = E.Div().Col(Align.FlexEnd).Ignore();
+                    skill.Add(E.Text(SkillTitle(best.Value), 11.5f, Theme.GoldLight, Theme.F.TextBold).NoWrap());
+                    var pips = E.Div().Row().Margin(3).Ignore();
+                    for (int i = 0; i < 5; i++)
+                    {
+                        var pip = E.Div().Size(7, 7).Radius(3.5f).Ignore().Bg(i < lv ? Theme.Gold : new Color(1, 1, 1, 0.12f));
+                        pip.style.marginLeft = 3;
+                        pips.Add(pip);
+                    }
+                    skill.Add(pips);
+                    row.Add(skill);
+                }
+                list.Add(row);
+            }
+            if (G.State.People.Count == 0) list.Add(E.Text("No one lives here yet.", 12, Theme.Muted));
+            host.Add(list);
+            host.Add(E.Text("Skilled people work faster (+10% per level). Skills grow with every season of work, and the most skilled idle people take new jobs first.",
+                            11.5f, Theme.Muted).Margin(0, 4, 0, 4));
+        }
+
+        static string SkillTitle(JobType job)
+        {
+            switch (job)
+            {
+                case JobType.Foraging: return "Forager";
+                case JobType.Farming: return "Farmer";
+                case JobType.Fishing: return "Fisher";
+                case JobType.Hunting: return "Hunter";
+                case JobType.Woodcutting: return "Woodcutter";
+                case JobType.Stonecutting: return "Quarrier";
+                case JobType.Mining: return "Miner";
+                case JobType.Crafting: return "Toolmaker";
+                case JobType.Construction: return "Builder";
+                default: return "Thinker";
+            }
         }
 
         /// <summary>Approval with its causes, and what the season asks of the settlement.</summary>

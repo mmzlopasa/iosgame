@@ -51,7 +51,8 @@ namespace Founders.UI
     {
         GameStore store;
         UIDocument doc;
-        VisualElement root, hudLayer, safe, sheetLayer, modalLayer, loadingLayer;
+        VisualElement root, hudLayer, safe, sheetLayer, modalLayer, loadingLayer, showHud;
+        float confirmDemolishUntil;
         ScrollView sheetScroll;
         VisualElement sheet;
         public LoadingScreen Loading { get; private set; }
@@ -123,6 +124,10 @@ namespace Founders.UI
             modalLayer = E.Div("modals").Fill().Ignore().Hidden(true);
             loadingLayer = E.Div("loading").Fill().Ignore().Hidden(true);
             root.Add(hudLayer);
+            // While the HUD is hidden only this small eye button remains, to bring it back.
+            showHud = E.IconButton("eye", Act(() => store.HudHidden = false), 44, null, true).Abs(null, 64, 18);
+            showHud.style.opacity = 0.75f;
+            root.Add(showHud);
             root.Add(sheetLayer);
             root.Add(modalLayer);
             root.Add(loadingLayer);
@@ -195,8 +200,10 @@ namespace Founders.UI
         {
             if (store?.Game == null || root == null) return;
             UpdateSafeArea();
-            hudLayer.Hidden(Hidden);
+            hudLayer.Hidden(Hidden || store.HudHidden);
+            showHud?.Hidden(Hidden || !store.HudHidden);
             if (Hidden) { sheetLayer.Hidden(true); modalLayer.Hidden(true); return; }
+            if (store.HudHidden) { sheetLayer.Hidden(true); return; }
 
             if (!dirty && Time.unscaledTime < nextTick) return;
             dirty = false;
@@ -536,6 +543,17 @@ namespace Founders.UI
 
         void BuildRightRail(VisualElement host)
         {
+            var tools = E.Div().Row().Ignore();
+            tools.style.justifyContent = Justify.FlexEnd;
+            tools.style.marginBottom = 8;
+            tools.Add(E.IconButton("eye_off", Act(() =>
+            {
+                store.CancelPlacement();
+                store.SelectedBuildingId = null;
+                store.ActivePanel = Panel.None;
+                store.HudHidden = true;
+            }), 38));
+            host.Add(tools);
             host.Add(SeasonCard());
             var r = G.State.ActiveResearch;
             if (r != null)
@@ -675,10 +693,15 @@ namespace Founders.UI
         string ContextKey()
         {
             var ev = G.PendingEvent != null && store.EventMinimized ? G.PendingEvent.Id : "";
+            if (store.DecoratingId != null)
+            {
+                var d = G.Content.Decoration(store.DecoratingId);
+                return $"deco|{store.DecoratingId}|{store.PaintMode}|{store.DecorationRotation}|{(d == null || G.State.Resources.Covers(d.Cost))}|{G.State.Decorations.Count}";
+            }
             if (store.PlacingBuildingId != null)
             {
                 var issues = store.PlacementIssues();
-                return $"place|{store.PlacingBuildingId}|{(issues.Count > 0 ? issues[0].Message : "ok")}|{ev}";
+                return $"place|{store.PlacingBuildingId}|{(issues.Count > 0 ? issues[0].Message : "ok")}|{store.PlacementRotation}|{ev}";
             }
             if (store.SelectedBuildingId != null)
             {
@@ -688,7 +711,9 @@ namespace Founders.UI
                 var target = def?.UpgradesTo == null ? null : G.Content.Building(def.UpgradesTo);
                 string up = target == null ? "" : $"{G.IsUnlocked(target)}{G.State.Resources.Covers(target.Cost)}";
                 string jobs = string.Join(",", (def?.JobSlots ?? new List<JobSlot>()).Select(s => $"{G.State.Assignments[s.Job]}/{G.JobCapacity(s.Job)}"));
-                return $"sel|{b.Id}|{b.DefinitionId}|{b.Status}|{up}|{jobs}|{G.IdleWorkers > 0}|{ev}";
+                var lv = G.NextLevel(b);
+                string level = $"{b.Level}|{(lv == null ? "" : G.State.Resources.Covers(lv.Cost).ToString())}|{G.HasRoadAccess(b)}|{Time.unscaledTime < confirmDemolishUntil}";
+                return $"sel|{b.Id}|{b.DefinitionId}|{b.Status}|{up}|{jobs}|{G.IdleWorkers > 0}|{level}|{ev}";
             }
             return "none|" + ev;
         }
@@ -705,7 +730,8 @@ namespace Founders.UI
                 Tap(pill, () => store.EventMinimized = false);
                 host.Add(pill);
             }
-            if (store.PlacingBuildingId != null) PlacementCard(host);
+            if (store.DecoratingId != null) DecorationCard(host);
+            else if (store.PlacingBuildingId != null) PlacementCard(host);
             else if (store.SelectedBuildingId != null) BuildingCard(host);
         }
 
@@ -729,10 +755,48 @@ namespace Founders.UI
             status.Add(msg);
             card.Add(status);
             var buttons = E.Div().Row().Margin(12).Ignore();
+            var rotate = E.IconButton("rotate", Act(store.RotatePlacement), 44);
+            rotate.style.marginRight = 10;
+            buttons.Add(rotate);
             buttons.Add(E.Button("Cancel", Act(store.CancelPlacement), E.Kind.Ghost).Grow());
             var confirm = E.Button("Build here", Act(store.ConfirmPlacement), ok ? E.Kind.Gold : E.Kind.Disabled, 44, "build").Grow();
             confirm.style.marginLeft = 10;
             buttons.Add(confirm);
+            card.Add(buttons);
+            host.Add(card);
+        }
+
+        /// <summary>The town tool bar: what is being laid out, draw/tap mode, rotation, remove and done.</summary>
+        void DecorationCard(VisualElement host)
+        {
+            bool removing = store.DecoratingId == GameStore.RemoveTool;
+            var def = removing ? null : G.Content.Decoration(store.DecoratingId);
+            var card = E.Div().Col().Glass(22).Pad(14);
+            card.Add(E.Eyebrow(removing ? "Clearing" : def?.Category ?? "Town", removing ? Theme.Error : Theme.Gold));
+            var head = E.Div().Row().Between().Margin(4).Ignore();
+            head.Add(E.Text(removing ? "Remove decorations" : def?.Name ?? "", 18, Theme.Ink, Theme.F.Display));
+            if (def != null && def.Beauty > 0) head.Add(StatChip("sparkle", $"Beauty +{def.Beauty}"));
+            card.Add(head);
+            if (def != null && def.Cost.Entries.Any()) card.Add(CostChips(def.Cost).Margin(8));
+            string hint = removing ? "Tap a road, fence or ornament to remove it. Half of its cost comes back."
+                : store.PaintMode ? "Drag across the ground to draw. Tap the hand to move the camera instead."
+                : "Tap the ground to place. Each tap places one.";
+            card.Add(E.Text(hint, 12, Theme.Body).Margin(8));
+            var buttons = E.Div().Row().Margin(12).Ignore();
+            if (!removing)
+            {
+                var mode = E.IconButton(store.PaintMode ? "road" : "compass", Act(store.TogglePaintMode), 44, store.PaintMode ? Theme.Gold : (Color?)null, store.PaintMode);
+                mode.style.marginRight = 8;
+                buttons.Add(mode);
+                var rot = E.IconButton("rotate", Act(store.RotatePlacement), 44);
+                rot.style.marginRight = 8;
+                buttons.Add(rot);
+            }
+            var trash = E.IconButton("trash", Act(() => store.BeginDecorating(removing ? "dirt_path" : GameStore.RemoveTool)), 44,
+                                     removing ? Theme.Error : (Color?)null, removing);
+            trash.style.marginRight = 10;
+            buttons.Add(trash);
+            buttons.Add(E.Button("Done", Act(store.EndDecorating), E.Kind.Gold, 44, "check").Grow());
             card.Add(buttons);
             host.Add(card);
         }
@@ -822,6 +886,38 @@ namespace Founders.UI
             }
             var next = def.SuccessorId == null ? null : G.Content.Building(def.SuccessorId);
             if (next != null) card.Add(E.Text($"Becomes the {next.Name} when the settlement grows.", 11.5f, Theme.Muted).Margin(10));
+
+            // Levels (Foundation-style upgrades of the same building) and road access.
+            var info = E.Div().Row().Margin(10).Ignore();
+            info.style.flexWrap = Wrap.Wrap;
+            info.Add(StatChip("level_up", $"Level {b.Level}/{def.MaxLevel}"));
+            if (def.JobSlots != null && def.JobSlots.Count > 0)
+                info.Add(StatChip("road", G.HasRoadAccess(b) ? "On a road +10%" : "No road"));
+            card.Add(info);
+            var lv = G.NextLevel(b);
+            if (lv != null && b.Status == BuildingStatus.Complete)
+            {
+                var up = E.Div().Col().Radius(18).Pad(12).BgImage(Theme.GoldGlow).Border(Theme.Alpha(Theme.Gold, 0.3f)).Margin(10);
+                var r1 = E.Div().Row().Between().Ignore();
+                r1.Add(E.Text($"Level {b.Level + 1}: +50% capacity", 14, Theme.Ink, Theme.F.Display));
+                r1.Add(E.Mono(Fmt.Clock(G.EstimatedSeconds(lv.BuildSeconds)), 11.5f, Theme.Body));
+                up.Add(r1);
+                up.Add(CostChips(lv.Cost).Margin(8));
+                bool can = G.State.Resources.Covers(lv.Cost);
+                up.Add(E.Button(can ? "Level up" : "Not enough resources", can ? Act(() => store.UpgradeLevel(id)) : null, can ? E.Kind.Gold : E.Kind.Disabled, 42, can ? "level_up" : null).Margin(8));
+                card.Add(up);
+            }
+            if (def.Buildable)
+            {
+                bool confirm = Time.unscaledTime < confirmDemolishUntil;
+                var demolish = E.Button(confirm ? "Tap again to demolish (50% back)" : "Demolish",
+                    Act(() =>
+                    {
+                        if (Time.unscaledTime < confirmDemolishUntil) { confirmDemolishUntil = 0; store.Demolish(id); }
+                        else confirmDemolishUntil = Time.unscaledTime + 3f;
+                    }), confirm ? E.Kind.Danger : E.Kind.Ghost, 38, "trash").Margin(10);
+                card.Add(demolish);
+            }
             host.Add(card);
         }
 

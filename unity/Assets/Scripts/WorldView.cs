@@ -471,18 +471,20 @@ namespace Founders
                 return;
             }
             bool valid = store.PlacementIssues().Count == 0;
-            string key = $"{id}|{cell.Value.x},{cell.Value.y}|{valid}";
+            int rot = store.PlacementRotation;
+            string key = $"{id}|{cell.Value.x},{cell.Value.y}|{valid}|{rot}";
             if (key == ghostKey) return;
             ghostKey = key;
             foreach (var go in ghost) Destroy(go);
             ghost.Clear();
 
             string mat = valid ? "GhostOk" : "GhostBad";
-            for (int dy = 0; dy < def.Footprint.Height; dy++)
-                for (int dx = 0; dx < def.Footprint.Width; dx++)
+            var fp = Game.Rotated(def.Footprint, rot);
+            for (int dy = 0; dy < fp.Height; dy++)
+                for (int dx = 0; dx < fp.Width; dx++)
                     ghost.Add(Marker(cell.Value.x + dx, cell.Value.y + dy, mat));
-            var center = Ground.OnGround(Grid.FootprintCenter(cell.Value.x, cell.Value.y, def.Footprint));
-            var preview = Parts.Group("GhostModel", overlayRoot, center);
+            var center = Ground.OnGround(Grid.FootprintCenter(cell.Value.x, cell.Value.y, fp));
+            var preview = Parts.Group("GhostModel", overlayRoot, center, rot * 90f);
             BuildingModels.Create(def.Sprite, preview.transform, valid ? null : Palette.Get("GhostBad"), Grid.CellSize * Mathf.Min(def.Footprint.Width, def.Footprint.Height));
             if (!valid) preview.transform.localScale = new Vector3(1f, 0.6f, 1f);
             ghost.Add(preview);

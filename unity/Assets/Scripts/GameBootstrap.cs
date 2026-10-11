@@ -40,6 +40,9 @@ namespace Founders
             var store = gameObject.AddComponent<GameStore>();
             rig.IsBlocked = ui.BlocksPointer;
             rig.OnTap = store.HandleTap;
+            rig.PaintMode = () => store.DecoratingId != null && store.PaintMode;
+            rig.OnPaint = store.HandlePaint;
+            rig.OnPaintEnd = store.EndPaintStroke;
             store.Init(rig, world, capture);
             gameObject.AddComponent<Atmosphere>().Init(store);
             gameObject.AddComponent<AudioDirector>().Init(store);

@@ -40,6 +40,10 @@ namespace Founders
         /// <summary>Called with the screen position (pixels, bottom-left origin) of a tap on the world.</summary>
         public Action<Vector2> OnTap;
         public Func<Vector2, bool> IsBlocked = _ => false;
+        /// <summary>While true, one-finger drags paint (roads, fences) instead of moving the camera.</summary>
+        public Func<bool> PaintMode = () => false;
+        public Action<Vector2> OnPaint;
+        public Action OnPaintEnd;
         public Rect Bounds = new Rect(-4, -36, 40, 40); // x/z extent the focus point may move in
         /// <summary>Ground height at a world position (hills and mountains); null means flat ground at y = 0.</summary>
         public Func<Vector3, float> HeightAt;
@@ -181,13 +185,21 @@ namespace Founders
         void Move(Vector2 pos, Vector2 delta)
         {
             if (pressBlocked) return;
-            if (!dragging && (pos - pressStart).magnitude > TapSlop) dragging = true;
-            if (dragging) Pan(delta);
+            bool paint = PaintMode();
+            if (!dragging && (pos - pressStart).magnitude > TapSlop)
+            {
+                dragging = true;
+                if (paint) OnPaint?.Invoke(pressStart);
+            }
+            if (!dragging) return;
+            if (paint) OnPaint?.Invoke(pos);
+            else Pan(delta);
         }
 
         void Release(Vector2 pos)
         {
             if (!pressBlocked && !dragging && !pinching) OnTap?.Invoke(pos);
+            if (dragging && PaintMode()) OnPaintEnd?.Invoke();
             pressBlocked = false;
             dragging = false;
         }

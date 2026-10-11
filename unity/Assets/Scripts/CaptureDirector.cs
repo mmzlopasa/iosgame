@@ -259,6 +259,17 @@ namespace Founders
             store.Refresh();
             Focus(Camp() + new Vector3(2f, 0, -5f), 20f);
             yield return Shot("06g_town_layout", false);
+            store.BeginDecorating("dirt_path");
+            yield return Shot("06h_road_tool", true);
+            store.EndDecorating();
+            var sel = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "wood_camp") ?? game.State.Buildings.First();
+            store.SelectedBuildingId = sel.Id;
+            store.Refresh();
+            yield return Shot("06i_building_levels", true);
+            store.SelectedBuildingId = null;
+            store.HudHidden = true;
+            yield return Shot("06j_hud_hidden", true);
+            store.HudHidden = false;
 
             // 3c. Day, night and the seasons.
             SetTime(game, 2, 0.3f);   // autumn, morning
