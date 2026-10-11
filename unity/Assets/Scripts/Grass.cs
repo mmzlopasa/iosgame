@@ -44,16 +44,14 @@ namespace Founders
         Layer NewLayer(string impostor)
         {
             var layer = new Layer { Material = Palette.Get($"I_{impostor}_side"), Top = Palette.Get($"I_{impostor}_top") };
-            if (layer.Top != null && !layer.Top.enableInstancing) layer.Top = new Material(layer.Top) { enableInstancing = true };
+            if (layer.Top != null) layer.Top.enableInstancing = true;
             if (ModelLibrary.HasImpostor(impostor))
             {
                 var info = ModelLibrary.Manifest.Obj("impostors").Obj(impostor);
                 layer.Aspect = (float)(info.Num("width") / Mathf.Max(0.01f, (float)info.Num("height")));
             }
-            if (layer.Material != null && !layer.Material.enableInstancing)
-            {
-                layer.Material = new Material(layer.Material) { enableInstancing = true };
-            }
+            // Shared materials (so the season tint reaches the grass and the farm crops alike).
+            if (layer.Material != null) layer.Material.enableInstancing = true;
             return layer;
         }
 

@@ -41,6 +41,7 @@ namespace Founders
             rig.IsBlocked = ui.BlocksPointer;
             rig.OnTap = store.HandleTap;
             store.Init(rig, world, capture);
+            gameObject.AddComponent<Atmosphere>().Init(store);
             ui.Loading.Set(0.78f, "Gathering the people…");
             yield return null;
 

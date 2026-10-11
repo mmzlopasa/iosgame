@@ -81,6 +81,18 @@ namespace Founders
             game.DebugFastForward(70);
         }
 
+        /// <summary>Jumps game time to the middle of a season at a given point of the day (capture only).</summary>
+        void SetTime(Game game, int season, float dayPhase)
+        {
+            double seasonLen = game.Content.Balance.SeasonSeconds;
+            double year = seasonLen * 4;
+            double start = System.Math.Floor(game.State.SimTime / year) * year + season * seasonLen + seasonLen * 0.35;
+            double t = System.Math.Floor(start / Atmosphere.DayLength) * Atmosphere.DayLength + dayPhase * Atmosphere.DayLength;
+            if (t < start) t += Atmosphere.DayLength;
+            game.State.SimTime = t;
+            store.Refresh();
+        }
+
         IEnumerator ShowPanel(string name, Panel panel)
         {
             store.ActivePanel = panel;
@@ -196,6 +208,19 @@ namespace Founders
             store.Celebration = null;
             store.Toasts.Clear();
             yield return Shot("06c_era2_village", false);
+
+            // 3c. Day, night and the seasons.
+            SetTime(game, 2, 0.3f);   // autumn, morning
+            yield return new WaitForSeconds(1.5f);
+            yield return Shot("06d_autumn", false);
+            SetTime(game, 3, 0.35f);  // winter, day
+            yield return new WaitForSeconds(1.5f);
+            yield return Shot("06e_winter", true);
+            SetTime(game, 1, 0.88f);  // summer, night
+            yield return new WaitForSeconds(1.5f);
+            yield return Shot("06f_night", false);
+            SetTime(game, 1, 0.3f);
+            yield return new WaitForSeconds(1f);
 
             // 4. Landscape views: the river and the forest edge.
             var map = game.Content.Map;

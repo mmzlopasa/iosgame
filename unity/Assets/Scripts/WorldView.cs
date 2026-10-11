@@ -418,6 +418,8 @@ namespace Founders
             {
                 var v = Villager.Spawn(peopleRoot, RandomSpot(game), villagers.Count);
                 v.PickSpot = () => RandomSpot(store.Game);
+                int index = villagers.Count;
+                v.NextTask = () => TaskFor(index);
                 v.Ground = Ground;
                 villagers.Add(v);
             }
@@ -426,6 +428,107 @@ namespace Founders
                 Destroy(villagers[villagers.Count - 1].gameObject);
                 villagers.RemoveAt(villagers.Count - 1);
             }
+        }
+
+        // MARK: - Villager jobs (people go where their work is)
+
+        static readonly Dictionary<JobType, string> JobAction = new Dictionary<JobType, string>
+        {
+            [JobType.Foraging] = "Gather", [JobType.Farming] = "Gather", [JobType.Woodcutting] = "Work",
+            [JobType.Stonecutting] = "Work", [JobType.Crafting] = "Work", [JobType.Construction] = "Work",
+            [JobType.Research] = "Talk",
+        };
+
+        /// <summary>The job of villager #index, from the current assignments (in job order), or null if idle.</summary>
+        JobType? JobOf(Game game, int index)
+        {
+            int k = 0;
+            foreach (var job in Enums.Jobs)
+            {
+                int n = game.State.Assignments[job];
+                if (index < k + n) return job;
+                k += n;
+            }
+            return null;
+        }
+
+        Vector3 Around(Vector3 center, float radius) =>
+            Ground.OnGround(center + Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward * radius);
+
+        /// <summary>Nearest cell of a terrain type around a building (wood camps send people into the trees).</summary>
+        Vector3? NearestTerrain(Vector3 from, TerrainType type, int range = 6)
+        {
+            var (cx, cy) = Grid.CellAt(from);
+            Vector3? best = null;
+            float bestD = float.MaxValue;
+            for (int y = cy - range; y <= cy + range; y++)
+                for (int x = cx - range; x <= cx + range; x++)
+                {
+                    if (Ground.CellType(x, y) != type) continue;
+                    var c = Grid.CellCenter(x, y);
+                    float d = (c - from).sqrMagnitude;
+                    if (d < bestD) { bestD = d; best = c; }
+                }
+            return best;
+        }
+
+        VillagerTask TaskFor(int index)
+        {
+            var game = store.Game;
+            var task = new VillagerTask { Action = "Idle", Duration = Random.Range(3f, 7f) };
+            var hearth = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "campfire" || b.DefinitionId == "village_hearth");
+            Vector3 hearthPos = hearth != null ? Grid.CellCenter(hearth.X, hearth.Y) : Vector3.zero;
+
+            // Night: everyone gathers around the hearth or rests by the houses.
+            if (Atmosphere.Nightness > 0.55f)
+            {
+                if (index % 3 != 0 || hearth == null)
+                {
+                    task.Spot = Around(hearthPos, Random.Range(1.6f, 2.4f));
+                    task.Action = Random.value < 0.6f ? "Sit" : "Talk";
+                }
+                else task.Spot = RandomSpot(game);
+                task.Duration = Random.Range(6f, 12f);
+                return task;
+            }
+
+            var job = JobOf(game, index);
+            if (job == null)
+            {
+                task.Spot = Around(hearthPos, Random.Range(1.6f, 2.6f));
+                task.Action = Random.value < 0.5f ? "Talk" : "Idle";
+                return task;
+            }
+
+            task.Action = JobAction[job.Value];
+            task.Duration = Random.Range(5f, 10f);
+            PlacedBuilding site = null;
+            if (job == JobType.Construction)
+                site = game.State.Buildings.FirstOrDefault(b => b.Status != BuildingStatus.Complete);
+            else
+            {
+                var places = game.OperationalBuildings().Where(x => x.def.Slots(job.Value) > 0).Select(x => x.building).ToList();
+                if (places.Count > 0) site = places[index % places.Count];
+            }
+            if (site == null)
+            {
+                task.Spot = Around(hearthPos, 2f);
+                task.Action = "Idle";
+                return task;
+            }
+            var def = game.Content.Building(site.DefinitionId);
+            var center = def == null ? Grid.CellCenter(site.X, site.Y) : Grid.FootprintCenter(site.X, site.Y, def.Footprint);
+            float reach = Grid.CellSize * 0.5f * Mathf.Max(def?.Footprint.Width ?? 1, def?.Footprint.Height ?? 1);
+            // Gatherers walk out to the resource itself.
+            if (job == JobType.Woodcutting && NearestTerrain(center, TerrainType.Forest) is Vector3 forest && Random.value < 0.7f)
+                task.Spot = Around(forest, Random.Range(0.6f, 1.4f));
+            else if (job == JobType.Stonecutting && NearestTerrain(center, TerrainType.Rock) is Vector3 rock && Random.value < 0.7f)
+                task.Spot = Around(rock, Random.Range(0.6f, 1.2f));
+            else if (job == JobType.Farming)
+                task.Spot = Ground.OnGround(center + new Vector3(Random.Range(-1.5f, 1.5f), 0, Random.Range(-1.5f, 1.5f)));
+            else
+                task.Spot = Around(center, reach + Random.Range(0.5f, 1.1f));
+            return task;
         }
 
         Vector3 RandomSpot(Game game)

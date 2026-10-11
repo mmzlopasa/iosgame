@@ -16,6 +16,7 @@ namespace UnityEngine.Rendering
     {
         public List<VolumeComponent> components = new List<VolumeComponent>();
         public T Add<T>(bool overrides = false) where T : VolumeComponent => default;
+        public bool TryGet<T>(out T component) where T : VolumeComponent { component = default; return false; }
     }
     public class Volume : MonoBehaviour { public bool isGlobal { get; set; } public VolumeProfile sharedProfile; }
 }

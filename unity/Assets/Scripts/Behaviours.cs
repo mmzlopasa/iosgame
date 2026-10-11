@@ -217,9 +217,21 @@ namespace Founders
     /// Uses the animated CC0 character (Models/Villager, legacy animation clips) with per-person
     /// skin, clothing and hair tints; falls back to a simple figure if the model is missing.
     /// </summary>
+    /// <summary>Where a villager goes next and what they do there.</summary>
+    public struct VillagerTask
+    {
+        public Vector3 Spot;
+        public string Action;   // Idle, Talk, Work, Gather, Sit
+        public float Duration;
+    }
+
     public class Villager : MonoBehaviour
     {
         public Func<Vector3> PickSpot;
+        /// <summary>Set by the world: the villager's job decides where they work (Manor Lords style).</summary>
+        public Func<VillagerTask> NextTask;
+        VillagerTask task;
+        bool hasTask;
         public WorldTerrain Ground;
         Vector3 target;
         float wait;
@@ -297,14 +309,31 @@ namespace Founders
             to.y = 0;
             if (to.magnitude < 0.15f)
             {
-                float r = Random.value;
-                if (r < 0.35f) { Play("Idle"); wait = Random.Range(2f, 6f); }
-                else if (r < 0.55f) { Play("Talk"); wait = Random.Range(3f, 7f); }
-                else if (r < 0.8f) { Play("Work"); wait = Random.Range(4f, 9f); }
-                else { Play("Gather"); wait = Random.Range(2.5f, 5f); }
-                var spot = PickSpot != null ? PickSpot() : transform.position;
-                var jitter = Random.insideUnitCircle * 0.3f;
-                target = spot + new Vector3(jitter.x, 0, jitter.y);
+                if (hasTask)
+                {
+                    Play(task.Action);
+                    wait = task.Duration;
+                }
+                else
+                {
+                    float r = Random.value;
+                    if (r < 0.35f) { Play("Idle"); wait = Random.Range(2f, 6f); }
+                    else if (r < 0.55f) { Play("Talk"); wait = Random.Range(3f, 7f); }
+                    else if (r < 0.8f) { Play("Work"); wait = Random.Range(4f, 9f); }
+                    else { Play("Gather"); wait = Random.Range(2.5f, 5f); }
+                }
+                if (NextTask != null)
+                {
+                    task = NextTask();
+                    hasTask = true;
+                    target = task.Spot;
+                }
+                else
+                {
+                    var spot = PickSpot != null ? PickSpot() : transform.position;
+                    var jitter = Random.insideUnitCircle * 0.3f;
+                    target = spot + new Vector3(jitter.x, 0, jitter.y);
+                }
                 return;
             }
             Play("Walk");
