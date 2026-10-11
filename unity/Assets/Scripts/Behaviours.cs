@@ -233,11 +233,11 @@ namespace Founders
             new Color(0.92f, 0.72f, 0.58f), new Color(0.84f, 0.62f, 0.48f), new Color(0.74f, 0.52f, 0.38f),
             new Color(0.62f, 0.43f, 0.31f), new Color(0.52f, 0.36f, 0.26f),
         };
-        // Multiplies the leather texture: greyed, darker hides so clothing reads apart from skin.
+        // Multiplies the leather texture: warm browns that read as hide, apart from the skin.
         static readonly Color[] HideTints =
         {
-            new Color(0.55f, 0.45f, 0.38f), new Color(0.45f, 0.38f, 0.32f), new Color(0.62f, 0.50f, 0.40f),
-            new Color(0.40f, 0.35f, 0.31f), new Color(0.68f, 0.58f, 0.48f),
+            new Color(0.95f, 0.80f, 0.64f), new Color(0.80f, 0.66f, 0.52f), new Color(1.00f, 0.86f, 0.70f),
+            new Color(0.72f, 0.60f, 0.50f), new Color(0.88f, 0.75f, 0.60f),
         };
         static readonly Color[] HairColors =
         {
@@ -246,6 +246,19 @@ namespace Founders
         };
 
         static GameObject model;
+        static Material cloth;
+
+        /// <summary>Matte leather for clothing (the shared hide surface is too glossy on a body).</summary>
+        static Material ClothMaterial()
+        {
+            if (cloth != null) return cloth;
+            var src = ModelLibrary.Surface("Hide");
+            if (src == null) return null;
+            cloth = new Material(src) { name = "VillagerHide" };
+            if (cloth.HasProperty("_Smoothness")) cloth.SetFloat("_Smoothness", 0.12f);
+            if (cloth.HasProperty("_EnvironmentReflections")) cloth.SetFloat("_EnvironmentReflections", 0f);
+            return cloth;
+        }
         static bool modelLoaded;
 
         void Start()
@@ -338,7 +351,7 @@ namespace Founders
                     for (int i = 0; i < source.Length; i++)
                     {
                         string n = source[i] != null ? source[i].name : "";
-                        if (n.StartsWith("Hide")) { mats[i] = ModelLibrary.Surface("Hide"); tints[i] = hide; }
+                        if (n.StartsWith("Hide")) { mats[i] = ClothMaterial(); tints[i] = hide; }
                         else if (n.StartsWith("Hair")) { mats[i] = Palette.Get("Hair"); tints[i] = hair; }
                         else { mats[i] = Palette.Get("Skin"); tints[i] = skin; }
                     }
