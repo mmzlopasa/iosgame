@@ -256,34 +256,44 @@ namespace Founders
         }
     }
 
-    /// <summary>A villager walking between buildings (ambient life; not tied to the rules).</summary>
-    /// <summary>
-    /// A villager: walks between work spots and, on arrival, idles, talks, works or gathers.
-    /// Uses the animated CC0 character (Models/Villager, legacy animation clips) with per-person
-    /// skin, clothing and hair tints; falls back to a simple figure if the model is missing.
-    /// </summary>
     /// <summary>Where a villager goes next and what they do there.</summary>
     public struct VillagerTask
     {
         public Vector3 Spot;
-        public string Action;   // Idle, Talk, Work, Gather, Sit
+        /// <summary>Clip played on arrival: Idle, Talk, Work, Gather, Sit, Chop, Plant, Harvest, Water, Throw, Lantern…</summary>
+        public string Action;
+        /// <summary>Tool shown in the right hand while working (Prop_Axe, Prop_Pickaxe, Prop_Hammer, Prop_Spear) or null.</summary>
+        public string Tool;
+        /// <summary>Clip used on the way there (Walk, or Carry when bringing goods home).</summary>
+        public string WalkClip;
         public float Duration;
+        /// <summary>Optional waypoints along the roads before the spot.</summary>
+        public List<Vector3> Route;
     }
 
+    /// <summary>
+    /// A villager: walks (along the roads when there are any) to the place of their job and
+    /// does the work there with the right tool: woodcutters chop, miners and quarriers strike,
+    /// farmers sow, water and harvest, hunters and fishers throw spears, builders hammer.
+    /// Uses the animated CC0 characters (Models/Villager and VillagerF, legacy clips) with
+    /// per-person skin, clothing and hair tints; falls back to a simple figure if missing.
+    /// </summary>
     public class Villager : MonoBehaviour
     {
-        public Func<Vector3> PickSpot;
-        /// <summary>Set by the world: the villager's job decides where they work (Manor Lords style).</summary>
-        public Func<VillagerTask> NextTask;
+        /// <summary>Set by the world: the next task, given where the villager stands now.</summary>
+        public Func<Vector3, VillagerTask> NextTask;
+        public WorldTerrain Ground;
         VillagerTask task;
         bool hasTask;
-        public WorldTerrain Ground;
+        readonly Queue<Vector3> route = new Queue<Vector3>();
         Vector3 target;
         float wait;
         float speed;
         Transform body;
         Animation anim;
         string current;
+        readonly Dictionary<string, GameObject> tools = new Dictionary<string, GameObject>();
+        string shownTool;
 
         static readonly Color[] SkinTones =
         {
@@ -302,7 +312,7 @@ namespace Founders
             new Color(0.05f, 0.045f, 0.04f), new Color(0.38f, 0.27f, 0.16f),
         };
 
-        static GameObject model;
+        static readonly Dictionary<string, GameObject> models = new Dictionary<string, GameObject>();
         static Material cloth;
 
         /// <summary>Matte leather for clothing (the shared hide surface is too glossy on a body).</summary>
@@ -316,7 +326,14 @@ namespace Founders
             if (cloth.HasProperty("_EnvironmentReflections")) cloth.SetFloat("_EnvironmentReflections", 0f);
             return cloth;
         }
-        static bool modelLoaded;
+
+        static GameObject Model(string name)
+        {
+            if (models.TryGetValue(name, out var m)) return m;
+            m = Resources.Load<GameObject>("Models/" + name);
+            if (m == null) Debug.LogWarning($"[FOUNDERS] {name} model missing.");
+            return models[name] = m;
+        }
 
         void Start()
         {
@@ -325,6 +342,12 @@ namespace Founders
             wait = Random.Range(0f, 3f);
             target = transform.position;
             anim = GetComponentInChildren<Animation>();
+            foreach (var r in GetComponentsInChildren<MeshRenderer>(true))
+            {
+                if (!r.name.StartsWith("Prop_")) continue;
+                tools[r.name] = r.gameObject;
+                r.gameObject.SetActive(false);
+            }
             if (anim != null)
             {
                 anim.cullingType = AnimationCullingType.BasedOnRenderers;
@@ -345,6 +368,15 @@ namespace Founders
                 current = clip;
                 return;
             }
+            if (clip != "Idle") Play("Idle", fade);
+        }
+
+        void ShowTool(string tool)
+        {
+            if (tool == shownTool) return;
+            if (shownTool != null && tools.TryGetValue(shownTool, out var old)) old.SetActive(false);
+            shownTool = tool;
+            if (tool != null && tools.TryGetValue(tool, out var go)) go.SetActive(true);
         }
 
         void Update()
@@ -354,35 +386,33 @@ namespace Founders
             to.y = 0;
             if (to.magnitude < 0.15f)
             {
+                if (route.Count > 0)
+                {
+                    target = route.Dequeue();
+                    return;
+                }
                 if (hasTask)
                 {
+                    hasTask = false;
+                    ShowTool(task.Tool);
                     Play(task.Action);
                     wait = task.Duration;
+                    return;
                 }
-                else
-                {
-                    float r = Random.value;
-                    if (r < 0.35f) { Play("Idle"); wait = Random.Range(2f, 6f); }
-                    else if (r < 0.55f) { Play("Talk"); wait = Random.Range(3f, 7f); }
-                    else if (r < 0.8f) { Play("Work"); wait = Random.Range(4f, 9f); }
-                    else { Play("Gather"); wait = Random.Range(2.5f, 5f); }
-                }
-                if (NextTask != null)
-                {
-                    task = NextTask();
-                    hasTask = true;
-                    target = task.Spot;
-                }
-                else
-                {
-                    var spot = PickSpot != null ? PickSpot() : transform.position;
-                    var jitter = Random.insideUnitCircle * 0.3f;
-                    target = spot + new Vector3(jitter.x, 0, jitter.y);
-                }
+                if (NextTask == null) { wait = 2f; return; }
+                task = NextTask(transform.position);
+                hasTask = true;
+                route.Clear();
+                if (task.Route != null) foreach (var p in task.Route) route.Enqueue(p);
+                target = route.Count > 0 ? route.Dequeue() : task.Spot;
+                route.Enqueue(task.Spot);
+                // Tools stay in hand on the way to work; carried goods replace them.
+                ShowTool(task.WalkClip == "Carry" ? null : task.Tool);
                 return;
             }
-            Play("Walk");
-            var step = to.normalized * speed * Time.deltaTime;
+            bool onRoad = task.Route != null && route.Count > 0;
+            Play(task.WalkClip ?? "Walk");
+            var step = to.normalized * speed * (onRoad ? 1.3f : 1f) * Time.deltaTime;
             var next = transform.position + Vector3.ClampMagnitude(step, to.magnitude);
             if (Ground != null) next.y = Ground.HeightAt(next);
             transform.position = next;
@@ -391,16 +421,11 @@ namespace Founders
                 body.localPosition = new Vector3(0, Mathf.Abs(Mathf.Sin(Time.time * speed * 7f)) * 0.05f, 0);
         }
 
-        public static Villager Spawn(Transform parent, Vector3 at, int seed)
+        public static Villager Spawn(Transform parent, Vector3 at, int seed, bool female)
         {
             var root = Parts.Group("Villager", parent, at).transform;
             root.rotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
-            if (!modelLoaded)
-            {
-                modelLoaded = true;
-                model = Resources.Load<GameObject>("Models/Villager");
-                if (model == null) Debug.LogWarning("[FOUNDERS] Villager model missing; using placeholder figures.");
-            }
+            var model = Model(female ? "VillagerF" : "Villager") ?? Model("Villager");
 
             if (model != null)
             {
@@ -409,8 +434,7 @@ namespace Founders
                 body.name = "Body";
                 body.transform.localPosition = Vector3.zero;
                 body.transform.localRotation = Quaternion.identity;
-                bool smaller = rng.NextDouble() < 0.45;
-                float s = (smaller ? 0.9f : 0.97f) + (float)rng.NextDouble() * 0.06f;
+                float s = (female ? 0.9f : 0.95f) + (float)rng.NextDouble() * 0.07f;
                 body.transform.localScale = Vector3.one * s;
 
                 var skin = SkinTones[rng.Next(SkinTones.Length)];
@@ -438,6 +462,16 @@ namespace Founders
                         block.SetColor("_BaseColor", tints[i]);
                         r.SetPropertyBlock(block, i);
                     }
+                }
+                // Hand tools: wooden handles and knapped stone heads.
+                foreach (var r in body.GetComponentsInChildren<MeshRenderer>(true))
+                {
+                    var source = r.sharedMaterials;
+                    var mats = new Material[source.Length];
+                    for (int i = 0; i < source.Length; i++)
+                        mats[i] = source[i] != null && source[i].name.StartsWith("Stone") ? ModelLibrary.Surface("DarkRock") : ModelLibrary.Surface("RoughWood");
+                    r.sharedMaterials = mats;
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 }
                 return root.gameObject.AddComponent<Villager>();
             }

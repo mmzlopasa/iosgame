@@ -271,6 +271,23 @@ namespace Founders
             yield return Shot("06j_hud_hidden", true);
             store.HudHidden = false;
 
+            // Work up close: builders at a new site, woodcutters in the forest.
+            game.DebugGrant(new ResourceBundle(200, 200, 200, 0));
+            var siteCell = FindCell("longhouse");
+            if (siteCell != null && game.PlaceBuilding("longhouse", siteCell.Value.Item1, siteCell.Value.Item2).Ok)
+            {
+                store.Refresh();
+                yield return new WaitForSeconds(12f);
+                Focus(Grid.CellCenter(siteCell.Value.Item1 + 0.5f, siteCell.Value.Item2 + 0.5f), 10f);
+                yield return Shot("06k_builders", false);
+            }
+            var camp = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "wood_camp");
+            if (camp != null)
+            {
+                Focus(Grid.CellCenter(camp.X, camp.Y), 14f);
+                yield return Shot("06l_woodcutters", false);
+            }
+
             // 3c. Day, night and the seasons.
             SetTime(game, 2, 0.3f);   // autumn, morning
             yield return new WaitForSeconds(1.5f);

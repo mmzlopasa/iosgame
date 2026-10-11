@@ -83,7 +83,7 @@ namespace FoundersEditor
             if (!assetPath.StartsWith("Assets/Art/")) return;
             var mi = (ModelImporter)assetImporter;
             mi.materialImportMode = ModelImporterMaterialImportMode.None; // materials are assigned from the art manifest
-            bool character = Path.GetFileNameWithoutExtension(assetPath) == "Villager";
+            bool character = Path.GetFileNameWithoutExtension(assetPath).StartsWith("Villager");
             mi.importAnimation = character;
             if (character)
             {
