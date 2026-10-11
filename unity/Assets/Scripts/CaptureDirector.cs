@@ -116,6 +116,21 @@ namespace Founders
             store.Refresh();
         }
 
+        /// <summary>Answers any waiting decision so dialogs do not cover the scenery shots.</summary>
+        void ResolvePending()
+        {
+            var game = store.Game;
+            for (int i = 0; i < 4 && game.PendingEvent != null; i++)
+            {
+                var option = game.PendingEvent.Options.FirstOrDefault(o => game.OptionBlocker(o) == null);
+                if (option == null) break;
+                game.ResolveEvent(option.Id);
+            }
+            game.DismissStory();
+            store.Celebration = null;
+            store.Refresh();
+        }
+
         /// <summary>Moves game time on to the start of a year (capture only: the story gates need years).</summary>
         static void JumpToYear(Game game, int year)
         {
@@ -249,6 +264,7 @@ namespace Founders
             var pending = game.PendingEvent;
             if (pending != null) game.ResolveEvent(pending.Options.First(o => game.OptionBlocker(o) == null).Id);
             JumpToYear(game, 5);
+            if (game.State.Chapter < 3) game.State.Chapter = 3;
             if (game.CanClaimMilestone("first_civilization")) game.ClaimMilestone("first_civilization");
             else Debug.LogWarning("[FOUNDERS] capture: first_civilization not claimable: " +
                                   string.Join(", ", game.MilestoneRequirements("first_civilization").Where(r => !r.Met).Select(r => r.Text)));
@@ -273,7 +289,9 @@ namespace Founders
                 yield return null;
             }
             store.World.RebuildAll();
-            store.Refresh();
+            ResolvePending();
+            SetTime(game, 1, 0.3f);   // a summer morning for the town shots
+            yield return new WaitForSeconds(1f);
             Focus(Camp() + new Vector3(2f, 0, -5f), 20f);
             yield return Shot("06g_town_layout", false);
             store.BeginDecorating("dirt_path");
@@ -318,6 +336,10 @@ namespace Founders
             SetTime(game, 1, 0.3f);
             yield return new WaitForSeconds(1f);
 
+            ResolvePending();
+            SetTime(game, 1, 0.3f);
+            yield return new WaitForSeconds(1f);
+
             // 4. Landscape views: the river and the forest edge.
             var map = game.Content.Map;
             Focus(Grid.CellCenter(9.5f, 9f), 16f);
@@ -338,6 +360,7 @@ namespace Founders
             }
             Focus(Grid.CellCenter((map.Width - 1) * 0.5f, (map.Height - 1) * 0.5f), 80f);
             yield return Shot("09_overview", true);
+            yield return Shot("09b_valley", false);
 
             // 5. UI screens.
             Focus(Camp(), 24f);

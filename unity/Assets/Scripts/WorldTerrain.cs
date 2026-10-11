@@ -136,8 +136,39 @@ namespace Founders
             for (int i = 0; i < HeightRes; i++)
                 for (int j = 0; j < HeightRes; j++)
                     signedWaterDistance[i, j] = water[i, j] ? -inside[i, j] : outside[i, j];
+            // The map is made of 2 m cells: round off the stepped shores and let them wander a little.
+            signedWaterDistance = Blur(Blur(signedWaterDistance, 2), 2);
+            for (int i = 0; i < HeightRes; i++)
+                for (int j = 0; j < HeightRes; j++)
+                {
+                    var w = SampleWorld(i, j, HeightRes);
+                    signedWaterDistance[i, j] += (Mathf.PerlinNoise(w.x * 0.21f + 13f, w.y * 0.21f + 7f) - 0.5f) * 0.5f;
+                }
             mountainDepth = Chamfer(mountain, false, step);
             hillDepth = Chamfer(hill, false, step);
+        }
+
+        /// <summary>Separable box blur with the given radius (in samples).</summary>
+        static float[,] Blur(float[,] src, int r)
+        {
+            int n = src.GetLength(0);
+            var tmp = new float[n, n];
+            var dst = new float[n, n];
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < n; j++)
+                {
+                    float sum = 0f; int c = 0;
+                    for (int k = Mathf.Max(0, j - r); k <= Mathf.Min(n - 1, j + r); k++) { sum += src[i, k]; c++; }
+                    tmp[i, j] = sum / c;
+                }
+            for (int i = 0; i < n; i++)
+                for (int j = 0; j < n; j++)
+                {
+                    float sum = 0f; int c = 0;
+                    for (int k = Mathf.Max(0, i - r); k <= Mathf.Min(n - 1, i + r); k++) { sum += tmp[k, j]; c++; }
+                    dst[i, j] = sum / c;
+                }
+            return dst;
         }
 
         /// <summary>Distance from each sample to the nearest sample where mask == target.</summary>

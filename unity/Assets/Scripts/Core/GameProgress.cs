@@ -45,6 +45,7 @@ namespace Founders.Core
                 case ConditionKind.DistinctJobsAtLeast: return Enums.Jobs.Count(j => State.Assignments[j] > 0) >= amount;
                 case ConditionKind.FoodBalancePositive: return Economy().Net.Food > 0;
                 case ConditionKind.YearAtLeast: return Year >= amount;
+                case ConditionKind.ChapterAtLeast: return State.Chapter >= amount;
                 case ConditionKind.RoadCellsAtLeast: return RoadCount() >= amount;
                 case ConditionKind.BeautyAtLeast: return Beauty() >= amount;
                 default: return false;
@@ -80,6 +81,8 @@ namespace Founders.Core
                     return $"Food balance {perMinute.ToString("+0.0;-0.0;+0.0", CultureInfo.InvariantCulture)}/min (must be positive)";
                 }
                 case ConditionKind.YearAtLeast: return $"Reach year {amount} (now year {Year})";
+                case ConditionKind.ChapterAtLeast:
+                    return $"Reach chapter {amount}: {Content.Chapters.FirstOrDefault(c => c.Number == (int)amount)?.Title ?? "?"}";
                 case ConditionKind.RoadCellsAtLeast: return $"Road tiles {RoadCount()}/{amount}";
                 case ConditionKind.BeautyAtLeast: return $"Beauty {Beauty()}/{amount}";
                 default: return c.Kind.ToString();

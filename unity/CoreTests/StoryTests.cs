@@ -49,6 +49,17 @@ namespace Founders.Tests
         }
 
         [Test]
+        public void TheBronzeDawnWaitsForItsChapter()
+        {
+            var (game, _) = Fixtures.NewGame(full: true);
+            var gate = game.MilestoneRequirements("first_civilization").Single(r => r.Text.StartsWith("Reach chapter"));
+            Assert.That(gate.Met, Is.False);
+            Assert.That(gate.Text, Does.Contain("The Bronze Dawn"));
+            game.State.Chapter = 3;
+            Assert.That(game.MilestoneRequirements("first_civilization").Single(r => r.Text.StartsWith("Reach chapter")).Met, Is.True);
+        }
+
+        [Test]
         public void LockedChaptersNeverAdvance()
         {
             var (game, clock) = Fixtures.NewGame(full: true);

@@ -261,16 +261,28 @@ namespace Founders
             var cam = Camera.main;
             if (cam == null) return;
             var c = cam.transform.position;
+            var fwd = cam.transform.forward;
             foreach (var tv in trees)
             {
                 var p = tv.Position;
                 float dx = c.x - p.x, dz = c.z - p.z;
                 bool hide = false;
+                var crown = p + Vector3.up * tv.Height * 0.6f;
                 if (dx * dx + dz * dz < 400f)
                 {
-                    var crown = p + Vector3.up * tv.Height * 0.6f;
                     float horizontal = Mathf.Sqrt(dx * dx + dz * dz);
                     hide = (c - crown).magnitude < tv.Height * 0.55f + 3f || (c.y < p.y + tv.Height + 1.5f && horizontal < 4f);
+                }
+                // Crowns standing between the camera and the middle of the view hide too.
+                if (!hide && fwd.y < -0.1f && c.y - p.y < 22f)
+                {
+                    float t = Vector3.Dot(crown - c, fwd);
+                    float groundT = (c.y - p.y) / -fwd.y; // where the view ray reaches this tree's ground level
+                    if (t > 0f && t < groundT)
+                    {
+                        float off = (crown - (c + fwd * t)).magnitude;
+                        hide = off < tv.Height * 0.4f + 1.5f;
+                    }
                 }
                 if (hide == tv.NearCamera) continue;
                 tv.NearCamera = hide;

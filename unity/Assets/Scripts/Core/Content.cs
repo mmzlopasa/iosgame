@@ -171,6 +171,7 @@ namespace Founders.Core
         YearAtLeast,            // amount (game years since founding; one year = four seasons)
         RoadCellsAtLeast,       // amount
         BeautyAtLeast,          // amount (sum of decoration beauty)
+        ChapterAtLeast,         // amount (story chapter number)
     }
 
     public sealed class Condition

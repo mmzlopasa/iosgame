@@ -1797,6 +1797,10 @@
    "description": "Fields, granaries and bronze: a new era begins.",
    "requirements": [
     {
+     "kind": "chapterAtLeast",
+     "amount": 3
+    },
+    {
      "kind": "milestoneReached",
      "id": "stable_village"
     },
