@@ -57,7 +57,7 @@ namespace Founders
             main.loop = true;
             main.startLifetime = 9f;
             main.startSpeed = 0f;
-            main.startSize = new ParticleSystem.MinMaxCurve(0.06f, 0.14f);
+            main.startSize = new ParticleSystem.MinMaxCurve(0.03f, 0.06f);
             main.startColor = new Color(1f, 1f, 1f, 0.85f);
             main.maxParticles = 1500;
             main.gravityModifier = 0.025f;
@@ -74,6 +74,7 @@ namespace Founders
             var r = go.GetComponent<ParticleSystemRenderer>();
             r.sharedMaterial = Palette.Get("Mist");
             r.shadowCastingMode = ShadowCastingMode.Off;
+            r.maxParticleSize = 0.006f; // flakes right in front of the lens stay small
             snow.Play();
         }
 
@@ -117,20 +118,20 @@ namespace Founders
             Color dayColor = Color.Lerp(Dawn, noon, Mathf.SmoothStep(0f, 1f, elevation / 0.4f));
             float dayIntensity = Mathf.Lerp(0.9f, 2.1f, elevation) * seasonLight;
             sun.color = Color.Lerp(dayColor, Moon, nightness);
-            sun.intensity = Mathf.Lerp(dayIntensity, 0.32f, nightness);
+            sun.intensity = Mathf.Lerp(dayIntensity, 0.6f, nightness);
             float pitch = p < 0.75f ? Mathf.Lerp(9f, 56f, elevation) : Mathf.Lerp(12f, 48f, nightness);
             sun.transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
 
-            RenderSettings.ambientIntensity = Mathf.Lerp(Mathf.Lerp(0.75f, 1f, elevation), 0.32f, nightness);
+            RenderSettings.ambientIntensity = Mathf.Lerp(Mathf.Lerp(0.75f, 1f, elevation), 0.55f, nightness);
             RenderSettings.reflectionIntensity = Mathf.Lerp(1f, 0.3f, nightness);
-            if (sky != null && sky.HasProperty("_Exposure")) sky.SetFloat("_Exposure", Mathf.Lerp(skyExposure, skyExposure * 0.2f, nightness));
+            if (sky != null && sky.HasProperty("_Exposure")) sky.SetFloat("_Exposure", Mathf.Lerp(skyExposure, skyExposure * 0.35f, nightness));
             var fog = id == "winter" ? new Color(0.78f, 0.82f, 0.88f) : SceneEnvironment.FogColor;
             RenderSettings.fogColor = Color.Lerp(fog, NightFog, nightness);
 
             if (white != null)
             {
                 float temp = id switch { "summer" => 8f, "autumn" => 16f, "winter" => -16f, _ => 2f };
-                white.temperature.value = Mathf.Lerp(baseTemperature + temp, -28f, nightness);
+                white.temperature.value = Mathf.Lerp(baseTemperature + temp, -18f, nightness);
             }
 
             // Vegetation tints follow the season (eased over the first part of each season).
