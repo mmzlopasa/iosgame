@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UIElements;
+using UnityEngine.Video;
 
 namespace Founders.UI
 {
@@ -19,7 +20,9 @@ namespace Founders.UI
         };
 
         readonly VisualElement layer;
-        readonly VisualElement fill, card;
+        readonly VisualElement fill, card, video;
+        VideoPlayer player;
+        RenderTexture videoTexture;
         readonly Label percent, status;
         float shown;
 
@@ -32,6 +35,19 @@ namespace Founders.UI
             layer.Cover(Theme.Image("loading_bg"));
             layer.style.backgroundColor = Theme.Bg;
             layer.Transition(420, "opacity");
+
+            // A montage of the valley plays behind the title (fades in once the first frame is ready).
+            video = E.Div().Fill().Ignore();
+            video.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
+            video.style.opacity = 0;
+            video.Transition(900, "opacity");
+            layer.Add(video);
+            var topShade = E.Div().Abs(0, 0, 0).BgImage(Theme.TopShade).Ignore();
+            topShade.style.height = Length.Percent(55);
+            layer.Add(topShade);
+            var bottomShade = E.Div().Abs(0, null, 0, 0).BgImage(Theme.BottomShade).Ignore();
+            bottomShade.style.height = Length.Percent(45);
+            layer.Add(bottomShade);
 
             var brand = E.Div().Col(Align.Center).Ignore();
             brand.style.position = Position.Absolute;
@@ -80,6 +96,40 @@ namespace Founders.UI
             layer.Add(version);
         }
 
+        /// <summary>Starts the loading montage (Resources/Video/loading) on a VideoPlayer owned by <paramref name="host"/>.</summary>
+        public void StartVideo(GameObject host)
+        {
+            var clip = Resources.Load<VideoClip>("Video/loading");
+            if (clip == null) return;
+            videoTexture = new RenderTexture((int)clip.width, (int)clip.height, 0) { name = "LoadingVideo" };
+            player = host.AddComponent<VideoPlayer>();
+            player.playOnAwake = false;
+            player.source = VideoSource.VideoClip;
+            player.clip = clip;
+            player.isLooping = true;
+            player.renderMode = VideoRenderMode.RenderTexture;
+            player.targetTexture = videoTexture;
+            player.audioOutputMode = VideoAudioOutputMode.None;
+            player.prepareCompleted += p =>
+            {
+                if (!Visible) return;
+                video.style.backgroundImage = Background.FromRenderTexture(videoTexture);
+                p.Play();
+                video.style.opacity = 1;
+            };
+            player.Prepare();
+        }
+
+        void StopVideo()
+        {
+            if (player == null) return;
+            player.Stop();
+            Object.Destroy(player);
+            player = null;
+            video.style.backgroundImage = StyleKeyword.None;
+            if (videoTexture != null) { videoTexture.Release(); Object.Destroy(videoTexture); videoTexture = null; }
+        }
+
         public void Show()
         {
             Visible = true;
@@ -101,7 +151,7 @@ namespace Founders.UI
         {
             Visible = false;
             layer.style.opacity = 0;
-            layer.schedule.Execute(() => { if (!Visible) layer.Hidden(true); }).StartingIn(450);
+            layer.schedule.Execute(() => { if (!Visible) { layer.Hidden(true); StopVideo(); } }).StartingIn(450);
         }
     }
 
