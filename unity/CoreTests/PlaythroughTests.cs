@@ -17,7 +17,7 @@ namespace Founders.Tests
         [Test]
         public void ScriptedPlayerReachesStableVillage()
         {
-            var (game, clock) = Fixtures.NewGame();
+            var (game, clock) = Fixtures.NewGame(full: true);
             int nextBuild = 0;
             double? reachedAt = null;
 

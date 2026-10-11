@@ -16,9 +16,18 @@ namespace Founders.Tests
         /// <summary>Fresh, validated copy of the shipped content (safe to mutate per test).</summary>
         public static GameContent Content() => GameContent.Load(ContentJson);
 
-        public static (Game game, ManualClock clock) NewGame(Action<GameContent> configure = null)
+        /// <summary>
+        /// A new game. By default seasons and approval effects are switched off so rule tests can
+        /// check exact rates; <paramref name="full"/> plays with every system on (as shipped).
+        /// </summary>
+        public static (Game game, ManualClock clock) NewGame(Action<GameContent> configure = null, bool full = false)
         {
             var c = Content();
+            if (!full)
+            {
+                c.Balance.SeasonSeconds = 0;
+                c.Balance.ApprovalAffectsWork = false;
+            }
             configure?.Invoke(c);
             var clock = new ManualClock();
             return (Game.NewGame(c, clock), clock);

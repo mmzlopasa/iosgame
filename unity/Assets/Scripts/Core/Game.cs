@@ -143,6 +143,7 @@ namespace Founders.Core
             AdvanceGrowth(dt);
 
             State.SimTime += dt;
+            TrackSeason();
             double simTime = State.SimTime;
             State.Modifiers.RemoveAll(m => m.ExpiresAtSimTime.HasValue && m.ExpiresAtSimTime.Value <= simTime);
         }
@@ -152,7 +153,9 @@ namespace Founders.Core
             var b = Content.Balance;
             if (State.FoodShortage || State.Population >= HousingCapacity() || State.Resources.Food < b.GrowthMinFood
                 || b.GrowthSecondsPerPerson <= 0) return;
-            State.GrowthProgress += dt / b.GrowthSecondsPerPerson * Multiplier(EffectKind.GrowthMultiplier);
+            double rate = Multiplier(EffectKind.GrowthMultiplier) * (Season?.Growth ?? 1) * ApprovalGrowth(Approval);
+            if (rate <= 0) return;
+            State.GrowthProgress += dt / b.GrowthSecondsPerPerson * rate;
             if (State.GrowthProgress >= 1)
             {
                 State.GrowthProgress = 0;

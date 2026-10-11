@@ -28,8 +28,17 @@
    "id": "epoch_first_civilizations",
    "index": 2,
    "name": "First Civilizations",
-   "playable": false,
-   "stages": []
+   "playable": true,
+   "stages": [
+    {
+     "id": "farming_village",
+     "name": "Farming Village"
+    },
+    {
+     "id": "bronze_town",
+     "name": "Bronze Town"
+    }
+   ]
   },
   {
    "id": "epoch_classical_worlds",
@@ -120,6 +129,14 @@
     "unlimitedSlots": false
    },
    {
+    "job": "farming",
+    "name": "Farming",
+    "description": "Sow, tend and harvest the fields. Depends on the season.",
+    "output": "food",
+    "ratePerWorkerPerSecond": 0.16,
+    "unlimitedSlots": false
+   },
+   {
     "job": "woodcutting",
     "name": "Wood Gathering",
     "description": "Collect deadwood and fell small trees.",
@@ -157,6 +174,45 @@
     "ratePerWorkerPerSecond": 0.06,
     "unlimitedSlots": false
    }
+  ],
+  "seasonSeconds": 360,
+  "seasons": [
+   {
+    "id": "spring",
+    "name": "Spring",
+    "description": "Fields can be sown and the community grows.",
+    "foraging": 1.0,
+    "farming": 0.7,
+    "growth": 1.15,
+    "fuelPerPersonPerSecond": 0
+   },
+   {
+    "id": "summer",
+    "name": "Summer",
+    "description": "Berries ripen and the days are long.",
+    "foraging": 1.2,
+    "farming": 1.2,
+    "growth": 1.0,
+    "fuelPerPersonPerSecond": 0
+   },
+   {
+    "id": "autumn",
+    "name": "Autumn",
+    "description": "Harvest time: fill the stores and the woodpile before winter.",
+    "foraging": 1.1,
+    "farming": 1.6,
+    "growth": 0.9,
+    "fuelPerPersonPerSecond": 0.004
+   },
+   {
+    "id": "winter",
+    "name": "Winter",
+    "description": "Wild food is scarce and every hearth burns firewood.",
+    "foraging": 0.45,
+    "farming": 0,
+    "growth": 0.5,
+    "fuelPerPersonPerSecond": 0.01
+   }
   ]
  },
  "buildings": [
@@ -192,7 +248,8 @@
      "count": 1
     }
    ],
-   "successorId": "village_hearth"
+   "successorId": "village_hearth",
+   "community": 4
   },
   {
    "id": "shelter",
@@ -214,7 +271,8 @@
    ],
    "buildable": true,
    "housing": 2,
-   "upgradesTo": "woven_shelter"
+   "upgradesTo": "woven_shelter",
+   "comfort": 0
   },
   {
    "id": "woven_shelter",
@@ -237,7 +295,9 @@
    ],
    "buildable": false,
    "housing": 4,
-   "requiresTech": "structural_weaving"
+   "requiresTech": "structural_weaving",
+   "comfort": 5,
+   "upgradesTo": "daub_house"
   },
   {
    "id": "foraging_camp",
@@ -395,7 +455,8 @@
      "job": "research",
      "count": 3
     }
-   ]
+   ],
+   "community": 6
   },
   {
    "id": "village_hearth",
@@ -429,7 +490,8 @@
      "job": "research",
      "count": 2
     }
-   ]
+   ],
+   "community": 8
   },
   {
    "id": "fishing_weir",
@@ -459,7 +521,8 @@
      "job": "foraging",
      "count": 2
     }
-   ]
+   ],
+   "foodSource": "fish"
   },
   {
    "id": "drying_rack",
@@ -510,7 +573,8 @@
      "job": "research",
      "count": 3
     }
-   ]
+   ],
+   "community": 5
   },
   {
    "id": "longhouse",
@@ -533,7 +597,199 @@
    ],
    "buildable": true,
    "requiresTech": "longhouses",
-   "housing": 8
+   "housing": 8,
+   "comfort": 8
+  },
+  {
+   "id": "daub_house",
+   "name": "Daub House",
+   "description": "Wattle walls sealed with clay and dung under a thick thatch. Houses 5 people in comfort.",
+   "epoch": "epoch_first_civilizations",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 30,
+    "stone": 10
+   },
+   "buildSeconds": 35,
+   "sprite": "daub_house",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": false,
+   "housing": 5,
+   "comfort": 10,
+   "requiresTech": "agriculture"
+  },
+  {
+   "id": "farm_field",
+   "name": "Farm Field",
+   "description": "Tilled strips of grain. +4 Farming jobs. Farms give most in autumn and nothing in winter.",
+   "epoch": "epoch_first_civilizations",
+   "footprint": {
+    "width": 2,
+    "height": 2
+   },
+   "cost": {
+    "wood": 30
+   },
+   "buildSeconds": 30,
+   "sprite": "farm_field",
+   "allowedTerrain": [
+    "grass"
+   ],
+   "buildable": true,
+   "requiresTech": "agriculture",
+   "jobSlots": [
+    {
+     "job": "farming",
+     "count": 4
+    }
+   ]
+  },
+  {
+   "id": "animal_pen",
+   "name": "Animal Pen",
+   "description": "Goats and sheep behind a woven fence. +2 Foraging jobs and a new kind of food.",
+   "epoch": "epoch_first_civilizations",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 35
+   },
+   "buildSeconds": 30,
+   "sprite": "animal_pen",
+   "allowedTerrain": [
+    "grass"
+   ],
+   "buildable": true,
+   "requiresTech": "animal_husbandry",
+   "foodSource": "meat",
+   "jobSlots": [
+    {
+     "job": "foraging",
+     "count": 2
+    }
+   ]
+  },
+  {
+   "id": "granary",
+   "name": "Granary",
+   "description": "A raised store of clay pots. +150 storage and protects 80 food from spoilage.",
+   "epoch": "epoch_first_civilizations",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 40,
+    "stone": 20
+   },
+   "buildSeconds": 40,
+   "sprite": "granary",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "pottery",
+   "storage": 150,
+   "protectedFood": 80
+  },
+  {
+   "id": "pottery_kiln",
+   "name": "Pottery Kiln",
+   "description": "A domed clay kiln. +2 Crafting jobs.",
+   "epoch": "epoch_first_civilizations",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 30,
+    "stone": 25
+   },
+   "buildSeconds": 35,
+   "sprite": "pottery_kiln",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "pottery",
+   "jobSlots": [
+    {
+     "job": "crafting",
+     "count": 2
+    }
+   ]
+  },
+  {
+   "id": "copper_smelter",
+   "name": "Copper Smelter",
+   "description": "A stone furnace and bellows. +2 Stone Gathering and +1 Crafting job.",
+   "epoch": "epoch_first_civilizations",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 40,
+    "stone": 40
+   },
+   "buildSeconds": 45,
+   "sprite": "copper_smelter",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "copper_smelting",
+   "jobSlots": [
+    {
+     "job": "stonecutting",
+     "count": 2
+    },
+    {
+     "job": "crafting",
+     "count": 1
+    }
+   ]
+  },
+  {
+   "id": "bronze_workshop",
+   "name": "Bronze Workshop",
+   "description": "Moulds, crucibles and the first bronze tools. +3 Crafting jobs.",
+   "epoch": "epoch_first_civilizations",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 50,
+    "stone": 40
+   },
+   "buildSeconds": 50,
+   "sprite": "bronze_workshop",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "bronze_working",
+   "maxCount": 1,
+   "community": 3,
+   "jobSlots": [
+    {
+     "job": "crafting",
+     "count": 3
+    }
+   ]
   }
  ],
  "technologies": [
@@ -707,6 +963,115 @@
     {
      "kind": "growthMultiplier",
      "value": 1.15
+    }
+   ]
+  },
+  {
+   "id": "agriculture",
+   "name": "Agriculture",
+   "description": "Sowing wild grain in tilled plots. Unlocks Farm Fields and Daub Houses.",
+   "cost": {
+    "knowledge": 60
+   },
+   "researchSeconds": 75,
+   "prerequisites": [
+    "permanent_settlement"
+   ],
+   "effects": [
+    {
+     "kind": "growthMultiplier",
+     "value": 1.05
+    }
+   ]
+  },
+  {
+   "id": "animal_husbandry",
+   "name": "Animal Husbandry",
+   "description": "Penning goats and sheep. Unlocks the Animal Pen (a new kind of food).",
+   "cost": {
+    "knowledge": 70
+   },
+   "researchSeconds": 80,
+   "prerequisites": [
+    "agriculture"
+   ],
+   "effects": [
+    {
+     "kind": "growthMultiplier",
+     "value": 1.05
+    }
+   ]
+  },
+  {
+   "id": "pottery",
+   "name": "Pottery",
+   "description": "Fired clay pots keep grain dry. Unlocks the Granary and the Pottery Kiln. Food spoils 20% slower.",
+   "cost": {
+    "knowledge": 70
+   },
+   "researchSeconds": 80,
+   "prerequisites": [
+    "agriculture",
+    "food_preservation"
+   ],
+   "effects": [
+    {
+     "kind": "spoilageMultiplier",
+     "value": 0.8
+    }
+   ]
+  },
+  {
+   "id": "copper_smelting",
+   "name": "Copper Smelting",
+   "description": "Green stones melt into copper in hot kilns. Unlocks the Copper Smelter. +15% stone gathering.",
+   "cost": {
+    "knowledge": 90
+   },
+   "researchSeconds": 100,
+   "prerequisites": [
+    "pottery",
+    "improved_stone_tools"
+   ],
+   "effects": [
+    {
+     "kind": "jobRateMultiplier",
+     "job": "stonecutting",
+     "value": 1.15
+    }
+   ]
+  },
+  {
+   "id": "bronze_working",
+   "name": "Bronze Working",
+   "description": "Copper and tin make bronze: tools that never chip. Unlocks the Bronze Workshop. +20% to all gathering and farming.",
+   "cost": {
+    "knowledge": 120
+   },
+   "researchSeconds": 120,
+   "prerequisites": [
+    "copper_smelting"
+   ],
+   "effects": [
+    {
+     "kind": "jobRateMultiplier",
+     "job": "foraging",
+     "value": 1.2
+    },
+    {
+     "kind": "jobRateMultiplier",
+     "job": "woodcutting",
+     "value": 1.2
+    },
+    {
+     "kind": "jobRateMultiplier",
+     "job": "stonecutting",
+     "value": 1.2
+    },
+    {
+     "kind": "jobRateMultiplier",
+     "job": "farming",
+     "value": 1.2
     }
    ]
   }
@@ -965,6 +1330,49 @@
      "legacyText": "The river took part of the stores — and taught respect for its seasons."
     }
    ]
+  },
+  {
+   "id": "harvest_festival",
+   "title": "The First Harvest",
+   "text": "The first fields have given grain. The people want to celebrate.",
+   "trigger": [
+    {
+     "kind": "buildingCount",
+     "id": "farm_field",
+     "amount": 1
+    }
+   ],
+   "options": [
+    {
+     "id": "feast",
+     "label": "Hold a harvest feast",
+     "tradeOff": "Costs 30 food. Approval +12 for 6 min.",
+     "cost": {
+      "food": 30
+     },
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": 12,
+       "durationSeconds": 360
+      }
+     ],
+     "legacyText": "The first harvest feast: songs that would be sung for a thousand years."
+    },
+    {
+     "id": "store_grain",
+     "label": "Store every grain",
+     "tradeOff": "No cost, but some grumble: approval −4 for 4 min.",
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": -4,
+       "durationSeconds": 240
+      }
+     ],
+     "legacyText": "Every grain went into the stores. The elders called it wisdom; the young called it meanness."
+    }
+   ]
   }
  ],
  "objectives": [
@@ -1121,6 +1529,39 @@
     }
    ],
    "legacyText": "The campfire became the Village Hearth. Every later town centre will grow around this spot."
+  },
+  {
+   "id": "first_civilization",
+   "name": "The Bronze Dawn",
+   "description": "Fields, granaries and bronze: a new era begins.",
+   "requirements": [
+    {
+     "kind": "milestoneReached",
+     "id": "stable_village"
+    },
+    {
+     "kind": "techResearched",
+     "id": "bronze_working"
+    },
+    {
+     "kind": "buildingCount",
+     "id": "farm_field",
+     "amount": 2
+    },
+    {
+     "kind": "buildingCount",
+     "id": "granary",
+     "amount": 1
+    },
+    {
+     "kind": "populationAtLeast",
+     "amount": 20
+    }
+   ],
+   "newStage": "farming_village",
+   "newEpoch": "epoch_first_civilizations",
+   "buildingTransforms": [],
+   "legacyText": "The village sowed its first fields and cast its first bronze. The Era of First Civilizations began."
   }
  ],
  "regions": [

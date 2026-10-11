@@ -6,14 +6,14 @@ namespace Founders.Core
 {
     // MARK: - Basic enums
 
-    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research }
+    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming }
 
     public enum TerrainType { Grass, Forest, Rock, Water, Sand }
 
     public static class Enums
     {
         public static readonly JobType[] Jobs =
-            { JobType.Foraging, JobType.Woodcutting, JobType.Stonecutting, JobType.Crafting, JobType.Construction, JobType.Research };
+            { JobType.Foraging, JobType.Farming, JobType.Woodcutting, JobType.Stonecutting, JobType.Crafting, JobType.Construction, JobType.Research };
 
         public static string Id(this JobType j)
         {
@@ -24,6 +24,7 @@ namespace Founders.Core
                 case JobType.Stonecutting: return "stonecutting";
                 case JobType.Crafting: return "crafting";
                 case JobType.Construction: return "construction";
+                case JobType.Farming: return "farming";
                 default: return "research";
             }
         }
@@ -103,6 +104,8 @@ namespace Founders.Core
         UnlockBuilding,
         /// <summary>Adds Resources once (event outcomes and rewards).</summary>
         GrantResources,
+        /// <summary>Adds Value points to approval (usually temporary, from events).</summary>
+        ApprovalBonus,
     }
 
     /// <summary>A data-driven gameplay effect. Which optional fields are used depends on Kind.</summary>
@@ -203,6 +206,12 @@ namespace Founders.Core
         public string UpgradesTo;
         /// <summary>Building this structure becomes later (keeps location and identity).</summary>
         public string SuccessorId;
+        /// <summary>Housing quality: raises approval for the people living here (0 = bare shelter).</summary>
+        public int? Comfort;
+        /// <summary>Gathering place value (hearths, circles, lodges): raises approval for everyone.</summary>
+        public int? Community;
+        /// <summary>Food source kind counted for food variety (e.g. "fish", "grain", "meat").</summary>
+        public string FoodSource;
 
         public int HousingValue => Housing ?? 0;
         public double StorageValue => Storage ?? 0;
@@ -234,6 +243,9 @@ namespace Founders.Core
                 RequiresAdjacentTerrain = o.Has("requiresAdjacentTerrain") ? Enums.ParseTerrain(o.Str("requiresAdjacentTerrain")) : (TerrainType?)null,
                 UpgradesTo = o.OptStr("upgradesTo"),
                 SuccessorId = o.OptStr("successorId"),
+                Comfort = o.OptInt("comfort"),
+                Community = o.OptInt("community"),
+                FoodSource = o.OptStr("foodSource"),
             };
         }
     }
@@ -326,6 +338,8 @@ namespace Founders.Core
         public string Id, Name, Description;
         public List<Condition> Requirements = new List<Condition>();
         public string NewStage;
+        /// <summary>Optional: the milestone opens a new era (epoch).</summary>
+        public string NewEpoch;
         public List<BuildingTransform> BuildingTransforms = new List<BuildingTransform>();
         public string LegacyText;
 
@@ -336,6 +350,7 @@ namespace Founders.Core
             Description = o.Str("description"),
             Requirements = o.Objs("requirements").Select(Condition.FromJson).ToList(),
             NewStage = o.Str("newStage"),
+            NewEpoch = o.OptStr("newEpoch"),
             BuildingTransforms = o.Objs("buildingTransforms").Select(t => new BuildingTransform { From = t.Str("from"), To = t.Str("to") }).ToList(),
             LegacyText = o.Str("legacyText"),
         };
@@ -419,6 +434,26 @@ namespace Founders.Core
         };
     }
 
+    /// <summary>One season of the year and how it changes the economy.</summary>
+    public sealed class SeasonDefinition
+    {
+        public string Id, Name, Description;
+        public double Foraging = 1, Farming = 1, Growth = 1;
+        /// <summary>Wood burnt per person per second to keep warm.</summary>
+        public double FuelPerPersonPerSecond;
+
+        internal static SeasonDefinition FromJson(JObj o) => new SeasonDefinition
+        {
+            Id = o.Str("id"),
+            Name = o.Str("name"),
+            Description = o.OptStr("description") ?? "",
+            Foraging = o.OptNum("foraging") ?? 1,
+            Farming = o.OptNum("farming") ?? 1,
+            Growth = o.OptNum("growth") ?? 1,
+            FuelPerPersonPerSecond = o.OptNum("fuelPerPersonPerSecond") ?? 0,
+        };
+    }
+
     public sealed class StageDefinition
     {
         public string Id, Name;
@@ -459,6 +494,11 @@ namespace Founders.Core
         public double MaxOfflineSeconds;
         public double SimulationStepSeconds;
         public List<JobConfig> Jobs = new List<JobConfig>();
+        /// <summary>Length of one season in seconds of game time (0 disables seasons).</summary>
+        public double SeasonSeconds;
+        public List<SeasonDefinition> Seasons = new List<SeasonDefinition>();
+        /// <summary>Whether approval changes work speed and growth (off in some rule tests).</summary>
+        public bool ApprovalAffectsWork = true;
 
         internal static BalanceConfig FromJson(JObj o) => new BalanceConfig
         {
@@ -481,6 +521,9 @@ namespace Founders.Core
             MaxOfflineSeconds = o.Num("maxOfflineSeconds"),
             SimulationStepSeconds = o.Num("simulationStepSeconds"),
             Jobs = o.Objs("jobs").Select(JobConfig.FromJson).ToList(),
+            SeasonSeconds = o.OptNum("seasonSeconds") ?? 0,
+            ApprovalAffectsWork = !o.Has("approvalAffectsWork") || o.Bool("approvalAffectsWork"),
+            Seasons = o.Has("seasons") ? o.Objs("seasons").Select(SeasonDefinition.FromJson).ToList() : new List<SeasonDefinition>(),
         };
     }
 

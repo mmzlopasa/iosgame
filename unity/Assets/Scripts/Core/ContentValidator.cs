@@ -158,7 +158,17 @@ namespace Founders.Core
             foreach (var ms in c.Milestones)
             {
                 CheckConditions(ms.Requirements, $"milestone '{ms.Id}'");
-                if (!stageIds.Contains(ms.NewStage)) problems.Add($"milestone '{ms.Id}' targets unknown stage '{ms.NewStage}'");
+                if (string.IsNullOrEmpty(ms.NewEpoch))
+                {
+                    if (!stageIds.Contains(ms.NewStage)) problems.Add($"milestone '{ms.Id}' targets unknown stage '{ms.NewStage}'");
+                }
+                else
+                {
+                    var epoch = c.Epoch(ms.NewEpoch);
+                    if (epoch == null) problems.Add($"milestone '{ms.Id}' targets unknown epoch '{ms.NewEpoch}'");
+                    else if (!epoch.Stages.Any(st => st.Id == ms.NewStage))
+                        problems.Add($"milestone '{ms.Id}' targets stage '{ms.NewStage}', which is not in {ms.NewEpoch}");
+                }
                 foreach (var t in ms.BuildingTransforms)
                 {
                     var from = c.Building(t.From);
@@ -205,7 +215,13 @@ namespace Founders.Core
                         if (e.Resources == null) problems.Add($"{owner}: grantResources needs resources");
                         break;
                 }
-                if (e.Value.HasValue && (double.IsNaN(e.Value.Value) || double.IsInfinity(e.Value.Value) || e.Value.Value < 0))
+                if (e.Kind == EffectKind.ApprovalBonus)
+                {
+                    // Approval points are additive and may be negative.
+                    if (e.Value == null || double.IsNaN(e.Value.Value) || double.IsInfinity(e.Value.Value) || Math.Abs(e.Value.Value) > 100)
+                        problems.Add($"{owner}: approvalBonus needs a value between -100 and 100");
+                }
+                else if (e.Value.HasValue && (double.IsNaN(e.Value.Value) || double.IsInfinity(e.Value.Value) || e.Value.Value < 0))
                     problems.Add($"{owner}: effect value must be finite and >= 0");
             }
             return problems;

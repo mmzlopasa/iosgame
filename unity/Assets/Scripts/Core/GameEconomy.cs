@@ -79,18 +79,20 @@ namespace Founders.Core
         }
 
         /// <summary>Output per worker per second, including all current bonuses and penalties.</summary>
-        public double RatePerWorker(JobType job)
+        public double RatePerWorker(JobType job) => RatePerWorker(job, ApprovalProductivity(Approval));
+
+        double RatePerWorker(JobType job, double productivity)
         {
             var cfg = Content.JobConfig(job);
             if (cfg == null || cfg.Output == null) return 0;
-            double rate = cfg.RatePerWorkerPerSecond * Multiplier(EffectKind.JobRateMultiplier, job);
+            double rate = cfg.RatePerWorkerPerSecond * Multiplier(EffectKind.JobRateMultiplier, job) * SeasonJobMultiplier(job) * productivity;
             if (State.FoodShortage) rate *= Content.Balance.ShortageProductivityMultiplier;
             if (IsGathering(job)) rate *= 1 + GetCraftingStatus().Bonus;
             return rate;
         }
 
         internal static bool IsGathering(JobType job) =>
-            job == JobType.Foraging || job == JobType.Woodcutting || job == JobType.Stonecutting;
+            job == JobType.Foraging || job == JobType.Woodcutting || job == JobType.Stonecutting || job == JobType.Farming;
 
         public CraftingStatus GetCraftingStatus()
         {
@@ -109,7 +111,10 @@ namespace Founders.Core
         }
 
         /// <summary>Current per-second economy.</summary>
-        public EconomySnapshot Economy()
+        public EconomySnapshot Economy() => EconomyCore(ApprovalProductivity(Approval));
+
+        /// <summary>The economy at a given work speed (approval uses the neutral speed to avoid a loop).</summary>
+        EconomySnapshot EconomyCore(double productivity)
         {
             var b = Content.Balance;
             var snap = new EconomySnapshot();
@@ -121,7 +126,7 @@ namespace Founders.Core
             foreach (var cfg in b.Jobs)
             {
                 if (cfg.Output == null) continue;
-                production[cfg.Output.Value] += State.Assignments[cfg.Job] * RatePerWorker(cfg.Job);
+                production[cfg.Output.Value] += State.Assignments[cfg.Job] * RatePerWorker(cfg.Job, productivity);
             }
             snap.Production = production;
 
@@ -129,6 +134,7 @@ namespace Founders.Core
             consumption.Food = State.Population * b.FoodPerPersonPerSecond * Multiplier(EffectKind.ConsumptionMultiplier);
             snap.Spoilage = Math.Max(0, State.Resources.Food - ProtectedFood()) * b.SpoilageRatePerSecond * Multiplier(EffectKind.SpoilageMultiplier);
             consumption.Food += snap.Spoilage;
+            consumption.Wood = FuelPerSecond;
             snap.Consumption = consumption + crafting.Input;
             return snap;
         }

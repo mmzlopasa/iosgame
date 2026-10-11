@@ -142,6 +142,7 @@ namespace Founders.Core
                     b.History.Add(t.To);
                 }
             }
+            if (!string.IsNullOrEmpty(ms.NewEpoch)) State.EpochId = ms.NewEpoch;
             State.StageId = ms.NewStage;
             State.ReachedMilestones.Add(id);
             NormalizeAssignments();

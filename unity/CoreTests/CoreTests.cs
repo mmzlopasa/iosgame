@@ -15,8 +15,8 @@ namespace Founders.Tests
         {
             var c = Fixtures.Content();
             Assert.That(ContentValidator.Validate(c), Is.Empty);
-            Assert.That(c.Buildings.Count(b => b.Buildable), Is.EqualTo(11));
-            Assert.That(c.Technologies.Count, Is.EqualTo(9));
+            Assert.That(c.Buildings.Count(b => b.Buildable), Is.EqualTo(17));
+            Assert.That(c.Technologies.Count, Is.EqualTo(14));
         }
 
         [Test]
