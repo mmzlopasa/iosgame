@@ -187,7 +187,7 @@ namespace Founders.UI
         }
 
         /// <summary>Wraps a UI action so the screen refreshes on the next frame.</summary>
-        Action Act(Action a) => () => { a(); dirty = true; };
+        Action Act(Action a) => () => { AudioDirector.Ui("ui_tap"); a(); dirty = true; };
 
         VisualElement Tap(VisualElement e, Action a) => e.OnTap(Act(a));
 

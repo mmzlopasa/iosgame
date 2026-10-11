@@ -42,6 +42,7 @@ namespace Founders
             rig.OnTap = store.HandleTap;
             store.Init(rig, world, capture);
             gameObject.AddComponent<Atmosphere>().Init(store);
+            gameObject.AddComponent<AudioDirector>().Init(store);
             ui.Loading.Set(0.78f, "Gathering the people…");
             yield return null;
 

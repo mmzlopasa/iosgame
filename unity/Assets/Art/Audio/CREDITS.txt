@@ -1,0 +1,10 @@
+All sounds and music are CC0 (public domain) from OpenGameArt.org:
+fire.ogg  <- https://opengameart.org/content/fireplace-sound-loop (CC0)
+river.ogg  <- https://opengameart.org/content/park-ambiences (CC0)
+wind.ogg  <- https://opengameart.org/content/park-ambiences (CC0)
+birds.ogg  <- https://opengameart.org/content/ambient-bird-sounds (CC0)
+music_forest.ogg  <- https://opengameart.org/content/forest-ambience (CC0)
+music_first_light.ogg  <- https://opengameart.org/content/first-light-particles-%E2%80%93-cc0-atmospheric-pianoambient-track (CC0)
+ui_tap.ogg  <- click1.wav from https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks (CC0)
+ui_open.ogg  <- switch20.wav from https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks (CC0)
+ui_confirm.ogg  <- rollover3.wav from https://opengameart.org/content/51-ui-sound-effects-buttons-switches-and-clicks (CC0)

@@ -64,6 +64,20 @@ namespace FoundersEditor
             }
         }
 
+        void OnPreprocessAudio()
+        {
+            if (!assetPath.StartsWith("Assets/Art/Audio/")) return;
+            var ai = (AudioImporter)assetImporter;
+            bool music = Path.GetFileNameWithoutExtension(assetPath).StartsWith("music");
+            var s = ai.defaultSampleSettings;
+            s.loadType = music ? AudioClipLoadType.Streaming : AudioClipLoadType.CompressedInMemory;
+            s.compressionFormat = AudioCompressionFormat.Vorbis;
+            s.quality = music ? 0.45f : 0.6f;
+            ai.defaultSampleSettings = s;
+            ai.forceToMono = !music;
+            ai.loadInBackground = music;
+        }
+
         void OnPreprocessModel()
         {
             if (!assetPath.StartsWith("Assets/Art/")) return;

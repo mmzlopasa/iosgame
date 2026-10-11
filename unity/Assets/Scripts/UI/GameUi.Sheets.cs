@@ -161,7 +161,7 @@ namespace Founders.UI
                 case Panel.Profile:
                     return $"{G.State.Legacy.Count}|{G.State.Researched.Count}|{G.State.Buildings.Count}|{G.State.StageId}";
                 default:
-                    return $"{Prefs.Quality}|{Prefs.BatterySaver}|{Prefs.Haptics}|{Time.unscaledTime < confirmResetUntil}|{store.SaveStatus}";
+                    return $"{Prefs.Quality}|{Prefs.BatterySaver}|{Prefs.Haptics}|{AudioDirector.MusicOn}|{AudioDirector.SoundOn}|{Time.unscaledTime < confirmResetUntil}|{store.SaveStatus}";
             }
         }
 
@@ -721,6 +721,8 @@ namespace Founders.UI
             toggles.style.overflow = Overflow.Hidden;
             toggles.Add(Toggle("Battery saver", "30 fps, lighter on the battery", Prefs.BatterySaver, v => { Prefs.BatterySaver = v; Prefs.Apply(); }, false));
             toggles.Add(Toggle("Haptics", "A tap of vibration on milestones", Prefs.Haptics, v => Prefs.Haptics = v, true));
+            toggles.Add(Toggle("Music", "Calm themes between the seasons", AudioDirector.MusicOn, v => AudioDirector.MusicOn = v, true));
+            toggles.Add(Toggle("Sound", "Fire, river, birds, wind and taps", AudioDirector.SoundOn, v => AudioDirector.SoundOn = v, true));
             host.Add(toggles);
 
             host.Add(SectionLabel("Account"));
