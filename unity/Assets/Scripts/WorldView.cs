@@ -184,9 +184,11 @@ namespace Founders
                 }
                 case TerrainType.Rock:
                 {
-                    if (rng.Next(2) == 0) Model("rock_moss_set_01", Jitter(c, rng, 0.8f), 0.24f + (float)rng.NextDouble() * 0.08f);
-                    else Model("namaqualand_boulder_02", Jitter(c, rng, 0.8f), 0.7f + (float)rng.NextDouble() * 0.4f);
-                    if (rng.Next(2) == 0) Model("boulder_01", Jitter(c, rng, 1.6f), 0.45f);
+                    // Outcrops here and there; the hills show their stony ground between them.
+                    int r = rng.Next(10);
+                    if (r < 3) Model("rock_moss_set_01", Jitter(c, rng, 0.8f), 0.24f + (float)rng.NextDouble() * 0.08f);
+                    else if (r < 5) Model("namaqualand_boulder_02", Jitter(c, rng, 0.8f), 0.7f + (float)rng.NextDouble() * 0.5f);
+                    if (rng.Next(4) == 0) Model("boulder_01", Jitter(c, rng, 1.6f), 0.45f);
                     if (rng.Next(5) == 0) Model("shrub_03", Jitter(c, rng, 1.4f), 0.9f, false);
                     break;
                 }
@@ -203,7 +205,7 @@ namespace Founders
                 {
                     var p = Jitter(c, rng, 1.6f);
                     // Pines climb the lower slopes; boulders lie in the scree above.
-                    if (p.y < 11f && rng.Next(3) == 0) Tree(Pines[rng.Next(Pines.Length)], p, 6f + (float)rng.NextDouble() * 4f);
+                    if (p.y < 7f && rng.Next(3) == 0) Tree(Pines[rng.Next(Pines.Length)], p, 6f + (float)rng.NextDouble() * 4f);
                     else if (rng.Next(3) == 0) Model("namaqualand_boulder_02", p, 0.9f + (float)rng.NextDouble() * 1.2f);
                     break;
                 }

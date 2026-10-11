@@ -348,7 +348,7 @@ namespace Founders
             yield return Shot("08_forest_edge", false);
             Focus(Grid.CellCenter(15f, 33f), 40f);
             yield return Shot("07b_lake", false);
-            Focus(Grid.CellCenter(50f, 22f), 50f);
+            Focus(Grid.CellCenter(43f, 26f), 60f);
             yield return Shot("07c_mountains", false);
             Focus(Grid.CellCenter(31f, 13f), 34f);
             yield return Shot("07d_stone_hills", false);

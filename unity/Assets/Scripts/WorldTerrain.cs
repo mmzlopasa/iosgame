@@ -240,7 +240,9 @@ namespace Founders
                     {
                         float ridge = 1f - Mathf.Abs(2f * Mathf.PerlinNoise(w.x * 0.03f + 11f, w.y * 0.03f + 4f) - 1f);
                         float detail = Mathf.PerlinNoise(w.x * 0.11f + 2f, w.y * 0.11f + 8f);
-                        peaks = (1f - Mathf.Exp(-md / 7f)) * (9f + 24f * ridge * ridge) * (0.75f + 0.5f * detail) + md * 0.12f;
+                        // A steady climb from the foot (no plateau), with ridges and crags on top.
+                        float climb = md * (0.55f + 0.35f * detail);
+                        peaks = climb + (1f - Mathf.Exp(-md / 12f)) * 16f * ridge * ridge;
                     }
                     // Hills grow with distance from the playable area (but the river valley stays low).
                     float dx = Mathf.Max(0f, Mathf.Max(mapMin.x - w.x, w.x - mapMax.x));
@@ -319,9 +321,9 @@ namespace Founders
                             case TerrainType.Ore: wts[LRock] = 1f; wts[LMud] = 0.6f + 0.6f * n2; break;
                             case TerrainType.Mountain:
                                 // Alpine grass on the lower slopes, bare rock above.
-                                wts[LRock] = 1f;
-                                wts[LGrass] = 0.7f * n1 * (1f - Mathf.Clamp01((gy - 4f) / 10f));
-                                wts[LForest] = 0.3f * n2;
+                                wts[LRock] = 1.2f;
+                                wts[LGrass] = 0.6f * n1 * (1f - Mathf.Clamp01((gy - 2f) / 5f));
+                                wts[LForest] = 0.25f * n2 * (1f - Mathf.Clamp01((gy - 3f) / 6f));
                                 break;
                             case TerrainType.Sand: wts[LSand] = 1f; wts[LMud] = 0.3f * n2; break;
                             default:
