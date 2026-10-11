@@ -203,6 +203,10 @@ namespace Founders.Core
         public int NextPersonId;
         public List<PlacedDecoration> Decorations = new List<PlacedDecoration>();
         public int NextDecorationId;
+        /// <summary>Number of the current story chapter (1 = the first).</summary>
+        public int Chapter = 1;
+        /// <summary>Chapter whose opening scene the player has not seen yet, or null.</summary>
+        public string PendingStory;
 
         public PlacedBuilding Building(int id) => Buildings.FirstOrDefault(b => b.Id == id);
 
@@ -259,6 +263,8 @@ namespace Founders.Core
                 d["people"] = People.Select(p => (object)p.ToJson()).ToList();
                 d["nextPersonId"] = NextPersonId;
             }
+            if (Chapter != 1) d["chapter"] = Chapter;
+            if (PendingStory != null) d["pendingStory"] = PendingStory;
             if (Decorations.Count > 0 || NextDecorationId > 0)
             {
                 d["decorations"] = Decorations.Select(x => (object)x.ToJson()).ToList();
@@ -330,6 +336,8 @@ namespace Founders.Core
             s.NextPersonId = o.OptInt("nextPersonId") ?? 0;
             if (o.Has("decorations")) s.Decorations = o.Objs("decorations").Select(PlacedDecoration.FromJson).ToList();
             s.NextDecorationId = o.OptInt("nextDecorationId") ?? 0;
+            s.Chapter = o.OptInt("chapter") ?? 1;
+            s.PendingStory = o.OptStr("pendingStory");
             s.Legacy = o.Objs("legacy").Select(l => new LegacyEntry
             {
                 Id = l.Int("id"), SimTime = l.Num("simTime"), EpochId = l.Str("epochId"),

@@ -453,6 +453,8 @@ namespace Founders.Tests
             game.AddCompleted("shelter", 4, 5);
             Assert.That(game.CanClaimMilestone("stable_village"), Is.False, "population is still 6");
             game.State.Population = 8;
+            // Without seasons the year never advances; the year gate is covered by StoryTests.
+            game.Content.Milestone("stable_village").Requirements.RemoveAll(r => r.Kind == ConditionKind.YearAtLeast);
             Assert.That(game.CanClaimMilestone("stable_village"), Is.True);
 
             var campfire = game.State.Buildings.First(b => b.DefinitionId == "campfire");

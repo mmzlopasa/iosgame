@@ -280,6 +280,13 @@ namespace Founders
         public void Explore(string regionId) => Perform(Game.StartExpedition(regionId).Error);
         public void ClaimMilestone(string id) => Perform(Game.ClaimMilestone(id).Error);
 
+        public void DismissStory()
+        {
+            Game.DismissStory();
+            Save();
+            Refresh();
+        }
+
         public void DebugFastForward(double minutes)
         {
             Game.DebugFastForward(minutes * 60);

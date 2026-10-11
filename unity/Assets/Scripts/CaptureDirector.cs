@@ -116,6 +116,13 @@ namespace Founders
             store.Refresh();
         }
 
+        /// <summary>Moves game time on to the start of a year (capture only: the story gates need years).</summary>
+        static void JumpToYear(Game game, int year)
+        {
+            double start = (year - 1) * 4 * game.Content.Balance.SeasonSeconds + 1;
+            if (game.State.SimTime < start) game.State.SimTime = start;
+        }
+
         /// <summary>Jumps game time to the middle of a season at a given point of the day (capture only).</summary>
         void SetTime(Game game, int season, float dayPhase)
         {
@@ -147,8 +154,12 @@ namespace Founders
             ui.Loading.Hide();
             yield return new WaitForSeconds(0.6f);
 
-            // 1. The starting camp as a new player sees it.
+            // 1. The opening story scene, then the starting camp as a new player sees it.
             Focus(Camp(), 26f);
+            store.Refresh();
+            yield return Shot("00b_story", true);
+            game.DismissStory();
+            store.Refresh();
             yield return Shot("01_start_camp", true);
             Focus(Camp(), 12f);
             yield return Shot("02_campfire_close", false);
@@ -187,7 +198,8 @@ namespace Founders
             Focus(Camp(), 24f);
             yield return Shot("04_camp_grown", false);
 
-            // 3. Village milestone (population grows over time).
+            // 3. Village milestone (population grows over time; the village needs its second year).
+            JumpToYear(game, 2);
             for (int i = 0; i < 12 && !game.CanClaimMilestone("stable_village"); i++)
             {
                 game.DebugGrant(new ResourceBundle(120, 0, 0, 0));
@@ -198,6 +210,9 @@ namespace Founders
             Focus(Camp(), 22f);
             yield return Shot("05_milestone", true);
             store.Celebration = null;
+            store.Refresh();
+            yield return Shot("05b_chapter_two", true);
+            game.DismissStory();
             store.Toasts.Clear();
             // The new buildings unlocked by the later research.
             foreach (var id in new[] { "longhouse", "elders_lodge", "drying_rack", "fishing_weir" })
@@ -233,6 +248,7 @@ namespace Founders
             game.State.Population = Mathf.Max(game.State.Population, 20);
             var pending = game.PendingEvent;
             if (pending != null) game.ResolveEvent(pending.Options.First(o => game.OptionBlocker(o) == null).Id);
+            JumpToYear(game, 5);
             if (game.CanClaimMilestone("first_civilization")) game.ClaimMilestone("first_civilization");
             else Debug.LogWarning("[FOUNDERS] capture: first_civilization not claimable: " +
                                   string.Join(", ", game.MilestoneRequirements("first_civilization").Where(r => !r.Met).Select(r => r.Text)));
@@ -241,6 +257,7 @@ namespace Founders
             Focus(Camp(), 26f);
             yield return Shot("06b_bronze_dawn", true);
             store.Celebration = null;
+            game.DismissStory();
             store.Toasts.Clear();
             yield return Shot("06c_era2_village", false);
 

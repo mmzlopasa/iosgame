@@ -67,6 +67,7 @@ namespace Founders.Core
             var traits = string.Join(", ", content.Map.Traits);
             game.AddLegacy("founding", $"{settlementName} is founded",
                 $"A small band settles in a clearing ({traits}). This place will shape everything built here.", content.Map.Name);
+            game.BeginStory();
             return game;
         }
 

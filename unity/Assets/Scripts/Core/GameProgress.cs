@@ -114,6 +114,7 @@ namespace Founders.Core
                     changed = true;
                 }
             }
+            AdvanceChapters();
             CheckEventTriggers();
         }
 

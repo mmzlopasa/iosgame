@@ -152,7 +152,8 @@ namespace Founders.UI
                     return $"{G.State.ActiveResearch?.TechId}|" + string.Join(",", G.Content.Technologies.Select(t =>
                         $"{G.GetResearchStatus(t.Id).State}{G.State.Resources.Covers(t.Cost)}"));
                 case Panel.Objectives:
-                    return string.Join(",", G.State.CompletedObjectives) + "|" + G.CurrentObjective?.Id + "|" +
+                    return $"{G.State.Chapter}|{G.Year}|" + string.Join("", G.ChapterRequirements().Select(r => r.Met ? "1" : "0")) + "|" +
+                           string.Join(",", G.State.CompletedObjectives) + "|" + G.CurrentObjective?.Id + "|" +
                            string.Join(",", G.Content.Milestones.Select(m => $"{G.CanClaimMilestone(m.Id)}{G.State.ReachedMilestones.Contains(m.Id)}")) + "|" +
                            (G.CurrentObjective == null ? "" : string.Join("", G.Status(G.CurrentObjective.Conditions).Select(s => s.Met ? "1" : "0"))) + "|" +
                            string.Join("", G.Content.Milestones.SelectMany(m => G.MilestoneRequirements(m.Id)).Select(s => s.Met ? "1" : "0"));
@@ -581,6 +582,7 @@ namespace Founders.UI
 
         void BuildGoalsPanel(VisualElement host)
         {
+            BuildChapters(host);
             foreach (var ms in G.Content.Milestones)
             {
                 bool reached = G.State.ReachedMilestones.Contains(ms.Id);
@@ -638,6 +640,47 @@ namespace Founders.UI
                 }
                 host.Add(card);
             }
+        }
+
+        /// <summary>The story: the current chapter with what it needs, and the road ahead.</summary>
+        void BuildChapters(VisualElement host)
+        {
+            var current = G.CurrentChapter;
+            if (current == null) return;
+            var card = E.Div().Col().Radius(22).Pad(16).BgImage(Theme.GoldGlow).Border(Theme.Alpha(Theme.Gold, 0.34f)).Margin(0, 0, 12);
+            var head = E.Div().Row().Between().Ignore();
+            head.Add(E.Eyebrow($"Chapter {current.Number} · {current.Era}"));
+            head.Add(E.Mono($"Year {G.Year}", 11, Theme.GoldLight));
+            card.Add(head);
+            card.Add(E.Text(current.Title, 20, Theme.Ink, Theme.F.Display).Margin(8));
+            card.Add(E.Text(current.Goal, 12.5f, Theme.Body).Margin(4));
+            if (current.Locked)
+                card.Add(Notice("lock", "The next era is still being built. Your settlement keeps growing until it arrives.", Theme.Lavender));
+            else
+                foreach (var req in G.ChapterRequirements()) card.Add(Check(req.Text, req.Met).Margin(8));
+            var story = E.Button("Read the story", Act(() => G.State.PendingStory = current.Id), E.Kind.Ghost, 38).Margin(12);
+            card.Add(story);
+            host.Add(card);
+
+            // The road ahead: every chapter, with the ones still to come.
+            var road = E.Div().Col().Glass(18).Pad(12).Margin(0, 0, 12);
+            foreach (var ch in G.Content.Chapters)
+            {
+                bool done = ch.Number < current.Number;
+                bool now = ch.Number == current.Number;
+                var row = E.Div().Row().Margin(ch.Number == 1 ? 0 : 7).Ignore();
+                if (!done && !now) row.style.opacity = 0.55f;
+                var dot = E.Div().Size(24, 24).Radius(12).Center().Ignore()
+                    .Bg(done ? Theme.Alpha(Theme.Mint, 0.16f) : now ? Theme.Alpha(Theme.Gold, 0.2f) : new Color(1, 1, 1, 0.06f));
+                dot.Add(E.Icon(done ? "check" : ch.Locked ? "lock" : now ? "goals" : "next", 12, done ? Theme.Mint : now ? Theme.Gold : Theme.Muted));
+                row.Add(dot);
+                var t = E.Text($"{ch.Number}. {ch.Title}", 13, now ? Theme.Ink : Theme.Body, now ? Theme.F.TextBold : Theme.F.TextMedium).Grow();
+                t.style.marginLeft = 9;
+                row.Add(t);
+                row.Add(E.Text(ch.Era, 10.5f, Theme.Muted));
+                road.Add(row);
+            }
+            host.Add(road);
         }
 
         static VisualElement Check(string text, bool met)

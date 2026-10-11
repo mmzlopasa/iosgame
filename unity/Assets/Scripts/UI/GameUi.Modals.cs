@@ -16,6 +16,7 @@ namespace Founders.UI
             if (store?.Game == null) return "";
             if (store.Celebration != null) return "ms|" + store.Celebration;
             if (store.Offline != null) return "wb";
+            if (G.PendingStory != null) return "story|" + G.PendingStory.Id;
             var ev = G.PendingEvent;
             if (ev != null && !store.EventMinimized)
                 return $"ev|{ev.Id}|{chosenOption}|" + string.Join("", ev.Options.Select(o => G.OptionBlocker(o) == null ? "1" : "0"));
@@ -34,6 +35,7 @@ namespace Founders.UI
             VisualElement card;
             if (key.StartsWith("ms|")) card = MilestoneCard();
             else if (key == "wb") card = WelcomeCard();
+            else if (key.StartsWith("story|")) card = StoryCard();
             else card = EventCard();
             frame.Add(card);
 
@@ -55,6 +57,36 @@ namespace Founders.UI
             c.style.overflow = Overflow.Hidden;
             c.style.width = Length.Percent(100);
             c.style.maxWidth = 420;
+            return c;
+        }
+
+        // MARK: - Story
+
+        /// <summary>The opening scene of a chapter: the story so far and what this generation must do.</summary>
+        VisualElement StoryCard()
+        {
+            var ch = G.PendingStory;
+            var c = DialogShell();
+            var top = E.Div().Col(Align.Center).Pad(26, 22, 6, 22).BgImage(Theme.GoldGlow).Ignore();
+            top.Add(E.Eyebrow($"Chapter {ch.Number} · {ch.Era}"));
+            top.Add(E.Text(ch.Title, 26, Theme.Ink, Theme.F.Display).Align(TextAnchor.MiddleCenter).Margin(8));
+            c.Add(top);
+            var body = E.Div().Col().Pad(10, 22, 20, 22).Ignore();
+            foreach (var para in ch.Story.Split('\n'))
+            {
+                if (string.IsNullOrWhiteSpace(para)) continue;
+                var t = E.Text(para.Trim(), 14, Theme.Body).Margin(0, 0, 10);
+                t.style.unityFontStyleAndWeight = FontStyle.Italic;
+                body.Add(t);
+            }
+            var goal = E.Div().Row(0, Align.FlexStart).Radius(16).Pad(12, 14).Bg(Theme.Alpha(Theme.Gold, 0.1f)).Border(Theme.Alpha(Theme.Gold, 0.28f)).Margin(6).Ignore();
+            goal.Add(E.Icon(ch.Locked ? "lock" : "goals", 16, Theme.Gold));
+            var gt = E.Text(ch.Goal, 13, Theme.Ink, Theme.F.TextMedium).Grow();
+            gt.style.marginLeft = 9;
+            goal.Add(gt);
+            body.Add(goal);
+            body.Add(E.Button(ch.Number == 1 ? "Begin" : "Continue the story", Act(() => store.DismissStory()), E.Kind.Gold, 48).Margin(16));
+            c.Add(body);
             return c;
         }
 

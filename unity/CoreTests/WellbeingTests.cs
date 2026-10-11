@@ -93,11 +93,14 @@ namespace Founders.Tests
             game.AddCompleted("farm_field", 3, 5);
             game.AddCompleted("granary", 6, 4);
             game.State.Population = 20;
+            Assert.That(game.CanClaimMilestone("first_civilization"), Is.False, "the Bronze Dawn cannot come before year 5");
+            game.State.SimTime = 4 * 4 * game.Content.Balance.SeasonSeconds;
+            Assert.That(game.Year, Is.EqualTo(5));
             Assert.That(game.CanClaimMilestone("first_civilization"), Is.True);
             Expect.Success(game.ClaimMilestone("first_civilization"));
             Assert.That(game.State.EpochId, Is.EqualTo("epoch_first_civilizations"));
             Assert.That(game.StageName, Is.EqualTo("Farming Village"));
-            Assert.That(game.State.Legacy.Last().Title, Is.EqualTo("The Bronze Dawn"));
+            Assert.That(game.State.Legacy.Any(l => l.Title == "The Bronze Dawn"), Is.True);
         }
     }
 }

@@ -409,6 +409,33 @@ namespace Founders.Core
         };
     }
 
+    /// <summary>
+    /// A chapter of the founders' story. Each chapter is one generation: it opens with a story
+    /// scene and ends when its requirements are met, which always include a minimum game year,
+    /// so the eras arrive slowly. Locked chapters (eras still in development) are shown but
+    /// cannot be reached yet.
+    /// </summary>
+    public sealed class ChapterDefinition
+    {
+        public string Id, Title, Era, Story, Goal, LegacyText;
+        public int Number;
+        public bool Locked;
+        public List<Condition> Requirements = new List<Condition>();
+
+        internal static ChapterDefinition FromJson(JObj o) => new ChapterDefinition
+        {
+            Id = o.Str("id"),
+            Number = o.Int("number"),
+            Title = o.Str("title"),
+            Era = o.Str("era"),
+            Story = o.Str("story"),
+            Goal = o.Str("goal"),
+            LegacyText = o.OptStr("legacyText"),
+            Locked = o.OptBool("locked", false),
+            Requirements = o.Has("requirements") ? o.Objs("requirements").Select(Condition.FromJson).ToList() : new List<Condition>(),
+        };
+    }
+
     public sealed class RegionDefinition
     {
         public string Id, Name, Description;
@@ -619,6 +646,7 @@ namespace Founders.Core
         public List<MilestoneDefinition> Milestones = new List<MilestoneDefinition>();
         public List<RegionDefinition> Regions = new List<RegionDefinition>();
         public List<DecorationDefinition> Decorations = new List<DecorationDefinition>();
+        public List<ChapterDefinition> Chapters = new List<ChapterDefinition>();
         public MapDefinition Map;
         public DecorationDefinition Decoration(string id) => Decorations.FirstOrDefault(d => d.Id == id);
 
@@ -657,6 +685,7 @@ namespace Founders.Core
                 Objectives = o.Objs("objectives").Select(ObjectiveDefinition.FromJson).ToList(),
                 Milestones = o.Objs("milestones").Select(MilestoneDefinition.FromJson).ToList(),
                 Regions = o.Objs("regions").Select(RegionDefinition.FromJson).ToList(),
+                Chapters = o.Has("chapters") ? o.Objs("chapters").Select(ChapterDefinition.FromJson).OrderBy(c => c.Number).ToList() : new List<ChapterDefinition>(),
                 Decorations = o.Has("decorations") ? o.Objs("decorations").Select(DecorationDefinition.FromJson).ToList() : new List<DecorationDefinition>(),
                 Map = MapDefinition.FromJson(o.Obj("map")),
             };

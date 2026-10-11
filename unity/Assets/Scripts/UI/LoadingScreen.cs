@@ -22,6 +22,7 @@ namespace Founders.UI
         readonly VisualElement layer;
         readonly VisualElement fill, card, video;
         VideoPlayer player;
+        GameObject videoHost;
         RenderTexture videoTexture;
         readonly Label percent, status;
         float shown;
@@ -99,6 +100,7 @@ namespace Founders.UI
         /// <summary>Starts the loading montage (Resources/Video/loading) on a VideoPlayer owned by <paramref name="host"/>.</summary>
         public void StartVideo(GameObject host)
         {
+            videoHost = host;
             var clip = Resources.Load<VideoClip>("Video/loading");
             if (clip == null) return;
             videoTexture = new RenderTexture((int)clip.width, (int)clip.height, 0) { name = "LoadingVideo" };
@@ -133,6 +135,7 @@ namespace Founders.UI
         public void Show()
         {
             Visible = true;
+            if (player == null && videoHost != null) StartVideo(videoHost);
             layer.style.opacity = 1;
             layer.Hidden(false);
         }

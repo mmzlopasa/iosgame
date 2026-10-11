@@ -1776,6 +1776,10 @@
     {
      "kind": "eventResolved",
      "id": "poor_foraging_season"
+    },
+    {
+     "kind": "yearAtLeast",
+     "amount": 2
     }
    ],
    "newStage": "village",
@@ -1813,6 +1817,10 @@
     {
      "kind": "populationAtLeast",
      "amount": 20
+    },
+    {
+     "kind": "yearAtLeast",
+     "amount": 5
     }
    ],
    "newStage": "farming_village",
@@ -2245,6 +2253,124 @@
     "stone": 10
    },
    "beauty": 4
+  }
+ ],
+ "chapters": [
+  {
+   "id": "ch1_riverside_camp",
+   "number": 1,
+   "title": "The Riverside Camp",
+   "era": "Stone Age",
+   "story": "The winter in the north was the hardest anyone could remember. When the reindeer did not return, the families followed the river south, carrying fire in a clay pot.\n\nAfter many days they came to a valley none of them had seen: a quiet river, a great lake beyond the trees, hills of grey stone and, far to the east, mountains that shine red at sunset.\n\nYou are the Founder. Make a camp by the water and keep everyone alive through their first year.",
+   "goal": "Survive the first year and make the camp a stable village.",
+   "requirements": [
+    {
+     "kind": "milestoneReached",
+     "id": "stable_village"
+    }
+   ],
+   "legacyText": "The band survived its first year in the valley and the camp became a village."
+  },
+  {
+   "id": "ch2_stable_village",
+   "number": 2,
+   "title": "The Stable Village",
+   "era": "Stone Age",
+   "story": "The fire in the clay pot became a hearth of stone. Children are born who have never seen the north.\n\nThe elders say a village is more than huts: it needs paths between the homes, fences for the animals, light against the night and a place to remember the ancestors.\n\nLay out your village: roads, fences, lights and monuments, and give every family a trade.",
+   "goal": "Shape the village: roads, beauty and skilled people.",
+   "requirements": [
+    {
+     "kind": "yearAtLeast",
+     "amount": 3
+    },
+    {
+     "kind": "roadCellsAtLeast",
+     "amount": 12
+    },
+    {
+     "kind": "beautyAtLeast",
+     "amount": 15
+    },
+    {
+     "kind": "populationAtLeast",
+     "amount": 14
+    }
+   ],
+   "legacyText": "The village was laid out with paths, fences and the first monuments."
+  },
+  {
+   "id": "ch3_bronze_dawn",
+   "number": 3,
+   "title": "The Bronze Dawn",
+   "era": "Late Prehistory",
+   "story": "Traders from the river people came with seeds of wheat and a blade that did not break: green-gold metal, born from stone and fire.\n\nThe red stones at the foot of the mountains are the same ore. To make bronze, the village must learn to sow fields, store grain and work the fire hotter than ever.\n\nScout the mountains, open a mine and bring the Bronze Dawn to the valley.",
+   "goal": "Fields, a granary and bronze: open the Era of First Civilizations.",
+   "requirements": [
+    {
+     "kind": "milestoneReached",
+     "id": "first_civilization"
+    }
+   ],
+   "legacyText": "Fields were sown and the first bronze was cast in the valley."
+  },
+  {
+   "id": "ch4_hillfort",
+   "number": 4,
+   "title": "The Hillfort",
+   "era": "Late Prehistory",
+   "story": "Bronze brought wealth, and wealth brings envy. Smoke has been seen beyond the southern peaks.\n\nThe founders' grandchildren look to the stony hills: a place that can be walled, with a view over the whole valley. A chieftain's hall, palisades and broad roads would make the village a hillfort.\n\nGrow strong, wall the heart of the village and keep the mines working.",
+   "goal": "A large, beautiful and well-defended settlement with a working mine.",
+   "requirements": [
+    {
+     "kind": "yearAtLeast",
+     "amount": 8
+    },
+    {
+     "kind": "populationAtLeast",
+     "amount": 30
+    },
+    {
+     "kind": "beautyAtLeast",
+     "amount": 40
+    },
+    {
+     "kind": "roadCellsAtLeast",
+     "amount": 30
+    },
+    {
+     "kind": "buildingCount",
+     "id": "mine",
+     "amount": 1
+    }
+   ],
+   "legacyText": "The village became a hillfort, walled and proud above the valley."
+  },
+  {
+   "id": "ch5_charter",
+   "number": 5,
+   "title": "The Charter",
+   "era": "Middle Ages",
+   "locked": true,
+   "story": "Centuries pass. A lord rides into the valley with a parchment and a seal: the village may become a town, with a market, a church and the right to its own laws.\n\nThe Middle Ages are coming to the valley in a future update.",
+   "goal": "The Middle Ages are in development."
+  },
+  {
+   "id": "ch6_market_town",
+   "number": 6,
+   "title": "The Market Town",
+   "era": "Middle Ages",
+   "locked": true,
+   "story": "Craftsmen, stone houses, a mill on the river and a smithy that never sleeps.",
+   "goal": "Coming in a future update."
+  },
+  {
+   "id": "ch7_walled_town",
+   "number": 7,
+   "title": "The Walled Town",
+   "era": "Middle Ages",
+   "locked": true,
+   "story": "Town walls, gates, a stone church and a castle on the hill.",
+   "goal": "Coming in a future update."
   }
  ]
 }
