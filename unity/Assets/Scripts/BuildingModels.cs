@@ -31,6 +31,13 @@ namespace Founders
                 case "drying_rack": DryingRack(b); break;
                 case "elders_lodge": EldersLodge(b); break;
                 case "longhouse": Longhouse(b); break;
+                case "daub_house": DaubHouse(b); break;
+                case "farm_field": FarmField(b); break;
+                case "animal_pen": AnimalPen(b); break;
+                case "granary": Granary(b); break;
+                case "pottery_kiln": PotteryKiln(b); break;
+                case "copper_smelter": CopperSmelter(b); break;
+                case "bronze_workshop": BronzeWorkshop(b); break;
                 default: b.Model("boulder_01", Vector3.zero, 0.5f); break;
             }
             return root;
@@ -188,9 +195,9 @@ namespace Founders
         }
 
         /// <summary>Roundhouse: wattle wall on a stone footing under a thick conical thatch roof.</summary>
-        static void Roundhouse(Builder b, float diameter, float wallHeight, float roofHeight)
+        static void Roundhouse(Builder b, float diameter, float wallHeight, float roofHeight, string wall = "Bark")
         {
-            b.Shape(Meshes.Wall(), Vector3.zero, new Vector3(diameter, wallHeight, diameter), "Bark");
+            b.Shape(Meshes.Wall(), Vector3.zero, new Vector3(diameter, wallHeight, diameter), wall);
             b.Shape(Meshes.Roof(), new Vector3(0, wallHeight - 0.05f, 0), new Vector3(diameter * 1.28f, roofHeight, diameter * 1.28f), "Thatch");
             b.PrimColor(PrimitiveType.Cylinder, new Vector3(0, 0.01f, 0), new Vector3(diameter * 0.97f, 0.01f, diameter * 0.97f), "Ash");
             int stones = Mathf.RoundToInt(diameter * 8f);
@@ -376,6 +383,146 @@ namespace Founders
                 }
             b.Model("ceramic_pot", new Vector3(1.5f, 0f, -1.4f), 0.6f, 15f);
             b.Model("wicker_basket_01", new Vector3(1.45f, 0f, 1.3f), 1.3f, 40f);
+        }
+
+        // MARK: - Era II: First Civilizations
+
+        static void DaubHouse(Builder b)
+        {
+            Roundhouse(b, 1.85f, 1.1f, 1.55f, "Mud");
+            b.Model("ceramic_pot", new Vector3(0.85f, 0f, -0.8f), 0.7f, 15f);
+            b.Model("ceramic_pot", new Vector3(0.65f, 0f, -0.95f), 0.5f, 75f);
+            b.Pole(new Vector3(-0.95f, 0.08f, -0.6f), new Vector3(-0.3f, 0.08f, -1.0f), 0.18f);
+        }
+
+        static void FarmField(Builder b)
+        {
+            // 2×2 cells: tilled earth, furrows and rows of grain.
+            b.Prim(PrimitiveType.Cube, new Vector3(0, 0.03f, 0), new Vector3(3.6f, 0.06f, 3.6f), "Mud");
+            for (int i = 0; i < 7; i++)
+            {
+                float x = -1.5f + i * 0.5f;
+                b.Prim(PrimitiveType.Cube, new Vector3(x, 0.08f, 0), new Vector3(0.18f, 0.06f, 3.4f), "Mud", new Vector3(0, 0, 0));
+                for (int k = 0; k < 6; k++)
+                {
+                    float z = -1.45f + k * 0.58f + (i % 2) * 0.2f;
+                    if (!b.Effects) continue; // the placement preview skips the crop cards
+                    var tuft = ModelLibrary.Tree("GrassTuft", b.T, new Vector3(x, 0.08f, z), 0.5f + (k % 3) * 0.06f, i * 37f + k * 53f);
+                    tuft.name = "Crop";
+                }
+            }
+            // Corner posts and a low wattle fence on two sides.
+            foreach (var c in new[] { new Vector3(-1.85f, 0, -1.85f), new Vector3(1.85f, 0, -1.85f), new Vector3(-1.85f, 0, 1.85f), new Vector3(1.85f, 0, 1.85f) })
+                b.Pole(c, c + new Vector3(0, 0.7f, 0), 0.07f);
+            b.Pole(new Vector3(-1.85f, 0.5f, 1.85f), new Vector3(1.85f, 0.5f, 1.85f), 0.05f);
+            b.Pole(new Vector3(-1.85f, 0.5f, -1.85f), new Vector3(-1.85f, 0.5f, 1.85f), 0.05f);
+            b.Model("wicker_basket_01", new Vector3(1.6f, 0f, -1.5f), 1.3f, 30f);
+        }
+
+        static void AnimalPen(Builder b)
+        {
+            const int posts = 10;
+            for (int i = 0; i < posts; i++)
+            {
+                float a0 = i / (float)posts * Mathf.PI * 2f, a1 = (i + 1) / (float)posts * Mathf.PI * 2f;
+                var p0 = new Vector3(Mathf.Cos(a0) * 0.9f, 0f, Mathf.Sin(a0) * 0.9f);
+                var p1 = new Vector3(Mathf.Cos(a1) * 0.9f, 0f, Mathf.Sin(a1) * 0.9f);
+                b.Pole(p0, p0 + new Vector3(0, 0.75f, 0), 0.06f);
+                if (i == 7) continue; // gate gap
+                b.Pole(p0 + new Vector3(0, 0.55f, 0), p1 + new Vector3(0, 0.55f, 0), 0.04f);
+                b.Pole(p0 + new Vector3(0, 0.3f, 0), p1 + new Vector3(0, 0.3f, 0), 0.04f);
+            }
+            b.Prim(PrimitiveType.Cylinder, new Vector3(0, 0.01f, 0), new Vector3(1.7f, 0.01f, 1.7f), "Mud");
+            b.Shape(Meshes.Dome(), new Vector3(-0.35f, 0f, 0.3f), new Vector3(0.6f, 0.45f, 0.6f), "Thatch");
+            b.Pole(new Vector3(0.1f, 0.1f, -0.45f), new Vector3(0.6f, 0.1f, -0.2f), 0.16f);
+            // Goats: small bodies with heads (simple shapes read well from the strategy camera).
+            for (int i = 0; i < 3; i++)
+            {
+                var g = Parts.Group("Goat", b.T, new Vector3(0.35f - i * 0.3f, 0f, -0.1f + (i % 2) * 0.35f), i * 70f).transform;
+                var body = b.PrimColor(PrimitiveType.Capsule, new Vector3(0, 0.32f, 0), new Vector3(0.18f, 0.2f, 0.18f), i == 1 ? "Tunic2" : "Tunic", new Vector3(90, 0, 0));
+                body.transform.SetParent(g, false);
+                var head = b.PrimColor(PrimitiveType.Sphere, new Vector3(0, 0.42f, 0.2f), new Vector3(0.12f, 0.12f, 0.14f), i == 1 ? "Tunic2" : "Tunic");
+                head.transform.SetParent(g, false);
+                foreach (var lx in new[] { -0.06f, 0.06f })
+                    foreach (var lz in new[] { -0.1f, 0.1f })
+                    {
+                        var leg = b.PrimColor(PrimitiveType.Cylinder, new Vector3(lx, 0.12f, lz), new Vector3(0.035f, 0.12f, 0.035f), "Hair");
+                        leg.transform.SetParent(g, false);
+                    }
+            }
+        }
+
+        static void Granary(Builder b)
+        {
+            const float lift = 0.65f;
+            foreach (var c in new[] { new Vector3(-0.6f, 0, -0.6f), new Vector3(0.6f, 0, -0.6f), new Vector3(-0.6f, 0, 0.6f), new Vector3(0.6f, 0, 0.6f) })
+            {
+                b.Pole(c, c + new Vector3(0, lift, 0), 0.12f);
+                b.Model("stone_01", c + new Vector3(0, lift - 0.02f, 0), 2.2f);
+            }
+            b.Prim(PrimitiveType.Cube, new Vector3(0, lift + 0.05f, 0), new Vector3(1.6f, 0.1f, 1.6f), "RoughWood");
+            var g = Parts.Group("Store", b.T, new Vector3(0, lift + 0.1f, 0)).transform;
+            int before = b.T.childCount;
+            Roundhouse(b, 1.35f, 0.75f, 1.05f, "Mud");
+            for (int i = b.T.childCount - 1; i >= before; i--) b.T.GetChild(i).SetParent(g, false);
+            // Ladder
+            b.Pole(new Vector3(-0.2f, 0f, -1.15f), new Vector3(-0.2f, lift + 0.15f, -0.75f), 0.04f);
+            b.Pole(new Vector3(0.2f, 0f, -1.15f), new Vector3(0.2f, lift + 0.15f, -0.75f), 0.04f);
+            for (int i = 1; i < 4; i++)
+            {
+                float t = i / 4f;
+                var y = t * (lift + 0.15f);
+                var z = Mathf.Lerp(-1.15f, -0.75f, t);
+                b.Pole(new Vector3(-0.22f, y, z), new Vector3(0.22f, y, z), 0.03f);
+            }
+            b.Model("ceramic_pot", new Vector3(0.85f, 0f, -0.75f), 0.65f, 20f);
+            b.Model("ceramic_pot", new Vector3(-0.85f, 0f, -0.7f), 0.55f, 120f);
+        }
+
+        static void PotteryKiln(Builder b)
+        {
+            b.Shape(Meshes.Dome(), new Vector3(0.1f, 0f, 0.25f), new Vector3(1.3f, 1.2f, 1.3f), "Mud");
+            b.Shape(Meshes.Cone(), new Vector3(0.1f, 0.55f, 0.25f), new Vector3(0.35f, 0.35f, 0.35f), "Mud");
+            b.PrimColor(PrimitiveType.Cube, new Vector3(0.1f, 0.22f, -0.42f), new Vector3(0.4f, 0.4f, 0.08f), "Ash");
+            b.Fire(new Vector3(0.1f, 0.05f, -0.5f), 0.45f);
+            for (int i = 0; i < 6; i++)
+                b.Model("ceramic_pot", new Vector3(-0.85f + (i % 3) * 0.3f, 0f, -0.6f + (i / 3) * 0.35f), 0.45f + (i % 2) * 0.1f, i * 47f);
+            b.Pole(new Vector3(0.75f, 0.08f, -0.8f), new Vector3(0.95f, 0.08f, 0.2f), 0.16f);
+        }
+
+        static void CopperSmelter(Builder b)
+        {
+            for (int row = 0; row < 3; row++)
+            {
+                int n = 9 - row * 2;
+                float r = 0.55f - row * 0.1f;
+                for (int i = 0; i < n; i++)
+                {
+                    float a = (i + row * 0.5f) / n * Mathf.PI * 2f;
+                    b.Model("stone_01", new Vector3(Mathf.Cos(a) * r, row * 0.18f, Mathf.Sin(a) * r), 3.4f - row * 0.5f, i * 41f);
+                }
+            }
+            b.Fire(new Vector3(0, 0.45f, 0), 0.6f);
+            b.Model("rock_07", new Vector3(0.7f, 0f, 0.55f), 0.25f, 30f);
+            b.Model("rock_07", new Vector3(0.85f, 0f, 0.25f), 0.18f, 100f);
+            // Bellows of hide and a crucible pot
+            b.Prim(PrimitiveType.Cube, new Vector3(-0.75f, 0.15f, -0.3f), new Vector3(0.4f, 0.22f, 0.3f), "Hide", new Vector3(0, 25, 0));
+            b.Pole(new Vector3(-0.55f, 0.12f, -0.25f), new Vector3(-0.3f, 0.2f, -0.1f), 0.05f);
+            b.Model("ceramic_pot", new Vector3(0.3f, 0f, -0.75f), 0.45f, 0f);
+        }
+
+        static void BronzeWorkshop(Builder b)
+        {
+            // Open shed: four posts under a thatch roof.
+            foreach (var c in new[] { new Vector3(-0.75f, 0, -0.75f), new Vector3(0.75f, 0, -0.75f), new Vector3(-0.75f, 0, 0.75f), new Vector3(0.75f, 0, 0.75f) })
+                b.Pole(c, c + new Vector3(0, 1.35f, 0), 0.09f);
+            b.Shape(Meshes.Roof(), new Vector3(0, 1.3f, 0), new Vector3(2.4f, 1.1f, 2.4f), "Thatch");
+            b.Model("stone_fire_pit", new Vector3(-0.3f, 0f, 0.25f), 0.45f);
+            b.Fire(new Vector3(-0.3f, 0.05f, 0.25f), 0.45f);
+            b.Model("boulder_01", new Vector3(0.35f, 0f, -0.2f), 0.22f, 40f);
+            b.Model("wooden_axe", new Vector3(0.4f, 0.32f, -0.2f), 0.8f, 0f, null, new Vector3(0, 60, 80));
+            b.Model("ceramic_pot", new Vector3(0.55f, 0f, 0.5f), 0.5f);
+            b.Model("wooden_bowl_01", new Vector3(-0.6f, 0f, -0.55f), 1.1f);
         }
 }
 }
