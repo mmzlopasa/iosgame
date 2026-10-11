@@ -1,44 +1,174 @@
 {
   "_comment": "CC0 assets from Poly Haven (https://polyhaven.com, CC0 1.0). Processed for iPhone by tools/assets/build_assets.py.",
-  "hdri": { "id": "kloofendal_48d_partly_cloudy_puresky", "res": "2k" },
+  "hdri": {
+    "id": "kloofendal_48d_partly_cloudy_puresky",
+    "res": "2k"
+  },
   "textures": [
-    { "id": "leafy_grass",            "name": "Grass",      "res": "1k" },
-    { "id": "forest_leaves_04",       "name": "ForestFloor","res": "1k" },
-    { "id": "brown_mud_leaves_01",    "name": "Mud",        "res": "1k" },
-    { "id": "damp_sand",              "name": "Sand",       "res": "1k" },
-    { "id": "river_small_rocks",      "name": "Riverbed",   "res": "1k" },
-    { "id": "rocky_terrain_02",       "name": "RockGround", "res": "1k" },
-    { "id": "pine_bark",              "name": "Bark",       "res": "1k" },
-    { "id": "brown_leather",          "name": "Hide",       "res": "1k" },
-    { "id": "thatch_roof_angled",     "name": "Thatch",     "res": "1k" },
-    { "id": "rough_wood",             "name": "RoughWood",  "res": "1k" },
-    { "id": "dark_rock",              "name": "DarkRock",   "res": "1k" }
+    {
+      "id": "leafy_grass",
+      "name": "Grass",
+      "res": "1k"
+    },
+    {
+      "id": "forest_leaves_04",
+      "name": "ForestFloor",
+      "res": "1k"
+    },
+    {
+      "id": "brown_mud_leaves_01",
+      "name": "Mud",
+      "res": "1k"
+    },
+    {
+      "id": "damp_sand",
+      "name": "Sand",
+      "res": "1k"
+    },
+    {
+      "id": "river_small_rocks",
+      "name": "Riverbed",
+      "res": "1k"
+    },
+    {
+      "id": "rocky_terrain_02",
+      "name": "RockGround",
+      "res": "1k"
+    },
+    {
+      "id": "pine_bark",
+      "name": "Bark",
+      "res": "1k"
+    },
+    {
+      "id": "brown_leather",
+      "name": "Hide",
+      "res": "1k"
+    },
+    {
+      "id": "thatch_roof_angled",
+      "name": "Thatch",
+      "res": "1k"
+    },
+    {
+      "id": "rough_wood",
+      "name": "RoughWood",
+      "res": "1k"
+    },
+    {
+      "id": "dark_rock",
+      "name": "DarkRock",
+      "res": "1k"
+    }
   ],
   "models": [
-    { "id": "stone_fire_pit",         "tris": 4000 },
-    { "id": "dead_tree_trunk",        "tris": 2500 },
-    { "id": "dead_tree_trunk_02",     "tris": 3500 },
-    { "id": "tree_stump_01",          "tris": 2000 },
-    { "id": "boulder_01",             "tris": 2500 },
-    { "id": "rock_moss_set_01",       "tris": 5000 },
-    { "id": "namaqualand_boulder_02", "tris": 2500 },
-    { "id": "rock_07",                "tris": 1500 },
-    { "id": "stone_01",               "tris": 800 },
-    { "id": "shrub_03",               "tris": 3000 },
-    { "id": "shrub_04",               "tris": 3000 },
-    { "id": "fern_02",                "tris": 3000 },
-    { "id": "dry_branches_medium_01", "tris": 2500 },
-    { "id": "nettle_plant",           "tris": 3000 },
-    { "id": "wicker_basket_01",       "tris": 2000 },
-    { "id": "ceramic_pot",            "tris": 2000 },
-    { "id": "wooden_bowl_01",         "tris": 1500 },
-    { "id": "wooden_axe",             "tris": 1500 }
+    {
+      "id": "stone_fire_pit",
+      "tris": 4000
+    },
+    {
+      "id": "dead_tree_trunk",
+      "tris": 2500
+    },
+    {
+      "id": "dead_tree_trunk_02",
+      "tris": 3500
+    },
+    {
+      "id": "tree_stump_01",
+      "tris": 2000
+    },
+    {
+      "id": "boulder_01",
+      "tris": 2500
+    },
+    {
+      "id": "rock_moss_set_01",
+      "tris": 5000
+    },
+    {
+      "id": "namaqualand_boulder_02",
+      "tris": 2500
+    },
+    {
+      "id": "rock_07",
+      "tris": 1500
+    },
+    {
+      "id": "stone_01",
+      "tris": 800
+    },
+    {
+      "id": "shrub_03",
+      "tris": 3000
+    },
+    {
+      "id": "shrub_04",
+      "tris": 3000
+    },
+    {
+      "id": "fern_02",
+      "tris": 3000
+    },
+    {
+      "id": "dry_branches_medium_01",
+      "tris": 2500
+    },
+    {
+      "id": "nettle_plant",
+      "tris": 3000
+    },
+    {
+      "id": "wicker_basket_01",
+      "tris": 2000
+    },
+    {
+      "id": "ceramic_pot",
+      "tris": 2000
+    },
+    {
+      "id": "wooden_bowl_01",
+      "tris": 1500
+    },
+    {
+      "id": "wooden_axe",
+      "tris": 1500
+    }
   ],
   "impostors": [
-    { "id": "pine_tree_01",   "name": "PineA", "node": "pine_tree_01_a_LOD0" },
-    { "id": "pine_tree_01",   "name": "PineB", "node": "pine_tree_01_b_LOD0" },
-    { "id": "pine_tree_01",   "name": "PineC", "node": "pine_tree_01_c_LOD0" },
-    { "id": "tree_small_02",  "name": "LeafTree" },
-    { "id": "fir_sapling",    "name": "FirSapling", "node": "fir_sapling_a" }
+    {
+      "id": "pine_tree_01",
+      "name": "PineA",
+      "node": "pine_tree_01_a_LOD0"
+    },
+    {
+      "id": "pine_tree_01",
+      "name": "PineB",
+      "node": "pine_tree_01_b_LOD0"
+    },
+    {
+      "id": "pine_tree_01",
+      "name": "PineC",
+      "node": "pine_tree_01_c_LOD0"
+    },
+    {
+      "id": "tree_small_02",
+      "name": "LeafTree"
+    },
+    {
+      "id": "fir_sapling",
+      "name": "FirSapling",
+      "node": "fir_sapling_a"
+    },
+    {
+      "id": "grass_medium_01",
+      "name": "GrassTuft",
+      "node": "grass_medium_01_large_a_LOD0"
+    },
+    {
+      "id": "flower_heliophila",
+      "name": "Wildflowers",
+      "node": "flower_heliophila_large"
+    }
   ]
 }

@@ -47,7 +47,7 @@ namespace Founders
 
         const float MinDistance = 9f;
         const float MaxDistance = 55f;
-        const float Pitch = 47f;
+        float Pitch => Mathf.Lerp(52f, 40f, Mathf.InverseLerp(MinDistance, MaxDistance, distance));
         public const float Yaw = -45f;
         const float TapSlop = 12f; // pixels
 
@@ -212,6 +212,11 @@ namespace Founders
     }
 
     /// <summary>A villager walking between buildings (ambient life; not tied to the rules).</summary>
+    /// <summary>
+    /// A villager: walks between work spots and, on arrival, idles, talks, works or gathers.
+    /// Uses the animated CC0 character (Models/Villager, legacy animation clips) with per-person
+    /// skin, clothing and hair tints; falls back to a simple figure if the model is missing.
+    /// </summary>
     public class Villager : MonoBehaviour
     {
         public Func<Vector3> PickSpot;
@@ -220,13 +225,55 @@ namespace Founders
         float wait;
         float speed;
         Transform body;
+        Animation anim;
+        string current;
+
+        static readonly Color[] SkinTones =
+        {
+            new Color(0.80f, 0.60f, 0.47f), new Color(0.70f, 0.50f, 0.37f), new Color(0.58f, 0.40f, 0.28f),
+            new Color(0.47f, 0.31f, 0.21f), new Color(0.36f, 0.24f, 0.16f),
+        };
+        static readonly Color[] HideTints =
+        {
+            new Color(1f, 1f, 1f), new Color(0.85f, 0.78f, 0.70f), new Color(0.70f, 0.62f, 0.55f),
+            new Color(1.05f, 0.92f, 0.78f), new Color(0.62f, 0.56f, 0.52f),
+        };
+        static readonly Color[] HairColors =
+        {
+            new Color(0.05f, 0.035f, 0.025f), new Color(0.12f, 0.08f, 0.05f), new Color(0.22f, 0.14f, 0.08f),
+            new Color(0.03f, 0.03f, 0.03f), new Color(0.30f, 0.22f, 0.15f),
+        };
+
+        static GameObject model;
+        static bool modelLoaded;
 
         void Start()
         {
-            speed = Random.Range(0.9f, 1.4f);
+            speed = Random.Range(1.0f, 1.25f);
             body = transform.GetChild(0);
             wait = Random.Range(0f, 3f);
             target = transform.position;
+            anim = GetComponentInChildren<Animation>();
+            if (anim != null)
+            {
+                anim.cullingType = AnimationCullingType.BasedOnRenderers;
+                foreach (AnimationState st in anim) st.wrapMode = WrapMode.Loop;
+                Play(Random.value < 0.5f ? "Idle" : "Talk", 0f);
+                // Desynchronise identical loops.
+                foreach (AnimationState st in anim) st.normalizedTime = Random.value;
+            }
+        }
+
+        void Play(string clip, float fade = 0.25f)
+        {
+            if (anim == null || current == clip) return;
+            foreach (AnimationState st in anim)
+            {
+                if (!st.name.EndsWith(clip, StringComparison.Ordinal)) continue;
+                if (fade > 0) anim.CrossFade(st.name, fade); else anim.Play(st.name);
+                current = clip;
+                return;
+            }
         }
 
         void Update()
@@ -236,30 +283,75 @@ namespace Founders
             to.y = 0;
             if (to.magnitude < 0.15f)
             {
-                wait = Random.Range(1.5f, 6f);
+                float r = Random.value;
+                if (r < 0.35f) { Play("Idle"); wait = Random.Range(2f, 6f); }
+                else if (r < 0.55f) { Play("Talk"); wait = Random.Range(3f, 7f); }
+                else if (r < 0.8f) { Play("Work"); wait = Random.Range(4f, 9f); }
+                else { Play("Gather"); wait = Random.Range(2.5f, 5f); }
                 var spot = PickSpot != null ? PickSpot() : transform.position;
                 var jitter = Random.insideUnitCircle * 0.9f;
                 target = spot + new Vector3(jitter.x, 0, jitter.y);
                 return;
             }
+            Play("Walk");
             var step = to.normalized * speed * Time.deltaTime;
             var next = transform.position + Vector3.ClampMagnitude(step, to.magnitude);
             if (Ground != null) next.y = Ground.HeightAt(next);
             transform.position = next;
-            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(to), 8f * Time.deltaTime);
-            body.localPosition = new Vector3(0, Mathf.Abs(Mathf.Sin(Time.time * speed * 7f)) * 0.05f, 0);
+            transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(to), 6f * Time.deltaTime);
+            if (anim == null)
+                body.localPosition = new Vector3(0, Mathf.Abs(Mathf.Sin(Time.time * speed * 7f)) * 0.05f, 0);
         }
 
         public static Villager Spawn(Transform parent, Vector3 at, int seed)
         {
             var root = Parts.Group("Villager", parent, at).transform;
-            var body = Parts.Group("Body", root, Vector3.zero).transform;
-            // Placeholder figure (real character models are a later step): hide clothing, skin, hair.
-            Parts.Prim(PrimitiveType.Capsule, body, new Vector3(0, 0.55f, 0), new Vector3(0.34f, 0.5f, 0.28f), ModelLibrary.Surface("Hide"));
-            Parts.Prim(PrimitiveType.Sphere, body, new Vector3(0, 1.18f, 0), Vector3.one * 0.22f, "Skin");
-            Parts.Prim(PrimitiveType.Sphere, body, new Vector3(0, 1.24f, -0.02f), new Vector3(0.24f, 0.15f, 0.24f), "Hair");
-            Parts.Prim(PrimitiveType.Capsule, body, new Vector3(-0.08f, 0.18f, 0), new Vector3(0.11f, 0.2f, 0.11f), "Skin");
-            Parts.Prim(PrimitiveType.Capsule, body, new Vector3(0.08f, 0.18f, 0), new Vector3(0.11f, 0.2f, 0.11f), "Skin");
+            root.rotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
+            if (!modelLoaded)
+            {
+                modelLoaded = true;
+                model = Resources.Load<GameObject>("Models/Villager");
+                if (model == null) Debug.LogWarning("[FOUNDERS] Villager model missing; using placeholder figures.");
+            }
+
+            if (model != null)
+            {
+                var rng = new System.Random(seed * 7919 + 17);
+                var body = Instantiate(model, root);
+                body.name = "Body";
+                body.transform.localPosition = Vector3.zero;
+                body.transform.localRotation = Quaternion.identity;
+                bool smaller = rng.NextDouble() < 0.45;
+                float s = (smaller ? 0.9f : 0.97f) + (float)rng.NextDouble() * 0.06f;
+                body.transform.localScale = Vector3.one * s;
+
+                var skin = SkinTones[rng.Next(SkinTones.Length)];
+                var hide = HideTints[rng.Next(HideTints.Length)];
+                var hair = HairColors[rng.Next(HairColors.Length)];
+                foreach (var r in body.GetComponentsInChildren<SkinnedMeshRenderer>())
+                {
+                    r.sharedMaterials = new[] { Palette.Get("Skin"), ModelLibrary.Surface("Hide"), Palette.Get("Hair") };
+                    r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+                    r.updateWhenOffscreen = false;
+                    var block = new MaterialPropertyBlock();
+                    block.SetColor("_BaseColor", skin);
+                    r.SetPropertyBlock(block, 0);
+                    block = new MaterialPropertyBlock();
+                    block.SetColor("_BaseColor", hide);
+                    r.SetPropertyBlock(block, 1);
+                    block = new MaterialPropertyBlock();
+                    block.SetColor("_BaseColor", hair);
+                    r.SetPropertyBlock(block, 2);
+                }
+                return root.gameObject.AddComponent<Villager>();
+            }
+
+            var figure = Parts.Group("Body", root, Vector3.zero).transform;
+            Parts.Prim(PrimitiveType.Capsule, figure, new Vector3(0, 0.55f, 0), new Vector3(0.34f, 0.5f, 0.28f), ModelLibrary.Surface("Hide"));
+            Parts.Prim(PrimitiveType.Sphere, figure, new Vector3(0, 1.18f, 0), Vector3.one * 0.22f, "Skin");
+            Parts.Prim(PrimitiveType.Sphere, figure, new Vector3(0, 1.24f, -0.02f), new Vector3(0.24f, 0.15f, 0.24f), "Hair");
+            Parts.Prim(PrimitiveType.Capsule, figure, new Vector3(-0.08f, 0.18f, 0), new Vector3(0.11f, 0.2f, 0.11f), "Skin");
+            Parts.Prim(PrimitiveType.Capsule, figure, new Vector3(0.08f, 0.18f, 0), new Vector3(0.11f, 0.2f, 0.11f), "Skin");
             return root.gameObject.AddComponent<Villager>();
         }
     }

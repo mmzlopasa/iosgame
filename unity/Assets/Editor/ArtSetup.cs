@@ -69,7 +69,16 @@ namespace FoundersEditor
             if (!assetPath.StartsWith("Assets/Art/")) return;
             var mi = (ModelImporter)assetImporter;
             mi.materialImportMode = ModelImporterMaterialImportMode.None; // materials are assigned from the art manifest
-            mi.importAnimation = false;
+            bool character = Path.GetFileNameWithoutExtension(assetPath) == "Villager";
+            mi.importAnimation = character;
+            if (character)
+            {
+                // Legacy clips: played by name from code, no Animator Controller assets needed.
+                mi.animationType = ModelImporterAnimationType.Legacy;
+                mi.generateAnimations = ModelImporterGenerateAnimations.GenerateAnimations;
+                mi.animationCompression = ModelImporterAnimationCompression.KeyframeReductionAndCompression;
+                mi.optimizeGameObjects = false;
+            }
             mi.importCameras = false;
             mi.importLights = false;
             mi.isReadable = false;

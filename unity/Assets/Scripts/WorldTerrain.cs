@@ -14,7 +14,7 @@ namespace Founders
     public sealed class WorldTerrain
     {
         public const float Size = 128f;
-        const float HeightRange = 16f;
+        const float HeightRange = 52f;
         const float BaseDepth = 5f;          // world y = 0 sits this far above the terrain bottom
         const int HeightRes = 257;
         const int SplatRes = 256;
@@ -28,6 +28,7 @@ namespace Founders
         readonly Vector3 origin;
         float[,] signedWaterDistance; // metres; negative inside water
         TerrainType[,] fine;          // terrain type per heightmap sample
+        float[,] worldY;              // ground height (world y) per heightmap sample
 
         public WorldTerrain(MapDefinition map, Transform parent)
         {
@@ -161,6 +162,7 @@ namespace Founders
         float[,] BuildHeights()
         {
             var h = new float[HeightRes, HeightRes];
+            worldY = new float[HeightRes, HeightRes];
             var mapMin = Grid.CellCenter(-0.5f, map.Height - 0.5f);
             var mapMax = Grid.CellCenter(map.Width - 0.5f, -0.5f);
             for (int i = 0; i < HeightRes; i++)
@@ -188,9 +190,15 @@ namespace Founders
                     float outsideDist = Mathf.Sqrt(dx * dx + dz * dz);
                     if (outsideDist > 0f)
                     {
-                        float hills = outsideDist * 0.16f * (0.6f + Mathf.PerlinNoise(w.x * 0.035f + 5f, w.y * 0.035f + 1f));
-                        y += hills * Mathf.Clamp01(s / 8f);
+                        // Rolling foothills first, then ridged mountains that wall in the valley.
+                        float hills = outsideDist * 0.12f * (0.6f + Mathf.PerlinNoise(w.x * 0.035f + 5f, w.y * 0.035f + 1f));
+                        float ridge = 1f - Mathf.Abs(2f * Mathf.PerlinNoise(w.x * 0.028f + 11f, w.y * 0.028f + 4f) - 1f);
+                        float detail = Mathf.PerlinNoise(w.x * 0.09f + 2f, w.y * 0.09f + 8f);
+                        float rise = Mathf.Pow(Mathf.Clamp01((outsideDist - 10f) / 38f), 1.5f);
+                        float mountains = rise * (20f + 26f * ridge * ridge) * (0.75f + 0.5f * detail);
+                        y += (hills + mountains) * Mathf.Clamp01(s / 10f);
                     }
+                    worldY[i, j] = y;
                     h[i, j] = Mathf.Clamp01((y + BaseDepth) / HeightRange);
                 }
             }
@@ -239,6 +247,19 @@ namespace Founders
                         float bank = 1f - Mathf.Clamp01((s - 0.2f) / 2.2f);
                         wts[LSand] += bank * 1.4f;
                         wts[LMud] += bank * 0.4f * n2;
+                    }
+
+                    // High ground turns to bare rock on steep faces and grass thins out on ridges.
+                    float gy = worldY[hi, hj];
+                    if (gy > 2.5f)
+                    {
+                        float gx = worldY[hi, Mathf.Min(HeightRes - 1, hj + 1)] - worldY[hi, Mathf.Max(0, hj - 1)];
+                        float gz = worldY[Mathf.Min(HeightRes - 1, hi + 1), hj] - worldY[Mathf.Max(0, hi - 1), hj];
+                        float slope = new Vector2(gx, gz).magnitude / (2f * Size / (HeightRes - 1));
+                        float rock = Mathf.Clamp01((slope - 0.45f) * 2.2f) + Mathf.Clamp01((gy - 18f) / 10f);
+                        rock = Mathf.Clamp01(rock + (n2 - 0.5f) * 0.3f);
+                        for (int l = 0; l < L; l++) wts[l] *= 1f - rock;
+                        wts[LRock] += rock * 1.5f;
                     }
 
                     if (buildings != null)

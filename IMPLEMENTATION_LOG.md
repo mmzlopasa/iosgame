@@ -90,3 +90,27 @@
 - `dotnet test unity/CoreTests` prolazi 45/45.
 
 **Nije provjereno:** izgled u simulatoru. Provjerit će se kad se završe CI preview snimke.
+
+## 2026-10-11 — Ljudi, trava, planine
+
+Korisnik je odabrao besplatne (CC0) modele ljudi.
+
+**Ljudi:**
+- Izvor: Quaternius „Universal Animation Library” (CC0, preko OpenGameArta). To je čovjek realnih proporcija s 46 animacija.
+- `tools/assets/build_people.py` i `blender_people.py` model pripremaju u Blenderu:
+  - smanjuju ga na 6,2k trokuta;
+  - dodaju zone kože, kožne tunike s hlačama i omotačima za stopala, te kose;
+  - izvoze 8 animacija: Idle, Walk, Work, Gather, Talk, Sit, Carry, Jog.
+- U Unityju (`Villager`) svaki seljak ima svoju boju kože, odjeće i kose te visinu.
+- Seljaci hodaju između zgrada, a na odredištu miruju, razgovaraju, rade ili skupljaju.
+
+**Trava:** `GrassField` iscrtava tisuće križnih kartica busena trave i divljeg cvijeća (Poly Haven `grass_medium_01` i `flower_heliophila`, renderirani Cyclesom). Kartice se crtaju GPU instancingom, a ne rastu kroz zgrade.
+
+**Planine:**
+- Izvan doline teren se diže u brda i grebenaste planine visine do oko 45 m.
+- Strme padine i vrhovi dobivaju kamenu teksturu, a rijeka ostaje u dolini.
+- Kamera se pri odzumiranju lagano spušta (nagib 52° → 40°), pa se vidi okolni krajolik.
+
+**Magla neistraženog:** prozirnija je i niža, a drveće i stijene ispod nje ostaju vidljivi kao obrisi.
+
+**Provjereno:** compile check prolazi. Izgled u igri čeka CI preview snimke.

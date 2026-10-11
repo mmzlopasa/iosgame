@@ -8,6 +8,14 @@
    "top": "Art/Textures/FirSapling_impostor_top.png",
    "width": 0.861
   },
+  "GrassTuft": {
+   "height": 0.147,
+   "side": "Art/Textures/GrassTuft_impostor_side.png",
+   "side2": "Art/Textures/GrassTuft_impostor_side2.png",
+   "source": "https://polyhaven.com/a/grass_medium_01",
+   "top": "Art/Textures/GrassTuft_impostor_top.png",
+   "width": 0.327
+  },
   "LeafTree": {
    "height": 4.557,
    "side": "Art/Textures/LeafTree_impostor_side.png",
@@ -39,6 +47,14 @@
    "source": "https://polyhaven.com/a/pine_tree_01",
    "top": "Art/Textures/PineC_impostor_top.png",
    "width": 7.855
+  },
+  "Wildflowers": {
+   "height": 0.399,
+   "side": "Art/Textures/Wildflowers_impostor_side.png",
+   "side2": "Art/Textures/Wildflowers_impostor_side2.png",
+   "source": "https://polyhaven.com/a/flower_heliophila",
+   "top": "Art/Textures/Wildflowers_impostor_top.png",
+   "width": 1.663
   }
  },
  "license": "CC0 1.0 (Poly Haven)",

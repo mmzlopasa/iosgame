@@ -110,7 +110,7 @@ namespace Founders
         public static string MaterialKey(string modelId, string materialName) =>
             ("M_" + modelId + "__" + materialName).Replace(' ', '_').Replace('.', '_');
 
-        static JObj Manifest
+        public static JObj Manifest
         {
             get
             {

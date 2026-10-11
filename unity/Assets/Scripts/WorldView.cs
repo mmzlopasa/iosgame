@@ -62,6 +62,7 @@ namespace Founders
         Transform natureRoot, objectRoot, overlayRoot, peopleRoot;
 
         ParticleSystem mist;
+        GrassField grassField;
         readonly Dictionary<(int, int), GameObject> cellProps = new Dictionary<(int, int), GameObject>();
         readonly Dictionary<int, BuildingView> buildings = new Dictionary<int, BuildingView>();
         readonly List<GameObject> selection = new List<GameObject>();
@@ -111,6 +112,8 @@ namespace Founders
             peopleRoot = Parts.Group("People", transform, Vector3.zero).transform;
             BuildWater();
             BuildNature();
+            grassField = Parts.Group("Grass", transform, Vector3.zero).AddComponent<GrassField>();
+            grassField.Init(Ground, store.Game);
             BuildMist();
             Sync(true);
         }
@@ -149,7 +152,6 @@ namespace Founders
                     if (inside)
                     {
                         cellProps[(cx, cy)] = props.gameObject;
-                        if (!game.IsRevealed(cx, cy)) props.gameObject.SetActive(false);
                     }
                 }
             }
@@ -247,20 +249,20 @@ namespace Founders
             foreach (var (x, y) in hidden)
             {
                 var rng = new System.Random(x * 9176 + y * 131);
-                for (int k = 0; k < 3; k++)
+                for (int k = 0; k < 2; k++)
                 {
                     var c = Grid.CellCenter(x + ((float)rng.NextDouble() - 0.5f), y + ((float)rng.NextDouble() - 0.5f));
-                    ep.position = new Vector3(c.x, 2.5f + (float)rng.NextDouble() * 4f, c.z);
-                    ep.startSize = 6f + (float)rng.NextDouble() * 4f;
+                    ep.position = new Vector3(c.x, 1.6f + (float)rng.NextDouble() * 2.5f, c.z);
+                    ep.startSize = 5f + (float)rng.NextDouble() * 3.5f;
                     ep.rotation = (float)rng.NextDouble() * 360f;
                     float shade = 0.82f + (float)rng.NextDouble() * 0.18f;
-                    ep.startColor = new Color(shade, shade, shade * 1.02f, 0.9f);
+                    ep.startColor = new Color(shade, shade, shade * 1.02f, 0.42f);
                     ep.startLifetime = 1e6f;
                     mist.Emit(ep, 1);
                 }
             }
-            foreach (var kv in cellProps)
-                kv.Value.SetActive(game.IsRevealed(kv.Key.Item1, kv.Key.Item2));
+            // Unexplored land stays visible as a silhouette under the mist.
+            foreach (var kv in cellProps) kv.Value.SetActive(true);
         }
 
         // MARK: - Sync
@@ -350,6 +352,7 @@ namespace Founders
             bool firstVillage = !initial && lastStage == game.Content.StartStage && game.State.StageId != game.Content.StartStage;
             lastStage = game.State.StageId;
             splatKey = key;
+            if (!initial && grassField != null) grassField.Rebuild();
             var around = new List<(Vector3, float)>();
             var paths = new List<(Vector3, Vector3)>();
             foreach (var b in game.State.Buildings)
