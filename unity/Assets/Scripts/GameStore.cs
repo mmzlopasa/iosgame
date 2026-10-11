@@ -103,7 +103,8 @@ namespace Founders
             AbsorbNotices();
             World.Init(this);
             Rig.Bounds = MapBounds();
-            Rig.HeightAt = World.Ground.HeightAt;
+            // Through the world, not a captured terrain: RebuildAll replaces the terrain.
+            Rig.HeightAt = p => World.Ground != null && World.Ground.Terrain != null ? World.Ground.HeightAt(p) : 0f;
             FocusOnSettlement(true);
             Save();
         }
