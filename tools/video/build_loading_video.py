@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Builds the loading-screen montage (unity/Assets/Art/Resources/Video/loading.mp4) from the
+"""Builds the loading-screen montage (unity/Assets/StreamingAssets/loading.mp4, played by URL) from the
 game's own no-UI captures (the iOS Simulator preview screenshots).
 
 Each shot slowly zooms and drifts (Ken Burns) and cross-fades into the next; the clip loops
@@ -13,7 +13,7 @@ import subprocess
 import sys
 
 ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
-OUT = os.path.join(ROOT, "unity", "Assets", "Art", "Resources", "Video", "loading.mp4")
+OUT = os.path.join(ROOT, "unity", "Assets", "StreamingAssets", "loading.mp4")
 
 # The montage: the valley, the people at work, the seasons, the town at night.
 SHOTS = [

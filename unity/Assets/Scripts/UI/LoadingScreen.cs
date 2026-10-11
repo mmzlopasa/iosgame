@@ -101,22 +101,23 @@ namespace Founders.UI
         public void StartVideo(GameObject host)
         {
             videoHost = host;
-            var clip = Resources.Load<VideoClip>("Video/loading");
-            if (clip == null) { Debug.LogWarning("[FOUNDERS] loading video: clip missing"); return; }
-            videoTexture = new RenderTexture((int)clip.width, (int)clip.height, 0) { name = "LoadingVideo" };
+            // Played from StreamingAssets by URL: no import step, so every build machine can ship it.
+            string path = System.IO.Path.Combine(Application.streamingAssetsPath, "loading.mp4");
+            if (!System.IO.File.Exists(path)) { Debug.LogWarning("[FOUNDERS] loading video: missing " + path); return; }
             player = host.AddComponent<VideoPlayer>();
             player.playOnAwake = false;
-            player.source = VideoSource.VideoClip;
-            player.clip = clip;
+            player.source = VideoSource.Url;
+            player.url = path;
             player.isLooping = true;
             player.renderMode = VideoRenderMode.RenderTexture;
-            player.targetTexture = videoTexture;
             player.audioOutputMode = VideoAudioOutputMode.None;
             player.errorReceived += (p, message) => Debug.LogWarning("[FOUNDERS] loading video error: " + message);
             player.prepareCompleted += p =>
             {
-                Debug.Log($"[FOUNDERS] loading video ready {clip.width}x{clip.height} visible={Visible}");
+                Debug.Log($"[FOUNDERS] loading video ready {p.width}x{p.height} visible={Visible}");
                 if (!Visible) return;
+                videoTexture = new RenderTexture((int)p.width, (int)p.height, 0) { name = "LoadingVideo" };
+                p.targetTexture = videoTexture;
                 video.style.backgroundImage = Background.FromRenderTexture(videoTexture);
                 p.Play();
                 video.style.opacity = 1;
