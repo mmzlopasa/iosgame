@@ -197,7 +197,7 @@
   {
    "id": "shelter",
    "name": "Shelter",
-   "description": "A simple lean-to of branches and hide. Houses 2 people.",
+   "description": "A hide tent on a ring of poles. Houses 2 people.",
    "epoch": "epoch_first_communities",
    "footprint": {
     "width": 1,

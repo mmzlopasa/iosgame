@@ -94,6 +94,7 @@ namespace Founders
         {
             foreach (Transform child in transform) Destroy(child.gameObject);
             cellProps.Clear();
+            trees.Clear();
             buildings.Clear();
             selection.Clear();
             ghost.Clear();
@@ -169,7 +170,7 @@ namespace Founders
                         bool pine = rng.Next(3) != 0;
                         string kind = pine ? Pines[rng.Next(Pines.Length)] : "LeafTree";
                         float h = pine ? 8f + (float)rng.NextDouble() * 5f : 5.5f + (float)rng.NextDouble() * 2.5f;
-                        ModelLibrary.Tree(kind, t, Jitter(c, rng, 1.6f), h, yaw());
+                        TrackTree(ModelLibrary.Tree(kind, t, Jitter(c, rng, 1.6f), h, yaw()), h);
                     }
                     if (inside && rng.Next(2) == 0) ModelLibrary.Place("fern_02", t, Jitter(c, rng, 1.6f), 0.8f, yaw());
                     if (inside && rng.Next(4) == 0) ModelLibrary.Place("dry_branches_medium_01", t, Jitter(c, rng, 1.6f), 1f, yaw());
@@ -196,7 +197,7 @@ namespace Founders
                     int r = rng.Next(10);
                     if (r == 0) ModelLibrary.Place("shrub_03", t, Jitter(c, rng, 1.4f), 1f, yaw());
                     else if (r == 1) ModelLibrary.Place("shrub_04", t, Jitter(c, rng, 1.4f), 1.4f, yaw());
-                    else if (r == 2 && !inside) ModelLibrary.Tree("LeafTree", t, Jitter(c, rng, 1.4f), 5f, yaw());
+                    else if (r == 2 && !inside) TrackTree(ModelLibrary.Tree("LeafTree", t, Jitter(c, rng, 1.4f), 5f, yaw()), 5f);
                     else if (r == 3 && inside) ModelLibrary.Tree("FirSapling", t, Jitter(c, rng, 1.4f), 1.6f, yaw());
                     break;
                 }
@@ -204,10 +205,41 @@ namespace Founders
         }
 
 
+        // MARK: - Trees near the camera
+
+        sealed class TreeView { public Transform T; public float Height; public Renderer[] Renderers; public bool Hidden; }
+        readonly List<TreeView> trees = new List<TreeView>();
+        float nextTreeCheck;
+
+        void TrackTree(GameObject tree, float height) =>
+            trees.Add(new TreeView { T = tree.transform, Height = height, Renderers = tree.GetComponentsInChildren<Renderer>() });
+
+        /// <summary>Hides trees whose crown would fill the screen when the camera flies low over them.</summary>
+        void UpdateTreeFade()
+        {
+            if (Time.unscaledTime < nextTreeCheck) return;
+            nextTreeCheck = Time.unscaledTime + 0.15f;
+            var cam = Camera.main;
+            if (cam == null) return;
+            var c = cam.transform.position;
+            foreach (var tv in trees)
+            {
+                if (tv.T == null) continue;
+                var p = tv.T.position;
+                var crown = p + Vector3.up * tv.Height * 0.6f;
+                float horizontal = new Vector2(c.x - p.x, c.z - p.z).magnitude;
+                bool hide = (c - crown).magnitude < tv.Height * 0.55f + 3f || (c.y < p.y + tv.Height + 1.5f && horizontal < 4f);
+                if (hide == tv.Hidden) continue;
+                tv.Hidden = hide;
+                foreach (var r in tv.Renderers) if (r != null) r.enabled = !hide;
+            }
+        }
+
         // MARK: - Sync
 
         void Update()
         {
+            UpdateTreeFade();
             foreach (var view in buildings.Values)
             {
                 if (view.PopUntil <= 0f) continue;
