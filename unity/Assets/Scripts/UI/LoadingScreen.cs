@@ -120,7 +120,7 @@ namespace Founders.UI
                 p.targetTexture = videoTexture;
                 video.style.backgroundImage = Background.FromRenderTexture(videoTexture);
                 p.Play();
-                video.style.opacity = 1;
+                video.style.opacity = 0.62f; // dimmed so the title stays readable
             };
             player.Prepare();
         }
