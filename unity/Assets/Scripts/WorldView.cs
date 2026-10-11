@@ -66,6 +66,8 @@ namespace Founders
         readonly Dictionary<int, BuildingView> buildings = new Dictionary<int, BuildingView>();
         readonly Dictionary<int, (string key, GameObject go)> decorations = new Dictionary<int, (string, GameObject)>();
         string occupancyKey;
+        float nextGroundPaint, nextGrassRebuild;
+        bool grassDirty;
         readonly List<GameObject> selection = new List<GameObject>();
         readonly List<GameObject> ghost = new List<GameObject>();
         readonly List<Villager> villagers = new List<Villager>();
@@ -227,6 +229,12 @@ namespace Founders
 
         void Update()
         {
+            if (grassDirty && grassField != null && Time.unscaledTime >= nextGrassRebuild)
+            {
+                grassDirty = false;
+                nextGrassRebuild = Time.unscaledTime + 0.6f;
+                grassField.Rebuild();
+            }
             foreach (var view in buildings.Values)
             {
                 if (view.PopUntil <= 0f) continue;
@@ -309,6 +317,9 @@ namespace Founders
             string key = game.State.StageId + "#" + string.Join(",", game.State.Buildings.Select(b => $"{b.X}:{b.Y}:{b.DefinitionId}")) +
                          "#" + string.Join(",", game.State.Decorations.Select(d => $"{d.X}:{d.Y}:{d.DefinitionId}"));
             if (key == splatKey) return;
+            // Repainting the ground is heavy: while a road is being drawn, do it a few times a second at most.
+            if (!initial && Time.unscaledTime < nextGroundPaint) return;
+            nextGroundPaint = Time.unscaledTime + 0.35f;
             bool firstVillage = !initial && lastStage == game.Content.StartStage && game.State.StageId != game.Content.StartStage;
             lastStage = game.State.StageId;
             splatKey = key;
@@ -424,7 +435,7 @@ namespace Founders
             occupancyKey = key;
             var used = OccupiedCells(game);
             nature.SetBlocked((x, y) => used.Contains((x, y)));
-            if (!first && grassField != null) grassField.Rebuild();
+            if (!first) grassDirty = true;
         }
 
         // MARK: - Selection & placement ghost
