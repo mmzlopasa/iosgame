@@ -230,18 +230,19 @@ namespace Founders
 
         static readonly Color[] SkinTones =
         {
-            new Color(0.80f, 0.60f, 0.47f), new Color(0.70f, 0.50f, 0.37f), new Color(0.58f, 0.40f, 0.28f),
-            new Color(0.47f, 0.31f, 0.21f), new Color(0.36f, 0.24f, 0.16f),
+            new Color(0.92f, 0.72f, 0.58f), new Color(0.84f, 0.62f, 0.48f), new Color(0.74f, 0.52f, 0.38f),
+            new Color(0.62f, 0.43f, 0.31f), new Color(0.52f, 0.36f, 0.26f),
         };
+        // Multiplies the leather texture: greyed, darker hides so clothing reads apart from skin.
         static readonly Color[] HideTints =
         {
-            new Color(1f, 1f, 1f), new Color(0.85f, 0.78f, 0.70f), new Color(0.70f, 0.62f, 0.55f),
-            new Color(1.05f, 0.92f, 0.78f), new Color(0.62f, 0.56f, 0.52f),
+            new Color(0.55f, 0.45f, 0.38f), new Color(0.45f, 0.38f, 0.32f), new Color(0.62f, 0.50f, 0.40f),
+            new Color(0.40f, 0.35f, 0.31f), new Color(0.68f, 0.58f, 0.48f),
         };
         static readonly Color[] HairColors =
         {
-            new Color(0.05f, 0.035f, 0.025f), new Color(0.12f, 0.08f, 0.05f), new Color(0.22f, 0.14f, 0.08f),
-            new Color(0.03f, 0.03f, 0.03f), new Color(0.30f, 0.22f, 0.15f),
+            new Color(0.08f, 0.055f, 0.04f), new Color(0.16f, 0.10f, 0.06f), new Color(0.28f, 0.18f, 0.10f),
+            new Color(0.05f, 0.045f, 0.04f), new Color(0.38f, 0.27f, 0.16f),
         };
 
         static GameObject model;
@@ -289,7 +290,7 @@ namespace Founders
                 else if (r < 0.8f) { Play("Work"); wait = Random.Range(4f, 9f); }
                 else { Play("Gather"); wait = Random.Range(2.5f, 5f); }
                 var spot = PickSpot != null ? PickSpot() : transform.position;
-                var jitter = Random.insideUnitCircle * 0.9f;
+                var jitter = Random.insideUnitCircle * 0.3f;
                 target = spot + new Vector3(jitter.x, 0, jitter.y);
                 return;
             }

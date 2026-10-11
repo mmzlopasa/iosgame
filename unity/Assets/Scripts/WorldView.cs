@@ -465,7 +465,9 @@ namespace Founders
             var b = list[Random.Range(0, list.Count)];
             var def = game.Content.Building(b.DefinitionId);
             var center = def == null ? Grid.CellCenter(b.X, b.Y) : Grid.FootprintCenter(b.X, b.Y, def.Footprint);
-            var offset = Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward * (Grid.CellSize * 0.8f);
+            // Stand around the building, never on it (the hearth sits in the middle of its cell).
+            float reach = Grid.CellSize * (0.55f + 0.5f * Mathf.Max(def?.Footprint.Width ?? 1, def?.Footprint.Height ?? 1)) + Random.Range(0f, 0.6f);
+            var offset = Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward * reach;
             return Ground.OnGround(center + offset);
         }
     }

@@ -15,6 +15,8 @@ namespace Founders
         sealed class Layer
         {
             public Material Material;
+            public Material Top;
+            public RenderParams TopParams;
             public float Aspect = 1f;
             public readonly List<Matrix4x4[]> Batches = new List<Matrix4x4[]>();
             public readonly List<int> Counts = new List<int>();
@@ -22,7 +24,7 @@ namespace Founders
 
         const int BatchSize = 1023;
         const float Radius = 58f;
-        Mesh mesh;
+        Mesh mesh, flat;
         Layer grass, flowers;
         RenderParams grassParams, flowerParams;
         WorldTerrain ground;
@@ -33,6 +35,7 @@ namespace Founders
             this.ground = ground;
             this.game = game;
             mesh = CrossMesh();
+            flat = FlatMesh();
             grass = NewLayer("GrassTuft");
             flowers = NewLayer("Wildflowers");
             Rebuild();
@@ -40,7 +43,8 @@ namespace Founders
 
         Layer NewLayer(string impostor)
         {
-            var layer = new Layer { Material = Palette.Get($"I_{impostor}_side") };
+            var layer = new Layer { Material = Palette.Get($"I_{impostor}_side"), Top = Palette.Get($"I_{impostor}_top") };
+            if (layer.Top != null && !layer.Top.enableInstancing) layer.Top = new Material(layer.Top) { enableInstancing = true };
             if (ModelLibrary.HasImpostor(impostor))
             {
                 var info = ModelLibrary.Manifest.Obj("impostors").Obj(impostor);
@@ -110,6 +114,8 @@ namespace Founders
             Fill(flowers, f);
             grassParams = Params(grass.Material);
             if (flowers.Material != null) flowerParams = Params(flowers.Material);
+            if (grass.Top != null) grass.TopParams = Params(grass.Top);
+            if (flowers.Top != null) flowers.TopParams = Params(flowers.Top);
         }
 
         static void Fill(Layer layer, List<Matrix4x4> all)
@@ -129,11 +135,32 @@ namespace Founders
         void Update()
         {
             if (mesh == null || grass?.Material == null) return;
-            for (int i = 0; i < grass.Batches.Count; i++)
-                Graphics.RenderMeshInstanced(grassParams, mesh, 0, grass.Batches[i], grass.Counts[i]);
-            if (flowers.Material == null) return;
-            for (int i = 0; i < flowers.Batches.Count; i++)
-                Graphics.RenderMeshInstanced(flowerParams, mesh, 0, flowers.Batches[i], flowers.Counts[i]);
+            Draw(grass, grassParams);
+            if (flowers.Material != null) Draw(flowers, flowerParams);
+        }
+
+        void Draw(Layer layer, RenderParams side)
+        {
+            // The strategy camera looks down, so each tuft is a top-view card plus two crossed side cards.
+            for (int i = 0; i < layer.Batches.Count; i++)
+            {
+                if (layer.Top != null) Graphics.RenderMeshInstanced(layer.TopParams, flat, 0, layer.Batches[i], layer.Counts[i]);
+                Graphics.RenderMeshInstanced(side, mesh, 0, layer.Batches[i], layer.Counts[i]);
+            }
+        }
+
+        /// <summary>Horizontal unit card a little above the ground (seen from the strategy camera).</summary>
+        static Mesh FlatMesh()
+        {
+            var m = new Mesh { name = "GrassTop" };
+            const float y = 0.3f;
+            m.vertices = new[] { new Vector3(-0.5f, y, -0.5f), new Vector3(0.5f, y, -0.5f), new Vector3(-0.5f, y, 0.5f), new Vector3(0.5f, y, 0.5f) };
+            m.uv = new[] { new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 1), new Vector2(1, 1) };
+            m.triangles = new[] { 0, 2, 1, 2, 3, 1 };
+            m.normals = new[] { Vector3.up, Vector3.up, Vector3.up, Vector3.up };
+            m.RecalculateTangents();
+            m.RecalculateBounds();
+            return m;
         }
 
         /// <summary>Two unit cards crossed at 90° (pivot at the bottom); normals point up for soft, even lighting.</summary>
