@@ -56,26 +56,26 @@ namespace Founders.Core
             }
         }
 
-        public int HousingCapacity() => OperationalBuildings().Sum(x => x.def.HousingValue);
+        public int HousingCapacity() => OperationalBuildings().Sum(x => HousingOf(x.building, x.def));
 
         public ResourceBundle StorageCapacity()
         {
-            double extra = OperationalBuildings().Sum(x => x.def.StorageValue);
+            double extra = OperationalBuildings().Sum(x => x.def.StorageValue * LevelFactor(x.building.Level));
             double baseCap = Content.Balance.BaseStorage + extra;
             var caps = new ResourceBundle();
-            foreach (var t in new[] { ResourceType.Food, ResourceType.Wood, ResourceType.Stone })
+            foreach (var t in ResourceTypes.Stored)
                 caps[t] = baseCap * Multiplier(EffectKind.StorageMultiplier, null, t);
             caps.Knowledge = Content.Balance.KnowledgeCap * Multiplier(EffectKind.StorageMultiplier, null, ResourceType.Knowledge);
             return caps;
         }
 
-        public double ProtectedFood() => OperationalBuildings().Sum(x => x.def.ProtectedFoodValue);
+        public double ProtectedFood() => OperationalBuildings().Sum(x => x.def.ProtectedFoodValue * LevelFactor(x.building.Level));
 
         /// <summary>How many workers a job can take. Jobs with unlimited slots are limited only by population.</summary>
         public int JobCapacity(JobType job)
         {
             if (Content.JobConfig(job)?.UnlimitedSlots == true) return State.Population;
-            return OperationalBuildings().Sum(x => x.def.Slots(job));
+            return OperationalBuildings().Sum(x => SlotsOf(x.building, x.def, job));
         }
 
         /// <summary>Output per worker per second, including all current bonuses and penalties.</summary>
@@ -85,14 +85,16 @@ namespace Founders.Core
         {
             var cfg = Content.JobConfig(job);
             if (cfg == null || cfg.Output == null) return 0;
-            double rate = cfg.RatePerWorkerPerSecond * Multiplier(EffectKind.JobRateMultiplier, job) * SeasonJobMultiplier(job) * productivity;
+            double rate = cfg.RatePerWorkerPerSecond * Multiplier(EffectKind.JobRateMultiplier, job) * SeasonJobMultiplier(job) * productivity
+                          * RoadMultiplier(job);
             if (State.FoodShortage) rate *= Content.Balance.ShortageProductivityMultiplier;
             if (IsGathering(job)) rate *= 1 + GetCraftingStatus().Bonus;
             return rate;
         }
 
         internal static bool IsGathering(JobType job) =>
-            job == JobType.Foraging || job == JobType.Woodcutting || job == JobType.Stonecutting || job == JobType.Farming;
+            job == JobType.Foraging || job == JobType.Woodcutting || job == JobType.Stonecutting || job == JobType.Farming
+            || job == JobType.Fishing || job == JobType.Hunting || job == JobType.Mining;
 
         public CraftingStatus GetCraftingStatus()
         {
@@ -126,7 +128,9 @@ namespace Founders.Core
             foreach (var cfg in b.Jobs)
             {
                 if (cfg.Output == null) continue;
-                production[cfg.Output.Value] += State.Assignments[cfg.Job] * RatePerWorker(cfg.Job, productivity);
+                double made = SkilledWorkers(cfg.Job) * RatePerWorker(cfg.Job, productivity);
+                production[cfg.Output.Value] += made;
+                if (cfg.Byproduct.HasValue) production[cfg.Byproduct.Value] += made * cfg.ByproductRatio;
             }
             snap.Production = production;
 
@@ -155,6 +159,7 @@ namespace Founders.Core
                 if (target > capacity) return GameError.NoJobSlots(capacity);
             }
             State.Assignments[job] = target;
+            SyncPeople();
             EvaluateProgress();
             return GameResult.Success;
         }
@@ -173,6 +178,7 @@ namespace Founders.Core
                 if (busy.Count == 0) break;
                 State.Assignments[busy[busy.Count - 1]] -= 1;
             }
+            SyncPeople();
         }
     }
 }

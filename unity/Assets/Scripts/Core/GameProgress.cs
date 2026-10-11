@@ -44,6 +44,9 @@ namespace Founders.Core
                 case ConditionKind.RegionExplored: return State.ExploredRegions.Contains(id);
                 case ConditionKind.DistinctJobsAtLeast: return Enums.Jobs.Count(j => State.Assignments[j] > 0) >= amount;
                 case ConditionKind.FoodBalancePositive: return Economy().Net.Food > 0;
+                case ConditionKind.YearAtLeast: return Year >= amount;
+                case ConditionKind.RoadCellsAtLeast: return RoadCount() >= amount;
+                case ConditionKind.BeautyAtLeast: return Beauty() >= amount;
                 default: return false;
             }
         }
@@ -76,6 +79,9 @@ namespace Founders.Core
                     double perMinute = Economy().Net.Food * 60;
                     return $"Food balance {perMinute.ToString("+0.0;-0.0;+0.0", CultureInfo.InvariantCulture)}/min (must be positive)";
                 }
+                case ConditionKind.YearAtLeast: return $"Reach year {amount} (now year {Year})";
+                case ConditionKind.RoadCellsAtLeast: return $"Road tiles {RoadCount()}/{amount}";
+                case ConditionKind.BeautyAtLeast: return $"Beauty {Beauty()}/{amount}";
                 default: return c.Kind.ToString();
             }
         }

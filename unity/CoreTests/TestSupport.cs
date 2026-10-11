@@ -27,6 +27,8 @@ namespace Founders.Tests
             {
                 c.Balance.SeasonSeconds = 0;
                 c.Balance.ApprovalAffectsWork = false;
+                c.Balance.SkillBonusPerLevel = 0;
+                c.Balance.RoadWorkBonus = 0;
             }
             configure?.Invoke(c);
             var clock = new ManualClock();

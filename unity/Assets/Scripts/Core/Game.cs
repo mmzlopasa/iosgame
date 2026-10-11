@@ -23,6 +23,7 @@ namespace Founders.Core
             Content = content;
             State = state;
             this.clock = clock;
+            SyncPeople(); // older saves had no named people: create them from the population
         }
 
         /// <summary>Creates a brand new settlement from content.</summary>
@@ -137,6 +138,7 @@ namespace Founders.Core
                 else Notice(NoticeKind.Success, "Food supply restored.");
             }
 
+            AdvanceSkills(dt);
             AdvanceConstruction(dt);
             AdvanceResearch(dt);
             AdvanceExpedition(dt);
@@ -160,6 +162,7 @@ namespace Founders.Core
             {
                 State.GrowthProgress = 0;
                 State.Population += 1;
+                SyncPeople();
                 Notice(NoticeKind.Success, $"A new member joined the community (population {State.Population}).");
             }
         }

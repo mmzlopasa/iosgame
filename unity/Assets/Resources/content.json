@@ -173,6 +173,32 @@
     "output": "knowledge",
     "ratePerWorkerPerSecond": 0.06,
     "unlimitedSlots": false
+   },
+   {
+    "job": "fishing",
+    "name": "Fishing",
+    "description": "Cast lines and traps in the river and the lake.",
+    "output": "food",
+    "ratePerWorkerPerSecond": 0.13,
+    "unlimitedSlots": false
+   },
+   {
+    "job": "hunting",
+    "name": "Hunting",
+    "description": "Track deer and boar in the forest. Brings meat and hides.",
+    "output": "food",
+    "byproduct": "hides",
+    "byproductRatio": 0.35,
+    "ratePerWorkerPerSecond": 0.1,
+    "unlimitedSlots": false
+   },
+   {
+    "job": "mining",
+    "name": "Mining",
+    "description": "Dig ore from the veins at the foot of the mountains.",
+    "output": "ore",
+    "ratePerWorkerPerSecond": 0.045,
+    "unlimitedSlots": false
    }
   ],
   "seasonSeconds": 360,
@@ -184,7 +210,9 @@
     "foraging": 1.0,
     "farming": 0.7,
     "growth": 1.15,
-    "fuelPerPersonPerSecond": 0
+    "fuelPerPersonPerSecond": 0,
+    "fishing": 1.1,
+    "hunting": 0.9
    },
    {
     "id": "summer",
@@ -193,7 +221,9 @@
     "foraging": 1.2,
     "farming": 1.2,
     "growth": 1.0,
-    "fuelPerPersonPerSecond": 0
+    "fuelPerPersonPerSecond": 0,
+    "fishing": 1.0,
+    "hunting": 1.0
    },
    {
     "id": "autumn",
@@ -202,7 +232,9 @@
     "foraging": 1.1,
     "farming": 1.6,
     "growth": 0.9,
-    "fuelPerPersonPerSecond": 0.004
+    "fuelPerPersonPerSecond": 0.004,
+    "fishing": 0.9,
+    "hunting": 1.25
    },
    {
     "id": "winter",
@@ -211,7 +243,9 @@
     "foraging": 0.45,
     "farming": 0,
     "growth": 0.5,
-    "fuelPerPersonPerSecond": 0.01
+    "fuelPerPersonPerSecond": 0.01,
+    "fishing": 0.5,
+    "hunting": 0.8
    }
   ]
  },
@@ -272,7 +306,22 @@
    "buildable": true,
    "housing": 2,
    "upgradesTo": "woven_shelter",
-   "comfort": 0
+   "comfort": 0,
+   "levels": [
+    {
+     "cost": {
+      "wood": 10
+     },
+     "buildSeconds": 15
+    },
+    {
+     "cost": {
+      "wood": 15,
+      "hides": 4
+     },
+     "buildSeconds": 20
+    }
+   ]
   },
   {
    "id": "woven_shelter",
@@ -297,7 +346,23 @@
    "housing": 4,
    "requiresTech": "structural_weaving",
    "comfort": 5,
-   "upgradesTo": "daub_house"
+   "upgradesTo": "daub_house",
+   "levels": [
+    {
+     "cost": {
+      "wood": 15,
+      "stone": 5
+     },
+     "buildSeconds": 20
+    },
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 10
+     },
+     "buildSeconds": 25
+    }
+   ]
   },
   {
    "id": "foraging_camp",
@@ -322,6 +387,21 @@
     {
      "job": "foraging",
      "count": 3
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 15
+     },
+     "buildSeconds": 15
+    },
+    {
+     "cost": {
+      "wood": 25,
+      "stone": 5
+     },
+     "buildSeconds": 20
     }
    ]
   },
@@ -350,6 +430,22 @@
      "job": "woodcutting",
      "count": 3
     }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 15,
+      "stone": 5
+     },
+     "buildSeconds": 15
+    },
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 10
+     },
+     "buildSeconds": 20
+    }
    ]
   },
   {
@@ -368,6 +464,7 @@
    "sprite": "stone_site",
    "allowedTerrain": [
     "grass",
+    "rock",
     "sand"
    ],
    "buildable": true,
@@ -376,6 +473,21 @@
     {
      "job": "stonecutting",
      "count": 2
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 20
+     },
+     "buildSeconds": 20
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 10
+     },
+     "buildSeconds": 25
     }
    ]
   },
@@ -400,7 +512,16 @@
    ],
    "buildable": true,
    "storage": 100,
-   "protectedFood": 40
+   "protectedFood": 40,
+   "levels": [
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 10
+     },
+     "buildSeconds": 20
+    }
+   ]
   },
   {
    "id": "toolmaker",
@@ -426,6 +547,15 @@
     {
      "job": "crafting",
      "count": 2
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 15
+     },
+     "buildSeconds": 25
     }
    ]
   },
@@ -496,7 +626,7 @@
   {
    "id": "fishing_weir",
    "name": "Fishing Weir",
-   "description": "Stakes and woven traps in the shallows. Must touch the river. +2 Foraging jobs.",
+   "description": "Stakes and woven traps in the shallows. Must touch the river or lake. +2 Fishing jobs.",
    "epoch": "epoch_first_communities",
    "footprint": {
     "width": 1,
@@ -518,11 +648,19 @@
    "maxCount": 3,
    "jobSlots": [
     {
-     "job": "foraging",
+     "job": "fishing",
      "count": 2
     }
    ],
-   "foodSource": "fish"
+   "foodSource": "fish",
+   "levels": [
+    {
+     "cost": {
+      "wood": 20
+     },
+     "buildSeconds": 20
+    }
+   ]
   },
   {
    "id": "drying_rack",
@@ -598,7 +736,16 @@
    "buildable": true,
    "requiresTech": "longhouses",
    "housing": 8,
-   "comfort": 8
+   "comfort": 8,
+   "levels": [
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 15
+     },
+     "buildSeconds": 40
+    }
+   ]
   },
   {
    "id": "daub_house",
@@ -622,7 +769,24 @@
    "buildable": false,
    "housing": 5,
    "comfort": 10,
-   "requiresTech": "agriculture"
+   "requiresTech": "agriculture",
+   "levels": [
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 15
+     },
+     "buildSeconds": 30
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 25,
+      "ore": 5
+     },
+     "buildSeconds": 40
+    }
+   ]
   },
   {
    "id": "farm_field",
@@ -647,6 +811,14 @@
     {
      "job": "farming",
      "count": 4
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 25
+     },
+     "buildSeconds": 25
     }
    ]
   },
@@ -699,7 +871,16 @@
    "buildable": true,
    "requiresTech": "pottery",
    "storage": 150,
-   "protectedFood": 80
+   "protectedFood": 80,
+   "levels": [
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 20
+     },
+     "buildSeconds": 30
+    }
+   ]
   },
   {
    "id": "pottery_kiln",
@@ -788,6 +969,82 @@
     {
      "job": "crafting",
      "count": 3
+    }
+   ]
+  },
+  {
+   "id": "hunters_lodge",
+   "name": "Hunter's Lodge",
+   "description": "A lodge at the edge of the forest. Must touch the forest. +3 Hunting jobs (meat and hides).",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 25
+   },
+   "buildSeconds": 20,
+   "sprite": "hunters_lodge",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresAdjacentTerrain": "forest",
+   "foodSource": "game",
+   "jobSlots": [
+    {
+     "job": "hunting",
+     "count": 3
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 20,
+      "hides": 5
+     },
+     "buildSeconds": 20
+    }
+   ]
+  },
+  {
+   "id": "mine",
+   "name": "Mine",
+   "description": "A shaft into an ore vein at the foot of the mountains. Must touch ore. +3 Mining jobs.",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 40,
+    "stone": 20
+   },
+   "buildSeconds": 40,
+   "sprite": "mine",
+   "allowedTerrain": [
+    "grass",
+    "sand",
+    "rock"
+   ],
+   "buildable": true,
+   "requiresAdjacentTerrain": "ore",
+   "requiresTech": "improved_stone_tools",
+   "jobSlots": [
+    {
+     "job": "mining",
+     "count": 3
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 25
+     },
+     "buildSeconds": 35
     }
    ]
   }
@@ -1726,5 +1983,141 @@
     "y": 6
    }
   ]
- }
+ },
+ "decorations": [
+  {
+   "id": "dirt_path",
+   "name": "Dirt Path",
+   "description": "Beaten earth. People walk faster; workplaces beside it work 10% better.",
+   "category": "Roads",
+   "cost": {},
+   "road": true
+  },
+  {
+   "id": "stone_road",
+   "name": "Stone Road",
+   "description": "Packed stones that never turn to mud.",
+   "category": "Roads",
+   "cost": {
+    "stone": 1
+   },
+   "road": true,
+   "beauty": 0,
+   "requiresTech": "permanent_settlement"
+  },
+  {
+   "id": "wattle_fence",
+   "name": "Wattle Fence",
+   "description": "Woven branches between stakes.",
+   "category": "Fences",
+   "cost": {
+    "wood": 2
+   },
+   "beauty": 1
+  },
+  {
+   "id": "palisade",
+   "name": "Palisade",
+   "description": "Sharpened logs: the first wall.",
+   "category": "Fences",
+   "cost": {
+    "wood": 5
+   },
+   "beauty": 1,
+   "requiresTech": "permanent_settlement"
+  },
+  {
+   "id": "stone_wall",
+   "name": "Stone Wall",
+   "description": "Dry-stone wall of fieldstones.",
+   "category": "Fences",
+   "cost": {
+    "stone": 4
+   },
+   "beauty": 2
+  },
+  {
+   "id": "torch_post",
+   "name": "Torch Post",
+   "description": "A burning torch on a post: light at night.",
+   "category": "Lights",
+   "cost": {
+    "wood": 3
+   },
+   "beauty": 2
+  },
+  {
+   "id": "oil_lantern",
+   "name": "Lantern Post",
+   "description": "A clay lantern on a post.",
+   "category": "Lights",
+   "cost": {
+    "wood": 3,
+    "stone": 2
+   },
+   "beauty": 3,
+   "requiresTech": "pottery"
+  },
+  {
+   "id": "bush",
+   "name": "Bush",
+   "description": "A green shrub.",
+   "category": "Nature",
+   "cost": {
+    "wood": 1
+   },
+   "beauty": 1
+  },
+  {
+   "id": "young_tree",
+   "name": "Tree",
+   "description": "A young tree for shade.",
+   "category": "Nature",
+   "cost": {
+    "wood": 2
+   },
+   "beauty": 2
+  },
+  {
+   "id": "flower_bed",
+   "name": "Wildflowers",
+   "description": "A patch of wildflowers.",
+   "category": "Nature",
+   "cost": {
+    "food": 2
+   },
+   "beauty": 2
+  },
+  {
+   "id": "well",
+   "name": "Well",
+   "description": "A stone-lined well at the heart of the village.",
+   "category": "Monuments",
+   "cost": {
+    "stone": 15,
+    "wood": 5
+   },
+   "beauty": 6
+  },
+  {
+   "id": "totem",
+   "name": "Totem",
+   "description": "A carved totem of the founders.",
+   "category": "Monuments",
+   "cost": {
+    "wood": 12
+   },
+   "beauty": 5
+  },
+  {
+   "id": "standing_stone",
+   "name": "Standing Stone",
+   "description": "A single raised stone that marks the land as ours.",
+   "category": "Monuments",
+   "cost": {
+    "stone": 10
+   },
+   "beauty": 4
+  }
+ ]
 }

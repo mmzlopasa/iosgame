@@ -301,16 +301,21 @@ namespace Founders.UI
 
             var grid = E.Div().Row(0, Align.Stretch).Margin(10, 14, 0, 14).Ignore();
             int i = 0;
-            foreach (var type in ResourceTypes.All) grid.Add(ResourcePill(type, i++ > 0));
+            foreach (var type in PrimaryResources) grid.Add(ResourcePill(type, i++ > 0));
             grid.Add(PeoplePill());
             host.Add(grid);
         }
+
+        /// <summary>Resources shown in the top bar (ore and hides appear in costs and the stores panel).</summary>
+        static readonly ResourceType[] PrimaryResources = { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Knowledge };
 
         static string IconFor(ResourceType t) => t switch
         {
             ResourceType.Food => "food",
             ResourceType.Wood => "wood",
             ResourceType.Stone => "stone",
+            ResourceType.Ore => "ore",
+            ResourceType.Hides => "hides",
             _ => "knowledge",
         };
 
@@ -319,6 +324,8 @@ namespace Founders.UI
             ResourceType.Food => Theme.Error,
             ResourceType.Wood => Theme.GoldDeep,
             ResourceType.Stone => Theme.Body,
+            ResourceType.Ore => Theme.Hex("#E39A62"),
+            ResourceType.Hides => Theme.Hex("#C9A27E"),
             _ => Theme.Lavender,
         };
 

@@ -18,6 +18,11 @@ namespace Founders.Core
         /// <summary>Every definition this building has been, oldest first.</summary>
         public List<string> History = new List<string>();
         public double FoundedAtSimTime;
+        /// <summary>Quarter turns (0–3). Odd turns swap the footprint's width and height.</summary>
+        public int Rotation;
+        /// <summary>Building level (1 = as built). Upgrading to <see cref="PendingLevel"/> raises it.</summary>
+        public int Level = 1;
+        public int PendingLevel;
 
         public bool IsOperational => Status != BuildingStatus.Constructing;
 
@@ -40,6 +45,9 @@ namespace Founders.Core
                 ["history"] = History.Cast<object>().ToList(), ["foundedAtSimTime"] = FoundedAtSimTime,
             };
             if (UpgradeTargetId != null) d["upgradeTargetId"] = UpgradeTargetId;
+            if (Rotation != 0) d["rotation"] = Rotation;
+            if (Level != 1) d["level"] = Level;
+            if (PendingLevel != 0) d["pendingLevel"] = PendingLevel;
             return d;
         }
 
@@ -54,6 +62,61 @@ namespace Founders.Core
             UpgradeTargetId = o.OptStr("upgradeTargetId"),
             History = o.Strs("history"),
             FoundedAtSimTime = o.Num("foundedAtSimTime"),
+            Rotation = o.OptInt("rotation") ?? 0,
+            Level = o.OptInt("level") ?? 1,
+            PendingLevel = o.OptInt("pendingLevel") ?? 0,
+        };
+    }
+
+    /// <summary>A villager: a named person with a job and skills that grow with work.</summary>
+    public sealed class Person
+    {
+        public int Id;
+        public string Name;
+        public bool Female;
+        /// <summary>Job id while working, null when idle.</summary>
+        public string Job;
+        /// <summary>Seconds worked per job id.</summary>
+        public Dictionary<string, double> Experience = new Dictionary<string, double>();
+
+        internal Dictionary<string, object> ToJson()
+        {
+            var d = new Dictionary<string, object>
+            {
+                ["id"] = Id, ["name"] = Name, ["female"] = Female,
+                ["experience"] = Experience.ToDictionary(kv => kv.Key, kv => (object)kv.Value),
+            };
+            if (Job != null) d["job"] = Job;
+            return d;
+        }
+
+        internal static Person FromJson(JObj o)
+        {
+            var p = new Person { Id = o.Int("id"), Name = o.Str("name"), Female = o.OptBool("female", false), Job = o.OptStr("job") };
+            if (o.Has("experience"))
+            {
+                var e = o.Obj("experience");
+                foreach (var k in e.Keys) p.Experience[k] = e.Num(k);
+            }
+            return p;
+        }
+    }
+
+    /// <summary>A placed road tile, fence, wall, lantern, plant or monument.</summary>
+    public sealed class PlacedDecoration
+    {
+        public int Id;
+        public string DefinitionId;
+        public int X, Y, Rotation;
+
+        internal Dictionary<string, object> ToJson() => new Dictionary<string, object>
+        {
+            ["id"] = Id, ["definitionId"] = DefinitionId, ["x"] = X, ["y"] = Y, ["rotation"] = Rotation,
+        };
+
+        internal static PlacedDecoration FromJson(JObj o) => new PlacedDecoration
+        {
+            Id = o.Int("id"), DefinitionId = o.Str("definitionId"), X = o.Int("x"), Y = o.Int("y"), Rotation = o.OptInt("rotation") ?? 0,
         };
     }
 
@@ -136,6 +199,11 @@ namespace Founders.Core
         public List<LegacyEntry> Legacy = new List<LegacyEntry>();
         public int NextLegacyId;
 
+        public List<Person> People = new List<Person>();
+        public int NextPersonId;
+        public List<PlacedDecoration> Decorations = new List<PlacedDecoration>();
+        public int NextDecorationId;
+
         public PlacedBuilding Building(int id) => Buildings.FirstOrDefault(b => b.Id == id);
 
         // MARK: - JSON
@@ -186,6 +254,16 @@ namespace Founders.Core
                 }).ToList(),
                 ["nextLegacyId"] = NextLegacyId,
             };
+            if (People.Count > 0)
+            {
+                d["people"] = People.Select(p => (object)p.ToJson()).ToList();
+                d["nextPersonId"] = NextPersonId;
+            }
+            if (Decorations.Count > 0 || NextDecorationId > 0)
+            {
+                d["decorations"] = Decorations.Select(x => (object)x.ToJson()).ToList();
+                d["nextDecorationId"] = NextDecorationId;
+            }
             if (ActiveResearch != null)
                 d["activeResearch"] = new Dictionary<string, object>
                 {
@@ -248,6 +326,10 @@ namespace Founders.Core
                 Effect = Effect.FromJson(m.Obj("effect")),
                 ExpiresAtSimTime = m.OptNum("expiresAtSimTime"),
             }).ToList();
+            if (o.Has("people")) s.People = o.Objs("people").Select(Person.FromJson).ToList();
+            s.NextPersonId = o.OptInt("nextPersonId") ?? 0;
+            if (o.Has("decorations")) s.Decorations = o.Objs("decorations").Select(PlacedDecoration.FromJson).ToList();
+            s.NextDecorationId = o.OptInt("nextDecorationId") ?? 0;
             s.Legacy = o.Objs("legacy").Select(l => new LegacyEntry
             {
                 Id = l.Int("id"), SimTime = l.Num("simTime"), EpochId = l.Str("epochId"),

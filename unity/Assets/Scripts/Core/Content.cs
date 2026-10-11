@@ -6,14 +6,15 @@ namespace Founders.Core
 {
     // MARK: - Basic enums
 
-    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming }
+    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming, Fishing, Hunting, Mining }
 
-    public enum TerrainType { Grass, Forest, Rock, Water, Sand }
+    public enum TerrainType { Grass, Forest, Rock, Water, Sand, Mountain, Ore }
 
     public static class Enums
     {
         public static readonly JobType[] Jobs =
-            { JobType.Foraging, JobType.Farming, JobType.Woodcutting, JobType.Stonecutting, JobType.Crafting, JobType.Construction, JobType.Research };
+            { JobType.Foraging, JobType.Farming, JobType.Fishing, JobType.Hunting, JobType.Woodcutting, JobType.Stonecutting, JobType.Mining,
+              JobType.Crafting, JobType.Construction, JobType.Research };
 
         public static string Id(this JobType j)
         {
@@ -25,6 +26,9 @@ namespace Founders.Core
                 case JobType.Crafting: return "crafting";
                 case JobType.Construction: return "construction";
                 case JobType.Farming: return "farming";
+                case JobType.Fishing: return "fishing";
+                case JobType.Hunting: return "hunting";
+                case JobType.Mining: return "mining";
                 default: return "research";
             }
         }
@@ -54,6 +58,8 @@ namespace Founders.Core
                 case 'R': return TerrainType.Rock;
                 case '~': return TerrainType.Water;
                 case ',': return TerrainType.Sand;
+                case 'M': return TerrainType.Mountain;
+                case 'O': return TerrainType.Ore;
                 default: return null;
             }
         }
@@ -162,6 +168,9 @@ namespace Founders.Core
         RegionExplored,         // id
         DistinctJobsAtLeast,    // amount (jobs with at least one worker)
         FoodBalancePositive,    // net food rate > 0
+        YearAtLeast,            // amount (game years since founding; one year = four seasons)
+        RoadCellsAtLeast,       // amount
+        BeautyAtLeast,          // amount (sum of decoration beauty)
     }
 
     public sealed class Condition
@@ -212,6 +221,9 @@ namespace Founders.Core
         public int? Community;
         /// <summary>Food source kind counted for food variety (e.g. "fish", "grain", "meat").</summary>
         public string FoodSource;
+        /// <summary>Upgrades to level 2, 3… (index 0 = cost of level 2). Each level adds 50 % capacity.</summary>
+        public List<LevelDefinition> Levels = new List<LevelDefinition>();
+        public int MaxLevel => 1 + Levels.Count;
 
         public int HousingValue => Housing ?? 0;
         public double StorageValue => Storage ?? 0;
@@ -246,8 +258,49 @@ namespace Founders.Core
                 Comfort = o.OptInt("comfort"),
                 Community = o.OptInt("community"),
                 FoodSource = o.OptStr("foodSource"),
+                Levels = o.Has("levels") ? o.Objs("levels").Select(LevelDefinition.FromJson).ToList() : new List<LevelDefinition>(),
             };
         }
+    }
+
+    public sealed class LevelDefinition
+    {
+        public ResourceBundle Cost;
+        public double BuildSeconds;
+
+        internal static LevelDefinition FromJson(JObj o) => new LevelDefinition
+        {
+            Cost = ResourceBundle.FromJson(o.OptObj("cost")),
+            BuildSeconds = o.Num("buildSeconds"),
+        };
+    }
+
+    /// <summary>Roads, paths, fences, walls, lanterns, plants and monuments placed freely on cells.</summary>
+    public sealed class DecorationDefinition
+    {
+        public string Id, Name, Description, Category, Sprite;
+        public ResourceBundle Cost;
+        /// <summary>Beauty adds to approval (Foundation's splendor).</summary>
+        public int Beauty;
+        public string RequiresTech;
+        public List<TerrainType> AllowedTerrain = new List<TerrainType>();
+        /// <summary>Roads: villagers walk faster and adjacent workplaces work better.</summary>
+        public bool IsRoad;
+
+        internal static DecorationDefinition FromJson(JObj o) => new DecorationDefinition
+        {
+            Id = o.Str("id"),
+            Name = o.Str("name"),
+            Description = o.OptStr("description") ?? "",
+            Category = o.Str("category"),
+            Sprite = o.OptStr("sprite") ?? o.Str("id"),
+            Cost = ResourceBundle.FromJson(o.OptObj("cost")),
+            Beauty = o.OptInt("beauty") ?? 0,
+            RequiresTech = o.OptStr("requiresTech"),
+            AllowedTerrain = o.Has("allowedTerrain") ? o.Strs("allowedTerrain").Select(Enums.ParseTerrain).ToList()
+                                                     : new List<TerrainType> { TerrainType.Grass, TerrainType.Sand, TerrainType.Forest },
+            IsRoad = o.OptBool("road", false),
+        };
     }
 
     public sealed class TechnologyDefinition
@@ -422,6 +475,9 @@ namespace Founders.Core
         public double RatePerWorkerPerSecond;
         /// <summary>Jobs like construction have no building slots.</summary>
         public bool UnlimitedSlots;
+        /// <summary>A second good made alongside the output (hunters bring hides).</summary>
+        public ResourceType? Byproduct;
+        public double ByproductRatio;
 
         internal static JobConfig FromJson(JObj o) => new JobConfig
         {
@@ -431,6 +487,8 @@ namespace Founders.Core
             Output = o.Has("output") ? ResourceTypes.Parse(o.Str("output")) : (ResourceType?)null,
             RatePerWorkerPerSecond = o.Num("ratePerWorkerPerSecond"),
             UnlimitedSlots = o.Bool("unlimitedSlots"),
+            Byproduct = o.Has("byproduct") ? ResourceTypes.Parse(o.Str("byproduct")) : (ResourceType?)null,
+            ByproductRatio = o.OptNum("byproductRatio") ?? 0,
         };
     }
 
@@ -438,7 +496,7 @@ namespace Founders.Core
     public sealed class SeasonDefinition
     {
         public string Id, Name, Description;
-        public double Foraging = 1, Farming = 1, Growth = 1;
+        public double Foraging = 1, Farming = 1, Growth = 1, Fishing = 1, Hunting = 1;
         /// <summary>Wood burnt per person per second to keep warm.</summary>
         public double FuelPerPersonPerSecond;
 
@@ -450,6 +508,8 @@ namespace Founders.Core
             Foraging = o.OptNum("foraging") ?? 1,
             Farming = o.OptNum("farming") ?? 1,
             Growth = o.OptNum("growth") ?? 1,
+            Fishing = o.OptNum("fishing") ?? 1,
+            Hunting = o.OptNum("hunting") ?? 1,
             FuelPerPersonPerSecond = o.OptNum("fuelPerPersonPerSecond") ?? 0,
         };
     }
@@ -499,6 +559,12 @@ namespace Founders.Core
         public List<SeasonDefinition> Seasons = new List<SeasonDefinition>();
         /// <summary>Whether approval changes work speed and growth (off in some rule tests).</summary>
         public bool ApprovalAffectsWork = true;
+        /// <summary>Extra output per skill level (0–5) of each worker.</summary>
+        public double SkillBonusPerLevel = 0.1;
+        /// <summary>Seconds of work in a job to reach skill level 1 (level n needs n² times this).</summary>
+        public double SkillSecondsPerLevel = 120;
+        /// <summary>Extra output for workplaces next to a road.</summary>
+        public double RoadWorkBonus = 0.1;
 
         internal static BalanceConfig FromJson(JObj o) => new BalanceConfig
         {
@@ -523,6 +589,9 @@ namespace Founders.Core
             Jobs = o.Objs("jobs").Select(JobConfig.FromJson).ToList(),
             SeasonSeconds = o.OptNum("seasonSeconds") ?? 0,
             ApprovalAffectsWork = !o.Has("approvalAffectsWork") || o.Bool("approvalAffectsWork"),
+            SkillBonusPerLevel = o.OptNum("skillBonusPerLevel") ?? 0.1,
+            SkillSecondsPerLevel = o.OptNum("skillSecondsPerLevel") ?? 120,
+            RoadWorkBonus = o.OptNum("roadWorkBonus") ?? 0.1,
             Seasons = o.Has("seasons") ? o.Objs("seasons").Select(SeasonDefinition.FromJson).ToList() : new List<SeasonDefinition>(),
         };
     }
@@ -549,7 +618,9 @@ namespace Founders.Core
         public List<ObjectiveDefinition> Objectives = new List<ObjectiveDefinition>();
         public List<MilestoneDefinition> Milestones = new List<MilestoneDefinition>();
         public List<RegionDefinition> Regions = new List<RegionDefinition>();
+        public List<DecorationDefinition> Decorations = new List<DecorationDefinition>();
         public MapDefinition Map;
+        public DecorationDefinition Decoration(string id) => Decorations.FirstOrDefault(d => d.Id == id);
 
         public BuildingDefinition Building(string id) => Buildings.FirstOrDefault(b => b.Id == id);
         public TechnologyDefinition Technology(string id) => Technologies.FirstOrDefault(t => t.Id == id);
@@ -586,6 +657,7 @@ namespace Founders.Core
                 Objectives = o.Objs("objectives").Select(ObjectiveDefinition.FromJson).ToList(),
                 Milestones = o.Objs("milestones").Select(MilestoneDefinition.FromJson).ToList(),
                 Regions = o.Objs("regions").Select(RegionDefinition.FromJson).ToList(),
+                Decorations = o.Has("decorations") ? o.Objs("decorations").Select(DecorationDefinition.FromJson).ToList() : new List<DecorationDefinition>(),
                 Map = MapDefinition.FromJson(o.Obj("map")),
             };
         }

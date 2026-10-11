@@ -82,9 +82,9 @@ namespace Founders.Core
         {
             foreach (var b in State.Buildings)
             {
-                var def = Content.Building(b.DefinitionId);
-                if (def == null) continue;
-                if (x >= b.X && x < b.X + def.Footprint.Width && y >= b.Y && y < b.Y + def.Footprint.Height) return b.Id;
+                if (Content.Building(b.DefinitionId) == null) continue;
+                var fp = FootprintOf(b);
+                if (x >= b.X && x < b.X + fp.Width && y >= b.Y && y < b.Y + fp.Height) return b.Id;
             }
             return null;
         }
@@ -97,7 +97,7 @@ namespace Founders.Core
         public bool IsUnlocked(BuildingDefinition def) => def.RequiresTech == null || State.Researched.Contains(def.RequiresTech);
 
         /// <summary>All reasons the building cannot be placed at (x, y). Empty = valid. Changes no state.</summary>
-        public List<PlacementIssue> PlacementIssues(string buildingId, int x, int y)
+        public List<PlacementIssue> PlacementIssues(string buildingId, int x, int y, int rotation = 0)
         {
             var def = Content.Building(buildingId);
             if (def == null) return new List<PlacementIssue> { PlacementIssue.NotBuildable };
@@ -106,7 +106,7 @@ namespace Founders.Core
             if (!IsUnlocked(def)) issues.Add(PlacementIssue.LockedByTech(Content.Technology(def.RequiresTech ?? "")?.Name ?? "?"));
             if (def.MaxCount.HasValue && Count(def.Id, true) >= def.MaxCount.Value) issues.Add(PlacementIssue.LimitReached(def.MaxCount.Value));
 
-            var cells = Cells(x, y, def.Footprint);
+            var cells = Cells(x, y, Rotated(def.Footprint, rotation));
             var map = Content.Map;
             if (cells.Any(c => c.x < 0 || c.y < 0 || c.x >= map.Width || c.y >= map.Height))
             {
@@ -124,7 +124,7 @@ namespace Founders.Core
                         break;
                     }
                 }
-                if (cells.Any(c => BuildingIdAt(c.x, c.y) != null)) issues.Add(PlacementIssue.Overlaps);
+                if (cells.Any(c => BuildingIdAt(c.x, c.y) != null || DecorationAt(c.x, c.y) != null)) issues.Add(PlacementIssue.Overlaps);
                 if (def.RequiresAdjacentTerrain.HasValue && !HasAdjacent(def.RequiresAdjacentTerrain.Value, cells))
                     issues.Add(PlacementIssue.NeedsAdjacent(def.RequiresAdjacentTerrain.Value));
             }
@@ -153,12 +153,13 @@ namespace Founders.Core
 
         /// <summary>Places a building and starts construction. Resources are spent only here,
         /// only after every check passed, and exactly once per placed building.</summary>
-        public GameResult<int> PlaceBuilding(string buildingId, int x, int y)
+        public GameResult<int> PlaceBuilding(string buildingId, int x, int y, int rotation = 0)
         {
             Update();
             var def = Content.Building(buildingId);
             if (def == null) return GameError.UnknownContent(buildingId);
-            var issues = PlacementIssues(buildingId, x, y);
+            rotation = ((rotation % 4) + 4) % 4;
+            var issues = PlacementIssues(buildingId, x, y, rotation);
             if (issues.Count > 0) return GameError.Placement(issues[0]);
             State.Resources = State.Resources - def.Cost;
             int id = State.NextBuildingId;
@@ -167,7 +168,7 @@ namespace Founders.Core
             {
                 Id = id, DefinitionId = def.Id, X = x, Y = y, Status = BuildingStatus.Constructing,
                 RemainingWork = def.BuildSeconds, TotalWork = def.BuildSeconds,
-                History = new List<string> { def.Id }, FoundedAtSimTime = State.SimTime,
+                History = new List<string> { def.Id }, FoundedAtSimTime = State.SimTime, Rotation = rotation,
             });
             Notice(NoticeKind.Info, $"Construction started: {def.Name}.");
             return GameResult<int>.Success(id);
@@ -216,12 +217,23 @@ namespace Founders.Core
                 b.DefinitionId = b.UpgradeTargetId;
                 b.History.Add(b.UpgradeTargetId);
             }
+            bool levelUp = wasUpgrade && b.PendingLevel > 0;
+            if (levelUp)
+            {
+                b.Level = b.PendingLevel;
+                b.PendingLevel = 0;
+            }
             b.Status = BuildingStatus.Complete;
             b.RemainingWork = 0;
             b.UpgradeTargetId = null;
 
             var def = Content.Building(b.DefinitionId);
             string name = def?.Name ?? b.DefinitionId;
+            if (levelUp)
+            {
+                Notice(NoticeKind.Success, $"{name} reached level {b.Level}.");
+                return;
+            }
             Notice(NoticeKind.Success, wasUpgrade ? $"Upgrade complete: {name}." : $"Construction complete: {name}.");
             if (Count(b.DefinitionId) == 1) AddLegacy("building", $"First {name}", def?.Description ?? "", b.DefinitionId);
         }
