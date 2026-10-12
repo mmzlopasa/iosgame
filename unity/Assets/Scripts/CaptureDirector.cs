@@ -177,7 +177,7 @@ namespace Founders
             // 0. The loading screen.
             ui.Loading.Show();
             ui.Loading.Set(0.64f, "Kindling the hearth…");
-            for (int i = 0; i < 60 && !ui.Loading.VideoPlaying; i++) yield return new WaitForSeconds(0.1f);
+            for (int i = 0; i < 150 && !ui.Loading.VideoPlaying; i++) yield return new WaitForSeconds(0.1f);
             yield return new WaitForSeconds(1.2f);
             yield return Shot("00_loading", true);
             ui.Loading.Hide();

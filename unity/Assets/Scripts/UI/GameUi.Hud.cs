@@ -143,11 +143,6 @@ namespace Founders.UI
             idle.style.marginLeft = 4;
             Bind(() => idle.style.display = G.IdleWorkers > 0 || G.State.FoodShortage ? DisplayStyle.Flex : DisplayStyle.None);
             bar.Add(idle);
-            bar.Add(Divider());
-            var name = Bold(G.State.SettlementName, 13, Theme.GoldPale).Grow();
-            name.style.overflow = Overflow.Hidden;
-            name.style.textOverflow = TextOverflow.Ellipsis;
-            bar.Add(name);
             Tap(bar, () => store.ActivePanel = Panel.People);
             right.Add(bar);
 

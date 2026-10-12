@@ -17,8 +17,8 @@ OUT = os.path.join(ROOT, "unity", "Assets", "StreamingAssets", "loading.mp4")
 
 # The montage: the valley, the people at work, the seasons, the town at night.
 SHOTS = [
-    "06c_era2_village", "07e_mine", "06g_town_layout", "06k_builders", "06d_autumn",
-    "07d_stone_hills", "07c_mountains", "06f_night", "09b_valley",
+    "09b_valley", "06m_medieval_town", "07b_lake", "06g_town_layout", "06k_builders",
+    "07d_stone_hills", "06p_watermill", "07c_mountains", "06f_night",
 ]
 W, H = 720, 1558          # the capture aspect (1125×2436), even sizes for H.264
 FPS = 24
