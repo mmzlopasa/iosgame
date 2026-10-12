@@ -258,17 +258,17 @@ namespace Founders.UI
         void BuildHud()
         {
             var top = E.Div("top").Ignore().Col();
-            AddRegion(top, () => $"{G.State.SettlementName}|{G.State.StageId}|{G.State.EpochId}", BuildTopBar);
+            AddRegion(top, TopKey, BuildTop);
             safe.Add(top);
 
-            var rails = E.Div("rails").Ignore().Row(0, Align.FlexStart).Margin(10, 14, 0, 14);
-            var left = E.Div("left-rail").Ignore().Col().Size(222);
-            var right = E.Div("right-rail").Ignore().Col().Size(118);
+            var rails = E.Div("rails").Ignore().Row(0, Align.FlexStart).Margin(10, 12, 0, 12);
+            var left = E.Div("left-rail").Ignore().Col(Align.FlexStart).Size(200);
+            var right = E.Div("right-rail").Ignore().Col(Align.FlexEnd).Size(130);
             rails.Add(left);
             rails.Add(E.Div().Grow().Ignore());
             rails.Add(right);
-            AddRegion(left, LeftRailKey, BuildLeftRail);
-            AddRegion(right, RightRailKey, BuildRightRail);
+            AddRegion(left, SidesKey, BuildLeftSide);
+            AddRegion(right, SidesKey, BuildRightSide);
             safe.Add(rails);
 
             var toasts = E.Div("toasts").Ignore().Col(Align.Center).Margin(12, 16, 0, 16);
@@ -281,9 +281,9 @@ namespace Founders.UI
             AddRegion(context, ContextKey, BuildContext);
             safe.Add(context);
 
-            var dock = E.Div("dock").Ignore().Margin(0, 12, 0, 12);
-            AddRegion(dock, DockKey, BuildDock);
-            safe.Add(dock);
+            var bottom = E.Div("bottom").Ignore();
+            AddRegion(bottom, BottomKey, BuildBottom);
+            safe.Add(bottom);
         }
 
         void BuildTopBar(VisualElement host)

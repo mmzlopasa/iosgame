@@ -89,8 +89,18 @@ for a in list(bpy.data.actions):
         taken.add(clip)
         a.name = clip
         a.use_fake_user = True
+        # FBX-imported actions have no owner type; the FBX exporter skips those silently.
+        a.id_root = "OBJECT"
     else:
         bpy.data.actions.remove(a)
+# The FBX exporter drops a whole action if any curve points at a bone this skeleton lacks
+# (UAL1 has a few extra bones): remove those curves.
+for a in bpy.data.actions:
+    for fc in list(a.fcurves):
+        try:
+            rig.path_resolve(fc.data_path)
+        except ValueError:
+            a.fcurves.remove(fc)
 missing = set(KEEP.values()) - taken
 if missing:
     print("PEOPLE_WARN missing clips", sorted(missing))
