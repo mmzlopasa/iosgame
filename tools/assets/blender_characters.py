@@ -50,6 +50,17 @@ tgt = next(o for o in char_objs if o.type == "ARMATURE")
 meshes = [o for o in char_objs if o.type == "MESH"]
 for a in char_actions:
     bpy.data.actions.remove(a)
+# Modern headwear (top hats, hard hats) does not belong in the valley: remove those faces.
+import bmesh
+for o in meshes:
+    hats = {i for i, m in enumerate(o.data.materials) if m and m.name.split(".")[0] in ("Hat", "Helmet")}
+    if hats:
+        bm = bmesh.new()
+        bm.from_mesh(o.data)
+        bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.material_index in hats], context="FACES")
+        bm.to_mesh(o.data)
+        bm.free()
+
 # The FBX importer reads the pack's materials as fully transparent: make them opaque.
 for o in meshes:
     for m in o.data.materials:

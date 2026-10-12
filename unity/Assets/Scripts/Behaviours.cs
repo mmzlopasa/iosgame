@@ -522,7 +522,7 @@ namespace Founders
                         mats[i] = Palette.Get("Tunic");
                         if (n.StartsWith("Skin")) tints[i] = skin;
                         else if (n.StartsWith("Hair")) { mats[i] = Palette.Get("Hair"); tints[i] = hair; }
-                        else if (n.StartsWith("Main") && recolourClothes) tints[i] = cloth;
+                        else if ((n.StartsWith("Main") || n.StartsWith("Shirt")) && recolourClothes) tints[i] = cloth;
                         else tints[i] = Original(source[i]);
                     }
                     r.sharedMaterials = mats;
