@@ -231,6 +231,20 @@ def smithy(col):
     place("Prop_Crate", (1.7, -2.3, 0.0), 0.3, col, scale=0.7)
 
 
+def barn(col):
+    # A wide timber barn at the back of a fenced paddock.
+    block(col, 2, 3, [("Plaster", "grid")], origin=(-1.0, 1.0), roof="Roof_RoundTiles_4x6", gable="Roof_Front_Brick4",
+          open_front=True, door=False)
+    place("Wall_Arch", (-1.0, -2.0, 0), 0.0, col)
+    for x in (-2.8, -1.4, 0.0, 1.4, 2.8):
+        place("Prop_WoodenFence_Single", (x, -2.9, 0), 0.0, col)
+    for y in (-2.2, -0.8):
+        place("Prop_WoodenFence_Single", (-3.0, y, 0), math.pi / 2, col)
+        place("Prop_WoodenFence_Single", (3.0, y, 0), math.pi / 2, col)
+    place("Prop_Crate", (2.2, 0.4, 0), 0.4, col, scale=0.7)
+    place("Prop_Wagon", (-2.1, 0.3, 0), 0.2, col, scale=0.6)
+
+
 BUILDINGS = {
     "medieval_cottage": cottage,
     "medieval_house": house,
@@ -239,6 +253,7 @@ BUILDINGS = {
     "medieval_market": market,
     "medieval_mill": mill,
     "medieval_smithy": smithy,
+    "medieval_barn": barn,
 }
 
 
@@ -275,7 +290,7 @@ def preview(cols):
     scene.collection.objects.link(cam)
     scene.camera = cam
     cam.data.type = "ORTHO"
-    cam.data.ortho_scale = 14.0 * len(cols) * 0.75
+    cam.data.ortho_scale = max(20.0, 14.0 * len(cols) * 0.75)
     target = Vector(((len(cols) - 1) * 7.0, 0, 4.0))
     cam.location = target + Vector((20, -26, 22))
     cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()

@@ -737,6 +737,52 @@
    "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
    "triangles": 226
   },
+  "medieval_barn": {
+   "materialOrder": [
+    "MI_WoodTrim",
+    "MI_Plaster",
+    "MI_RoundTiles",
+    "MI_WoodTrim_Wear"
+   ],
+   "materials": {
+    "MI_Plaster": {
+     "albedo": "Art/Textures/medieval__MI_Plaster_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_Plaster_mask.png",
+     "normal": "Art/Textures/medieval__MI_Plaster_normal.jpg"
+    },
+    "MI_RoundTiles": {
+     "albedo": "Art/Textures/medieval__MI_RoundTiles_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_RoundTiles_mask.png",
+     "normal": "Art/Textures/medieval__MI_RoundTiles_normal.jpg"
+    },
+    "MI_WoodTrim": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_normal.jpg"
+    },
+    "MI_WoodTrim_Wear": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_Wear_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_Wear_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_Wear_normal.jpg"
+    }
+   },
+   "resource": "Models/medieval_barn",
+   "size": [
+    7.664,
+    6.746,
+    8.026
+   ],
+   "source": "https://opengameart.org/content/medieval-village-megakit (Quaternius, CC0)",
+   "triangles": 7706
+  },
   "medieval_church": {
    "materialOrder": [
     "MI_WoodTrim",

@@ -150,6 +150,16 @@
     "unlimitedSlots": false
    },
    {
+    "job": "herding",
+    "name": "Herding",
+    "description": "Tend goats, sheep and cattle: milk, meat and hides all year round.",
+    "output": "food",
+    "byproduct": "hides",
+    "byproductRatio": 0.2,
+    "ratePerWorkerPerSecond": 0.12,
+    "unlimitedSlots": false
+   },
+   {
     "job": "woodcutting",
     "name": "Wood Gathering",
     "description": "Collect deadwood and fell small trees.",
@@ -843,7 +853,7 @@
   {
    "id": "animal_pen",
    "name": "Animal Pen",
-   "description": "Goats and sheep behind a woven fence. +2 Foraging jobs and a new kind of food.",
+   "description": "Goats and sheep behind a woven fence. +2 Herding jobs (food and hides).",
    "epoch": "epoch_first_civilizations",
    "footprint": {
     "width": 1,
@@ -859,11 +869,24 @@
    ],
    "buildable": true,
    "requiresTech": "animal_husbandry",
-   "foodSource": "meat",
+   "foodSource": "livestock",
    "jobSlots": [
     {
-     "job": "foraging",
+     "job": "herding",
      "count": 2
+    }
+   ],
+   "animals": [
+    "sheep",
+    "sheep",
+    "sheep"
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 25
+     },
+     "buildSeconds": 25
     }
    ]
   },
@@ -1319,6 +1342,102 @@
      "count": 3
     }
    ]
+  },
+  {
+   "id": "pasture",
+   "name": "Pasture",
+   "description": "A fenced meadow for cattle and sheep. Must be on open grass. +3 Herding jobs.",
+   "epoch": "epoch_first_civilizations",
+   "footprint": {
+    "width": 2,
+    "height": 2
+   },
+   "cost": {
+    "wood": 50,
+    "stone": 10
+   },
+   "buildSeconds": 45,
+   "sprite": "pasture",
+   "allowedTerrain": [
+    "grass"
+   ],
+   "buildable": true,
+   "requiresTech": "animal_husbandry",
+   "foodSource": "livestock",
+   "jobSlots": [
+    {
+     "job": "herding",
+     "count": 3
+    }
+   ],
+   "animals": [
+    "cow",
+    "cow",
+    "sheep",
+    "sheep"
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 10
+     },
+     "buildSeconds": 40
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 20
+     },
+     "buildSeconds": 50
+    }
+   ]
+  },
+  {
+   "id": "medieval_barn",
+   "name": "Barn and Paddock",
+   "description": "A timber barn with horses and cattle. +4 Herding jobs and +100 storage.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 3,
+    "height": 3
+   },
+   "cost": {
+    "wood": 140,
+    "stone": 80
+   },
+   "buildSeconds": 100,
+   "sprite": "medieval_barn",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "animal_breeding",
+   "foodSource": "livestock",
+   "storage": 100,
+   "jobSlots": [
+    {
+     "job": "herding",
+     "count": 4
+    }
+   ],
+   "animals": [
+    "horse",
+    "horse",
+    "cow",
+    "pig",
+    "pig"
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 40
+     },
+     "buildSeconds": 60
+    }
+   ]
   }
  ],
  "technologies": [
@@ -1516,7 +1635,7 @@
   {
    "id": "animal_husbandry",
    "name": "Animal Husbandry",
-   "description": "Penning goats and sheep. Unlocks the Animal Pen (a new kind of food).",
+   "description": "Penning goats, sheep and cattle. Unlocks the Animal Pen and the Pasture: herders bring food and hides all year.",
    "cost": {
     "knowledge": 70
    },
@@ -1744,6 +1863,26 @@
     {
      "kind": "jobRateMultiplier",
      "job": "research",
+     "value": 1.2
+    }
+   ]
+  },
+  {
+   "id": "animal_breeding",
+   "epoch": "epoch_medieval_kingdoms",
+   "name": "Animal Breeding",
+   "description": "Strong horses and heavy cattle. Unlocks the Barn and Paddock. +20% herding.",
+   "cost": {
+    "knowledge": 260
+   },
+   "researchSeconds": 200,
+   "prerequisites": [
+    "masonry"
+   ],
+   "effects": [
+    {
+     "kind": "jobRateMultiplier",
+     "job": "herding",
      "value": 1.2
     }
    ]

@@ -94,7 +94,7 @@ namespace Founders.Core
 
         internal static bool IsGathering(JobType job) =>
             job == JobType.Foraging || job == JobType.Woodcutting || job == JobType.Stonecutting || job == JobType.Farming
-            || job == JobType.Fishing || job == JobType.Hunting || job == JobType.Mining;
+            || job == JobType.Fishing || job == JobType.Hunting || job == JobType.Mining || job == JobType.Herding;
 
         public CraftingStatus GetCraftingStatus()
         {

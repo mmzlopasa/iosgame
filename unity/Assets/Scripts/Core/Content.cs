@@ -6,14 +6,14 @@ namespace Founders.Core
 {
     // MARK: - Basic enums
 
-    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming, Fishing, Hunting, Mining }
+    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming, Fishing, Hunting, Mining, Herding }
 
     public enum TerrainType { Grass, Forest, Rock, Water, Sand, Mountain, Ore }
 
     public static class Enums
     {
         public static readonly JobType[] Jobs =
-            { JobType.Foraging, JobType.Farming, JobType.Fishing, JobType.Hunting, JobType.Woodcutting, JobType.Stonecutting, JobType.Mining,
+            { JobType.Foraging, JobType.Farming, JobType.Herding, JobType.Fishing, JobType.Hunting, JobType.Woodcutting, JobType.Stonecutting, JobType.Mining,
               JobType.Crafting, JobType.Construction, JobType.Research };
 
         public static string Id(this JobType j)
@@ -29,6 +29,7 @@ namespace Founders.Core
                 case JobType.Fishing: return "fishing";
                 case JobType.Hunting: return "hunting";
                 case JobType.Mining: return "mining";
+                case JobType.Herding: return "herding";
                 default: return "research";
             }
         }
@@ -222,6 +223,8 @@ namespace Founders.Core
         public int? Community;
         /// <summary>Food source kind counted for food variety (e.g. "fish", "grain", "meat").</summary>
         public string FoodSource;
+        /// <summary>Animals kept here (herding buildings): cow, sheep, pig, horse, llama.</summary>
+        public List<string> Animals = new List<string>();
         /// <summary>Upgrades to level 2, 3… (index 0 = cost of level 2). Each level adds 50 % capacity.</summary>
         public List<LevelDefinition> Levels = new List<LevelDefinition>();
         public int MaxLevel => 1 + Levels.Count;
@@ -259,6 +262,7 @@ namespace Founders.Core
                 Comfort = o.OptInt("comfort"),
                 Community = o.OptInt("community"),
                 FoodSource = o.OptStr("foodSource"),
+                Animals = o.Has("animals") ? o.Strs("animals") : new List<string>(),
                 Levels = o.Has("levels") ? o.Objs("levels").Select(LevelDefinition.FromJson).ToList() : new List<LevelDefinition>(),
             };
         }

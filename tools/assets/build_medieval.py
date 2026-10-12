@@ -26,6 +26,7 @@ SOURCE = "https://opengameart.org/content/medieval-village-megakit (Quaternius, 
 BUDGET = {
     "medieval_cottage": 6000, "medieval_house": 10000, "medieval_townhouse": 15500,
     "medieval_church": 26000, "medieval_market": 6500, "medieval_mill": 11000, "medieval_smithy": 7500,
+    "medieval_barn": 9000,
 }
 
 

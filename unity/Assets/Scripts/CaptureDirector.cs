@@ -266,7 +266,7 @@ namespace Founders
                     if (option != null) game.ResolveEvent(option.Id);
                 }
             }
-            foreach (var id in new[] { "farm_field", "farm_field", "granary", "pottery_kiln", "animal_pen", "copper_smelter", "bronze_workshop" })
+            foreach (var id in new[] { "farm_field", "farm_field", "granary", "pottery_kiln", "animal_pen", "pasture", "copper_smelter", "bronze_workshop" })
             {
                 Build(id);
                 store.Refresh();
@@ -349,7 +349,7 @@ namespace Founders
             // 3d. The Middle Ages: the charter, stone houses, the market hall, the mill and the church.
             game.State.Chapter = Mathf.Max(game.State.Chapter, 5);
             JumpToYear(game, 12);
-            foreach (var tech in new[] { "written_law", "masonry", "ironworking", "watermill", "guilds", "burgher_rights", "monastic_orders" })
+            foreach (var tech in new[] { "written_law", "masonry", "ironworking", "watermill", "guilds", "burgher_rights", "monastic_orders", "animal_breeding" })
                 if (!game.State.Researched.Contains(tech)) game.State.Researched.Add(tech);
             game.State.Population = Mathf.Max(game.State.Population, 40);
             if (game.CanClaimMilestone("the_charter")) game.ClaimMilestone("the_charter");
@@ -363,7 +363,7 @@ namespace Founders
                 game.State.PendingStory = "ch6_market_town";
             }
             foreach (var id in new[] { "medieval_cottage", "medieval_house", "medieval_cottage", "medieval_townhouse", "medieval_market",
-                                       "medieval_smithy", "medieval_mill", "medieval_church" })
+                                       "medieval_smithy", "medieval_mill", "medieval_church", "medieval_barn" })
             {
                 BuildRich(id);
                 store.Refresh();
@@ -390,6 +390,22 @@ namespace Founders
             {
                 Focus(Grid.CellCenter(mill.X + 0.5f, mill.Y + 0.5f), 15f);
                 yield return Shot("06p_watermill", false);
+            }
+
+            // 3d'. Herders among their animals at the pasture and the barn.
+            store.SetWorkers(JobType.Herding, game.JobCapacity(JobType.Herding));
+            yield return new WaitForSeconds(8f);
+            var pasture = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "pasture");
+            if (pasture != null)
+            {
+                Focus(Grid.CellCenter(pasture.X + 0.5f, pasture.Y + 0.5f), 12f);
+                yield return Shot("06s_herders", false);
+            }
+            var barn = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "medieval_barn");
+            if (barn != null)
+            {
+                Focus(Grid.CellCenter(barn.X + 1f, barn.Y + 1f), 16f);
+                yield return Shot("06t_barn", false);
             }
 
             // 3e. Survival: tap a stand of trees and send the woodcutters there; hunger over the heads.

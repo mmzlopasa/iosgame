@@ -109,6 +109,7 @@ namespace Founders
             decorations.Clear();
             tallDecor.Clear();
             harvestMarkers.Clear();
+            herds.Clear();
             occupancyKey = null;
             selection.Clear();
             ghost.Clear();
@@ -311,6 +312,7 @@ namespace Founders
             }
 
             SyncDecorations(game);
+            SyncHerds(game);
             UpdateOccupancy(game);
             RepaintGround(game, initial);
             UpdateSelection();
@@ -412,6 +414,41 @@ namespace Founders
                 else list.Add(new WorldTerrain.RoadSegment(c, c, kv.Value));
             }
             return list;
+        }
+
+        // MARK: - Herds
+
+        readonly Dictionary<int, (string key, List<Animal> animals)> herds = new Dictionary<int, (string, List<Animal>)>();
+
+        /// <summary>Animals graze around every finished pen, pasture and barn (one more per level).</summary>
+        void SyncHerds(Game game)
+        {
+            var seen = new HashSet<int>();
+            foreach (var b in game.State.Buildings)
+            {
+                var def = game.Content.Building(b.DefinitionId);
+                if (def == null || def.Animals.Count == 0 || b.Status == BuildingStatus.Constructing) continue;
+                seen.Add(b.Id);
+                string key = $"{b.DefinitionId}|{b.Level}|{b.X},{b.Y}|{b.Rotation}";
+                if (herds.TryGetValue(b.Id, out var herd) && herd.key == key) continue;
+                if (herd.animals != null) foreach (var a in herd.animals) if (a != null) Destroy(a.gameObject);
+                var fp = game.FootprintOf(b);
+                var center = Grid.FootprintCenter(b.X, b.Y, fp);
+                float radius = Grid.CellSize * 0.42f * Mathf.Max(fp.Width, fp.Height);
+                var list = new List<Animal>();
+                int count = def.Animals.Count + (b.Level - 1);
+                for (int i = 0; i < count; i++)
+                {
+                    var a = Animal.Spawn(def.Animals[i % def.Animals.Count], peopleRoot, center, radius, b.Id * 31 + i, Ground);
+                    if (a != null) list.Add(a);
+                }
+                herds[b.Id] = (key, list);
+            }
+            foreach (var id in herds.Keys.Where(id => !seen.Contains(id)).ToList())
+            {
+                foreach (var a in herds[id].animals) if (a != null) Destroy(a.gameObject);
+                herds.Remove(id);
+            }
         }
 
         // MARK: - Decorations
@@ -764,6 +801,12 @@ namespace Founders
                     task.WalkClip = Random.value < 0.4f ? "Jog" : "Walk";
                     return task;
                 }
+                case JobType.Herding:
+                    // Herders walk among the animals with their staff, watch them and lend a hand.
+                    task.Spot = Around(center, Random.Range(0.3f, reach + 0.4f));
+                    task.Action = Random.value < 0.5f ? "Watch" : Random.value < 0.5f ? "Gather" : "Idle";
+                    task.Tool = "Prop_Spear";
+                    return task;
                 case JobType.Crafting:
                     task.Spot = Around(center, reach + Random.Range(0.4f, 0.9f));
                     task.Action = "Work";

@@ -197,7 +197,7 @@ namespace Founders.Core
             var p = new Person { Id = id, Female = female, Name = names[(id * 7 + 3) % names.Length] };
             if (id >= names.Length * 2) p.Name += " " + (char)('A' + id / (names.Length * 2) % 26) + ".";
             // Everyone arrives with a little experience in one craft: the valley's first specialists.
-            var crafts = new[] { JobType.Woodcutting, JobType.Foraging, JobType.Stonecutting, JobType.Hunting, JobType.Fishing, JobType.Crafting };
+            var crafts = new[] { JobType.Woodcutting, JobType.Foraging, JobType.Stonecutting, JobType.Hunting, JobType.Fishing, JobType.Crafting, JobType.Herding };
             p.Experience[crafts[(id * 5 + 1) % crafts.Length].Id()] = Content.Balance.SkillSecondsPerLevel * (1 + id % 3);
             return p;
         }

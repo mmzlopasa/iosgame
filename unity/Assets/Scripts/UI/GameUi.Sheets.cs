@@ -417,6 +417,7 @@ namespace Founders.UI
                 case JobType.Farming: return "Farmer";
                 case JobType.Fishing: return "Fisher";
                 case JobType.Hunting: return "Hunter";
+                case JobType.Herding: return "Herder";
                 case JobType.Woodcutting: return "Woodcutter";
                 case JobType.Stonecutting: return "Quarrier";
                 case JobType.Mining: return "Miner";

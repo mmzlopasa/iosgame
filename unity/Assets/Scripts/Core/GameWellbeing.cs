@@ -85,6 +85,7 @@ namespace Founders.Core
             if (State.Assignments[JobType.Farming] > 0) sources.Add("grain");
             if (State.Assignments[JobType.Fishing] > 0) sources.Add("fish");
             if (State.Assignments[JobType.Hunting] > 0) sources.Add("game");
+            if (State.Assignments[JobType.Herding] > 0) sources.Add("livestock");
             foreach (var (_, def) in OperationalBuildings())
                 if (!string.IsNullOrEmpty(def.FoodSource)) sources.Add(def.FoodSource);
             if (sources.Count > 1) list.Add(new ApprovalFactor($"Food variety ({sources.Count} kinds)", Math.Min(12, (sources.Count - 1) * 4)));

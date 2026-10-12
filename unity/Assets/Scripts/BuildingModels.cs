@@ -40,6 +40,7 @@ namespace Founders
                 case "bronze_workshop": BronzeWorkshop(b); break;
                 case "hunters_lodge": HuntersLodge(b); break;
                 case "mine": Mine(b); break;
+                case "pasture": Pasture(b); break;
                 case "medieval_cottage":
                 case "medieval_house":
                 case "medieval_townhouse":
@@ -47,6 +48,7 @@ namespace Founders
                 case "medieval_mill":
                 case "medieval_smithy":
                 case "medieval_church":
+                case "medieval_barn":
                     Medieval(b, sprite);
                     break;
                 default: b.Model("boulder_01", Vector3.zero, 0.5f); break;
@@ -456,21 +458,7 @@ namespace Founders
             b.Prim(PrimitiveType.Cylinder, new Vector3(0, 0.01f, 0), new Vector3(1.7f, 0.01f, 1.7f), "Mud");
             b.Shape(Meshes.Dome(), new Vector3(-0.35f, 0f, 0.3f), new Vector3(0.6f, 0.45f, 0.6f), "Thatch");
             b.Pole(new Vector3(0.1f, 0.1f, -0.45f), new Vector3(0.6f, 0.1f, -0.2f), 0.16f);
-            // Goats: small bodies with heads (simple shapes read well from the strategy camera).
-            for (int i = 0; i < 3; i++)
-            {
-                var g = Parts.Group("Goat", b.T, new Vector3(0.35f - i * 0.3f, 0f, -0.1f + (i % 2) * 0.35f), i * 70f).transform;
-                var body = b.PrimColor(PrimitiveType.Capsule, new Vector3(0, 0.32f, 0), new Vector3(0.18f, 0.2f, 0.18f), i == 1 ? "Tunic2" : "Tunic", new Vector3(90, 0, 0));
-                body.transform.SetParent(g, false);
-                var head = b.PrimColor(PrimitiveType.Sphere, new Vector3(0, 0.42f, 0.2f), new Vector3(0.12f, 0.12f, 0.14f), i == 1 ? "Tunic2" : "Tunic");
-                head.transform.SetParent(g, false);
-                foreach (var lx in new[] { -0.06f, 0.06f })
-                    foreach (var lz in new[] { -0.1f, 0.1f })
-                    {
-                        var leg = b.PrimColor(PrimitiveType.Cylinder, new Vector3(lx, 0.12f, lz), new Vector3(0.035f, 0.12f, 0.035f), "Hair");
-                        leg.transform.SetParent(g, false);
-                    }
-            }
+            // The animals themselves graze here (see WorldView herds).
         }
 
         static void Granary(Builder b)
@@ -568,6 +556,35 @@ namespace Founders
             b.Model("wicker_basket_01", new Vector3(0.85f, 0f, 0.2f), 1.1f, 40f);
             b.Model("stone_fire_pit", new Vector3(-0.55f, 0f, -0.75f), 0.3f);
             b.Fire(new Vector3(-0.55f, 0.04f, -0.75f), 0.3f);
+        }
+
+        static void Pasture(Builder b)
+        {
+            // A rail fence around a 4 m meadow, with a gate, a trough and hay.
+            const float h = 1.85f;
+            var corners = new[] { new Vector3(-h, 0, -h), new Vector3(h, 0, -h), new Vector3(h, 0, h), new Vector3(-h, 0, h) };
+            for (int i = 0; i < 4; i++)
+            {
+                var a = corners[i];
+                var c = corners[(i + 1) % 4];
+                int posts = 4;
+                for (int k = 0; k < posts; k++)
+                {
+                    var p = Vector3.Lerp(a, c, k / (float)posts);
+                    b.Pole(p, p + new Vector3(0, 0.8f, 0), 0.07f);
+                }
+                if (i == 0) // gate gap in the front fence
+                {
+                    b.Pole(a + new Vector3(0, 0.55f, 0), Vector3.Lerp(a, c, 0.4f) + new Vector3(0, 0.55f, 0), 0.045f);
+                    b.Pole(Vector3.Lerp(a, c, 0.6f) + new Vector3(0, 0.55f, 0), c + new Vector3(0, 0.55f, 0), 0.045f);
+                    continue;
+                }
+                b.Pole(a + new Vector3(0, 0.55f, 0), c + new Vector3(0, 0.55f, 0), 0.045f);
+                b.Pole(a + new Vector3(0, 0.3f, 0), c + new Vector3(0, 0.3f, 0), 0.045f);
+            }
+            b.Prim(PrimitiveType.Cube, new Vector3(1.2f, 0.18f, 1.2f), new Vector3(1.0f, 0.3f, 0.4f), "RoughWood", new Vector3(0, 30, 0));
+            b.PrimColor(PrimitiveType.Cube, new Vector3(1.2f, 0.33f, 1.2f), new Vector3(0.9f, 0.02f, 0.3f), "Water", new Vector3(0, 30, 0));
+            b.Prim(PrimitiveType.Cylinder, new Vector3(-1.2f, 0.3f, 1.1f), new Vector3(0.7f, 0.3f, 0.7f), "Thatch");
         }
 
         static void Mine(Builder b)
