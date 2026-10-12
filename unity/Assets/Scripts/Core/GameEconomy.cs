@@ -41,6 +41,7 @@ namespace Founders.Core
             }
             foreach (var m in State.Modifiers) effects.Add(m.Effect);
             effects.AddRange(PerkEffects());
+            effects.AddRange(LawEffects());
             return effects;
         }
 
@@ -95,7 +96,7 @@ namespace Founders.Core
             var cfg = Content.JobConfig(job);
             if (cfg == null || cfg.Output == null) return 0;
             double rate = cfg.RatePerWorkerPerSecond * Multiplier(EffectKind.JobRateMultiplier, job) * SeasonJobMultiplier(job) * productivity
-                          * RoadMultiplier(job);
+                          * RoadMultiplier(job) * WorkRate;
             if (State.FoodShortage) rate *= Content.Balance.ShortageProductivityMultiplier;
             if (IsGathering(job)) rate *= 1 + GetCraftingStatus().Bonus;
             return rate;
@@ -108,7 +109,7 @@ namespace Founders.Core
         public CraftingStatus GetCraftingStatus()
         {
             var b = Content.Balance;
-            int crafters = State.Assignments[JobType.Crafting];
+            int crafters = ActiveWorkers(JobType.Crafting);
             if (crafters <= 0) return new CraftingStatus();
             var input = b.CraftingInputPerCrafterPerSecond * crafters;
             // Crafting only works while there is enough material for at least one step.
@@ -120,6 +121,9 @@ namespace Founders.Core
                 Input = active ? input : ResourceBundle.Zero,
             };
         }
+
+        /// <summary>Work speed of everyone from the customs and from discontent.</summary>
+        public double WorkRate => Multiplier(EffectKind.WorkRateMultiplier) * DiscontentWork;
 
         /// <summary>Current per-second economy.</summary>
         public EconomySnapshot Economy() => EconomyCore(ApprovalProductivity(CurrentApproval));

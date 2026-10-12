@@ -60,7 +60,8 @@ namespace Founders.Core
         }
 
         /// <summary>Wood burnt per second to keep everyone warm this season.</summary>
-        public double FuelPerSecond => State.Population * (Season?.FuelPerPersonPerSecond ?? 0);
+        public double FuelPerSecond =>
+            State.Population * (Season?.FuelPerPersonPerSecond ?? 0) * Multiplier(EffectKind.FuelMultiplier) + FiresFuelPerSecond();
 
         /// <summary>The season needs firewood and the woodpile is empty.</summary>
         public bool Freezing => FuelPerSecond > 0 && State.Resources.Wood <= 1e-6;
@@ -94,6 +95,23 @@ namespace Founders.Core
             if (FuelPerSecond > 0)
                 list.Add(Freezing ? new ApprovalFactor("Freezing: no firewood", -25) : new ApprovalFactor("Warm fires", 4));
 
+            // Warmth of the homes (Frostpunk's heat)
+            if (HasWarmth)
+            {
+                var warmth = Warmth();
+                double pop = Math.Max(1, State.Population);
+                int cold = warmth.People[(int)Exposure.Cold], freezing = warmth.Freezing;
+                if (cold + freezing > 0)
+                    list.Add(new ApprovalFactor($"Cold homes ({cold + freezing})", -(int)Math.Round(12 * cold / pop + 22 * freezing / pop)));
+                else if (warmth.Temperature < Content.Balance.Warmth.Comfortable && warmth.People[(int)Exposure.Comfortable] == State.Population)
+                    list.Add(new ApprovalFactor("Warm homes in the cold", 4));
+            }
+            if (HasHealth)
+            {
+                int sick = SickCount;
+                if (sick > 0) list.Add(new ApprovalFactor($"Illness ({sick})", -Math.Min(10, 2 * sick)));
+            }
+
             // Housing quality (people-weighted average comfort)
             int housed = 0, comfort = 0;
             foreach (var (b, def) in OperationalBuildings())
@@ -117,9 +135,20 @@ namespace Founders.Core
             int beauty = Beauty();
             if (beauty > 0) list.Add(new ApprovalFactor("Beauty of the town", Math.Min(15, beauty / 2)));
 
-            // Events
-            double bonus = ActiveEffects().Where(e => e.Kind == EffectKind.ApprovalBonus).Sum(e => e.Value ?? 0);
+            // Customs, mourning, a roaring fire, promises kept and other events
+            int laws = LawApproval();
+            if (laws != 0) list.Add(new ApprovalFactor("Customs", laws));
+            double Source(string id) => State.Modifiers.Where(m => m.SourceId == id && m.Effect.Kind == EffectKind.ApprovalBonus).Sum(m => m.Effect.Value ?? 0);
+            double grief = Source("grief"), stoke = Source("stoke"), promise = Source("promise");
+            if (Math.Abs(grief) > 0.5) list.Add(new ApprovalFactor("Mourning", (int)Math.Round(grief)));
+            if (Math.Abs(stoke) > 0.5) list.Add(new ApprovalFactor("Roaring fire", (int)Math.Round(stoke)));
+            if (Math.Abs(promise) > 0.5) list.Add(new ApprovalFactor("Promise kept", (int)Math.Round(promise)));
+            double bonus = ActiveEffects().Where(e => e.Kind == EffectKind.ApprovalBonus).Sum(e => e.Value ?? 0) - laws - grief - stoke - promise;
             if (Math.Abs(bonus) > 0.5) list.Add(new ApprovalFactor("Recent events", (int)Math.Round(bonus)));
+
+            // Discontent drags hope down
+            if (HasDiscontent && State.Discontent >= Content.Balance.Discontent.Grumbling)
+                list.Add(new ApprovalFactor(DiscontentMood, -(int)Math.Round((State.Discontent - Content.Balance.Discontent.Grumbling) / 5)));
 
             return list;
         }

@@ -8,13 +8,21 @@ using UnityEngine.UIElements;
 
 namespace Founders.UI
 {
-    /// <summary>Bottom sheets opened from the dock, the avatar and the settings button.</summary>
+    /// <summary>
+    /// Side sheets (People, Goals, World, Profile, Settings) opened from the HUD: in landscape they slide in
+    /// from the right edge, about a portrait phone wide, so the content keeps its comfortable column width
+    /// and the settlement stays visible on the left.
+    /// </summary>
     public partial class GameUi
     {
         Panel shownPanel = Panel.None;
         bool sheetShown;
         string buildTab = "All";
         float confirmResetUntil;
+        VisualElement sheetHeader;
+
+        /// <summary>Width of the side sheet's content (the safe-area inset on the right comes on top).</summary>
+        float SheetWidth => Mathf.Clamp(PanelW * 0.56f, 400, 480);
 
         void BuildSheet()
         {
@@ -22,20 +30,19 @@ namespace Founders.UI
             Tap(scrim, () => store.ActivePanel = Panel.None);
             sheetLayer.Add(scrim);
 
-            sheet = E.Div("sheet").Abs(0, 90, 0, 0).Col().Radius(28, 0).BgImage(Theme.SheetFill).Bg(Theme.Hex("#0F1117"));
+            sheet = E.Div("sheet").Abs(null, 8, 0, 0).Col().BgImage(Theme.SheetFill).Bg(Theme.Hex("#0F1117"));
+            sheet.style.borderTopLeftRadius = 26;
+            sheet.style.borderBottomLeftRadius = 26;
             sheet.style.borderTopWidth = 1;
+            sheet.style.borderLeftWidth = 1;
             sheet.style.borderTopColor = new Color(1, 1, 1, 0.2f);
+            sheet.style.borderLeftColor = new Color(1, 1, 1, 0.12f);
             sheet.style.overflow = Overflow.Hidden;
             sheet.Transition(320, "translate", "opacity");
 
-            var grabber = E.Div().Size(40, 4).Radius(2).Bg(new Color(1, 1, 1, 0.2f)).Ignore();
-            grabber.style.alignSelf = Align.Center;
-            grabber.style.marginTop = 10;
-            sheet.Add(grabber);
-
-            var header = E.Div("sheet-header").Ignore();
-            AddRegion(header, () => SheetOpen && !DrawerPanel ? store.ActivePanel + "|" + HeaderKey() : "", BuildSheetHeader);
-            sheet.Add(header);
+            sheetHeader = E.Div("sheet-header").Ignore();
+            AddRegion(sheetHeader, () => SheetOpen && !DrawerPanel ? store.ActivePanel + "|" + HeaderKey() : "", BuildSheetHeader);
+            sheet.Add(sheetHeader);
 
             sheetScroll = new ScrollView(ScrollViewMode.Vertical);
             sheetScroll.verticalScrollerVisibility = ScrollerVisibility.Hidden;
@@ -44,12 +51,24 @@ namespace Founders.UI
             sheetScroll.style.flexGrow = 1;
             sheetScroll.contentContainer.style.paddingLeft = 16;
             sheetScroll.contentContainer.style.paddingRight = 16;
-            sheetScroll.contentContainer.style.paddingBottom = 40;
+            sheetScroll.contentContainer.style.paddingBottom = 24;
             sheet.Add(sheetScroll);
             AddRegion(sheetScroll.contentContainer, () => SheetOpen && !DrawerPanel ? store.ActivePanel + "|" + PanelKey() : "", BuildPanelContent);
 
             sheetLayer.Add(sheet);
             BuildDrawer();
+            LayoutSheet();
+        }
+
+        /// <summary>Sizes the side sheet for the screen and keeps its content clear of the notch and home indicator.</summary>
+        void LayoutSheet()
+        {
+            if (sheet == null) return;
+            sheet.style.top = SafeTop + 8;
+            sheet.style.width = SheetWidth + SafeRight;
+            sheetHeader.style.paddingRight = SafeRight;
+            sheetScroll.contentContainer.style.paddingRight = 16 + SafeRight;
+            sheetScroll.contentContainer.style.paddingBottom = 24 + SafeBottom;
         }
 
         /// <summary>Visibility of layers and the open animation, run once per tick before regions.</summary>
@@ -69,7 +88,7 @@ namespace Founders.UI
                 sheetLayer.Hidden(!open);
                 if (open)
                 {
-                    sheet.style.translate = new Translate(0, 70);
+                    sheet.style.translate = new Translate(60, 0);
                     sheet.style.opacity = 0;
                     sheet.schedule.Execute(() =>
                     {
@@ -78,8 +97,8 @@ namespace Founders.UI
                     }).StartingIn(16);
                 }
             }
-            sheetScroll.contentContainer.style.paddingBottom = 40 + SafeBottom;
             UpdateDrawer();
+            LayoutOverlays();
             modalLayer.Hidden(ModalKey() == "");
         }
 

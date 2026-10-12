@@ -44,7 +44,7 @@ namespace Founders.Core
         UnknownContent, Placement, Unaffordable, ConstructionQueueFull, NotUpgradeable, BuildingBusy, LockedByTech,
         TooManyWorkers, NoJobSlots, NothingLeft, ResearchAlreadyDone, ResearchInProgress, MissingPrerequisites, NoPendingEvent,
         OptionUnavailable, ExpeditionInProgress, RegionAlreadyExplored, RegionNotAdjacent, MilestoneAlreadyReached,
-        RequirementsNotMet,
+        RequirementsNotMet, NotReady,
     }
 
     /// <summary>Why a command was refused. Messages are player facing.</summary>
@@ -85,6 +85,8 @@ namespace Founders.Core
         public static readonly GameError MilestoneAlreadyReached = new GameError(GameErrorKind.MilestoneAlreadyReached, "Milestone already reached.");
         public static GameError RequirementsNotMet(List<string> list) =>
             new GameError(GameErrorKind.RequirementsNotMet, $"Not ready yet: {string.Join(", ", list)}.");
+
+        public static GameError NotReady(string reason) => new GameError(GameErrorKind.NotReady, reason);
 
         public bool Equals(GameError o) => o != null && Kind == o.Kind && Message == o.Message;
         public override bool Equals(object obj) => Equals(obj as GameError);

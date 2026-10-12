@@ -222,6 +222,13 @@
     "output": "ore",
     "ratePerWorkerPerSecond": 0.045,
     "unlimitedSlots": false
+   },
+   {
+    "job": "healing",
+    "name": "Healing",
+    "description": "Healers look after the sick: each cares for three, who get well quickly and never worse.",
+    "ratePerWorkerPerSecond": 0,
+    "unlimitedSlots": false
    }
   ],
   "seasonSeconds": 21600,
@@ -311,7 +318,94 @@
     "density": 0.6,
     "slot": 1
    }
-  ]
+  ],
+  "climate": {
+   "seasonTemperature": {
+    "spring": 9,
+    "summer": 21,
+    "autumn": 7,
+    "winter": -8
+   },
+   "dailySwing": 4,
+   "daySeconds": 21600,
+   "periodSeconds": 1800,
+   "noise": 2.5,
+   "forecastPeriods": 8,
+   "coldSnaps": [
+    {
+     "id": "great_frost",
+     "name": "Great Frost",
+     "drop": 16,
+     "chance": 0.1,
+     "seasons": [
+      "winter"
+     ]
+    },
+    {
+     "id": "cold_snap",
+     "name": "Cold Snap",
+     "drop": 9,
+     "chance": 0.25,
+     "seasons": [
+      "autumn",
+      "winter"
+     ]
+    }
+   ]
+  },
+  "warmth": {
+   "comfortable": 5,
+   "cold": 0,
+   "freezing": -10,
+   "heartHeat": 6,
+   "heartHeatPerLevel": 0.3,
+   "heartRadius": 3,
+   "heartRadiusPerLevel": 0.25,
+   "insulationPerLevel": 0.4,
+   "maxHeat": 22,
+   "stokeSeconds": 3600,
+   "stokeCooldownSeconds": 7200,
+   "stokeHeat": 6,
+   "stokeRadius": 2,
+   "stokeWoodPerSecond": 0.08,
+   "stokeApproval": 3
+  },
+  "health": {
+   "coldRate": 9.259259259259259e-05,
+   "freezingRate": 0.0002777777777777778,
+   "hungerRate": 0.0001388888888888889,
+   "recoverSeconds": 2400,
+   "treatedRecoverSeconds": 600,
+   "patientsPerHealer": 3,
+   "deathSeconds": 5400.0,
+   "griefApproval": -6,
+   "griefSeconds": 21600
+  },
+  "discontent": {
+   "hunger": 20,
+   "cold": 8,
+   "freezing": 16,
+   "sick": 10,
+   "homeless": 10,
+   "calm": 3,
+   "calmAbove": 55,
+   "calmPerApproval": 0.2,
+   "death": 8,
+   "grumbling": 40,
+   "grumblingWork": 0.92,
+   "unrest": 70,
+   "unrestWork": 0.8,
+   "leaveSeconds": 1800,
+   "lawCooldownSeconds": 1800,
+   "petitionAt": 55,
+   "petitionCooldownSeconds": 10800,
+   "promiseRelief": 10,
+   "keptRelief": 15,
+   "brokenAnger": 25,
+   "refusedAnger": 8,
+   "keptApproval": 8,
+   "keptSeconds": 21600
+  }
  },
  "buildings": [
   {
@@ -420,7 +514,7 @@
       "wood": 520,
       "stone": 280
      },
-     "buildSeconds": 2448.0,
+     "buildSeconds": 3101.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -433,7 +527,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 2
+       "amount": 3
       }
      ]
     },
@@ -443,7 +537,7 @@
       "stone": 340,
       "hides": 18
      },
-     "buildSeconds": 3329.0,
+     "buildSeconds": 4217.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -456,7 +550,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 2
+       "amount": 3
       }
      ]
     },
@@ -466,7 +560,7 @@
       "stone": 430,
       "hides": 25
      },
-     "buildSeconds": 4528.0,
+     "buildSeconds": 5735.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -479,7 +573,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 3
+       "amount": 4
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -494,7 +588,7 @@
       "stone": 530,
       "hides": 30
      },
-     "buildSeconds": 6158.0,
+     "buildSeconds": 7800.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -507,7 +601,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 3
+       "amount": 4
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -522,7 +616,7 @@
       "stone": 660,
       "hides": 35
      },
-     "buildSeconds": 8375.0,
+     "buildSeconds": 10608.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -535,7 +629,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 4
+       "amount": 5
       },
       {
        "kind": "techResearched",
@@ -554,7 +648,7 @@
       "stone": 810,
       "hides": 45
      },
-     "buildSeconds": 11390.0,
+     "buildSeconds": 14427.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -567,7 +661,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 4
+       "amount": 5
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -583,7 +677,7 @@
       "hides": 55,
       "ore": 55
      },
-     "buildSeconds": 15490.0,
+     "buildSeconds": 19620.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -596,7 +690,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 5
+       "amount": 6
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -612,7 +706,7 @@
       "hides": 65,
       "ore": 65
      },
-     "buildSeconds": 21066.0,
+     "buildSeconds": 26684.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -625,7 +719,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 5
+       "amount": 6
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -641,7 +735,7 @@
       "hides": 85,
       "ore": 85
      },
-     "buildSeconds": 28650.0,
+     "buildSeconds": 36290.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -654,7 +748,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 6
+       "amount": 7
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -670,7 +764,7 @@
       "hides": 105,
       "ore": 105
      },
-     "buildSeconds": 38964.0,
+     "buildSeconds": 49354.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -683,7 +777,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 6
+       "amount": 7
       },
       {
        "kind": "techResearched",
@@ -704,7 +798,7 @@
       "ore": 130,
       "food": 430
      },
-     "buildSeconds": 52991.0,
+     "buildSeconds": 67122.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -717,7 +811,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 7
+       "amount": 8
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -734,7 +828,7 @@
       "ore": 160,
       "food": 530
      },
-     "buildSeconds": 72067.0,
+     "buildSeconds": 91285.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -747,7 +841,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 7
+       "amount": 8
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -764,7 +858,7 @@
       "ore": 195,
       "food": 660
      },
-     "buildSeconds": 98012.0,
+     "buildSeconds": 124148.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -777,7 +871,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 8
+       "amount": 9
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -807,7 +901,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 8
+       "amount": 9
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -837,7 +931,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 9
+       "amount": 10
       },
       {
        "kind": "techResearched",
@@ -871,7 +965,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 9
+       "amount": 10
       }
      ]
     },
@@ -896,7 +990,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 10
+       "amount": 11
       }
      ]
     },
@@ -921,7 +1015,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 10
+       "amount": 11
       }
      ]
     },
@@ -946,7 +1040,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 11
+       "amount": 12
       }
      ]
     },
@@ -971,7 +1065,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 11
+       "amount": 12
       },
       {
        "kind": "techResearched",
@@ -1000,7 +1094,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 12
+       "amount": 13
       }
      ]
     },
@@ -1025,7 +1119,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 12
+       "amount": 13
       }
      ]
     },
@@ -1050,7 +1144,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 13
+       "amount": 14
       }
      ]
     },
@@ -1075,7 +1169,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 13
+       "amount": 14
       }
      ]
     },
@@ -1100,7 +1194,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 14
+       "amount": 15
       },
       {
        "kind": "techResearched",
@@ -1317,7 +1411,8 @@
      "sprite": "medieval_house",
      "name": "Two-Storey House"
     }
-   ]
+   ],
+   "insulation": 3
   },
   {
    "id": "woven_shelter",
@@ -1516,7 +1611,8 @@
      "sprite": "medieval_house",
      "name": "Two-Storey House"
     }
-   ]
+   ],
+   "insulation": 6
   },
   {
    "id": "foraging_camp",
@@ -2248,6 +2344,193 @@
    ]
   },
   {
+   "id": "healers_hut",
+   "name": "Healer's Hut",
+   "description": "Herbs, broth and a warm bed. Each healer looks after 3 sick: they get well four times faster and never worse.",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 30,
+    "stone": 10
+   },
+   "buildSeconds": 60,
+   "sprite": "healers_hut",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "herbal_healing",
+   "jobSlots": [
+    {
+     "job": "healing",
+     "count": 2
+    }
+   ],
+   "insulation": 8,
+   "comfort": 2,
+   "levels": [
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 8
+     },
+     "buildSeconds": 48.0
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 10
+     },
+     "buildSeconds": 60.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 12
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 15
+     },
+     "buildSeconds": 84.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 20
+     },
+     "buildSeconds": 108.0
+    },
+    {
+     "cost": {
+      "wood": 75,
+      "stone": 25
+     },
+     "buildSeconds": 138.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 35,
+      "hides": 8
+     },
+     "buildSeconds": 176.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 45,
+      "hides": 10
+     },
+     "buildSeconds": 225.0
+    },
+    {
+     "cost": {
+      "wood": 165,
+      "stone": 55,
+      "hides": 13
+     },
+     "buildSeconds": 289.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 70,
+      "hides": 17
+     },
+     "buildSeconds": 369.0
+    },
+    {
+     "cost": {
+      "wood": 280,
+      "stone": 95,
+      "hides": 25,
+      "ore": 30
+     },
+     "buildSeconds": 473.0
+    },
+    {
+     "cost": {
+      "wood": 370,
+      "stone": 120,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 605.0
+    },
+    {
+     "cost": {
+      "wood": 480,
+      "stone": 160,
+      "hides": 40,
+      "ore": 50
+     },
+     "buildSeconds": 775.0
+    },
+    {
+     "cost": {
+      "wood": 620,
+      "stone": 210,
+      "hides": 50,
+      "ore": 65
+     },
+     "buildSeconds": 992.0
+    },
+    {
+     "cost": {
+      "wood": 810,
+      "stone": 270,
+      "hides": 65,
+      "ore": 85
+     },
+     "buildSeconds": 1269.0
+    },
+    {
+     "cost": {
+      "wood": 1050,
+      "stone": 350,
+      "hides": 85,
+      "ore": 110
+     },
+     "buildSeconds": 1625.0
+    },
+    {
+     "cost": {
+      "wood": 1360,
+      "stone": 450,
+      "hides": 110,
+      "ore": 145
+     },
+     "buildSeconds": 2080.0
+    },
+    {
+     "cost": {
+      "wood": 1770,
+      "stone": 590,
+      "hides": 140,
+      "ore": 190
+     },
+     "buildSeconds": 2662.0
+    },
+    {
+     "cost": {
+      "wood": 2300,
+      "stone": 770,
+      "hides": 185,
+      "ore": 250
+     },
+     "buildSeconds": 3407.0
+    }
+   ]
+  },
+  {
    "id": "toolmaker",
    "name": "Toolmaker's Shelter",
    "description": "+2 Crafting jobs. Crafters use wood and stone to make tools that speed up all gathering.",
@@ -2678,7 +2961,7 @@
       "wood": 520,
       "stone": 280
      },
-     "buildSeconds": 2448.0,
+     "buildSeconds": 3101.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -2691,7 +2974,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 2
+       "amount": 3
       }
      ]
     },
@@ -2701,7 +2984,7 @@
       "stone": 340,
       "hides": 18
      },
-     "buildSeconds": 3329.0,
+     "buildSeconds": 4217.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -2714,7 +2997,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 2
+       "amount": 3
       }
      ]
     },
@@ -2724,7 +3007,7 @@
       "stone": 430,
       "hides": 25
      },
-     "buildSeconds": 4528.0,
+     "buildSeconds": 5735.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -2737,7 +3020,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 3
+       "amount": 4
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -2752,7 +3035,7 @@
       "stone": 530,
       "hides": 30
      },
-     "buildSeconds": 6158.0,
+     "buildSeconds": 7800.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -2765,7 +3048,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 3
+       "amount": 4
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -2780,7 +3063,7 @@
       "stone": 660,
       "hides": 35
      },
-     "buildSeconds": 8375.0,
+     "buildSeconds": 10608.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -2793,7 +3076,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 4
+       "amount": 5
       },
       {
        "kind": "techResearched",
@@ -2812,7 +3095,7 @@
       "stone": 810,
       "hides": 45
      },
-     "buildSeconds": 11390.0,
+     "buildSeconds": 14427.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -2825,7 +3108,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 4
+       "amount": 5
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -2841,7 +3124,7 @@
       "hides": 55,
       "ore": 55
      },
-     "buildSeconds": 15490.0,
+     "buildSeconds": 19620.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -2854,7 +3137,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 5
+       "amount": 6
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -2870,7 +3153,7 @@
       "hides": 65,
       "ore": 65
      },
-     "buildSeconds": 21066.0,
+     "buildSeconds": 26684.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -2883,7 +3166,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 5
+       "amount": 6
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -2899,7 +3182,7 @@
       "hides": 85,
       "ore": 85
      },
-     "buildSeconds": 28650.0,
+     "buildSeconds": 36290.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -2912,7 +3195,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 6
+       "amount": 7
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -2928,7 +3211,7 @@
       "hides": 105,
       "ore": 105
      },
-     "buildSeconds": 38964.0,
+     "buildSeconds": 49354.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -2941,7 +3224,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 6
+       "amount": 7
       },
       {
        "kind": "techResearched",
@@ -2962,7 +3245,7 @@
       "ore": 130,
       "food": 430
      },
-     "buildSeconds": 52991.0,
+     "buildSeconds": 67122.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -2975,7 +3258,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 7
+       "amount": 8
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -2992,7 +3275,7 @@
       "ore": 160,
       "food": 530
      },
-     "buildSeconds": 72067.0,
+     "buildSeconds": 91285.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -3005,7 +3288,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 7
+       "amount": 8
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -3022,7 +3305,7 @@
       "ore": 195,
       "food": 660
      },
-     "buildSeconds": 98012.0,
+     "buildSeconds": 124148.0,
      "requirements": [
       {
        "kind": "populationAtLeast",
@@ -3035,7 +3318,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 8
+       "amount": 9
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -3065,7 +3348,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 8
+       "amount": 9
       },
       {
        "kind": "buildingLevelAtLeast",
@@ -3095,7 +3378,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 9
+       "amount": 10
       },
       {
        "kind": "techResearched",
@@ -3129,7 +3412,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 9
+       "amount": 10
       }
      ]
     },
@@ -3154,7 +3437,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 10
+       "amount": 11
       }
      ]
     },
@@ -3179,7 +3462,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 10
+       "amount": 11
       }
      ]
     },
@@ -3204,7 +3487,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 11
+       "amount": 12
       }
      ]
     },
@@ -3229,7 +3512,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 11
+       "amount": 12
       },
       {
        "kind": "techResearched",
@@ -3258,7 +3541,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 12
+       "amount": 13
       }
      ]
     },
@@ -3283,7 +3566,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 12
+       "amount": 13
       }
      ]
     },
@@ -3308,7 +3591,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 13
+       "amount": 14
       }
      ]
     },
@@ -3333,7 +3616,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 13
+       "amount": 14
       }
      ]
     },
@@ -3358,7 +3641,7 @@
       },
       {
        "kind": "techCountAtLeast",
-       "amount": 14
+       "amount": 15
       },
       {
        "kind": "techResearched",
@@ -4074,7 +4357,8 @@
      "sprite": "medieval_townhouse",
      "name": "Great Longhouse"
     }
-   ]
+   ],
+   "insulation": 9
   },
   {
    "id": "daub_house",
@@ -4267,7 +4551,8 @@
      "sprite": "medieval_house",
      "name": "Two-Storey House"
     }
-   ]
+   ],
+   "insulation": 11
   },
   {
    "id": "farm_field",
@@ -5893,7 +6178,8 @@
      "sprite": "medieval_house",
      "name": "Townhouse"
     }
-   ]
+   ],
+   "insulation": 13
   },
   {
    "id": "medieval_house",
@@ -6074,7 +6360,8 @@
      },
      "buildSeconds": 5111.0
     }
-   ]
+   ],
+   "insulation": 15
   },
   {
    "id": "medieval_townhouse",
@@ -6266,7 +6553,8 @@
      },
      "buildSeconds": 6815.0
     }
-   ]
+   ],
+   "insulation": 16
   },
   {
    "id": "medieval_market",
@@ -7244,6 +7532,23 @@
     }
    ],
    "heartLevel": 2
+  },
+  {
+   "id": "herbal_healing",
+   "name": "Herbal Healing",
+   "description": "Willow bark, yarrow and broth. Unlocks the Healer's Hut, where the sick get well.",
+   "cost": {
+    "knowledge": 20
+   },
+   "researchSeconds": 300.0,
+   "prerequisites": [],
+   "heartLevel": 3,
+   "effects": [
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "healers_hut"
+    }
+   ]
   },
   {
    "id": "structural_weaving",
@@ -8307,8 +8612,12 @@
    "cost": {
     "food": 10
    },
-   "expeditionSeconds": 40,
-   "legacyText": "Scouts traced the river upstream through the northern forest."
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts traced the river upstream through the northern forest.",
+   "finding": "In the northern forest the scouts found a cache of dry firewood.",
+   "loot": {
+    "wood": 40
+   }
   },
   {
    "id": "west_woods",
@@ -8322,8 +8631,10 @@
    "cost": {
     "food": 10
    },
-   "expeditionSeconds": 40,
-   "legacyText": "Paths were cut into the western woods."
+   "expeditionSeconds": 600.0,
+   "legacyText": "Paths were cut into the western woods.",
+   "finding": "A hunter lost in the western woods followed the scouts home.",
+   "survivors": 1
   },
   {
    "id": "east_ridge",
@@ -8337,8 +8648,12 @@
    "cost": {
     "food": 15
    },
-   "expeditionSeconds": 45,
-   "legacyText": "Scouts crossed the river and climbed the eastern ridge."
+   "expeditionSeconds": 720.0,
+   "legacyText": "Scouts crossed the river and climbed the eastern ridge.",
+   "finding": "The scouts carried back fine flint from the ridge.",
+   "loot": {
+    "stone": 30
+   }
   },
   {
    "id": "south_bank",
@@ -8352,8 +8667,12 @@
    "cost": {
     "food": 10
    },
-   "expeditionSeconds": 40,
-   "legacyText": "The southern riverbank was explored — a future crossing point."
+   "expeditionSeconds": 600.0,
+   "legacyText": "The southern riverbank was explored — a future crossing point.",
+   "finding": "On the south bank the scouts found a fisher's abandoned catch.",
+   "loot": {
+    "food": 30
+   }
   },
   {
    "id": "eastern_highlands",
@@ -8368,8 +8687,13 @@
     "food": 15,
     "wood": 10
    },
-   "expeditionSeconds": 60,
-   "legacyText": "Scouts climbed past the ridge and saw the highlands roll on toward the mountains."
+   "expeditionSeconds": 1500.0,
+   "legacyText": "Scouts climbed past the ridge and saw the highlands roll on toward the mountains.",
+   "finding": "The highlands hide copper-green rocks and old hides in a cave.",
+   "loot": {
+    "ore": 20,
+    "hides": 10
+   }
   },
   {
    "id": "southern_marsh",
@@ -8383,8 +8707,10 @@
    "cost": {
     "food": 15
    },
-   "expeditionSeconds": 55,
-   "legacyText": "Scouts waded the southern marsh and found where the river widens into pools."
+   "expeditionSeconds": 1500.0,
+   "legacyText": "Scouts waded the southern marsh and found where the river widens into pools.",
+   "finding": "Two people hiding in the reeds of the marsh joined the village.",
+   "survivors": 2
   },
   {
    "id": "great_meadow",
@@ -8399,8 +8725,13 @@
     "food": 25,
     "wood": 10
    },
-   "expeditionSeconds": 90,
-   "legacyText": "Scouts crossed the ridge and found hills of good building stone."
+   "expeditionSeconds": 2700.0,
+   "legacyText": "Scouts crossed the ridge and found hills of good building stone.",
+   "finding": "Herders on the great meadow chose to settle with us.",
+   "survivors": 2,
+   "loot": {
+    "food": 40
+   }
   },
   {
    "id": "iron_mountains",
@@ -8415,8 +8746,12 @@
     "food": 40,
     "wood": 20
    },
-   "expeditionSeconds": 150,
-   "legacyText": "Scouts came back from the mountains with green and red stones that melt in fire."
+   "expeditionSeconds": 5400.0,
+   "legacyText": "Scouts came back from the mountains with green and red stones that melt in fire.",
+   "finding": "Red stone that rings when struck: iron, in the mountains.",
+   "loot": {
+    "ore": 50
+   }
   },
   {
    "id": "lake_country",
@@ -8431,8 +8766,13 @@
     "food": 30,
     "wood": 10
    },
-   "expeditionSeconds": 110,
-   "legacyText": "Scouts followed the river south and found a lake as wide as the sky."
+   "expeditionSeconds": 3600.0,
+   "legacyText": "Scouts followed the river south and found a lake as wide as the sky.",
+   "finding": "Lake folk came back with the scouts, and baskets of dried fish.",
+   "survivors": 2,
+   "loot": {
+    "food": 60
+   }
   },
   {
    "id": "deep_forest",
@@ -8447,8 +8787,13 @@
     "food": 35,
     "wood": 15
    },
-   "expeditionSeconds": 130,
-   "legacyText": "Hunters returned from the deep forest with tales of giant elk."
+   "expeditionSeconds": 4500.0,
+   "legacyText": "Hunters returned from the deep forest with tales of giant elk.",
+   "finding": "Two trappers from the deep forest joined the village.",
+   "survivors": 2,
+   "loot": {
+    "hides": 20
+   }
   },
   {
    "id": "southern_peaks",
@@ -8463,8 +8808,13 @@
     "food": 45,
     "wood": 20
    },
-   "expeditionSeconds": 160,
-   "legacyText": "The southern peaks were mapped for the first time."
+   "expeditionSeconds": 7200.0,
+   "legacyText": "The southern peaks were mapped for the first time.",
+   "finding": "A family from the peaks came down to live with us.",
+   "survivors": 3,
+   "loot": {
+    "stone": 60
+   }
   }
  ],
  "map": {
@@ -8650,6 +9000,22 @@
     "wood": 3
    },
    "beauty": 2
+  },
+  {
+   "id": "fire_brazier",
+   "name": "Brazier",
+   "category": "Lights",
+   "description": "A stone bowl of embers: warms the homes around it (+6° within 3 cells) and burns a little firewood when it is cold.",
+   "cost": {
+    "wood": 6,
+    "stone": 4
+   },
+   "beauty": 1,
+   "heat": {
+    "heat": 6,
+    "radius": 3,
+    "woodPerSecond": 0.004
+   }
   },
   {
    "id": "oil_lantern",
@@ -9422,6 +9788,462 @@
      ]
     }
    ]
+  },
+  {
+   "job": "healing",
+   "title": "Healer",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Willow Bark",
+     "description": "Eases fever and pain.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Clean Hands",
+     "description": "Fewer fall ill around the healer.",
+     "bonus": 0.1,
+     "effects": [
+      {
+       "kind": "sicknessMultiplier",
+       "value": 0.95
+      }
+     ]
+    },
+    {
+     "level": 6,
+     "name": "Bone Setter",
+     "description": "Mends what the cold and work break.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "recoveryMultiplier",
+       "value": 1.1
+      }
+     ]
+    },
+    {
+     "level": 8,
+     "name": "Midwife",
+     "description": "Mothers and babies come through.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "growthMultiplier",
+       "value": 1.03
+      }
+     ]
+    },
+    {
+     "level": 10,
+     "name": "Master Healer",
+     "description": "Death waits outside the door.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "deathMultiplier",
+       "value": 0.8
+      }
+     ]
+    }
+   ]
+  }
+ ],
+ "laws": [
+  {
+   "id": "shared_stew",
+   "name": "Shared Stew",
+   "branch": "Survival",
+   "heartLevel": 2,
+   "excludes": [
+    "hearty_meals"
+   ],
+   "description": "One pot for everyone, thinned with water and roots. People eat 15% less, but nobody likes it.",
+   "effects": [
+    {
+     "kind": "consumptionMultiplier",
+     "value": 0.85
+    },
+    {
+     "kind": "approvalBonus",
+     "value": -3
+    }
+   ],
+   "onSign": 3,
+   "legacyText": "The pot was shared and thin; nobody went without, and nobody had enough."
+  },
+  {
+   "id": "hearty_meals",
+   "name": "Hearty Meals",
+   "branch": "Survival",
+   "heartLevel": 2,
+   "excludes": [
+    "shared_stew"
+   ],
+   "description": "Thick broth and meat for all. People eat 15% more, fall ill less (−20%) and are happier.",
+   "effects": [
+    {
+     "kind": "consumptionMultiplier",
+     "value": 1.15
+    },
+    {
+     "kind": "sicknessMultiplier",
+     "value": 0.8
+    },
+    {
+     "kind": "approvalBonus",
+     "value": 2
+    }
+   ],
+   "legacyText": "Full bellies were the custom: strength came first."
+  },
+  {
+   "id": "long_days",
+   "name": "Long Days",
+   "branch": "Survival",
+   "heartLevel": 3,
+   "description": "Work from first light until dark. Everyone works 15% more, but falls ill more (+25%) and grumbles.",
+   "effects": [
+    {
+     "kind": "workRateMultiplier",
+     "value": 1.15
+    },
+    {
+     "kind": "sicknessMultiplier",
+     "value": 1.25
+    },
+    {
+     "kind": "discontentPerHour",
+     "value": 2
+    }
+   ],
+   "onSign": 4,
+   "legacyText": "The days grew long; the village grew, and so did its weariness."
+  },
+  {
+   "id": "dawn_to_dusk",
+   "name": "Dawn to Dusk",
+   "branch": "Survival",
+   "heartLevel": 9,
+   "requiresLaw": "long_days",
+   "description": "Not a moment idle. Another +15% work, but discontent rises quickly and hope fades.",
+   "effects": [
+    {
+     "kind": "workRateMultiplier",
+     "value": 1.15
+    },
+    {
+     "kind": "discontentPerHour",
+     "value": 4
+    },
+    {
+     "kind": "approvalBonus",
+     "value": -3
+    }
+   ],
+   "onSign": 8,
+   "legacyText": "From dawn to dusk the village laboured. It was remembered as a hard age."
+  },
+  {
+   "id": "fire_wardens",
+   "name": "Fire Wardens",
+   "branch": "Survival",
+   "heartLevel": 4,
+   "description": "Wardens tend the heart through the night: it gives 3° more warmth for 10% more firewood.",
+   "effects": [
+    {
+     "kind": "heatBonus",
+     "value": 3
+    },
+    {
+     "kind": "fuelMultiplier",
+     "value": 1.1
+    }
+   ],
+   "legacyText": "Someone always watched the fire. It never went out again."
+  },
+  {
+   "id": "bitter_remedies",
+   "name": "Bitter Remedies",
+   "branch": "Survival",
+   "heartLevel": 5,
+   "excludes": [
+    "watch_the_sick"
+   ],
+   "description": "Harsh cures that work: the sick get well 50% faster, but people resent the treatment.",
+   "effects": [
+    {
+     "kind": "recoveryMultiplier",
+     "value": 1.5
+    },
+    {
+     "kind": "approvalBonus",
+     "value": -2
+    }
+   ],
+   "onSign": 2,
+   "legacyText": "The remedies were bitter and the sick hated them. Most of them lived."
+  },
+  {
+   "id": "watch_the_sick",
+   "name": "Watch Over the Sick",
+   "branch": "Survival",
+   "heartLevel": 5,
+   "excludes": [
+    "bitter_remedies"
+   ],
+   "description": "Nobody is left alone with a fever: grave illness kills far more slowly (−60%), though recovery is a little slower.",
+   "effects": [
+    {
+     "kind": "deathMultiplier",
+     "value": 0.4
+    },
+    {
+     "kind": "recoveryMultiplier",
+     "value": 0.85
+    },
+    {
+     "kind": "approvalBonus",
+     "value": 1
+    }
+   ],
+   "legacyText": "Someone sat beside every sickbed. Fewer died alone."
+  },
+  {
+   "id": "apprentices",
+   "name": "Apprentices",
+   "branch": "Survival",
+   "heartLevel": 7,
+   "description": "The young learn beside the masters: everyone gains skill 50% faster, at a little cost to work.",
+   "effects": [
+    {
+     "kind": "experienceMultiplier",
+     "value": 1.5
+    },
+    {
+     "kind": "workRateMultiplier",
+     "value": 0.97
+    }
+   ],
+   "legacyText": "Every master had an apprentice, and every apprentice became a master."
+  },
+  {
+   "id": "day_of_rest",
+   "name": "Day of Rest",
+   "branch": "Community",
+   "heartLevel": 2,
+   "description": "One day in seven nobody works. Work is 7% slower, but people are happier and calmer.",
+   "effects": [
+    {
+     "kind": "workRateMultiplier",
+     "value": 0.93
+    },
+    {
+     "kind": "approvalBonus",
+     "value": 5
+    },
+    {
+     "kind": "discontentPerHour",
+     "value": -2
+    }
+   ],
+   "onSign": -5,
+   "legacyText": "A day of rest was kept; songs were sung on it."
+  },
+  {
+   "id": "burial_rites",
+   "name": "Burial Rites",
+   "branch": "Community",
+   "heartLevel": 3,
+   "description": "The dead are honoured and remembered: each death brings half the grief and anger.",
+   "effects": [
+    {
+     "kind": "griefMultiplier",
+     "value": 0.5
+    },
+    {
+     "kind": "approvalBonus",
+     "value": 1
+    }
+   ],
+   "legacyText": "The village learnt to bury its dead with song. Grief was shared, and so it was lighter."
+  },
+  {
+   "id": "story_nights",
+   "name": "Story Nights",
+   "branch": "Community",
+   "heartLevel": 6,
+   "requiresBuilding": "community_circle",
+   "description": "Stories by the fire after dark: people are happier and the elders learn 10% faster.",
+   "effects": [
+    {
+     "kind": "approvalBonus",
+     "value": 3
+    },
+    {
+     "kind": "jobRateMultiplier",
+     "value": 1.1,
+     "job": "research"
+    },
+    {
+     "kind": "discontentPerHour",
+     "value": -1
+    }
+   ],
+   "onSign": -3,
+   "legacyText": "Stories were told by the fire each night. Some are still told."
+  },
+  {
+   "id": "harvest_festival",
+   "name": "Harvest Festival",
+   "branch": "Community",
+   "heartLevel": 8,
+   "description": "A feast each autumn: people eat 5% more but are much happier and calmer.",
+   "effects": [
+    {
+     "kind": "consumptionMultiplier",
+     "value": 1.05
+    },
+    {
+     "kind": "approvalBonus",
+     "value": 4
+    },
+    {
+     "kind": "discontentPerHour",
+     "value": -2
+    }
+   ],
+   "onSign": -6,
+   "legacyText": "The harvest festival was held for the first time; it never stopped."
+  },
+  {
+   "id": "elders_council",
+   "name": "Elders' Council",
+   "branch": "Community",
+   "heartLevel": 12,
+   "requiresBuilding": "elders_lodge",
+   "excludes": [
+    "watchmen"
+   ],
+   "description": "The elders settle quarrels: discontent settles much faster and people trust the village more.",
+   "effects": [
+    {
+     "kind": "discontentPerHour",
+     "value": -4
+    },
+    {
+     "kind": "approvalBonus",
+     "value": 3
+    }
+   ],
+   "onSign": -8,
+   "legacyText": "The elders sat in council. The path of wisdom was chosen."
+  },
+  {
+   "id": "watchmen",
+   "name": "Watchmen",
+   "branch": "Community",
+   "heartLevel": 12,
+   "excludes": [
+    "elders_council"
+   ],
+   "description": "Armed watchmen keep the peace: discontent is crushed quickly, but hope suffers.",
+   "effects": [
+    {
+     "kind": "discontentPerHour",
+     "value": -7
+    },
+    {
+     "kind": "approvalBonus",
+     "value": -4
+    }
+   ],
+   "onSign": -12,
+   "legacyText": "Watchmen walked the lanes at night. The path of order was chosen."
+  }
+ ],
+ "petitions": [
+  {
+   "id": "warm_homes",
+   "title": "Warm Homes",
+   "text": "\"Our children shiver at night. Make every home warm before the cold takes one of us.\"",
+   "promise": "Nobody will sleep in the cold.",
+   "goal": [
+    {
+     "kind": "coldPeopleAtMost",
+     "amount": 0
+    }
+   ],
+   "deadlineSeconds": 7200
+  },
+  {
+   "id": "healer",
+   "title": "Someone to Tend the Sick",
+   "text": "\"The sick lie alone with their fever. We need a healer.\"",
+   "promise": "A healer's hut will stand.",
+   "goal": [
+    {
+     "kind": "buildingCount",
+     "id": "healers_hut",
+     "amount": 1
+    }
+   ],
+   "deadlineSeconds": 10800
+  },
+  {
+   "id": "full_stores",
+   "title": "Bread on Every Table",
+   "text": "\"Our stores are thin and winter is coming. Fill them.\"",
+   "promise": "The stores will hold 150 food.",
+   "goal": [
+    {
+     "kind": "resourceAtLeast",
+     "resource": "food",
+     "amount": 150
+    }
+   ],
+   "deadlineSeconds": 7200
+  },
+  {
+   "id": "heal_the_sick",
+   "title": "Heal the Sick",
+   "text": "\"Too many lie ill. Heal them before the illness spreads.\"",
+   "promise": "Everyone will be well again.",
+   "goal": [
+    {
+     "kind": "sickAtMost",
+     "amount": 0
+    }
+   ],
+   "deadlineSeconds": 7200
+  },
+  {
+   "id": "gathering_place",
+   "title": "A Place to Gather",
+   "text": "\"We work and sleep, and that is all. Give us a place to sit together.\"",
+   "promise": "A community circle will be built.",
+   "goal": [
+    {
+     "kind": "buildingCount",
+     "id": "community_circle",
+     "amount": 1
+    }
+   ],
+   "deadlineSeconds": 7200
+  },
+  {
+   "id": "rest_day",
+   "title": "A Day of Rest",
+   "text": "\"We are worn out. Give us one day to rest.\"",
+   "promise": "A day of rest will be the custom.",
+   "goal": [
+    {
+     "kind": "lawEnacted",
+     "id": "day_of_rest"
+    }
+   ],
+   "deadlineSeconds": 3600
   }
  ]
 }

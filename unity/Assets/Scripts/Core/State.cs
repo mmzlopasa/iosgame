@@ -79,6 +79,12 @@ namespace Founders.Core
         public string Job;
         /// <summary>Seconds worked per job id.</summary>
         public Dictionary<string, double> Experience = new Dictionary<string, double>();
+        /// <summary>Ill: keeps the job but does not work until well again.</summary>
+        public bool Sick;
+        /// <summary>0..1 towards getting well.</summary>
+        public double Recovery;
+        /// <summary>0..1 towards death while the illness goes untreated in the cold or hunger.</summary>
+        public double Severity;
 
         internal Dictionary<string, object> ToJson()
         {
@@ -88,12 +94,22 @@ namespace Founders.Core
                 ["experience"] = Experience.ToDictionary(kv => kv.Key, kv => (object)kv.Value),
             };
             if (Job != null) d["job"] = Job;
+            if (Sick)
+            {
+                d["sick"] = true;
+                d["recovery"] = Recovery;
+                d["severity"] = Severity;
+            }
             return d;
         }
 
         internal static Person FromJson(JObj o)
         {
-            var p = new Person { Id = o.Int("id"), Name = o.Str("name"), Female = o.OptBool("female", false), Job = o.OptStr("job") };
+            var p = new Person
+            {
+                Id = o.Int("id"), Name = o.Str("name"), Female = o.OptBool("female", false), Job = o.OptStr("job"),
+                Sick = o.OptBool("sick", false), Recovery = o.OptNum("recovery") ?? 0, Severity = o.OptNum("severity") ?? 0,
+            };
             if (o.Has("experience"))
             {
                 var e = o.Obj("experience");
@@ -156,6 +172,13 @@ namespace Founders.Core
         public double? ExpiresAtSimTime;
     }
 
+    /// <summary>A promise made to the people, with the time it must be kept by.</summary>
+    public sealed class ActivePetition
+    {
+        public string PetitionId;
+        public double DeadlineSimTime;
+    }
+
     /// <summary>One entry of the Legacy Timeline: a decision or event and its lasting meaning.</summary>
     public sealed class LegacyEntry
     {
@@ -214,6 +237,25 @@ namespace Founders.Core
         public Dictionary<int, double> NodeCleared = new Dictionary<int, double>();
         /// <summary>Cells the player marked to be harvested first, in order.</summary>
         public List<int> HarvestOrders = new List<int>();
+
+        /// <summary>Discontent 0–100 (Frostpunk's second meter).</summary>
+        public double Discontent;
+        /// <summary>Signed laws, in order.</summary>
+        public List<string> Laws = new List<string>();
+        /// <summary>Game time of the last law (laws need time between them). Null before the first.</summary>
+        public double? LastLawSimTime;
+        /// <summary>The heart burns hot until this time; it can be stoked again from StokeReadySimTime.</summary>
+        public double StokedUntilSimTime, StokeReadySimTime;
+        /// <summary>Towards the next person falling ill (1 = someone does).</summary>
+        public double IllnessProgress;
+        /// <summary>Towards the next family leaving while discontent is at the top.</summary>
+        public double LeaveProgress;
+        public int Deaths;
+        /// <summary>A petition waiting for the player's answer.</summary>
+        public string PendingPetition;
+        public ActivePetition ActivePetition;
+        /// <summary>When the people last petitioned (null = never).</summary>
+        public double? LastPetitionSimTime;
 
         public PlacedBuilding Building(int id) => Buildings.FirstOrDefault(b => b.Id == id);
 
@@ -295,6 +337,21 @@ namespace Founders.Core
                     ["totalSeconds"] = ActiveExpedition.TotalSeconds,
                 };
             if (PendingEventId != null) d["pendingEventId"] = PendingEventId;
+            if (Discontent > 0) d["discontent"] = Discontent;
+            if (Laws.Count > 0) d["laws"] = Strings(Laws);
+            if (LastLawSimTime.HasValue) d["lastLawSimTime"] = LastLawSimTime.Value;
+            if (StokedUntilSimTime > 0) d["stokedUntilSimTime"] = StokedUntilSimTime;
+            if (StokeReadySimTime > 0) d["stokeReadySimTime"] = StokeReadySimTime;
+            if (IllnessProgress > 0) d["illnessProgress"] = IllnessProgress;
+            if (LeaveProgress > 0) d["leaveProgress"] = LeaveProgress;
+            if (Deaths > 0) d["deaths"] = Deaths;
+            if (PendingPetition != null) d["pendingPetition"] = PendingPetition;
+            if (ActivePetition != null)
+                d["activePetition"] = new Dictionary<string, object>
+                {
+                    ["petitionId"] = ActivePetition.PetitionId, ["deadlineSimTime"] = ActivePetition.DeadlineSimTime,
+                };
+            if (LastPetitionSimTime.HasValue) d["lastPetitionSimTime"] = LastPetitionSimTime.Value;
             return d;
         }
 
@@ -353,6 +410,21 @@ namespace Founders.Core
                 foreach (var pair in o.Arr("nodeCleared")) { var l = (List<object>)pair; s.NodeCleared[Convert.ToInt32(l[0])] = Convert.ToDouble(l[1]); }
             if (o.Has("harvestOrders")) s.HarvestOrders = o.Arr("harvestOrders").Select(x => Convert.ToInt32(x)).ToList();
             s.PendingStory = o.OptStr("pendingStory");
+            s.Discontent = o.OptNum("discontent") ?? 0;
+            if (o.Has("laws")) s.Laws = o.Strs("laws");
+            s.LastLawSimTime = o.OptNum("lastLawSimTime");
+            s.StokedUntilSimTime = o.OptNum("stokedUntilSimTime") ?? 0;
+            s.StokeReadySimTime = o.OptNum("stokeReadySimTime") ?? 0;
+            s.IllnessProgress = o.OptNum("illnessProgress") ?? 0;
+            s.LeaveProgress = o.OptNum("leaveProgress") ?? 0;
+            s.Deaths = o.OptInt("deaths") ?? 0;
+            s.PendingPetition = o.OptStr("pendingPetition");
+            if (o.Has("activePetition"))
+            {
+                var ap = o.Obj("activePetition");
+                s.ActivePetition = new ActivePetition { PetitionId = ap.Str("petitionId"), DeadlineSimTime = ap.Num("deadlineSimTime") };
+            }
+            s.LastPetitionSimTime = o.OptNum("lastPetitionSimTime");
             s.Legacy = o.Objs("legacy").Select(l => new LegacyEntry
             {
                 Id = l.Int("id"), SimTime = l.Num("simTime"), EpochId = l.Str("epochId"),

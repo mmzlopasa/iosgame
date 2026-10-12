@@ -50,6 +50,10 @@ namespace Founders.Core
                 case ConditionKind.BeautyAtLeast: return Beauty() >= amount;
                 case ConditionKind.HeartLevelAtLeast: return HeartLevel >= amount;
                 case ConditionKind.BuildingLevelAtLeast: return BestLevel(id) >= amount;
+                case ConditionKind.ColdPeopleAtMost: return Warmth().Cold <= amount;
+                case ConditionKind.SickAtMost: return SickCount <= amount;
+                case ConditionKind.LawEnacted: return State.Laws.Contains(id);
+                case ConditionKind.DiscontentAtMost: return State.Discontent <= amount + 1e-9;
                 default: return false;
             }
         }
@@ -90,6 +94,12 @@ namespace Founders.Core
                 case ConditionKind.HeartLevelAtLeast: return $"{HeartName} level {HeartLevel}/{amount}";
                 case ConditionKind.BuildingLevelAtLeast:
                     return $"{Content.Building(id)?.Name ?? (c.Id ?? "?")} level {BestLevel(id)}/{amount}";
+                case ConditionKind.ColdPeopleAtMost:
+                    return amount == 0 ? $"Nobody in the cold (now {Warmth().Cold})" : $"At most {amount} in the cold (now {Warmth().Cold})";
+                case ConditionKind.SickAtMost:
+                    return amount == 0 ? $"Nobody ill (now {SickCount})" : $"At most {amount} ill (now {SickCount})";
+                case ConditionKind.LawEnacted: return $"Custom: {Content.Law(id)?.Name ?? "?"}";
+                case ConditionKind.DiscontentAtMost: return $"Discontent at most {amount} (now {(int)Math.Round(State.Discontent)})";
                 default: return c.Kind.ToString();
             }
         }
@@ -325,6 +335,20 @@ namespace Founders.Core
             if (State.ExploredRegions.Contains(exp.RegionId) || region == null) return;
             State.ExploredRegions.Add(exp.RegionId);
             Notice(NoticeKind.Success, $"Scouts returned: {region.Name} explored.");
+            if (!region.Loot.IsZero)
+            {
+                Apply(new Effect(EffectKind.GrantResources) { Resources = region.Loot }, region.Id);
+                Notice(NoticeKind.Success, $"The scouts brought back {region.Loot.ShortDescription}.");
+            }
+            if (region.Survivors > 0)
+            {
+                State.Population += region.Survivors;
+                SyncPeople();
+                Notice(NoticeKind.Success, region.Survivors == 1
+                    ? "A survivor found out there has joined the village."
+                    : $"{region.Survivors} survivors found out there have joined the village.");
+            }
+            if (!string.IsNullOrEmpty(region.Finding)) Notice(NoticeKind.Info, region.Finding);
             AddLegacy("exploration", $"Explored {region.Name}", region.LegacyText, region.Id);
         }
     }

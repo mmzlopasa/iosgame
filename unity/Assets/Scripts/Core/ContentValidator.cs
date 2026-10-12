@@ -155,6 +155,51 @@ namespace Founders.Core
                 }
             foreach (var n in b.Nodes)
                 if (n.Capacity < 0 || n.Density <= 0 || n.Density > 1) problems.Add($"node '{n.Id}' needs capacity >= 0 and density in (0, 1]");
+
+            // Laws and petitions
+            CheckUnique(c.Laws.Select(l => l.Id), "law");
+            CheckUnique(c.Petitions.Select(p => p.Id), "petition");
+            var lawIds = new HashSet<string>(c.Laws.Select(l => l.Id));
+            foreach (var law in c.Laws)
+            {
+                if (law.RequiresLaw != null && !lawIds.Contains(law.RequiresLaw)) problems.Add($"law '{law.Id}' requires unknown law '{law.RequiresLaw}'");
+                if (law.RequiresLaw == law.Id) problems.Add($"law '{law.Id}' requires itself");
+                if (law.RequiresBuilding != null && !buildingIds.Contains(law.RequiresBuilding))
+                    problems.Add($"law '{law.Id}' requires unknown building '{law.RequiresBuilding}'");
+                foreach (var x in law.Excludes)
+                {
+                    if (!lawIds.Contains(x)) problems.Add($"law '{law.Id}' excludes unknown law '{x}'");
+                    if (x == law.RequiresLaw) problems.Add($"law '{law.Id}' both requires and excludes '{x}'");
+                }
+                if (law.Effects.Any(e => e.DurationSeconds.HasValue)) problems.Add($"law '{law.Id}' effects must be lasting");
+                problems.AddRange(ValidateEffects(law.Effects, $"law '{law.Id}'", buildingIds));
+            }
+            foreach (var p in c.Petitions)
+            {
+                if (p.Goal.Count == 0) problems.Add($"petition '{p.Id}' has no goal");
+                if (p.DeadlineSeconds <= 0) problems.Add($"petition '{p.Id}' needs a deadline");
+                CheckConditions(p.Goal, $"petition '{p.Id}'");
+                foreach (var g in p.Goal)
+                    if (g.Kind == ConditionKind.LawEnacted && !lawIds.Contains(g.Id ?? "")) problems.Add($"petition '{p.Id}': unknown law '{g.Id}'");
+            }
+            if (b.Climate != null)
+            {
+                foreach (var s in b.Seasons)
+                    if (!b.Climate.SeasonTemperature.ContainsKey(s.Id)) problems.Add($"climate has no temperature for season '{s.Id}'");
+                if (b.Climate.PeriodSeconds <= 0 || b.Climate.DaySeconds <= 0) problems.Add("climate needs periodSeconds and daySeconds > 0");
+                foreach (var snap in b.Climate.ColdSnaps)
+                {
+                    if (snap.Chance < 0 || snap.Chance > 1) problems.Add($"cold snap '{snap.Id}' chance must be in 0–1");
+                    foreach (var sid in snap.Seasons)
+                        if (!b.Seasons.Any(s => s.Id == sid)) problems.Add($"cold snap '{snap.Id}' uses unknown season '{sid}'");
+                }
+            }
+            if (b.Warmth != null && !(b.Warmth.Comfortable > b.Warmth.Cold && b.Warmth.Cold > b.Warmth.Freezing))
+                problems.Add("warmth thresholds must be comfortable > cold > freezing");
+            if (b.Health != null && (b.Health.RecoverSeconds <= 0 || b.Health.TreatedRecoverSeconds <= 0 || b.Health.DeathSeconds <= 0))
+                problems.Add("health needs recoverSeconds, treatedRecoverSeconds and deathSeconds > 0");
+            foreach (var r in c.Regions)
+                if (r.Survivors < 0 || !r.Loot.IsValid) problems.Add($"region '{r.Id}' has negative survivors or loot");
             foreach (var ev in c.Events)
             {
                 CheckConditions(ev.Trigger, $"event '{ev.Id}'");
@@ -227,6 +272,13 @@ namespace Founders.Core
                     case EffectKind.ConsumptionMultiplier:
                     case EffectKind.GrowthMultiplier:
                     case EffectKind.ConstructionSpeedMultiplier:
+                    case EffectKind.WorkRateMultiplier:
+                    case EffectKind.SicknessMultiplier:
+                    case EffectKind.RecoveryMultiplier:
+                    case EffectKind.FuelMultiplier:
+                    case EffectKind.ExperienceMultiplier:
+                    case EffectKind.GriefMultiplier:
+                    case EffectKind.DeathMultiplier:
                         if (e.Value == null) problems.Add($"{owner}: {Enums.FirstLower(e.Kind.ToString())} needs value");
                         break;
                     case EffectKind.UnlockBuilding:
@@ -236,11 +288,11 @@ namespace Founders.Core
                         if (e.Resources == null) problems.Add($"{owner}: grantResources needs resources");
                         break;
                 }
-                if (e.Kind == EffectKind.ApprovalBonus)
+                if (e.Kind == EffectKind.ApprovalBonus || e.Kind == EffectKind.DiscontentPerHour || e.Kind == EffectKind.HeatBonus)
                 {
-                    // Approval points are additive and may be negative.
+                    // Points and degrees are additive and may be negative.
                     if (e.Value == null || double.IsNaN(e.Value.Value) || double.IsInfinity(e.Value.Value) || Math.Abs(e.Value.Value) > 100)
-                        problems.Add($"{owner}: approvalBonus needs a value between -100 and 100");
+                        problems.Add($"{owner}: {Enums.FirstLower(e.Kind.ToString())} needs a value between -100 and 100");
                 }
                 else if (e.Value.HasValue && (double.IsNaN(e.Value.Value) || double.IsInfinity(e.Value.Value) || e.Value.Value < 0))
                     problems.Add($"{owner}: effect value must be finite and >= 0");

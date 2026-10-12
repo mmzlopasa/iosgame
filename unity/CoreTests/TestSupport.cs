@@ -32,10 +32,17 @@ namespace Founders.Tests
                 c.Balance.ForestWood = c.Balance.RockStone = c.Balance.VeinOre = 0; // endless land (NodeTests cover it)
                 c.Balance.Nodes.Clear();
                 foreach (var t in c.Technologies) t.HeartLevel = null; // research rules without the heart's pacing
+                // No weather, cold homes, illness or discontent (SurvivalTests cover them).
+                c.Balance.Climate = null;
+                c.Balance.Warmth = null;
+                c.Balance.Health = null;
+                c.Balance.Discontent = null;
             }
             configure?.Invoke(c);
             var clock = new ManualClock();
-            return (Game.NewGame(c, clock), clock);
+            var game = Game.NewGame(c, clock);
+            game.State.SettlementId = "TEST-SETTLEMENT"; // the weather and illness follow it: same dice every run
+            return (game, clock);
         }
     }
 

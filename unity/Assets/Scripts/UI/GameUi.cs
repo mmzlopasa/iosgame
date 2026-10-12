@@ -83,6 +83,15 @@ namespace Founders.UI
 
         // MARK: - Setup
 
+        /// <summary>Design canvas: a landscape phone, 844 × 390 points.</summary>
+        public static readonly Vector2Int ReferenceResolution = new Vector2Int(844, 390);
+
+        /// <summary>
+        /// Phones in landscape (16:9 and wider) are matched on height, so the panel is always 390 units tall and
+        /// 690–850 wide. Squarer screens (iPad) are matched on width: 844 units across, taller than 390.
+        /// </summary>
+        public static float MatchFor(int width, int height) => width / (float)Mathf.Max(1, height) >= 1.7f ? 1f : 0f;
+
         public static GameUi Create(GameObject host)
         {
             var settings = UnityEngine.Resources.Load<PanelSettings>("UI/FoundersPanel");
@@ -92,10 +101,9 @@ namespace Founders.UI
                 settings = ScriptableObject.CreateInstance<PanelSettings>();
             }
             settings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
-            settings.referenceResolution = new Vector2Int(390, 844);
+            settings.referenceResolution = ReferenceResolution;
             settings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
-            // Phones are matched on width; wide screens (iPad) on height so the layout keeps its proportions.
-            settings.match = Screen.width / (float)Mathf.Max(1, Screen.height) > 0.6f ? 1f : 0f;
+            settings.match = MatchFor(Screen.width, Screen.height);
             settings.sortingOrder = 10;
 
             var go = new GameObject("UI");
@@ -116,16 +124,17 @@ namespace Founders.UI
 
             hudLayer = E.Div("hud").Fill().Ignore();
             safe = E.Div("safe").Fill().Ignore().Col();
-            hudLayer.Add(E.Div().Abs(0, 0, 0).Size(null, 230).BgImage(Theme.TopShade).Ignore());
-            hudLayer.Add(E.Div().Abs(0, null, 0, 0).Size(null, 190).BgImage(Theme.BottomShade).Ignore());
+            // Soft shades behind the top row and the bottom corners (the screen is short: keep them low).
+            hudLayer.Add(E.Div().Abs(0, 0, 0).Size(null, 120).BgImage(Theme.TopShade).Ignore());
+            hudLayer.Add(E.Div().Abs(0, null, 0, 0).Size(null, 110).BgImage(Theme.BottomShade).Ignore());
             hudLayer.Add(safe);
 
             sheetLayer = E.Div("sheets").Fill().Ignore().Hidden(true);
             modalLayer = E.Div("modals").Fill().Ignore().Hidden(true);
             loadingLayer = E.Div("loading").Fill().Ignore().Hidden(true);
             root.Add(hudLayer);
-            // While the HUD is hidden only this small eye button remains, to bring it back.
-            showHud = E.IconButton("eye", Act(() => store.HudHidden = false), 44, null, true).Abs(null, 64, 18);
+            // While the HUD is hidden only this small eye button remains, to bring it back (top right).
+            showHud = E.IconButton("eye", Act(() => store.HudHidden = false), 44, null, true).Abs(null, 10, 14);
             showHud.style.opacity = 0.75f;
             root.Add(showHud);
             root.Add(sheetLayer);
@@ -149,6 +158,10 @@ namespace Founders.UI
 
         bool SheetOpen => store != null && store.ActivePanel != Panel.None;
         bool ModalOpen => store != null && ModalKey() != "";
+
+        /// <summary>True while a card for a selection, a resource or a placement is docked on the left.</summary>
+        bool ContextOpen => store != null && (store.DecoratingId != null || store.PlacingBuildingId != null ||
+                                              store.SelectedBuildingId != null || store.SelectedNode != null);
 
         /// <summary>True when a screen point (pixels, bottom-left origin) is over UI or a sheet/dialog is open.</summary>
         public bool BlocksPointer(Vector2 screen)
@@ -199,8 +212,10 @@ namespace Founders.UI
 
         void Update()
         {
-            if (store?.Game == null || root == null) return;
+            if (root == null) return;
+            UpdateScale();
             UpdateSafeArea();
+            if (store?.Game == null) return;
             hudLayer.Hidden(Hidden || store.HudHidden);
             showHud?.Hidden(Hidden || !store.HudHidden);
             if (Hidden) { sheetLayer.Hidden(true); modalLayer.Hidden(true); return; }
@@ -233,27 +248,66 @@ namespace Founders.UI
             }
         }
 
+        /// <summary>Keeps the panel matched on height for phones and on width for iPads (e.g. after a resize).</summary>
+        void UpdateScale()
+        {
+            var settings = doc.panelSettings;
+            if (settings == null) return;
+            float m = MatchFor(Screen.width, Screen.height);
+            if (!Mathf.Approximately(settings.match, m)) settings.match = m;
+        }
+
+        // MARK: - Safe area
+
+        /// <summary>Panel size and the safe-area insets (notch / Dynamic Island on the left or right, home indicator below), in panel units.</summary>
+        float PanelW = 844, PanelH = 390, SafeTop, SafeBottom, SafeLeft, SafeRight;
+        float lastHeight;
+
+        /// <summary>Bottom margin of the HUD: the home indicator's inset, or a little air on phones without one.</summary>
+        float BottomPad => Mathf.Max(10, SafeBottom);
+
+        /// <summary>Usable height for a dialog (the screen minus the insets and a margin).</summary>
+        float ModalMaxHeight => Mathf.Max(200, PanelH - SafeTop - SafeBottom - 24);
+
         void UpdateSafeArea()
         {
-            float w = root.resolvedStyle.width;
-            if (float.IsNaN(w) || w <= 0) return;
+            float w = root.resolvedStyle.width, h = root.resolvedStyle.height;
+            if (float.IsNaN(w) || w <= 0 || float.IsNaN(h) || h <= 0) return;
             var s = Screen.safeArea;
-            if (s == lastSafe && Mathf.Approximately(w, lastWidth)) return;
+            if (s == lastSafe && Mathf.Approximately(w, lastWidth) && Mathf.Approximately(h, lastHeight)) return;
             lastSafe = s;
             lastWidth = w;
-            float k = w / Screen.width;
-            safe.style.paddingTop = (Screen.height - s.yMax) * k + 4;
-            safe.style.paddingBottom = Mathf.Max(10, s.yMin * k);
-            safe.style.paddingLeft = s.xMin * k;
-            safe.style.paddingRight = (Screen.width - s.xMax) * k;
-            if (sheet != null) sheet.style.top = (Screen.height - s.yMax) * k + 34;
-            SafeBottom = s.yMin * k;
+            lastHeight = h;
+            float k = w / Mathf.Max(1, Screen.width);
+            PanelW = w;
+            PanelH = h;
+            SafeTop = Mathf.Max(0, (Screen.height - s.yMax) * k);
+            SafeBottom = Mathf.Max(0, s.yMin * k);
+            SafeLeft = Mathf.Max(0, s.xMin * k);
+            SafeRight = Mathf.Max(0, (Screen.width - s.xMax) * k);
+
+            safe.style.paddingTop = SafeTop + 6;
+            safe.style.paddingBottom = BottomPad;
+            safe.style.paddingLeft = SafeLeft;
+            safe.style.paddingRight = SafeRight;
+            showHud.style.top = SafeTop + 10;
+            showHud.style.right = SafeRight + 14;
+            if (contextPanel != null)
+            {
+                contextPanel.style.left = SafeLeft + 10;
+                contextPanel.style.top = SafeTop + HudTop;
+                contextPanel.style.bottom = BottomPad + 6;
+            }
+            LayoutSheet();
+            Loading?.SetInsets(SafeBottom);
             dirty = true;
         }
 
-        float SafeBottom;
-
         // MARK: - HUD
+
+        VisualElement toastLayer, contextPanel;
+        ScrollView contextScroll;
+        string contextIdentity;
 
         void BuildHud()
         {
@@ -261,9 +315,13 @@ namespace Founders.UI
             AddRegion(top, TopKey, BuildTop);
             safe.Add(top);
 
-            var rails = E.Div("rails").Ignore().Row(0, Align.FlexStart).Margin(10, 12, 0, 12);
-            var left = E.Div("left-rail").Ignore().Col(Align.FlexStart).Size(200);
-            var right = E.Div("right-rail").Ignore().Col(Align.FlexEnd).Size(130);
+            // Middle band: goal and buttons on the left, timers and tiles on the right.
+            var rails = E.Div("rails").Ignore().Row(0, Align.FlexStart).Margin(8, 10, 0, 10);
+            rails.style.flexGrow = 1;
+            rails.style.flexShrink = 1;
+            rails.style.minHeight = 0;
+            var left = E.Div("left-rail").Ignore().Col(Align.FlexStart).Size(LeftRailW);
+            var right = E.Div("right-rail").Ignore().Row(0, Align.FlexStart).NoShrink();
             rails.Add(left);
             rails.Add(E.Div().Grow().Ignore());
             rails.Add(right);
@@ -271,51 +329,52 @@ namespace Founders.UI
             AddRegion(right, SidesKey, BuildRightSide);
             safe.Add(rails);
 
-            var toasts = E.Div("toasts").Ignore().Col(Align.Center).Margin(12, 16, 0, 16);
-            AddRegion(toasts, () => string.Join(",", store.Toasts.Select(t => t.CreatedAt.ToString(CultureInfo.InvariantCulture))), BuildToasts);
-            safe.Add(toasts);
-
-            safe.Add(E.Div().Grow().Ignore());
-
-            var context = E.Div("context").Ignore().Col().Margin(0, 12, 10, 12);
-            AddRegion(context, ContextKey, BuildContext);
-            safe.Add(context);
-
             var bottom = E.Div("bottom").Ignore();
             AddRegion(bottom, BottomKey, BuildBottom);
             safe.Add(bottom);
+
+            // Notices: a column between the rails, under the top row (placed by LayoutOverlays).
+            toastLayer = E.Div("toasts").Ignore().Col(Align.Center).Abs(0, HudTop, 0);
+            toastLayer.style.overflow = Overflow.Hidden;
+            AddRegion(toastLayer, ToastKey, BuildToasts);
+            hudLayer.Add(toastLayer);
+
+            // The selection / placement card, docked bottom-left; it scrolls when taller than the screen allows.
+            contextPanel = E.Div("context").Ignore().Col().Abs(10, HudTop, null, 16);
+            contextPanel.style.width = ContextW;
+            contextPanel.style.justifyContent = Justify.FlexEnd;
+            contextScroll = E.FitScroll();
+            contextPanel.Add(contextScroll);
+            AddRegion(contextScroll.contentContainer, ContextKey, BuildContext);
+            hudLayer.Add(contextPanel);
+            lastSafe = default;
         }
 
-        void BuildTopBar(VisualElement host)
+        /// <summary>Places the notice column between whatever occupies the two sides (called every tick).</summary>
+        void LayoutOverlays()
         {
-            int era = G.Content.Epoch(G.State.EpochId)?.Index ?? 1;
-            var row = E.Div().Row().Pad(4, 14, 0, 14).Ignore();
-
-            var avatar = Avatar(48, 17);
-            Tap(avatar, () => store.ActivePanel = Panel.Profile);
-            row.Add(avatar);
-
-            var names = E.Div().Col().Grow().Ignore();
-            names.style.marginLeft = 10;
-            names.Add(E.Text(G.State.SettlementName, 17, Theme.Ink, Theme.F.Display).NoWrap());
-            var sub = E.Eyebrow($"{G.StageName} · Era {Fmt.Roman(era)}", Theme.Gold, 9.5f).NoWrap();
-            sub.style.marginTop = 2;
-            names.Add(sub);
-            row.Add(names);
-
-            var gear = E.IconButton("settings", Act(() => store.ActivePanel = Panel.Settings), 38, Theme.Ink, true);
-            row.Add(gear);
-            host.Add(row);
-
-            var grid = E.Div().Row(0, Align.Stretch).Margin(10, 14, 0, 14).Ignore();
-            int i = 0;
-            foreach (var type in PrimaryResources) grid.Add(ResourcePill(type, i++ > 0));
-            grid.Add(PeoplePill());
-            host.Add(grid);
+            bool card = ContextOpen;
+            toastLayer.style.top = SafeTop + HudTop;
+            toastLayer.style.left = SafeLeft + 10 + (card ? ContextW : LeftRailW) + 10;
+            toastLayer.style.right = SafeRight + 10 + (card ? TileW : TimersW + 8 + TileW) + 10;
+            toastLayer.style.bottom = BottomPad + BottomRowH + 4;
         }
 
-        /// <summary>Resources shown in the top bar (ore and hides appear in costs and the stores panel).</summary>
-        static readonly ResourceType[] PrimaryResources = { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Knowledge };
+        /// <summary>Gold-ringed founder avatar with the settlement's initial.</summary>
+        VisualElement Avatar(float size, float letter)
+        {
+            var a = E.Div("avatar").Size(size, size).Center();
+            a.Add(E.Image(Theme.Image("avatar_ring"), size, size).Abs(0, 0));
+            var inner = E.Div().Size(size - 10, size - 10).Radius((size - 10) / 2).Center().Ignore();
+            inner.BgImage(Theme.Gradient("avatar", true, Theme.Navy3, Theme.Navy));
+            string initial = string.IsNullOrEmpty(G.State.SettlementName) ? "F" : G.State.SettlementName.Substring(0, 1).ToUpperInvariant();
+            inner.Add(E.Text(initial, letter, Theme.GoldLight, Theme.F.DisplayBold));
+            a.Add(inner);
+            int era = G.Content.Epoch(G.State.EpochId)?.Index ?? 1;
+            var badge = E.Badge(Fmt.Roman(era), Theme.Gold, Theme.OnGold).Abs(null, null, -4, -3);
+            a.Add(badge);
+            return a;
+        }
 
         static string IconFor(ResourceType t) => t switch
         {
@@ -337,164 +396,9 @@ namespace Founders.UI
             _ => Theme.Lavender,
         };
 
-        VisualElement PillShell(bool gap)
-        {
-            var cell = E.Div().Col(Align.Center).Grow().Glass(14).Pad(7, 2, 6, 2);
-            if (gap) cell.style.marginLeft = 6;
-            return cell;
-        }
-
-        VisualElement ResourcePill(ResourceType type, bool gap)
-        {
-            var cell = PillShell(gap);
-            var line = E.Div().Row().Ignore();
-            line.Add(E.Icon(IconFor(type), 14, TintFor(type)));
-            var value = E.Mono("", 14);
-            value.style.marginLeft = 4;
-            Bind(() =>
-            {
-                double v = G.State.Resources[type];
-                value.text = Fmt.Amount(v);
-                value.style.color = v >= caps[type] - 0.5 ? Theme.Gold : Theme.Ink;
-            });
-            line.Add(value);
-            cell.Add(line);
-            var rate = E.Mono("", 9.5f, Theme.Muted).NoWrap();
-            rate.style.marginTop = 2;
-            Bind(() =>
-            {
-                double r = econ.Net[type];
-                rate.text = Math.Abs(r) < 0.0005 ? (type.DisplayName()) : Fmt.PerMinute(r);
-                rate.style.color = r < -0.0005 ? Theme.Error : r > 0.0005 ? Theme.Mint : Theme.Muted;
-            });
-            cell.Add(rate);
-            Tap(cell, () => store.ActivePanel = type == ResourceType.Knowledge ? Panel.Research : Panel.People);
-            return cell;
-        }
-
-        VisualElement PeoplePill()
-        {
-            var cell = PillShell(true);
-            var line = E.Div().Row().Ignore();
-            line.Add(E.Icon("people", 14, Theme.Ink));
-            var value = E.Mono("", 14);
-            value.style.marginLeft = 4;
-            Bind(() => value.text = $"{G.State.Population}/{G.HousingCapacity()}");
-            line.Add(value);
-            cell.Add(line);
-            var sub = E.Mono("", 9.5f).NoWrap();
-            sub.style.marginTop = 2;
-            Bind(() =>
-            {
-                sub.text = G.State.FoodShortage ? "hungry" : G.IdleWorkers > 0 ? $"{G.IdleWorkers} idle" : "all busy";
-                sub.style.color = G.State.FoodShortage ? Theme.Error : G.IdleWorkers > 0 ? Theme.Gold : Theme.Muted;
-            });
-            cell.Add(sub);
-            Tap(cell, () => store.ActivePanel = Panel.People);
-            return cell;
-        }
-
-        /// <summary>Gold-ringed founder avatar with the settlement's initial.</summary>
-        VisualElement Avatar(float size, float letter)
-        {
-            var a = E.Div("avatar").Size(size, size).Center();
-            a.Add(E.Image(Theme.Image("avatar_ring"), size, size).Abs(0, 0));
-            var inner = E.Div().Size(size - 10, size - 10).Radius((size - 10) / 2).Center().Ignore();
-            inner.BgImage(Theme.Gradient("avatar", true, Theme.Navy3, Theme.Navy));
-            string initial = string.IsNullOrEmpty(G.State.SettlementName) ? "F" : G.State.SettlementName.Substring(0, 1).ToUpperInvariant();
-            inner.Add(E.Text(initial, letter, Theme.GoldLight, Theme.F.DisplayBold));
-            a.Add(inner);
-            int era = G.Content.Epoch(G.State.EpochId)?.Index ?? 1;
-            var badge = E.Badge(Fmt.Roman(era), Theme.Gold, Theme.OnGold).Abs(null, null, -4, -3);
-            a.Add(badge);
-            return a;
-        }
-
-        // MARK: - Left rail: goal + quick actions
-
-        string LeftRailKey()
-        {
-            var o = G.CurrentObjective;
-            bool ev = G.PendingEvent != null && store.EventMinimized;
-            return $"{o?.Id}|{ev}|{G.IdleWorkers > 0}|{G.IdleWorkers}|{MilestoneReady()}";
-        }
-
         bool MilestoneReady() => G.Content.Milestones.Any(m => G.CanClaimMilestone(m.Id));
 
-        void BuildLeftRail(VisualElement host)
-        {
-            var o = G.CurrentObjective;
-            if (o != null)
-            {
-                int index = G.Content.Objectives.FindIndex(x => x.Id == o.Id) + 1;
-                var card = E.Div("goal").Row(0, Align.FlexStart).Glass(16, Theme.Alpha(Theme.Gold, 0.34f)).Pad(11, 12);
-                var tile = E.Div().Size(28, 28).Radius(9).Center().Bg(Theme.Alpha(Theme.Gold, 0.16f)).Ignore();
-                tile.Add(E.Icon("goals", 16, Theme.Gold));
-                card.Add(tile);
-                var col = E.Div().Col().Grow().Ignore();
-                col.style.marginLeft = 10;
-                col.Add(E.Eyebrow($"Goal {index} of {G.Content.Objectives.Count}", Theme.Gold, 9.5f));
-                var title = E.Text(o.Title, 13.5f, Theme.Ink, Theme.F.TextBold);
-                title.style.marginTop = 3;
-                col.Add(title);
-                var hint = Live(() =>
-                {
-                    var st = G.Status(o.Conditions);
-                    var next = st.FirstOrDefault(s => !s.Met);
-                    return next.Text ?? (st.Count > 0 ? st[0].Text : o.Hint);
-                }, 11.5f, Theme.Body);
-                hint.style.marginTop = 3;
-                col.Add(hint);
-                var bar = LiveBar(() =>
-                {
-                    var st = G.Status(o.Conditions);
-                    return st.Count == 0 ? 0 : st.Count(s => s.Met) / (double)st.Count;
-                }, 4);
-                bar.style.marginTop = 7;
-                col.Add(bar);
-                card.Add(col);
-                Tap(card, () => store.ActivePanel = Panel.Objectives);
-                host.Add(card);
-            }
-            else if (MilestoneReady())
-            {
-                var card = E.Div().Row().Glass(16, Theme.Alpha(Theme.Gold, 0.5f)).Pad(11, 12);
-                card.Add(E.Icon("sparkle", 18, Theme.Gold));
-                var t = E.Text("A milestone is ready to claim", 13, Theme.Ink, Theme.F.TextBold).Grow();
-                t.style.marginLeft = 8;
-                card.Add(t);
-                Tap(card, () => store.ActivePanel = Panel.Objectives);
-                host.Add(card);
-            }
-
-            var quick = E.Div().Row().Ignore().Margin(8);
-            if (G.PendingEvent != null && store.EventMinimized)
-                quick.Add(QuickButton("bell", "1", Theme.Gold, Theme.OnGold, () => store.EventMinimized = false));
-            quick.Add(QuickButton("legacy", null, default, default, () => store.ActivePanel = Panel.Map));
-            quick.Add(QuickButton("people", G.IdleWorkers > 0 ? G.IdleWorkers.ToString(CultureInfo.InvariantCulture) : null, Theme.Mint, Theme.Hex("#0D2A1F"),
-                                  () => store.ActivePanel = Panel.People));
-            host.Add(quick);
-        }
-
-        VisualElement QuickButton(string icon, string badge, Color badgeBg, Color badgeFg, Action onTap)
-        {
-            var b = E.Div().Size(46, 46).Glass(14).Center();
-            b.style.marginRight = 8;
-            b.Add(E.Icon(icon, 20, Theme.Ink));
-            if (badge != null) b.Add(E.Badge(badge, badgeBg, badgeFg).Abs(null, -5, -5));
-            Tap(b, onTap);
-            return b;
-        }
-
-        // MARK: - Right rail: running timers
-
-        string RightRailKey()
-        {
-            var r = G.State.ActiveResearch;
-            var e = G.State.ActiveExpedition;
-            var builds = string.Join(",", G.State.Buildings.Where(b => b.Status != BuildingStatus.Complete).Select(b => b.Id));
-            return $"{r?.TechId}|{e?.RegionId}|{builds}|{G.SeasonIndex}|{G.Freezing}";
-        }
+        // MARK: - Timers (right rail)
 
         static string SeasonIcon(string id) => id switch { "summer" => "summer", "autumn" => "autumn", "winter" => "winter", _ => "spring" };
 
@@ -508,17 +412,18 @@ namespace Founders.UI
 
         static Color ApprovalColor(int a) => a >= 65 ? Theme.Mint : a >= 40 ? Theme.Gold : Theme.Error;
 
-        /// <summary>Season, year and approval at a glance (tap: People & wellbeing).</summary>
+        /// <summary>Season, year and approval at a glance (tap: People & wellbeing). About <see cref="SeasonCardH"/> tall.</summary>
         VisualElement SeasonCard()
         {
             var season = G.Season;
-            var c = E.Div("season").Col().Glass(16, G.Freezing ? Theme.Alpha(Theme.Error, 0.5f) : (Color?)null).Pad(10).Margin(0, 0, 8);
+            var c = E.Div("season").Col().Glass(14, G.Freezing ? Theme.Alpha(Theme.Error, 0.5f) : (Color?)null).Pad(8, 10).Margin(0, 0, 6);
             if (season != null)
             {
                 var head = E.Div().Row().Ignore();
                 head.Add(E.Icon(SeasonIcon(season.Id), 14, SeasonTint(season.Id)));
-                var name = E.Text(season.Name, 12.5f, Theme.Ink, Theme.F.TextBold);
+                var name = E.Text(season.Name, 12.5f, Theme.Ink, Theme.F.TextBold).NoWrap();
                 name.style.marginLeft = 5;
+                name.style.flexShrink = 1;
                 head.Add(name);
                 head.Add(E.Div().Grow().Ignore());
                 head.Add(Live(() => $"Y{G.Year}", 10, Theme.Muted, Theme.F.Mono));
@@ -527,9 +432,10 @@ namespace Founders.UI
                 bar.style.marginTop = 6;
                 c.Add(bar);
             }
-            var row = E.Div().Row().Margin(7).Ignore();
-            row.Add(E.Icon("approval", 13, Theme.Body));
-            var label = E.Text("Approval", 10.5f, Theme.Body);
+            var row = E.Div().Row().Margin(6).Ignore();
+            // Freezing replaces the approval label (one line keeps the card's height fixed).
+            row.Add(E.Icon(G.Freezing ? "alert" : "approval", 13, G.Freezing ? Theme.Error : Theme.Body));
+            var label = E.Text(G.Freezing ? "Freezing!" : "Approval", 10.5f, G.Freezing ? Theme.Error : Theme.Body, G.Freezing ? Theme.F.TextBold : Theme.F.Text);
             label.style.marginLeft = 5;
             row.Add(label);
             row.Add(E.Div().Grow().Ignore());
@@ -537,80 +443,58 @@ namespace Founders.UI
             Bind(() => { int a = G.Approval; value.text = a + "%"; value.style.color = ApprovalColor(a); });
             row.Add(value);
             c.Add(row);
-            if (G.Freezing) c.Add(E.Text("Freezing! Gather wood.", 10.5f, Theme.Error, Theme.F.TextBold).Margin(5));
             Tap(c, () => store.ActivePanel = Panel.People);
             return c;
         }
 
-        void BuildRightRail(VisualElement host)
-        {
-            var tools = E.Div().Row().Ignore();
-            tools.style.justifyContent = Justify.FlexEnd;
-            tools.style.marginBottom = 8;
-            tools.Add(E.IconButton("eye_off", Act(() =>
-            {
-                store.CancelPlacement();
-                store.SelectedBuildingId = null;
-                store.ActivePanel = Panel.None;
-                store.HudHidden = true;
-            }), 38));
-            host.Add(tools);
-            host.Add(SeasonCard());
-            var r = G.State.ActiveResearch;
-            if (r != null)
-            {
-                var tech = G.Content.Technology(r.TechId);
-                host.Add(TimerCard("knowledge", "Research", Theme.Lavender, tech?.Name ?? r.TechId,
-                    () => 1 - r.RemainingSeconds / Math.Max(1, r.TotalSeconds), () => $"{Fmt.Clock(r.RemainingSeconds)} left",
-                    Theme.LavenderFill, () => store.ActivePanel = Panel.Research));
-            }
-            foreach (var b in G.State.Buildings.Where(x => x.Status != BuildingStatus.Complete).Take(2))
-            {
-                var def = G.Content.Building(b.Status == BuildingStatus.Upgrading && b.UpgradeTargetId != null ? b.UpgradeTargetId : b.DefinitionId);
-                int id = b.Id;
-                host.Add(TimerCard("build", b.Status == BuildingStatus.Upgrading ? "Upgrading" : "Building", Theme.Gold, def?.Name ?? b.DefinitionId,
-                    () => G.State.Building(id)?.Progress ?? 1, () => $"{Fmt.Clock(G.EstimatedSeconds(G.State.Building(id)?.RemainingWork ?? 0))} left",
-                    Theme.GoldFill, () => store.FocusBuilding(id)));
-            }
-            var e = G.State.ActiveExpedition;
-            if (e != null)
-            {
-                var region = G.Content.Regions.FirstOrDefault(x => x.Id == e.RegionId);
-                host.Add(TimerCard("compass", "Scouting", Theme.Mint, region?.Name ?? e.RegionId,
-                    () => 1 - e.RemainingSeconds / Math.Max(1, e.TotalSeconds), () => $"{Fmt.Clock(e.RemainingSeconds)} left",
-                    Theme.MintFill, () => store.ActivePanel = Panel.Map));
-            }
-        }
-
+        /// <summary>A running job (research, construction, scouting): about <see cref="TimerCardH"/> tall.</summary>
         VisualElement TimerCard(string icon, string label, Color accent, string name, Func<double> progress, Func<string> left,
                                 Texture2D fill, Action onTap)
         {
-            var c = E.Div().Col().Glass(16).Pad(10).Margin(0, 0, 8);
+            var c = E.Div().Col().Glass(14).Pad(8, 10).Margin(0, 0, 6);
             var head = E.Div().Row().Ignore();
             head.Add(E.Icon(icon, 12, accent));
-            var l = E.Eyebrow(label, Theme.Muted, 9);
+            var l = E.Eyebrow(label, Theme.Muted, 9).NoWrap();
             l.style.marginLeft = 5;
+            l.style.flexShrink = 1;
             head.Add(l);
+            head.Add(E.Div().Grow().Ignore());
+            head.Add(Live(left, 10, Theme.Body, Theme.F.Mono));
             c.Add(head);
             var n = E.Text(name, 12, Theme.Ink, Theme.F.TextBold).NoWrap();
-            n.style.marginTop = 5;
+            n.style.marginTop = 4;
             c.Add(n);
             var bar = LiveBar(progress, 4, fill);
             bar.style.marginTop = 6;
             c.Add(bar);
-            var t = Live(left, 10.5f, Theme.Body, Theme.F.Mono);
-            t.style.marginTop = 5;
-            c.Add(t);
             Tap(c, onTap);
             return c;
         }
 
         // MARK: - Toasts
 
+        string ToastKey() => string.Join(",", store.Toasts.Select(t => t.CreatedAt.ToString(CultureInfo.InvariantCulture))) + "|" +
+                             (G.PendingEvent != null && store.EventMinimized && store.PlacingBuildingId == null ? G.PendingEvent.Id : "");
+
         void BuildToasts(VisualElement host)
         {
-            foreach (var toast in store.Toasts)
+            // A decision put off for later stays on top until it is answered.
+            if (G.PendingEvent != null && store.EventMinimized && store.PlacingBuildingId == null)
             {
+                var pill = E.Div().Row().Center().Radius(999).BgImage(Theme.GoldFill).Pad(9, 14).Margin(0, 0, 6);
+                pill.style.maxWidth = Length.Percent(100);
+                pill.Add(E.Icon("bell", 15, Theme.OnGold));
+                var t = E.Text($"Decision waiting · {G.PendingEvent.Title}", 12.5f, Theme.OnGold, Theme.F.TextBold).NoWrap();
+                t.style.marginLeft = 8;
+                t.style.flexShrink = 1;
+                pill.Add(t);
+                Tap(pill, () => store.EventMinimized = false);
+                host.Add(pill);
+            }
+            // Newest first: if the column ever runs out of height, the oldest is the one cut.
+            for (int i = store.Toasts.Count - 1; i >= 0; i--)
+            {
+                var toast = store.Toasts[i];
                 Color edge; string icon;
                 switch (toast.Notice.Kind)
                 {
@@ -619,8 +503,9 @@ namespace Founders.UI
                     case NoticeKind.Milestone: edge = Theme.Gold; icon = "sparkle"; break;
                     default: edge = Theme.Lavender; icon = "bell"; break;
                 }
-                var t = E.Div().Row().Radius(18).Pad(9, 14).Bg(new Color(0.07f, 0.07f, 0.13f, 0.86f)).Border(Theme.Alpha(edge, 0.4f)).Margin(0, 0, 6);
-                t.style.maxWidth = 350;
+                var t = E.Div().Row().Radius(16).Pad(8, 12).Bg(new Color(0.07f, 0.07f, 0.13f, 0.86f)).Border(Theme.Alpha(edge, 0.4f)).Margin(0, 0, 6);
+                t.style.maxWidth = 360;
+                t.style.flexShrink = 0;
                 t.Add(E.Icon(icon, 15, edge));
                 var text = E.Text(toast.Notice.Message, 12.5f, Theme.Ink).Grow();
                 text.style.marginLeft = 8;
@@ -632,68 +517,10 @@ namespace Founders.UI
             }
         }
 
-        // MARK: - Dock
-
-        static readonly (string label, string icon, Panel panel)[] DockItems =
-        {
-            ("Build", "build", Panel.Build),
-            ("People", "people", Panel.People),
-            ("Research", "knowledge", Panel.Research),
-            ("Goals", "goals", Panel.Objectives),
-            ("World", "world", Panel.Map),
-        };
-
-        bool DockBadge(Panel p)
-        {
-            switch (p)
-            {
-                case Panel.People: return G.IdleWorkers > 0 || G.Freezing;
-                case Panel.Research:
-                    return G.State.ActiveResearch == null && G.Content.Technologies.Any(t =>
-                        G.GetResearchStatus(t.Id).State == ResearchState.Available && G.State.Resources.Covers(t.Cost));
-                case Panel.Objectives: return MilestoneReady();
-                default: return false;
-            }
-        }
-
-        string DockKey() => store.ActivePanel + "|" + string.Join("", DockItems.Select(d => DockBadge(d.panel) ? "1" : "0"));
-
-        void BuildDock(VisualElement host)
-        {
-            var dock = E.Div().Row(0, Align.Stretch).Radius(26).Pad(8).BgImage(Theme.DockFill).Border(Theme.Edge);
-            dock.style.borderTopColor = new Color(1, 1, 1, 0.22f);
-            foreach (var item in DockItems)
-            {
-                bool on = store.ActivePanel == item.panel;
-                var b = E.Div().Col(Align.Center).Grow().Radius(18).Center();
-                b.style.height = 56;
-                if (on) b.BgImage(Theme.GoldFill);
-                var fg = on ? Theme.OnGold : Theme.Body;
-                b.Add(E.Icon(item.icon, 22, fg));
-                var l = E.Text(item.label, 11, fg, Theme.F.TextBold).NoWrap();
-                l.style.marginTop = 4;
-                b.Add(l);
-                if (!on && DockBadge(item.panel))
-                {
-                    var dot = E.Div().Ignore().Size(8, 8).Radius(4).Bg(Theme.Gold).Abs(null, 8, 16);
-                    b.Add(dot);
-                }
-                var panel = item.panel;
-                Tap(b, () =>
-                {
-                    store.CancelPlacement();
-                    store.ActivePanel = store.ActivePanel == panel ? Panel.None : panel;
-                });
-                dock.Add(b);
-            }
-            host.Add(dock);
-        }
-
-        // MARK: - Context card (placement / selected building / waiting decision)
+        // MARK: - Context card (placement / selected building / tapped resource)
 
         string ContextKey()
         {
-            var ev = G.PendingEvent != null && store.EventMinimized ? G.PendingEvent.Id : "";
             if (store.DecoratingId != null)
             {
                 var d = G.Content.Decoration(store.DecoratingId);
@@ -702,17 +529,17 @@ namespace Founders.UI
             if (store.PlacingBuildingId != null)
             {
                 var issues = store.PlacementIssues();
-                return $"place|{store.PlacingBuildingId}|{(issues.Count > 0 ? issues[0].Message : "ok")}|{store.PlacementRotation}|{store.GhostCell}|{ev}";
+                return $"place|{store.PlacingBuildingId}|{(issues.Count > 0 ? issues[0].Message : "ok")}|{store.PlacementRotation}|{store.GhostCell}";
             }
             if (store.SelectedNode is (int nx, int ny) && store.SelectedBuildingId == null)
             {
                 var n = G.NodeAt(nx, ny);
-                return n == null ? "none|" + ev : $"node|{nx},{ny}|{n.Ordered}|{(int)Math.Min(1e6, n.Remaining)}|{G.IsExhausted(n.Job)}|{G.JobCapacity(n.Job)}|{ev}";
+                return n == null ? "none" : $"node|{nx},{ny}|{n.Ordered}|{(int)Math.Min(1e6, n.Remaining)}|{G.IsExhausted(n.Job)}|{G.JobCapacity(n.Job)}";
             }
             if (store.SelectedBuildingId != null)
             {
                 var b = G.State.Building(store.SelectedBuildingId.Value);
-                if (b == null) return "none|" + ev;
+                if (b == null) return "none";
                 var def = G.Content.Building(b.DefinitionId);
                 var target = def?.UpgradesTo == null ? null : G.Content.Building(def.UpgradesTo);
                 string up = target == null ? "" : $"{G.IsUnlocked(target)}{G.State.Resources.Covers(target.Cost)}";
@@ -720,22 +547,19 @@ namespace Founders.UI
                 var lv = G.NextLevel(b);
                 string level = $"{b.Level}|{(lv == null ? "" : G.State.Resources.Covers(lv.Cost).ToString())}|{G.HasRoadAccess(b)}|{Time.unscaledTime < confirmDemolishUntil}|" +
                                string.Join("", G.LevelRequirements(b).Select(r => r.Met ? "1" : "0"));
-                return $"sel|{b.Id}|{b.DefinitionId}|{b.Status}|{up}|{jobs}|{G.IdleWorkers > 0}|{level}|{ev}";
+                return $"sel|{b.Id}|{b.DefinitionId}|{b.Status}|{up}|{jobs}|{G.IdleWorkers > 0}|{level}";
             }
-            return "none|" + ev;
+            return "none";
         }
 
         void BuildContext(VisualElement host)
         {
-            if (G.PendingEvent != null && store.EventMinimized && store.PlacingBuildingId == null)
+            // A different selection starts at the top of its card; updates of the same one keep the scroll.
+            string identity = $"{store.DecoratingId}|{store.PlacingBuildingId}|{store.SelectedBuildingId}|{store.SelectedNode}";
+            if (identity != contextIdentity)
             {
-                var pill = E.Div().Row().Center().Radius(999).BgImage(Theme.GoldFill).Pad(11, 16).Margin(0, 0, 8);
-                pill.Add(E.Icon("bell", 16, Theme.OnGold));
-                var t = E.Text($"Decision waiting · {G.PendingEvent.Title}", 13, Theme.OnGold, Theme.F.TextBold).NoWrap();
-                t.style.marginLeft = 8;
-                pill.Add(t);
-                Tap(pill, () => store.EventMinimized = false);
-                host.Add(pill);
+                contextIdentity = identity;
+                contextScroll.scrollOffset = Vector2.zero;
             }
             if (store.DecoratingId != null) DecorationCard(host);
             else if (store.PlacingBuildingId != null) PlacementCard(host);
@@ -780,7 +604,8 @@ namespace Founders.UI
             var rotate = E.IconButton("rotate", Act(store.RotatePlacement), 44);
             rotate.style.marginRight = 10;
             buttons.Add(rotate);
-            buttons.Add(E.Button("Cancel", Act(store.CancelPlacement), E.Kind.Ghost).Grow());
+            // Cancel keeps its natural width so "Build here" never gets squeezed in the narrow side card.
+            buttons.Add(E.Button("Cancel", Act(store.CancelPlacement), E.Kind.Ghost));
             var confirm = E.Button("Build here", Act(store.ConfirmPlacement), ok ? E.Kind.Gold : E.Kind.Disabled, 44, "build").Grow();
             confirm.style.marginLeft = 10;
             buttons.Add(confirm);

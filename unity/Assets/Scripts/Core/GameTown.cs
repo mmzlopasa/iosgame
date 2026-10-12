@@ -372,11 +372,12 @@ namespace Founders.Core
 
         void AdvanceSkills(double dt)
         {
+            double rate = Multiplier(EffectKind.ExperienceMultiplier);
             foreach (var p in State.People)
             {
-                if (p.Job == null) continue;
+                if (p.Job == null || p.Sick) continue;
                 p.Experience.TryGetValue(p.Job, out var xp);
-                p.Experience[p.Job] = xp + dt;
+                p.Experience[p.Job] = xp + dt * rate;
             }
         }
 
@@ -386,15 +387,16 @@ namespace Founders.Core
             int count = State.Assignments[job];
             double bonus = Content.Balance.SkillBonusPerLevel;
             if (count <= 0) return 0;
-            if (bonus <= 0 || State.People.Count == 0) return count;
+            if (bonus <= 0 || State.People.Count == 0) return ActiveWorkers(job);
             string id = job.Id();
             double sum = 0;
             int seen = 0;
             foreach (var p in State.People)
             {
                 if (p.Job != id) continue;
-                sum += WorkerMultiplier(p, job);
                 seen++;
+                if (p.Sick) continue; // the sick keep their place but do not work
+                sum += WorkerMultiplier(p, job);
             }
             return sum + Math.Max(0, count - seen);
         }

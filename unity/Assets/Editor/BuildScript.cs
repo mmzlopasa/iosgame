@@ -100,7 +100,13 @@ namespace FoundersEditor
             PlayerSettings.companyName = "Founders";
             PlayerSettings.productName = ProductName;
             PlayerSettings.bundleVersion = Version;
-            PlayerSettings.defaultInterfaceOrientation = UIOrientation.Portrait;
+            // Landscape only, either way round (notch on the left or the right); never portrait.
+            PlayerSettings.defaultInterfaceOrientation = UIOrientation.AutoRotation;
+            PlayerSettings.allowedAutorotateToPortrait = false;
+            PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
+            PlayerSettings.allowedAutorotateToLandscapeLeft = true;
+            PlayerSettings.allowedAutorotateToLandscapeRight = true;
+            PlayerSettings.useAnimatedAutorotation = true;
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.iOS, BundleId);
             PlayerSettings.SetApplicationIdentifier(NamedBuildTarget.Android, BundleId);
             PlayerSettings.colorSpace = ColorSpace.Linear;
@@ -133,6 +139,8 @@ namespace FoundersEditor
             PlayerSettings.SetScriptingBackend(NamedBuildTarget.iOS, ScriptingImplementation.IL2CPP);
             PlayerSettings.iOS.buildNumber = Environment.GetEnvironmentVariable("GITHUB_RUN_NUMBER") ?? "1";
             PlayerSettings.iOS.appleEnableAutomaticSigning = false;
+            // No iPad split view / slide over: those windows can be portrait-shaped.
+            PlayerSettings.iOS.requiresFullScreen = true;
         }
 
         static void EnsureFolder(string path)

@@ -58,6 +58,15 @@ namespace Founders
         float moveUntil;
         float zoomTarget = -1f;
 
+        /// <summary>
+        /// Vertical field of view. The game runs in landscape, where the screen is short: the portrait-era 34°
+        /// would show everything at under half its old size, so landscape narrows it. The same camera then sees
+        /// a wider, shorter window of the valley with buildings large enough to tap.
+        /// </summary>
+        const float PortraitFov = 34f;
+        const float LandscapeFov = 26f;
+        static float Fov => Screen.width > Screen.height ? LandscapeFov : PortraitFov;
+
         const float MinDistance = 9f;
         const float MaxDistance = 80f;
         /// <summary>Extra tilt the player added (two fingers up/down): negative looks flatter, positive more from above.</summary>
@@ -83,7 +92,7 @@ namespace Founders
                 var camGo = new GameObject("Main Camera") { tag = "MainCamera" };
                 Cam = camGo.AddComponent<Camera>();
                 camGo.AddComponent<AudioListener>();
-                Cam.fieldOfView = 34f;
+                Cam.fieldOfView = Fov;
                 Cam.nearClipPlane = 0.5f;
                 Cam.farClipPlane = 400f;
             }
@@ -125,6 +134,7 @@ namespace Founders
 
         void Apply()
         {
+            if (!Mathf.Approximately(Cam.fieldOfView, Fov)) Cam.fieldOfView = Fov;
             var rotation = Quaternion.Euler(Pitch, Yaw, 0f);
             var position = focus + rotation * new Vector3(0, 0, -distance);
             // Never inside a mountain between the camera and the focus.

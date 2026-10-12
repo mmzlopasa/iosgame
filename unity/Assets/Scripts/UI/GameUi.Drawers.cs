@@ -9,10 +9,11 @@ using UnityEngine.UIElements;
 namespace Founders.UI
 {
     /// <summary>
-    /// Build and Research as low wooden drawers along the bottom of the screen (mobile survival
-    /// builder style) instead of full-screen sheets, so the settlement stays in view:
-    /// Build shows icon tabs over a sideways strip of building cards; Research shows the
-    /// technology tree in columns by the campfire level they need, with a detail card below.
+    /// Build and Research as wooden drawers rising from the bottom of the screen (mobile survival
+    /// builder style) instead of side sheets. In landscape, Build is a low drawer (icon tabs in the
+    /// header over a sideways strip of building cards) so the settlement stays in view; Research is a
+    /// full-height board with the technology tree in columns by the campfire level they need on the
+    /// left and the selected technology's card on the right.
     /// </summary>
     public partial class GameUi
     {
@@ -61,10 +62,14 @@ namespace Founders.UI
             drawer.Hidden(!d);
             scrim.style.backgroundColor = d ? new Color(0, 0, 0, 0.12f) : new Color(0.03f, 0.035f, 0.05f, 0.5f);
             if (!d) return;
-            float h = store.ActivePanel == Panel.Build ? 268 : 452;
-            drawer.style.height = h + SafeBottom;
+            // Build: header with the tabs (50) + the card strip (158) + padding. Research: the whole height.
+            drawer.style.height = store.ActivePanel == Panel.Build ? BuildDrawerHeight + SafeBottom : PanelH - SafeTop - 8;
             drawer.style.paddingBottom = SafeBottom;
+            drawer.style.paddingLeft = 6 + SafeLeft;
+            drawer.style.paddingRight = 6 + SafeRight;
         }
+
+        const float BuildDrawerHeight = 222;
 
         string DrawerKey()
         {
@@ -88,25 +93,35 @@ namespace Founders.UI
         static Label Ink(string text, float size, Color? color = null, Theme.F font = Theme.F.TextBold) =>
             E.Text(text, size, color ?? InkBrown, font);
 
-        VisualElement DrawerHeader(string icon, string title, Func<string> sub, VisualElement extra = null)
+        /// <summary>Badge, title (and a live subtitle), an optional middle part (the build tabs) and the close button.</summary>
+        VisualElement DrawerHeader(string icon, string title, Func<string> sub, VisualElement extra = null, VisualElement middle = null)
         {
-            var row = E.Div().Row().Pad(8, 8, 2, 12).Ignore();
+            var row = E.Div().Row().Pad(middle != null ? 2 : 8, 8, 2, 12).Ignore();
+            row.style.flexShrink = 0;
             var badge = E.Div().Size(30, 30).Radius(9).Center().BgImage(Theme.Gradient("goldround", true, GoldTop, GoldBottom)).Border(GoldEdge, 1.5f).Ignore();
             badge.Add(E.Icon(icon, 17, Theme.Hex("#5A3208")));
             row.Add(badge);
-            var col = E.Div().Col().Grow().Ignore();
+            var col = E.Div().Col().Ignore();
+            if (middle == null) col.Grow(); else col.NoShrink();
             col.style.marginLeft = 9;
-            col.Add(Ink(title, 16, InkBrown, Theme.F.DisplayBold));
+            col.Add(Ink(title, 16, InkBrown, Theme.F.DisplayBold).NoWrap());
             if (sub != null)
             {
-                var s = Ink("", 10.5f, InkSoft, Theme.F.TextMedium);
+                var s = Ink("", 10.5f, InkSoft, Theme.F.TextMedium).NoWrap();
                 Bind(() => s.text = sub());
                 col.Add(s);
             }
             row.Add(col);
-            if (extra != null) row.Add(extra);
+            if (middle != null)
+            {
+                middle.style.marginLeft = 10;
+                middle.style.marginRight = 6;
+                row.Add(middle);
+            }
+            if (extra != null) row.Add(extra.NoShrink());
             var close = E.Div().Size(32, 32).Radius(16).Center().Bg(Theme.Alpha(InkBrown, 0.12f));
             close.style.marginLeft = 8;
+            close.style.flexShrink = 0;
             close.Add(E.Icon("close", 15, InkBrown));
             Tap(close, () => store.ActivePanel = Panel.None);
             row.Add(close);
@@ -168,12 +183,13 @@ namespace Founders.UI
             qt.style.marginLeft = 4;
             Bind(() => qt.text = $"{G.ActiveConstructionCount()}/{G.Content.Balance.MaxConcurrentConstructions}");
             queue.Add(qt);
-            host.Add(DrawerHeader("build", "Build", () => buildTab == "All" ? "Pick a building, then place it on the land" : buildTab, queue));
-
-            // Category tabs: round wooden icons.
+            // Category tabs: round wooden icons, in the header row (the landscape screen is short).
             var tabs = Sideways();
             tabs.style.height = 46;
-            tabs.style.flexShrink = 0;
+            tabs.style.flexGrow = 1;
+            tabs.style.flexShrink = 1;
+            tabs.style.minWidth = 0;
+            tabs.contentContainer.style.paddingLeft = 0;
             var decorCats = new HashSet<string>(G.Content.Decorations.Select(d => d.Category));
             foreach (var (tab, icon) in BuildTabs)
             {
@@ -189,7 +205,7 @@ namespace Founders.UI
                 Tap(t, () => buildTab = name);
                 tabs.Add(t);
             }
-            host.Add(tabs);
+            host.Add(DrawerHeader("build", buildTab == "All" ? "Build" : buildTab, null, queue, tabs));
 
             var strip = Sideways();
             strip.style.flexGrow = 1;
@@ -220,8 +236,8 @@ namespace Founders.UI
         static VisualElement CardShell(bool dim)
         {
             var c = E.Div().Col(Align.Center).Radius(16).Pad(8, 6);
-            c.style.width = 108;
-            c.style.height = 160;
+            c.style.width = 106;
+            c.style.height = 150;
             c.style.marginRight = 8;
             c.style.flexShrink = 0;
             c.BgImage(Theme.Gradient("cardparch", true, Theme.Hex("#FFF4DA"), Theme.Hex("#EED8A8")));
@@ -324,45 +340,38 @@ namespace Founders.UI
                 return $"{done}/{G.Content.Technologies.Count} discovered · {G.HeartName} level {G.HeartLevel}";
             }, know));
 
+            // Two panes: the tree (scrolls both ways) and, on the right, what is being studied and the selected card.
             var active = G.State.ActiveResearch;
-            if (active != null)
-            {
-                var tech = G.Content.Technology(active.TechId);
-                var bar = E.Div().Row().Radius(12).Pad(6, 10).Margin(4, 10, 0, 10).Bg(Theme.Alpha(Plum, 0.12f)).Border(Theme.Alpha(Plum, 0.3f), 1.5f);
-                bar.Add(E.Icon("clock", 13, Plum));
-                var n = Ink(tech?.Name ?? active.TechId, 11.5f, InkBrown).NoWrap();
-                n.style.marginLeft = 6;
-                n.style.width = 112;
-                bar.Add(n);
-                var fillBar = LiveBar(() => G.GetResearchStatus(active.TechId).Progress, 7, Theme.LavenderFill).Grow();
-                fillBar.style.marginLeft = 8;
-                fillBar.style.marginRight = 8;
-                bar.Add(fillBar);
-                bar.Add(Live(() => Fmt.Clock(G.State.ActiveResearch?.RemainingSeconds ?? 0), 10.5f, Plum, Theme.F.Mono));
-                string id = active.TechId;
-                Tap(bar, () => selectedTech = id);
-                host.Add(bar);
-            }
-            else if (econ.Production.Knowledge <= 0)
-            {
-                var hint = Ink("Nobody studies yet: put people on Research (People).", 10.5f, Ruby, Theme.F.TextMedium).Margin(4, 0, 0, 14);
-                host.Add(hint);
-            }
-
-            // The tree: one column per band of campfire levels.
             var techs = G.Content.Technologies;
             if (selectedTech == null || G.Content.Technology(selectedTech) == null)
                 selectedTech = active?.TechId ?? techs.FirstOrDefault(t => G.GetResearchStatus(t.Id).State == ResearchState.Available)?.Id ?? techs.First().Id;
-            var tree = Sideways();
+
+            var body = E.Div().Row(0, Align.Stretch).Ignore();
+            body.style.flexGrow = 1;
+            body.style.flexShrink = 1;
+            body.style.minHeight = 0;
+
+            // The tree: one column per band of campfire levels.
+            var tree = new ScrollView(ScrollViewMode.VerticalAndHorizontal);
+            tree.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            tree.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            tree.touchScrollBehavior = ScrollView.TouchScrollBehavior.Elastic;
             tree.style.flexGrow = 1;
+            tree.style.flexShrink = 1;
+            tree.style.minWidth = 0;
+            tree.contentContainer.style.flexDirection = FlexDirection.Row;
             tree.contentContainer.style.alignItems = Align.FlexStart;
+            tree.contentContainer.style.paddingLeft = 8;
+            tree.contentContainer.style.paddingRight = 8;
             tree.contentContainer.style.paddingTop = 6;
+            tree.contentContainer.style.paddingBottom = 8;
             foreach (var group in techs.GroupBy(Tier).OrderBy(g => g.Key))
             {
                 int from = group.Key * 5 + 1, to = from + 4;
                 bool reached = G.HeartLevel >= from;
                 var col = E.Div().Col().Ignore();
                 col.style.width = 138;
+                col.style.flexShrink = 0;
                 col.style.marginRight = 6;
                 var head = E.Div().Row().Center().Radius(8).Pad(3, 6).Margin(0, 0, 5).Bg(reached ? Theme.Alpha(Leaf, 0.16f) : Theme.Alpha(InkBrown, 0.08f)).Ignore();
                 head.Add(E.Icon(reached ? "flame" : "lock", 11, reached ? Leaf : InkSoft));
@@ -373,8 +382,45 @@ namespace Founders.UI
                 foreach (var t in group) col.Add(TechNode(t));
                 tree.Add(col);
             }
-            host.Add(tree);
-            host.Add(TechDetail(G.Content.Technology(selectedTech)));
+            body.Add(tree);
+
+            var side = new ScrollView(ScrollViewMode.Vertical);
+            side.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            side.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            side.touchScrollBehavior = ScrollView.TouchScrollBehavior.Elastic;
+            side.style.width = 290;
+            side.style.flexShrink = 0;
+            side.contentContainer.style.paddingRight = 8;
+            side.contentContainer.style.paddingTop = 6;
+            side.contentContainer.style.paddingBottom = 8;
+            if (active != null)
+            {
+                var tech = G.Content.Technology(active.TechId);
+                var bar = E.Div().Row().Radius(12).Pad(6, 10).Margin(0, 0, 6).Bg(Theme.Alpha(Plum, 0.12f)).Border(Theme.Alpha(Plum, 0.3f), 1.5f);
+                bar.Add(E.Icon("clock", 13, Plum));
+                var n = Ink(tech?.Name ?? active.TechId, 11.5f, InkBrown).NoWrap();
+                n.style.marginLeft = 6;
+                n.style.width = 96;
+                n.style.flexShrink = 0;
+                bar.Add(n);
+                var fillBar = LiveBar(() => G.GetResearchStatus(active.TechId).Progress, 7, Theme.LavenderFill).Grow();
+                fillBar.style.marginLeft = 8;
+                fillBar.style.marginRight = 8;
+                bar.Add(fillBar);
+                bar.Add(Live(() => Fmt.Clock(G.State.ActiveResearch?.RemainingSeconds ?? 0), 10.5f, Plum, Theme.F.Mono));
+                string id = active.TechId;
+                Tap(bar, () => selectedTech = id);
+                side.Add(bar);
+            }
+            else if (econ.Production.Knowledge <= 0)
+            {
+                var hint = Ink("Nobody studies yet: put people on Research (People).", 10.5f, Ruby, Theme.F.TextMedium).Margin(0, 4, 6, 4);
+                hint.style.whiteSpace = WhiteSpace.Normal;
+                side.Add(hint);
+            }
+            side.Add(TechDetail(G.Content.Technology(selectedTech)));
+            body.Add(side);
+            host.Add(body);
         }
 
         VisualElement TechNode(TechnologyDefinition t)
@@ -434,13 +480,16 @@ namespace Founders.UI
 
         VisualElement TechDetail(TechnologyDefinition t)
         {
-            var card = E.Div().Col().Radius(16).Pad(10, 12).Margin(2, 8, 8, 8).Bg(Theme.Hex("#FFF6DE")).Border(Theme.Alpha(InkBrown, 0.35f), 1.5f);
+            var card = E.Div().Col().Radius(16).Pad(10, 12).Bg(Theme.Hex("#FFF6DE")).Border(Theme.Alpha(InkBrown, 0.35f), 1.5f);
             card.style.flexShrink = 0;
             if (t == null) return card;
             var st = G.GetResearchStatus(t.Id);
             var head = E.Div().Row().Ignore();
-            head.Add(Ink(t.Name, 14.5f, InkBrown, Theme.F.DisplayBold).Grow());
-            var time = E.Div().Row().Ignore();
+            var title = Ink(t.Name, 14.5f, InkBrown, Theme.F.DisplayBold).Grow();
+            title.style.whiteSpace = WhiteSpace.Normal;
+            head.Add(title);
+            var time = E.Div().Row().Ignore().NoShrink();
+            time.style.marginLeft = 6;
             time.Add(E.Icon("clock", 11, InkSoft));
             var tt = Ink(Fmt.Clock(t.ResearchSeconds), 10.5f, InkSoft, Theme.F.Mono);
             tt.style.marginLeft = 3;
@@ -457,7 +506,8 @@ namespace Founders.UI
                 f.style.whiteSpace = WhiteSpace.Normal;
                 card.Add(f);
             }
-            var bottom = E.Div().Row().Between().Margin(8).Ignore();
+            // Stacked (cost over a full-width button): the card is narrow in the landscape board.
+            var bottom = E.Div().Col().Margin(8).Ignore();
             switch (st.State)
             {
                 case ResearchState.Researched:
@@ -480,7 +530,7 @@ namespace Founders.UI
                     bool can = !busy && G.State.Resources.Covers(t.Cost);
                     string id = t.Id;
                     bottom.Add(E.Button(busy ? "One at a time" : can ? "Research" : "Need knowledge", can ? Act(() => store.StartResearch(id)) : null,
-                                        can ? E.Kind.Gold : E.Kind.Disabled, 34, can ? "knowledge" : null, 12.5f).Pad(0, 14));
+                                        can ? E.Kind.Gold : E.Kind.Disabled, 36, can ? "knowledge" : null, 12.5f).Pad(0, 14).Margin(8));
                     break;
                 }
             }

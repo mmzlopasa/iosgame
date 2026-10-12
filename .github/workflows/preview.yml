@@ -107,6 +107,14 @@ jobs:
             # Backup: the simulator's own view every 20 s (independent of the in-game capture).
             if [ $((i % 2)) -eq 0 ]; then xcrun simctl io "$UDID" screenshot "shots/sim_$(printf %02d $i).png" || true; fi
           done
+          # The game is landscape-only but the simulator device stays portrait, so its own screenshots
+          # come out sideways (the in-game captures are already landscape): turn those upright.
+          for f in shots/sim_*.png; do
+            [ -f "$f" ] || continue
+            W=$(sips -g pixelWidth "$f" | awk '/pixelWidth/{print $2}')
+            H=$(sips -g pixelHeight "$f" | awk '/pixelHeight/{print $2}')
+            if [ "$H" -gt "$W" ]; then sips -r 270 "$f" >/dev/null || true; fi
+          done
           cp "$DATA"/Documents/captures/*.png shots/ 2>/dev/null || true
           ls -la shots
           xcrun simctl spawn "$UDID" log show --last 15m --predicate 'process == "Founders"' --style compact > shots/os.log 2>/dev/null || true

@@ -6,7 +6,7 @@ namespace Founders.Core
 {
     // MARK: - Basic enums
 
-    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming, Fishing, Hunting, Mining, Herding }
+    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming, Fishing, Hunting, Mining, Herding, Healing }
 
     public enum TerrainType { Grass, Forest, Rock, Water, Sand, Mountain, Ore }
 
@@ -14,7 +14,7 @@ namespace Founders.Core
     {
         public static readonly JobType[] Jobs =
             { JobType.Foraging, JobType.Farming, JobType.Herding, JobType.Fishing, JobType.Hunting, JobType.Woodcutting, JobType.Stonecutting, JobType.Mining,
-              JobType.Crafting, JobType.Construction, JobType.Research };
+              JobType.Crafting, JobType.Construction, JobType.Research, JobType.Healing };
 
         public static string Id(this JobType j)
         {
@@ -30,6 +30,7 @@ namespace Founders.Core
                 case JobType.Hunting: return "hunting";
                 case JobType.Mining: return "mining";
                 case JobType.Herding: return "herding";
+                case JobType.Healing: return "healing";
                 default: return "research";
             }
         }
@@ -113,6 +114,24 @@ namespace Founders.Core
         GrantResources,
         /// <summary>Adds Value points to approval (usually temporary, from events).</summary>
         ApprovalBonus,
+        /// <summary>Multiplies the work of every job (and of the builders) by Value: long days, rest days.</summary>
+        WorkRateMultiplier,
+        /// <summary>Multiplies how often people fall ill by Value.</summary>
+        SicknessMultiplier,
+        /// <summary>Multiplies how fast the sick get well by Value.</summary>
+        RecoveryMultiplier,
+        /// <summary>Adds Value °C to the warmth the heart gives off.</summary>
+        HeatBonus,
+        /// <summary>Adds Value points of discontent per hour (negative calms people down).</summary>
+        DiscontentPerHour,
+        /// <summary>Multiplies the firewood burnt for warmth by Value.</summary>
+        FuelMultiplier,
+        /// <summary>Multiplies the experience people gain at work by Value.</summary>
+        ExperienceMultiplier,
+        /// <summary>Multiplies the grief (lost approval, discontent) a death brings by Value.</summary>
+        GriefMultiplier,
+        /// <summary>Multiplies how fast untreated illness turns deadly by Value.</summary>
+        DeathMultiplier,
     }
 
     /// <summary>A data-driven gameplay effect. Which optional fields are used depends on Kind.</summary>
@@ -175,6 +194,10 @@ namespace Founders.Core
         ChapterAtLeast,         // amount (story chapter number)
         HeartLevelAtLeast,      // amount (level of the settlement's heart: campfire, then hearth)
         BuildingLevelAtLeast,   // id, amount (a completed building of that id at this level or higher)
+        ColdPeopleAtMost,       // amount (people living in cold or freezing homes, or without one)
+        SickAtMost,             // amount (people who are ill)
+        LawEnacted,             // id
+        DiscontentAtMost,       // amount
     }
 
     public sealed class Condition
@@ -235,6 +258,10 @@ namespace Founders.Core
         public bool Heart;
         /// <summary>How the building looks from a level on (a tent becomes a hut, a cottage, a house).</summary>
         public List<LevelLook> Looks = new List<LevelLook>();
+        /// <summary>How much warmer than outside it is inside this home (°C), before levels.</summary>
+        public double Insulation;
+        /// <summary>A fire that warms the homes around it (the heart's own warmth is set in balance.warmth).</summary>
+        public HeatSource Heat;
 
         /// <summary>The model shown at a level: the last look whose level has been reached.</summary>
         public string SpriteAt(int level)
@@ -282,8 +309,25 @@ namespace Founders.Core
                 Heart = o.OptBool("heart", false),
                 Looks = o.Has("looks") ? o.Objs("looks").Select(l => new LevelLook { Level = l.Int("level"), Sprite = l.Str("sprite"), Name = l.OptStr("name") })
                                                     .OrderBy(l => l.Level).ToList() : new List<LevelLook>(),
+                Insulation = o.OptNum("insulation") ?? 0,
+                Heat = o.Has("heat") ? HeatSource.FromJson(o.Obj("heat")) : null,
             };
         }
+    }
+
+    /// <summary>A fire that warms the cells around it and burns firewood while it does.</summary>
+    public sealed class HeatSource
+    {
+        /// <summary>°C added at the fire; it fades to half at the edge of the radius.</summary>
+        public double Heat;
+        /// <summary>Cells reached.</summary>
+        public double Radius;
+        public double WoodPerSecond;
+
+        internal static HeatSource FromJson(JObj o) => new HeatSource
+        {
+            Heat = o.Num("heat"), Radius = o.Num("radius"), WoodPerSecond = o.OptNum("woodPerSecond") ?? 0,
+        };
     }
 
     public sealed class LevelDefinition
@@ -391,6 +435,8 @@ namespace Founders.Core
         public bool IsBridge;
         /// <summary>Fences and walls: people walk around them.</summary>
         public bool Blocks;
+        /// <summary>Braziers and fire pits warm the homes around them.</summary>
+        public HeatSource Heat;
 
         internal static DecorationDefinition FromJson(JObj o) => new DecorationDefinition
         {
@@ -407,6 +453,7 @@ namespace Founders.Core
             IsRoad = o.OptBool("road", false),
             IsBridge = o.OptBool("bridge", false),
             Blocks = o.OptBool("blocks", false),
+            Heat = o.Has("heat") ? HeatSource.FromJson(o.Obj("heat")) : null,
         };
     }
 
@@ -557,6 +604,12 @@ namespace Founders.Core
         public ResourceBundle Cost;
         public double ExpeditionSeconds;
         public string LegacyText;
+        /// <summary>People found out there who join the settlement (Frostpunk's survivors).</summary>
+        public int Survivors;
+        /// <summary>Supplies the scouts bring back.</summary>
+        public ResourceBundle Loot;
+        /// <summary>What the scouts tell when they return.</summary>
+        public string Finding;
 
         public bool Contains(int cx, int cy) => cx >= X && cx < X + Width && cy >= Y && cy < Y + Height;
 
@@ -570,6 +623,9 @@ namespace Founders.Core
             Cost = ResourceBundle.FromJson(o.OptObj("cost")),
             ExpeditionSeconds = o.Num("expeditionSeconds"),
             LegacyText = o.Str("legacyText"),
+            Survivors = o.OptInt("survivors") ?? 0,
+            Loot = ResourceBundle.FromJson(o.OptObj("loot")),
+            Finding = o.OptStr("finding"),
         };
     }
 
@@ -717,6 +773,14 @@ namespace Founders.Core
         public int MaxSkillLevel = 10;
         /// <summary>Food, game and fish to gather besides wood, stone and ore.</summary>
         public List<NodeDefinition> Nodes = new List<NodeDefinition>();
+        /// <summary>Weather: temperatures through the seasons and the day, cold snaps (null = always mild).</summary>
+        public ClimateConfig Climate;
+        /// <summary>How warm homes are and how the heart warms them (null = no cold homes).</summary>
+        public WarmthConfig Warmth;
+        /// <summary>Illness, healing and death (null = nobody falls ill).</summary>
+        public HealthConfig Health;
+        /// <summary>Discontent, petitions and laws' cooldown (null = always content).</summary>
+        public DiscontentConfig Discontent;
 
         internal static BalanceConfig FromJson(JObj o) => new BalanceConfig
         {
@@ -753,6 +817,189 @@ namespace Founders.Core
             MaxSkillLevel = o.OptInt("maxSkillLevel") ?? 10,
             Nodes = o.Has("nodes") ? o.Objs("nodes").Select(NodeDefinition.FromJson).ToList() : new List<NodeDefinition>(),
             Seasons = o.Has("seasons") ? o.Objs("seasons").Select(SeasonDefinition.FromJson).ToList() : new List<SeasonDefinition>(),
+            Climate = o.Has("climate") ? ClimateConfig.FromJson(o.Obj("climate")) : null,
+            Warmth = o.Has("warmth") ? WarmthConfig.FromJson(o.Obj("warmth")) : null,
+            Health = o.Has("health") ? HealthConfig.FromJson(o.Obj("health")) : null,
+            Discontent = o.Has("discontent") ? DiscontentConfig.FromJson(o.Obj("discontent")) : null,
+        };
+    }
+
+    /// <summary>A spell of hard weather that may fall on an hour of some seasons.</summary>
+    public sealed class ColdSnapDefinition
+    {
+        public string Id, Name;
+        /// <summary>Degrees colder than usual.</summary>
+        public double Drop;
+        /// <summary>Chance per weather period (0–1) in the listed seasons.</summary>
+        public double Chance;
+        public List<string> Seasons = new List<string>();
+
+        internal static ColdSnapDefinition FromJson(JObj o) => new ColdSnapDefinition
+        {
+            Id = o.Str("id"), Name = o.Str("name"), Drop = o.Num("drop"), Chance = o.Num("chance"), Seasons = o.Strs("seasons"),
+        };
+    }
+
+    /// <summary>
+    /// The weather (Frostpunk's thermometer): each season has a usual temperature, the day is
+    /// warmer than the night, every weather period (an hour) varies a little, and cold snaps
+    /// fall on some periods. All of it follows from the settlement and the time alone, so it can
+    /// be forecast.
+    /// </summary>
+    public sealed class ClimateConfig
+    {
+        /// <summary>Usual temperature (°C) per season id.</summary>
+        public Dictionary<string, double> SeasonTemperature = new Dictionary<string, double>();
+        /// <summary>Half the difference between the warmest afternoon and the coldest night.</summary>
+        public double DailySwing;
+        /// <summary>Length of a day in seconds (it matches the sky).</summary>
+        public double DaySeconds;
+        /// <summary>Length of one weather period in seconds.</summary>
+        public double PeriodSeconds;
+        /// <summary>Largest random change of a period (±°C).</summary>
+        public double Noise;
+        /// <summary>How many periods ahead the forecast shows.</summary>
+        public int ForecastPeriods;
+        public List<ColdSnapDefinition> ColdSnaps = new List<ColdSnapDefinition>();
+
+        internal static ClimateConfig FromJson(JObj o)
+        {
+            var c = new ClimateConfig
+            {
+                DailySwing = o.Num("dailySwing"), DaySeconds = o.Num("daySeconds"), PeriodSeconds = o.Num("periodSeconds"),
+                Noise = o.Num("noise"), ForecastPeriods = o.Int("forecastPeriods"),
+                ColdSnaps = o.Objs("coldSnaps").Select(ColdSnapDefinition.FromJson).ToList(),
+            };
+            var t = o.Obj("seasonTemperature");
+            foreach (var k in t.Keys) c.SeasonTemperature[k] = t.Num(k);
+            return c;
+        }
+    }
+
+    /// <summary>How warm a home feels, and the heart's warmth (grows with its level, as Frostpunk's generator).</summary>
+    public sealed class WarmthConfig
+    {
+        /// <summary>At or above: comfortable. Below Cold: cold. Below Freezing: freezing. In between: chilly.</summary>
+        public double Comfortable, Cold, Freezing;
+        public double HeartHeat, HeartHeatPerLevel, HeartRadius, HeartRadiusPerLevel;
+        /// <summary>Extra insulation per building level.</summary>
+        public double InsulationPerLevel;
+        /// <summary>Most warmth all fires together can add to one place.</summary>
+        public double MaxHeat;
+        /// <summary>Stoking the heart (Frostpunk's overdrive): how long, how long until it can be done again, and what it gives.</summary>
+        public double StokeSeconds, StokeCooldownSeconds, StokeHeat, StokeRadius, StokeWoodPerSecond;
+        public double StokeApproval;
+
+        internal static WarmthConfig FromJson(JObj o) => new WarmthConfig
+        {
+            Comfortable = o.Num("comfortable"), Cold = o.Num("cold"), Freezing = o.Num("freezing"),
+            HeartHeat = o.Num("heartHeat"), HeartHeatPerLevel = o.Num("heartHeatPerLevel"),
+            HeartRadius = o.Num("heartRadius"), HeartRadiusPerLevel = o.Num("heartRadiusPerLevel"),
+            InsulationPerLevel = o.Num("insulationPerLevel"), MaxHeat = o.Num("maxHeat"),
+            StokeSeconds = o.Num("stokeSeconds"), StokeCooldownSeconds = o.Num("stokeCooldownSeconds"),
+            StokeHeat = o.Num("stokeHeat"), StokeRadius = o.Num("stokeRadius"), StokeWoodPerSecond = o.Num("stokeWoodPerSecond"),
+            StokeApproval = o.OptNum("stokeApproval") ?? 0,
+        };
+    }
+
+    /// <summary>Illness and healing (Frostpunk's sick and its medical posts).</summary>
+    public sealed class HealthConfig
+    {
+        /// <summary>Chance per second for one person to fall ill: per cold, per freezing, per hungry person.</summary>
+        public double ColdRate, FreezingRate, HungerRate;
+        /// <summary>Seconds to get well: untreated (in a warm enough home) and under a healer's care.</summary>
+        public double RecoverSeconds, TreatedRecoverSeconds;
+        /// <summary>How many sick one healer can look after.</summary>
+        public int PatientsPerHealer;
+        /// <summary>Seconds of untreated illness in the cold (or hunger) until it kills; freezing is twice as fast.</summary>
+        public double DeathSeconds;
+        /// <summary>Approval lost for a while when someone dies, and for how long.</summary>
+        public double GriefApproval, GriefSeconds;
+
+        internal static HealthConfig FromJson(JObj o) => new HealthConfig
+        {
+            ColdRate = o.Num("coldRate"), FreezingRate = o.Num("freezingRate"), HungerRate = o.Num("hungerRate"),
+            RecoverSeconds = o.Num("recoverSeconds"), TreatedRecoverSeconds = o.Num("treatedRecoverSeconds"),
+            PatientsPerHealer = o.Int("patientsPerHealer"), DeathSeconds = o.Num("deathSeconds"),
+            GriefApproval = o.Num("griefApproval"), GriefSeconds = o.Num("griefSeconds"),
+        };
+    }
+
+    /// <summary>Discontent (Frostpunk's second meter): what stirs it, what calms it, and what it does.</summary>
+    public sealed class DiscontentConfig
+    {
+        /// <summary>Points per hour while the whole settlement suffers it (scaled by the share of people).</summary>
+        public double Hunger, Cold, Freezing, Sick, Homeless;
+        /// <summary>Points per hour it settles by itself, and extra calm per approval point above CalmAbove.</summary>
+        public double Calm, CalmAbove, CalmPerApproval;
+        /// <summary>Points added at once when someone dies.</summary>
+        public double Death;
+        /// <summary>Grumbling and unrest thresholds and the work they cost.</summary>
+        public double Grumbling, GrumblingWork, Unrest, UnrestWork;
+        /// <summary>At the top, a family leaves every this many seconds.</summary>
+        public double LeaveSeconds;
+        /// <summary>Seconds between two laws.</summary>
+        public double LawCooldownSeconds;
+        /// <summary>People petition when discontent reaches this, at most once per PetitionCooldownSeconds.</summary>
+        public double PetitionAt, PetitionCooldownSeconds;
+        /// <summary>Discontent change when a petition is promised, kept, broken or refused.</summary>
+        public double PromiseRelief, KeptRelief, BrokenAnger, RefusedAnger;
+        /// <summary>Approval for a while after a promise is kept.</summary>
+        public double KeptApproval, KeptSeconds;
+
+        internal static DiscontentConfig FromJson(JObj o) => new DiscontentConfig
+        {
+            Hunger = o.Num("hunger"), Cold = o.Num("cold"), Freezing = o.Num("freezing"), Sick = o.Num("sick"), Homeless = o.Num("homeless"),
+            Calm = o.Num("calm"), CalmAbove = o.Num("calmAbove"), CalmPerApproval = o.Num("calmPerApproval"), Death = o.Num("death"),
+            Grumbling = o.Num("grumbling"), GrumblingWork = o.Num("grumblingWork"), Unrest = o.Num("unrest"), UnrestWork = o.Num("unrestWork"),
+            LeaveSeconds = o.Num("leaveSeconds"), LawCooldownSeconds = o.Num("lawCooldownSeconds"),
+            PetitionAt = o.Num("petitionAt"), PetitionCooldownSeconds = o.Num("petitionCooldownSeconds"),
+            PromiseRelief = o.Num("promiseRelief"), KeptRelief = o.Num("keptRelief"), BrokenAnger = o.Num("brokenAnger"), RefusedAnger = o.Num("refusedAnger"),
+            KeptApproval = o.Num("keptApproval"), KeptSeconds = o.Num("keptSeconds"),
+        };
+    }
+
+    /// <summary>
+    /// A custom of the settlement (Frostpunk's Book of Laws): signed once, it lasts. Some pairs
+    /// exclude each other, some follow from another, and the heart's level opens them.
+    /// </summary>
+    public sealed class LawDefinition
+    {
+        public string Id, Name, Description, Branch;
+        public int HeartLevel;
+        public string RequiresLaw, RequiresBuilding;
+        public List<string> Excludes = new List<string>();
+        /// <summary>Lasting effects while the law stands (approval bonuses here are permanent).</summary>
+        public List<Effect> Effects = new List<Effect>();
+        /// <summary>Discontent change the moment it is signed.</summary>
+        public double OnSign;
+        public string LegacyText;
+
+        internal static LawDefinition FromJson(JObj o) => new LawDefinition
+        {
+            Id = o.Str("id"), Name = o.Str("name"), Description = o.Str("description"), Branch = o.Str("branch"),
+            HeartLevel = o.OptInt("heartLevel") ?? 1,
+            RequiresLaw = o.OptStr("requiresLaw"), RequiresBuilding = o.OptStr("requiresBuilding"),
+            Excludes = o.Has("excludes") ? o.Strs("excludes") : new List<string>(),
+            Effects = o.Has("effects") ? o.Objs("effects").Select(Effect.FromJson).ToList() : new List<Effect>(),
+            OnSign = o.OptNum("onSign") ?? 0,
+            LegacyText = o.OptStr("legacyText"),
+        };
+    }
+
+    /// <summary>What the people demand when discontent runs high (Frostpunk's promises).</summary>
+    public sealed class PetitionDefinition
+    {
+        public string Id, Title, Text, Promise;
+        /// <summary>The promise is kept when all of these hold before the deadline.</summary>
+        public List<Condition> Goal = new List<Condition>();
+        public double DeadlineSeconds;
+
+        internal static PetitionDefinition FromJson(JObj o) => new PetitionDefinition
+        {
+            Id = o.Str("id"), Title = o.Str("title"), Text = o.Str("text"), Promise = o.Str("promise"),
+            Goal = o.Objs("goal").Select(Condition.FromJson).ToList(),
+            DeadlineSeconds = o.Num("deadlineSeconds"),
         };
     }
 
@@ -781,7 +1028,11 @@ namespace Founders.Core
         public List<DecorationDefinition> Decorations = new List<DecorationDefinition>();
         public List<ChapterDefinition> Chapters = new List<ChapterDefinition>();
         public List<SkillDefinition> Skills = new List<SkillDefinition>();
+        public List<LawDefinition> Laws = new List<LawDefinition>();
+        public List<PetitionDefinition> Petitions = new List<PetitionDefinition>();
         public MapDefinition Map;
+        public LawDefinition Law(string id) => Laws.FirstOrDefault(l => l.Id == id);
+        public PetitionDefinition Petition(string id) => Petitions.FirstOrDefault(p => p.Id == id);
         public SkillDefinition Skill(JobType job) => Skills.FirstOrDefault(s => s.Job == job);
         public DecorationDefinition Decoration(string id) => Decorations.FirstOrDefault(d => d.Id == id);
 
@@ -823,6 +1074,8 @@ namespace Founders.Core
                 Chapters = o.Has("chapters") ? o.Objs("chapters").Select(ChapterDefinition.FromJson).OrderBy(c => c.Number).ToList() : new List<ChapterDefinition>(),
                 Decorations = o.Has("decorations") ? o.Objs("decorations").Select(DecorationDefinition.FromJson).ToList() : new List<DecorationDefinition>(),
                 Skills = o.Has("skills") ? o.Objs("skills").Select(SkillDefinition.FromJson).ToList() : new List<SkillDefinition>(),
+                Laws = o.Has("laws") ? o.Objs("laws").Select(LawDefinition.FromJson).ToList() : new List<LawDefinition>(),
+                Petitions = o.Has("petitions") ? o.Objs("petitions").Select(PetitionDefinition.FromJson).ToList() : new List<PetitionDefinition>(),
                 Map = MapDefinition.FromJson(o.Obj("map")),
             };
         }

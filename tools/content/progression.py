@@ -76,7 +76,7 @@ def heart_levels():
             cost["ore"] = rnd(3 * g)
         if k >= 16:
             cost["food"] = rnd(10 * g)
-        seconds = 60 * (0.8 + 0.4 * n if n <= 4 else 30 * 1.36 ** (n - 4))
+        seconds = 60 * (0.8 + 0.4 * n if n <= 4 else 38 * 1.36 ** (n - 4))
         seconds = float(min(36 * 3600, int(round(seconds))))
         req = [{"kind": "populationAtLeast", "amount": int(round(6 + 1.2 * (k - 1))) if k <= 10 else 17 + 2 * (k - 10)}]
         if 4 <= k <= 20:
@@ -84,7 +84,8 @@ def heart_levels():
         if k > 20:
             req.append({"kind": "buildingLevelAtLeast", "id": "granary", "amount": k - 18})
         if k >= 6:
-            req.append({"kind": "techCountAtLeast", "amount": min(15, 1 + (k - 4) // 2) if k < 21 else min(15, 9 + (k - 20) // 2)})
+            # One more than the early techs alone (herbal healing counts as well).
+            req.append({"kind": "techCountAtLeast", "amount": min(16, 2 + (k - 4) // 2) if k < 21 else min(16, 10 + (k - 20) // 2)})
         gates = {10: "permanent_settlement", 15: "agriculture", 20: "bronze_working", 25: "pottery", 30: "written_law"}
         if k in gates:
             req.append({"kind": "techResearched", "id": gates[k]})
@@ -215,6 +216,13 @@ SKILLS = [
         (6, "Teacher", "Shares what they know.", 0.15, [{"kind": "jobRateMultiplier", "job": "research", "value": 1.05}]),
         (8, "Lore Keeper", "Nothing learnt is lost.", 0.15, []),
         (10, "Sage", "The wisest of the valley.", 0.25, [{"kind": "growthMultiplier", "value": 1.03}]),
+    ]),
+    ("healing", "Healer", [
+        (2, "Willow Bark", "Eases fever and pain.", 0.1, []),
+        (4, "Clean Hands", "Fewer fall ill around the healer.", 0.1, [{"kind": "sicknessMultiplier", "value": 0.95}]),
+        (6, "Bone Setter", "Mends what the cold and work break.", 0.15, [{"kind": "recoveryMultiplier", "value": 1.1}]),
+        (8, "Midwife", "Mothers and babies come through.", 0.15, [{"kind": "growthMultiplier", "value": 1.03}]),
+        (10, "Master Healer", "Death waits outside the door.", 0.25, [{"kind": "deathMultiplier", "value": 0.8}]),
     ]),
 ]
 

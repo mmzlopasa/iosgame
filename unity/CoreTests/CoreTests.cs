@@ -15,8 +15,8 @@ namespace Founders.Tests
         {
             var c = Fixtures.Content();
             Assert.That(ContentValidator.Validate(c), Is.Empty);
-            Assert.That(c.Buildings.Count(b => b.Buildable), Is.EqualTo(28));
-            Assert.That(c.Technologies.Count, Is.EqualTo(22));
+            Assert.That(c.Buildings.Count(b => b.Buildable), Is.EqualTo(29));
+            Assert.That(c.Technologies.Count, Is.EqualTo(23));
         }
 
         [Test]
@@ -490,7 +490,7 @@ namespace Founders.Tests
             Assert.That(game.IsRevealed(13, 8), Is.False);
             Expect.Success(game.StartExpedition("east_ridge"));
             Expect.Failure(game.StartExpedition("north_forest"), GameError.ExpeditionInProgress);
-            game.Run(45, clock);
+            game.Run(game.Content.Region("east_ridge").ExpeditionSeconds, clock);
             Assert.That(game.IsRevealed(13, 8), Is.True);
             Assert.That(game.PendingEvent?.Id, Is.EqualTo("ridge_deposit"));
             Expect.Failure(game.StartExpedition("east_ridge"), GameError.RegionAlreadyExplored);

@@ -15,6 +15,12 @@ namespace Founders
         {
             Prefs.Apply();
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
+            // Landscape only, following the device between left and right (also set in the player settings).
+            Screen.autorotateToPortrait = false;
+            Screen.autorotateToPortraitUpsideDown = false;
+            Screen.autorotateToLandscapeLeft = true;
+            Screen.autorotateToLandscapeRight = true;
+            Screen.orientation = ScreenOrientation.AutoRotation;
             var ui = GameUi.Create(gameObject);
             ui.Loading.Show();
             ui.Loading.Set(0.08f, "Kindling the hearth…");

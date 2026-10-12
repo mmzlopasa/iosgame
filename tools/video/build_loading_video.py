@@ -1,65 +1,75 @@
 #!/usr/bin/env python3
-"""Builds the loading-screen montage (unity/Assets/StreamingAssets/loading.mp4, played by URL) from the
-game's own no-UI captures (the iOS Simulator preview screenshots).
+"""Builds the loading-screen video unity/Assets/StreamingAssets/loading.mp4 ("The Long Rise").
 
-Each shot slowly zooms and drifts (Ken Burns) and cross-fades into the next; the clip loops
-seamlessly because the last shot fades back into the first. Portrait H.264, no audio, small.
+The game plays it by URL behind the title, dimmed, looping. The clip is a Blender time-lapse
+(tools/video/blender_rise.py): a floating island where a lone campfire at night grows into a
+medieval town by golden day. Landscape 1920x1080; the island stays inside the centre 1920x886
+(2.17:1, wide iPhones) and 1440x1080 (4:3, iPads) so "cover" scaling never crops it. It is rendered
+at half size with Cycles and upscaled here.
 
-Usage: python3 tools/video/build_loading_video.py <screenshots dir> [out.mp4]
-       (download the screenshots with: gh run download <run> -R mmzlopasa/iosgame -n screenshots -D <dir>)
+Steps (each is skipped when its output already exists, so an interrupted build resumes):
+  1. assemble the CC0 Medieval Village MegaKit houses (tools/assets/blender_medieval.py)
+     into tools/video/.cache/medieval (needs the kit in tools/assets/.cache/packs/medieval/glTF,
+     see tools/assets/PACKS.md);
+  2. render frames 0..263 at 960x540 to tools/video/.cache/frames (Blender 4.2 + Cycles on the CPU;
+     about 10 s per frame at the defaults on 4 cores, i.e. roughly 45 minutes);
+  3. encode: frames 24..263 play, and the last second cross-fades into frames 0..23 (the camera
+     swing and the fire are periodic over 240 frames), so the 10 s clip loops seamlessly. H.264
+     yuv420p, faststart, no audio.
+
+Usage: python3 tools/video/build_loading_video.py [--res 960] [--samples 16] [--crf 24] [--encode-only] [out.mp4]
 """
 import os
 import subprocess
 import sys
 
-ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
+HERE = os.path.dirname(os.path.abspath(__file__))
+ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 OUT = os.path.join(ROOT, "unity", "Assets", "StreamingAssets", "loading.mp4")
+CACHE = os.path.join(HERE, ".cache")
+MEDIEVAL = os.path.join(CACHE, "medieval")
+FRAMES = os.path.join(CACHE, "frames")
+KIT = os.path.join(ROOT, "tools", "assets", ".cache", "packs", "medieval", "glTF")
+W, H, FPS = 1920, 1080, 24
+LOOP, FADE = 240, 24      # frames in the loop; frames of the closing cross-fade
+LAST = LOOP + FADE - 1    # 263
 
-# The montage: the valley, the people at work, the seasons, the town at night.
-SHOTS = [
-    "09b_valley", "06m_medieval_town", "07b_lake", "06g_town_layout", "06k_builders",
-    "07d_stone_hills", "06p_watermill", "07c_mountains", "06f_night",
-]
-W, H = 720, 1558          # the capture aspect (1125×2436), even sizes for H.264
-FPS = 24
-SHOT = 3.2                # seconds per shot
-FADE = 0.8                # cross-fade
+
+def arg(name, default):
+    return sys.argv[sys.argv.index(name) + 1] if name in sys.argv else default
 
 
 def main():
-    src = sys.argv[1]
-    out = sys.argv[2] if len(sys.argv) > 2 else OUT
-    shots = [os.path.join(src, s + ".png") for s in SHOTS if os.path.exists(os.path.join(src, s + ".png"))]
-    if len(shots) < 3:
-        sys.exit(f"need at least 3 screenshots in {src}, found {len(shots)}")
-    shots.append(shots[0])  # loop back to the start
-    frames = int(SHOT * FPS)
-    args = ["ffmpeg", "-y", "-loglevel", "error"]
-    for s in shots:
-        args += ["-loop", "1", "-t", f"{SHOT}", "-i", s]
-    parts = []
-    for i in range(len(shots)):
-        # Alternate zooming in and out, drifting a little sideways.
-        zin = i % 2 == 0
-        z = f"'min(1+0.10*on/{frames},1.10)'" if zin else f"'max(1.10-0.10*on/{frames},1.0)'"
-        x = f"'(iw-iw/zoom)*({0.3 if zin else 0.7}+{0.4 if zin else -0.4}*on/{frames})'"
-        parts.append(
-            f"[{i}:v]scale={W * 2}:{H * 2},zoompan=z={z}:x={x}:y='(ih-ih/zoom)/2':d={frames}:s={W}x{H}:fps={FPS},"
-            f"setsar=1,format=yuv420p[v{i}]")
-    chain, last = [], "v0"
-    for i in range(1, len(shots)):
-        offset = i * (SHOT - FADE)
-        tag = f"x{i}"
-        chain.append(f"[{last}][v{i}]xfade=transition=fade:duration={FADE}:offset={offset:.2f}[{tag}]")
-        last = tag
-    total = (len(shots) - 1) * (SHOT - FADE)  # cut where the first shot has fully returned
-    graph = ";".join(parts + chain)
+    res, samples, crf = arg("--res", "960"), arg("--samples", "16"), arg("--crf", "24")
+    rest = [a for i, a in enumerate(sys.argv[1:], 1)
+            if not a.startswith("--") and sys.argv[i - 1] not in ("--res", "--samples", "--crf")]
+    out = rest[0] if rest else OUT
+
+    if "--encode-only" not in sys.argv:
+        if not os.path.exists(os.path.join(MEDIEVAL, "medieval_church", "medieval_church.gltf")):
+            subprocess.run(["blender", "-b", "--factory-startup", "-P",
+                            os.path.join(ROOT, "tools", "assets", "blender_medieval.py"), "--", KIT, MEDIEVAL], check=True)
+        subprocess.run(["blender", "-b", "--factory-startup", "-P", os.path.join(HERE, "blender_rise.py"), "--",
+                        FRAMES, "--medieval", MEDIEVAL, "--res", res, "--samples", samples, "--frames", f"0-{LAST}"],
+                       check=True)
+
+    missing = [f for f in range(LAST + 1) if not os.path.exists(os.path.join(FRAMES, f"f_{f:04d}.png"))]
+    if missing:
+        sys.exit(f"{len(missing)} frames missing in {FRAMES} (first: {missing[0]})")
+    pattern = os.path.join(FRAMES, "f_%04d.png")
+    scale = f"scale={W}:{H}:flags=lanczos,setsar=1,format=yuv420p"
+    graph = (f"[0:v]trim=end_frame={LOOP},setpts=PTS-STARTPTS,{scale}[a];"
+             f"[1:v]trim=end_frame={FADE},setpts=PTS-STARTPTS,{scale}[b];"
+             f"[a][b]xfade=transition=fade:duration={FADE / FPS}:offset={(LOOP - FADE) / FPS}[v]")
     os.makedirs(os.path.dirname(out), exist_ok=True)
-    args += ["-filter_complex", graph, "-map", f"[{last}]", "-t", f"{total:.2f}", "-an",
-             "-c:v", "libx264", "-profile:v", "main", "-pix_fmt", "yuv420p", "-crf", "27",
-             "-preset", "slow", "-movflags", "+faststart", out]
-    subprocess.run(args, check=True)
-    print("loading video:", out, os.path.getsize(out) // 1024, "KB,", f"{total:.1f}s from {len(shots) - 1} shots")
+    subprocess.run(["ffmpeg", "-y", "-loglevel", "error",
+                    "-framerate", str(FPS), "-start_number", str(FADE), "-i", pattern,
+                    "-framerate", str(FPS), "-start_number", "0", "-i", pattern,
+                    "-filter_complex", graph, "-map", "[v]", "-an", "-r", str(FPS),
+                    "-c:v", "libx264", "-profile:v", "high", "-level", "4.1", "-pix_fmt", "yuv420p",
+                    "-crf", crf, "-preset", "slow", "-tune", "animation", "-g", str(FPS * 2),
+                    "-movflags", "+faststart", out], check=True)
+    print("loading video:", out, os.path.getsize(out) // 1024, "KB,", f"{LOOP / FPS:.1f}s loop")
 
 
 if __name__ == "__main__":

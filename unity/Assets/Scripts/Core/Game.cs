@@ -17,6 +17,8 @@ namespace Founders.Core
         readonly IGameClock clock;
         /// <summary>Feedback produced since the UI last called DrainNotices().</summary>
         readonly List<GameNotice> notices = new List<GameNotice>();
+        /// <summary>True while catching up on a long absence (no forecasts then).</summary>
+        bool simulatingOffline;
 
         public Game(GameContent content, GameState state, IGameClock clock)
         {
@@ -107,6 +109,7 @@ namespace Founders.Core
         internal void Advance(double seconds)
         {
             if (!(seconds > 0)) return;
+            simulatingOffline = seconds > 120;
             double step = Content.Balance.SimulationStepSeconds;
             // Long absences (hours away) are simulated in coarser steps so resuming stays quick.
             if (seconds > 3600) step = Math.Max(step, 5);
@@ -117,6 +120,7 @@ namespace Founders.Core
                 SimulateStep(dt);
                 remaining -= dt;
             }
+            simulatingOffline = false;
             EvaluateProgress();
         }
 
@@ -124,13 +128,16 @@ namespace Founders.Core
         {
             stepEffects = null;
             stepApproval = null;
+            stepWarmth = null;
             stepEffects = ActiveEffects();
+            stepWarmth = Warmth();
             stepApproval = Approval;
             try { Step(dt); }
             finally
             {
                 stepEffects = null;
                 stepApproval = null;
+                stepWarmth = null;
                 gatherCache.Clear();
             }
         }
@@ -163,10 +170,15 @@ namespace Founders.Core
             AdvanceConstruction(dt);
             AdvanceResearch(dt);
             AdvanceExpedition(dt);
+            AdvanceHealth(dt);
+            AdvanceDiscontent(dt);
             AdvanceGrowth(dt, snapshot.Net.Food);
 
             State.SimTime += dt;
             TrackSeason();
+            TrackStoke();
+            TrackWeather();
+            AdvancePetitions();
             double simTime = State.SimTime;
             State.Modifiers.RemoveAll(m => m.ExpiresAtSimTime.HasValue && m.ExpiresAtSimTime.Value <= simTime);
         }
@@ -176,7 +188,7 @@ namespace Founders.Core
             var b = Content.Balance;
             // Families grow only while there is room, a reserve and more food coming in than eaten.
             if (State.FoodShortage || State.Population >= HousingCapacity() || State.Resources.Food < b.GrowthMinFood
-                || netFood <= 0 || b.GrowthSecondsPerPerson <= 0) return;
+                || netFood <= 0 || b.GrowthSecondsPerPerson <= 0 || UnrestStopsGrowth) return;
             double rate = Multiplier(EffectKind.GrowthMultiplier) * (Season?.Growth ?? 1) * ApprovalGrowth(Approval);
             if (rate <= 0) return;
             State.GrowthProgress += dt / b.GrowthSecondsPerPerson * rate;

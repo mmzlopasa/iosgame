@@ -7,7 +7,8 @@ namespace Founders.UI
 {
     /// <summary>
     /// Design tokens of the Founders UI (night navy glass + gold, after the approved design
-    /// canvas). Sizes are in panel units: the panel is scaled so the screen is 390 units wide.
+    /// canvas). Sizes are in panel units: the game runs in landscape and the panel is scaled so a
+    /// phone screen is 390 units tall (and about 690–850 wide); see <see cref="GameUi.MatchFor"/>.
     /// </summary>
     public static class Theme
     {
@@ -388,6 +389,33 @@ namespace Founders.UI
             b.Add(Icon(icon, size * 0.45f, tint ?? Theme.Ink));
             b.OnTap(onTap);
             return b;
+        }
+
+        /// <summary>
+        /// Vertical scroll view exactly as tall as its content, which flex-shrinks (and then scrolls) when its
+        /// column runs out of room: for cards and dialog panes that must never be taller than the short
+        /// landscape screen. The height is set from the content's measured size, so it works whether or not
+        /// the scroll view would size itself to its content.
+        /// </summary>
+        public static ScrollView FitScroll()
+        {
+            var s = new ScrollView(ScrollViewMode.Vertical);
+            s.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            s.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            s.touchScrollBehavior = ScrollView.TouchScrollBehavior.Elastic;
+            s.style.flexGrow = 0;
+            s.style.flexShrink = 1;
+            s.style.minHeight = 0;
+            s.contentContainer.style.flexShrink = 0;
+            float last = -1;
+            s.contentContainer.RegisterCallback<GeometryChangedEvent>(e =>
+            {
+                float h = e.newRect.height;
+                if (float.IsNaN(h) || Mathf.Abs(h - last) < 0.5f) return;
+                last = h;
+                s.style.height = h;
+            });
+            return s;
         }
 
         /// <summary>Small numeric badge.</summary>

@@ -6,7 +6,12 @@ using UnityEngine.UIElements;
 
 namespace Founders.UI
 {
-    /// <summary>Full-screen dialogs: milestone celebration, welcome back report and event decisions.</summary>
+    /// <summary>
+    /// Full-screen dialogs: milestone celebration, welcome back report, story chapters and event decisions.
+    /// The landscape screen is short (about 345 units of dialog height on a notched phone), so every dialog
+    /// is a wide card with two panes: the headline on the left and the details on the right, whose body
+    /// scrolls while its buttons stay put.
+    /// </summary>
     public partial class GameUi
     {
         string chosenOption;
@@ -29,7 +34,8 @@ namespace Founders.UI
             if (key == "") return;
             var scrim = E.Div().Fill().Bg(new Color(0.03f, 0.035f, 0.05f, 0.62f));
             host.Add(scrim);
-            var frame = E.Div().Fill().Ignore().Col().Center().Pad(0, 16);
+            var frame = E.Div().Fill().Ignore().Col().Center()
+                .Pad(12 + SafeTop, 16 + SafeRight, 12 + SafeBottom, 16 + SafeLeft);
             host.Add(frame);
 
             VisualElement card;
@@ -49,15 +55,47 @@ namespace Founders.UI
             }).StartingIn(16);
         }
 
-        static VisualElement DialogShell()
+        /// <summary>The dialog card: two panes side by side, never taller than the screen allows.</summary>
+        VisualElement DialogShell(out VisualElement left, out VisualElement right, float leftShare = 40)
         {
-            var c = E.Div("dialog").Col().Radius(28).BgImage(Theme.SheetFill).Border(Theme.Edge);
+            var c = E.Div("dialog").Row(0, Align.Stretch).Radius(28).BgImage(Theme.SheetFill).Border(Theme.Edge);
             c.style.borderTopColor = new Color(1, 1, 1, 0.24f);
             c.style.backgroundColor = Theme.Hex("#101218");
             c.style.overflow = Overflow.Hidden;
             c.style.width = Length.Percent(100);
-            c.style.maxWidth = 420;
+            c.style.maxWidth = 700;
+            c.style.maxHeight = ModalMaxHeight;
+            c.style.flexShrink = 1;
+            left = E.Div().Col().Ignore();
+            left.style.width = Length.Percent(leftShare);
+            left.style.flexShrink = 0;
+            left.style.justifyContent = Justify.Center;
+            right = E.Div().Col().Ignore();
+            right.style.flexGrow = 1;
+            right.style.flexShrink = 1;
+            right.style.minWidth = 0;
+            c.Add(left);
+            c.Add(right);
             return c;
+        }
+
+        /// <summary>A pane body that scrolls when the dialog is at its maximum height.</summary>
+        static ScrollView PaneBody(float top, float side, float bottom)
+        {
+            var s = E.FitScroll();
+            s.contentContainer.style.paddingTop = top;
+            s.contentContainer.style.paddingLeft = side;
+            s.contentContainer.style.paddingRight = side;
+            s.contentContainer.style.paddingBottom = bottom;
+            return s;
+        }
+
+        /// <summary>Buttons under a pane's body (never scrolled away).</summary>
+        static VisualElement PaneFooter(float side)
+        {
+            var f = E.Div().Col().Pad(6, side, 18, side).Ignore();
+            f.style.flexShrink = 0;
+            return f;
         }
 
         // MARK: - Story
@@ -66,12 +104,22 @@ namespace Founders.UI
         VisualElement StoryCard()
         {
             var ch = G.PendingStory;
-            var c = DialogShell();
-            var top = E.Div().Col(Align.Center).Pad(26, 22, 6, 22).BgImage(Theme.GoldGlow).Ignore();
-            top.Add(E.Eyebrow($"Chapter {ch.Number} · {ch.Era}"));
-            top.Add(E.Text(ch.Title, 26, Theme.Ink, Theme.F.Display).Align(TextAnchor.MiddleCenter).Margin(8));
-            c.Add(top);
-            var body = E.Div().Col().Pad(10, 22, 20, 22).Ignore();
+            var c = DialogShell(out var left, out var right, 40);
+            left.BgImage(Theme.GoldGlow);
+            var head = PaneBody(22, 20, 22);
+            head.contentContainer.style.alignItems = Align.Center;
+            head.Add(E.Eyebrow($"Chapter {ch.Number} · {ch.Era}").Align(TextAnchor.MiddleCenter));
+            head.Add(E.Text(ch.Title, 24, Theme.Ink, Theme.F.Display).Align(TextAnchor.MiddleCenter).Margin(8));
+            var goal = E.Div().Row(0, Align.FlexStart).Radius(16).Pad(12, 14).Bg(Theme.Alpha(Theme.Gold, 0.1f)).Border(Theme.Alpha(Theme.Gold, 0.28f)).Margin(16).Ignore();
+            goal.style.alignSelf = Align.Stretch;
+            goal.Add(E.Icon(ch.Locked ? "lock" : "goals", 16, Theme.Gold));
+            var gt = E.Text(ch.Goal, 13, Theme.Ink, Theme.F.TextMedium).Grow();
+            gt.style.marginLeft = 9;
+            goal.Add(gt);
+            head.Add(goal);
+            left.Add(head);
+
+            var body = PaneBody(22, 22, 4);
             foreach (var para in ch.Story.Split('\n'))
             {
                 if (string.IsNullOrWhiteSpace(para)) continue;
@@ -79,14 +127,10 @@ namespace Founders.UI
                 t.style.unityFontStyleAndWeight = FontStyle.Italic;
                 body.Add(t);
             }
-            var goal = E.Div().Row(0, Align.FlexStart).Radius(16).Pad(12, 14).Bg(Theme.Alpha(Theme.Gold, 0.1f)).Border(Theme.Alpha(Theme.Gold, 0.28f)).Margin(6).Ignore();
-            goal.Add(E.Icon(ch.Locked ? "lock" : "goals", 16, Theme.Gold));
-            var gt = E.Text(ch.Goal, 13, Theme.Ink, Theme.F.TextMedium).Grow();
-            gt.style.marginLeft = 9;
-            goal.Add(gt);
-            body.Add(goal);
-            body.Add(E.Button(ch.Number == 1 ? "Begin" : "Continue the story", Act(() => store.DismissStory()), E.Kind.Gold, 48).Margin(16));
-            c.Add(body);
+            right.Add(body);
+            var foot = PaneFooter(22);
+            foot.Add(E.Button(ch.Number == 1 ? "Begin" : "Continue the story", Act(() => store.DismissStory()), E.Kind.Gold, 48));
+            right.Add(foot);
             return c;
         }
 
@@ -95,22 +139,28 @@ namespace Founders.UI
         VisualElement MilestoneCard()
         {
             var ms = G.Content.Milestones.LastOrDefault(m => G.State.ReachedMilestones.Contains(m.Id));
-            var c = DialogShell();
-            var top = E.Div().Col(Align.Center).Pad(28, 20, 8, 20).BgImage(Theme.GoldGlow).Ignore();
-            top.Add(E.Image(Theme.Image("logo_mark"), 96, 96));
-            top.Add(E.Eyebrow("Milestone reached").Margin(10));
-            top.Add(E.Text(ms?.Name ?? "A new chapter", 26, Theme.Ink, Theme.F.Display).Align(TextAnchor.MiddleCenter).Margin(6));
-            c.Add(top);
-            var body = E.Div().Col().Pad(12, 20, 20, 20).Ignore();
-            body.Add(E.Text(store.Celebration, 14, Theme.Body).Align(TextAnchor.MiddleCenter));
-            var note = E.Div().Row().Center().Margin(14).Ignore();
+            var c = DialogShell(out var left, out var right, 42);
+            left.BgImage(Theme.GoldGlow);
+            var head = PaneBody(22, 18, 22);
+            head.contentContainer.style.alignItems = Align.Center;
+            head.Add(E.Image(Theme.Image("logo_mark"), 84, 84));
+            head.Add(E.Eyebrow("Milestone reached").Margin(10));
+            head.Add(E.Text(ms?.Name ?? "A new chapter", 24, Theme.Ink, Theme.F.Display).Align(TextAnchor.MiddleCenter).Margin(6));
+            left.Add(head);
+
+            right.style.justifyContent = Justify.Center;
+            var body = PaneBody(24, 22, 4);
+            body.Add(E.Text(store.Celebration, 14, Theme.Body));
+            var note = E.Div().Row().Margin(14).Ignore();
             note.Add(E.Icon("legacy", 14, Theme.Lavender));
-            var nt = E.Text("Recorded in your Legacy Timeline.", 12, Theme.Muted);
+            var nt = E.Text("Recorded in your Legacy Timeline.", 12, Theme.Muted).Grow();
             nt.style.marginLeft = 6;
             note.Add(nt);
             body.Add(note);
-            body.Add(E.Button("Continue", Act(() => store.Celebration = null), E.Kind.Gold, 48).Margin(16));
-            c.Add(body);
+            right.Add(body);
+            var foot = PaneFooter(22);
+            foot.Add(E.Button("Continue", Act(() => store.Celebration = null), E.Kind.Gold, 48));
+            right.Add(foot);
             return c;
         }
 
@@ -119,17 +169,22 @@ namespace Founders.UI
         VisualElement WelcomeCard()
         {
             var report = store.Offline;
-            var c = DialogShell();
-            var top = E.Div().Col(Align.Center).Pad(26, 20, 10, 20).BgImage(Theme.GoldGlow).Ignore();
-            top.Add(E.Image(Theme.Image("logo_mark"), 64, 64));
-            top.Add(E.Eyebrow("While you were away").Margin(8));
-            top.Add(E.Text("Welcome back, Founder", 24, Theme.Ink, Theme.F.Display).Align(TextAnchor.MiddleCenter).Margin(6));
+            var c = DialogShell(out var left, out var right, 38);
+            left.BgImage(Theme.GoldGlow);
+            var head = PaneBody(22, 18, 22);
+            head.contentContainer.style.alignItems = Align.Center;
+            head.Add(E.Image(Theme.Image("logo_mark"), 60, 60));
+            head.Add(E.Eyebrow("While you were away").Margin(8));
+            head.Add(E.Text("Welcome back, Founder", 22, Theme.Ink, Theme.F.Display).Align(TextAnchor.MiddleCenter).Margin(6));
             int mins = (int)(report.Seconds / 60);
             string away = mins >= 60 ? $"{mins / 60} h {mins % 60} min" : $"{mins} min";
-            top.Add(E.Text($"Your people kept the fire alive for {away}.", 13, Theme.Body).Align(TextAnchor.MiddleCenter).Margin(6));
-            c.Add(top);
+            head.Add(E.Text($"Your people kept the fire alive for {away}.", 13, Theme.Body).Align(TextAnchor.MiddleCenter).Margin(6));
+            double cap = G.Content.Balance.MaxOfflineSeconds / 3600.0;
+            head.Add(E.Text($"Time away counts for up to {cap.ToString("0.#", CultureInfo.InvariantCulture)} hours.", 11.5f, Theme.Muted)
+                .Align(TextAnchor.MiddleCenter).Margin(10));
+            left.Add(head);
 
-            var body = E.Div().Col().Pad(10, 16, 18, 16).Ignore();
+            var body = PaneBody(16, 16, 4);
             var gathered = E.Div().Col().Glass(20).Pad(12).Ignore();
             gathered.Add(E.Eyebrow("Gathered", Theme.Muted));
             var grid = E.Div().Row().Margin(8).Ignore();
@@ -164,11 +219,10 @@ namespace Founders.UI
                     village.Add(Check(line, true).Margin(8));
                 body.Add(village);
             }
-            double cap = G.Content.Balance.MaxOfflineSeconds / 3600.0;
-            body.Add(E.Text($"Time away counts for up to {cap.ToString("0.#", CultureInfo.InvariantCulture)} hours.", 11.5f, Theme.Muted)
-                .Align(TextAnchor.MiddleCenter).Margin(10));
-            body.Add(E.Button("Back to the village", Act(() => store.Offline = null), E.Kind.Gold, 48).Margin(14));
-            c.Add(body);
+            right.Add(body);
+            var foot = PaneFooter(16);
+            foot.Add(E.Button("Back to the village", Act(() => store.Offline = null), E.Kind.Gold, 48));
+            right.Add(foot);
             return c;
         }
 
@@ -177,26 +231,33 @@ namespace Founders.UI
         VisualElement EventCard()
         {
             var ev = G.PendingEvent;
-            var c = DialogShell();
+            var c = DialogShell(out var left, out var right, 40);
 
-            var art = E.Div().Size(null, 132).Ignore();
-            art.BgImage(Theme.Gradient("eventart", true, Theme.Hex("#2a3442"), Theme.Hex("#161b22")));
+            // Left: the scene (art backdrop, the flame, title and story) and the legacy note.
+            left.BgImage(Theme.Gradient("eventart", true, Theme.Hex("#2a3442"), Theme.Hex("#161b22")));
             var glow = E.Div().Abs(0, 0, 0, 0).BgImage(Theme.GoldGlow).Opacity(0.7f).Ignore();
-            art.Add(glow);
-            var mark = E.Div().Abs(null, null, null, 0).Ignore();
-            mark.style.left = 0; mark.style.right = 0; mark.style.top = 0;
-            mark.Center();
-            mark.Add(E.Icon("flame", 46, Theme.Alpha(Theme.Gold, 0.9f)));
-            art.Add(mark);
-            var tag = E.Div().Row().Radius(999).Pad(6, 10).Bg(new Color(0.05f, 0.06f, 0.08f, 0.6f)).Border(Theme.Alpha(Theme.Gold, 0.35f)).Abs(16, 14).Ignore();
+            left.Add(glow);
+            var story = PaneBody(16, 18, 16);
+            var tag = E.Div().Row().Radius(999).Pad(6, 10).Bg(new Color(0.05f, 0.06f, 0.08f, 0.6f)).Border(Theme.Alpha(Theme.Gold, 0.35f)).Ignore();
+            tag.style.alignSelf = Align.FlexStart;
             tag.Add(E.Eyebrow("Decision", Theme.Gold, 9.5f));
-            art.Add(tag);
-            c.Add(art);
+            story.Add(tag);
+            var mark = E.Icon("flame", 40, Theme.Alpha(Theme.Gold, 0.9f)).Margin(12);
+            mark.style.alignSelf = Align.Center;
+            story.Add(mark);
+            story.Add(E.Text(ev.Title, 21, Theme.Ink, Theme.F.Display).Margin(10));
+            story.Add(E.Text(ev.Text, 13, Theme.Body).Margin(6));
+            var note = E.Div().Row(0, Align.FlexStart).Margin(12).Ignore();
+            note.Add(E.Icon("legacy", 13, Theme.Lavender));
+            var nt = E.Text("Your choice is written into the Legacy Timeline.", 11.5f, Theme.Muted).Grow();
+            nt.style.marginLeft = 6;
+            note.Add(nt);
+            story.Add(note);
+            left.Add(story);
 
-            var body = E.Div().Col().Pad(16, 18, 18, 18).Ignore();
-            body.Add(E.Text(ev.Title, 22, Theme.Ink, Theme.F.Display));
-            body.Add(E.Text(ev.Text, 13.5f, Theme.Body).Margin(6));
-
+            // Right: the options (scroll if needed) and the two buttons.
+            var options = PaneBody(14, 16, 2);
+            options.contentContainer.Add(E.Eyebrow("Choose", Theme.Muted).Margin(2, 0, 0, 4));
             foreach (var option in ev.Options)
             {
                 var blocker = G.OptionBlocker(option);
@@ -221,25 +282,20 @@ namespace Founders.UI
                     string id = option.Id;
                     Tap(o, () => chosenOption = id);
                 }
-                body.Add(o);
+                options.Add(o);
             }
+            right.Add(options);
 
-            var note = E.Div().Row().Margin(12).Ignore();
-            note.Add(E.Icon("legacy", 13, Theme.Lavender));
-            var nt = E.Text("Your choice is written into the Legacy Timeline.", 11.5f, Theme.Muted);
-            nt.style.marginLeft = 6;
-            note.Add(nt);
-            body.Add(note);
-
-            var buttons = E.Div().Row().Margin(14).Ignore();
+            var foot = PaneFooter(16);
+            var buttons = E.Div().Row().Ignore();
             buttons.Add(E.Button("Decide later", Act(() => store.EventMinimized = true), E.Kind.Ghost, 46).Grow());
             bool ready = chosenOption != null;
             var confirm = E.Button("Confirm", ready ? Act(() => { store.ResolveEvent(chosenOption); chosenOption = null; }) : null,
                                    ready ? E.Kind.Gold : E.Kind.Disabled, 46).Grow();
             confirm.style.marginLeft = 10;
             buttons.Add(confirm);
-            body.Add(buttons);
-            c.Add(body);
+            foot.Add(buttons);
+            right.Add(foot);
             return c;
         }
     }

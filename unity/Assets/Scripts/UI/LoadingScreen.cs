@@ -6,7 +6,10 @@ using UnityEngine.Video;
 
 namespace Founders.UI
 {
-    /// <summary>The cairn-and-sunrise loading screen shown while the world is generated.</summary>
+    /// <summary>
+    /// The loading screen shown while the world is generated: a looping montage (any aspect; it fills the
+    /// screen, cropped like aspect-fill) behind the title, a tip and the progress bar.
+    /// </summary>
     public sealed class LoadingScreen
     {
         static readonly string[] Tips =
@@ -20,7 +23,8 @@ namespace Founders.UI
         };
 
         readonly VisualElement layer;
-        readonly VisualElement fill, card, video;
+        readonly VisualElement fill, card, video, tipRow, progressRow;
+        readonly Label version;
         VideoPlayer player;
         GameObject videoHost;
         RenderTexture videoTexture;
@@ -34,12 +38,16 @@ namespace Founders.UI
             this.layer = layer;
             layer.pickingMode = PickingMode.Position;
             layer.Cover(Theme.Image("loading_bg"));
+            layer.style.backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center);
+            layer.style.backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Center);
             layer.style.backgroundColor = Theme.Bg;
             layer.Transition(420, "opacity");
 
             // A montage of the valley plays behind the title (fades in once the first frame is ready).
             video = E.Div().Fill().Ignore();
             video.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
+            video.style.backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center);
+            video.style.backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Center);
             video.style.opacity = 0;
             video.Transition(900, "opacity");
             layer.Add(video);
@@ -50,37 +58,45 @@ namespace Founders.UI
             bottomShade.style.height = Length.Percent(45);
             layer.Add(bottomShade);
 
+            // Landscape: the title in the upper half, then a one-line tip, the progress bar and the version
+            // along the bottom (kept clear of the home indicator by SetInsets).
             var brand = E.Div().Col(Align.Center).Ignore();
             brand.style.position = Position.Absolute;
             brand.style.left = 0; brand.style.right = 0;
-            brand.style.top = Length.Percent(23);
-            brand.Add(E.Image(Theme.Image("logo_mark"), 132, 132));
-            var word = E.Text("FOUNDERS", 38, Theme.Ink, Theme.F.DisplayBold, 6.5f).Margin(20);
+            brand.style.top = Length.Percent(7);
+            brand.Add(E.Image(Theme.Image("logo_mark"), 76, 76));
+            var word = E.Text("FOUNDERS", 32, Theme.Ink, Theme.F.DisplayBold, 5.5f).Margin(12);
             brand.Add(word);
-            var sub = E.Div().Row().Margin(10).Ignore();
+            var sub = E.Div().Row().Margin(8).Ignore();
             sub.Add(E.Div().Size(28, 1).Bg(Theme.Alpha(Theme.Gold, 0.6f)).Ignore());
             var subText = E.Text("THE LONG RISE", 12, Theme.Gold, Theme.F.TextBold, 3.6f);
             subText.style.marginLeft = 10; subText.style.marginRight = 10;
             sub.Add(subText);
             sub.Add(E.Div().Size(28, 1).Bg(Theme.Alpha(Theme.Gold, 0.6f)).Ignore());
             brand.Add(sub);
-            var tagline = E.Text("Build a world that outlives you.", 14, Theme.Body).Margin(14);
+            var tagline = E.Text("Build a world that outlives you.", 13, Theme.Body).Margin(10);
             tagline.style.unityFontStyleAndWeight = FontStyle.Italic;
             brand.Add(tagline);
             layer.Add(brand);
 
-            card = E.Div().Row(0, Align.FlexStart).Glass(20).Pad(14, 16).Abs(24, null, 24, 150).Ignore();
-            var tile = E.Div().Size(30, 30).Radius(10).Center().Bg(Theme.Alpha(Theme.Gold, 0.16f)).Ignore();
-            tile.Add(E.Icon("knowledge", 16, Theme.Gold));
+            tipRow = E.Div().Col(Align.Center).Pad(0, 24).Abs(0, null, 0, 76).Ignore();
+            card = E.Div().Row(0, Align.Center).Glass(16).Pad(9, 14).Ignore();
+            card.style.maxWidth = 560;
+            var tile = E.Div().Size(26, 26).Radius(9).Center().Bg(Theme.Alpha(Theme.Gold, 0.16f)).Ignore();
+            tile.Add(E.Icon("knowledge", 14, Theme.Gold));
             card.Add(tile);
             var tipCol = E.Div().Col().Grow().Ignore();
-            tipCol.style.marginLeft = 12;
-            tipCol.Add(E.Eyebrow("Founder’s tip", Theme.Gold, 10));
-            tipCol.Add(E.Text(Tips[Random.Range(0, Tips.Length)], 13, Theme.Ink).Margin(4));
+            tipCol.style.marginLeft = 10;
+            tipCol.Add(E.Eyebrow("Founder’s tip", Theme.Gold, 9.5f));
+            tipCol.Add(E.Text(Tips[Random.Range(0, Tips.Length)], 12.5f, Theme.Ink).Margin(2));
             card.Add(tipCol);
-            layer.Add(card);
+            tipRow.Add(card);
+            layer.Add(tipRow);
 
-            var progress = E.Div().Col().Abs(24, null, 24, 74).Ignore();
+            progressRow = E.Div().Col(Align.Center).Pad(0, 24).Abs(0, null, 0, 34).Ignore();
+            var progress = E.Div().Col().Ignore();
+            progress.style.width = Length.Percent(100);
+            progress.style.maxWidth = 520;
             var labels = E.Div().Row().Between().Ignore();
             status = E.Text("Kindling the hearth…", 12, Theme.Body);
             labels.Add(status);
@@ -88,13 +104,22 @@ namespace Founders.UI
             labels.Add(percent);
             progress.Add(labels);
             var bar = E.Bar(out fill, 6, Theme.GoldFill);
-            bar.style.marginTop = 10;
+            bar.style.marginTop = 8;
             progress.Add(bar);
-            layer.Add(progress);
+            progressRow.Add(progress);
+            layer.Add(progressRow);
 
-            var version = E.Text($"v{Application.version} · ERA I — FIRST COMMUNITIES", 10.5f, Theme.Muted, Theme.F.Mono, 0.6f)
-                .Align(TextAnchor.MiddleCenter).Abs(0, null, 0, 30);
+            version = E.Text($"v{Application.version} · ERA I — FIRST COMMUNITIES", 10.5f, Theme.Muted, Theme.F.Mono, 0.6f)
+                .Align(TextAnchor.MiddleCenter).Abs(0, null, 0, 10);
             layer.Add(version);
+        }
+
+        /// <summary>Lifts the bottom rows above the home indicator (inset in panel units).</summary>
+        public void SetInsets(float bottom)
+        {
+            tipRow.style.bottom = bottom + 76;
+            progressRow.style.bottom = bottom + 34;
+            version.style.bottom = bottom + 10;
         }
 
         /// <summary>Starts the loading montage (Resources/Video/loading) on a VideoPlayer owned by <paramref name="host"/>.</summary>
