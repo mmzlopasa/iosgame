@@ -232,14 +232,20 @@ namespace Founders
             foreach (var set in drawOrder) set.Build();
         }
 
-        /// <summary>Hides everything standing on cells the player built on (and shows it again when cleared).</summary>
-        public void SetBlocked(Func<int, int, bool> blocked)
+        /// <summary>
+        /// Shows how much of each cell is still standing: 1 = everything, 0 = nothing (built on, cut
+        /// down or mined out). In between, the cell's trees and rocks disappear one by one.
+        /// </summary>
+        public void SetStanding(Func<int, int, float> standing)
         {
             foreach (var kv in byCell)
             {
-                bool b = blocked(kv.Key.Item1, kv.Key.Item2);
-                foreach (var item in kv.Value)
+                float f = standing(kv.Key.Item1, kv.Key.Item2);
+                int n = kv.Value.Count;
+                for (int i = 0; i < n; i++)
                 {
+                    var item = kv.Value[i];
+                    bool b = f <= 0f || (float)i / n >= f;
                     if (item.Blocked == b) continue;
                     item.Blocked = b;
                     Apply(item);

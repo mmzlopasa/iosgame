@@ -260,7 +260,12 @@
     "fishing": 0.5,
     "hunting": 0.8
    }
-  ]
+  ],
+  "forestWood": 60,
+  "rockStone": 120,
+  "veinOre": 90,
+  "treeRegrowSeconds": 1440,
+  "gatherReach": 7
  },
  "buildings": [
   {

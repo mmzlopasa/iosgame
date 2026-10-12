@@ -36,6 +36,8 @@ namespace Founders
 
         public Panel ActivePanel = Panel.None;
         public int? SelectedBuildingId;
+        /// <summary>A tree stand, rock or ore vein the player tapped.</summary>
+        public (int x, int y)? SelectedNode;
         public string PlacingBuildingId { get; private set; }
         public (int x, int y)? GhostCell { get; private set; }
         /// <summary>Quarter turns of the building being placed.</summary>
@@ -280,6 +282,7 @@ namespace Founders
         public void ResolveEvent(string optionId) => Perform(Game.ResolveEvent(optionId).Error);
         public void Explore(string regionId) => Perform(Game.StartExpedition(regionId).Error);
         public void ClaimMilestone(string id) => Perform(Game.ClaimMilestone(id).Error);
+        public void ToggleHarvest(int x, int y) => Perform(Game.ToggleHarvestOrder(x, y).Error);
 
         public void DismissStory()
         {
@@ -472,6 +475,9 @@ namespace Founders
             {
                 var hit = Game.BuildingIdAt(x, y);
                 SelectedBuildingId = hit == SelectedBuildingId ? null : hit;
+                // Trees, rocks and ore can be tapped too: the player sends gatherers to them.
+                var node = hit == null && Game.IsRevealed(x, y) ? Game.NodeAt(x, y) : null;
+                SelectedNode = node != null && SelectedNode != (x, y) ? (x, y) : ((int, int)?)null;
             }
             Refresh();
         }

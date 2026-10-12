@@ -325,6 +325,14 @@ namespace Founders
         /// <summary>The clip playing now (Walk, Chop, Plant…).</summary>
         public string Clip => current;
         public string Tool => shownTool;
+        NeedBubble need;
+
+        /// <summary>Survival need shown over the head ("food", "winter") or null.</summary>
+        public void SetNeed(string iconName)
+        {
+            if (need == null) { if (iconName == null) return; need = NeedBubble.Attach(transform); }
+            need.Show(iconName);
+        }
         public WorldTerrain Ground;
         VillagerTask task;
         bool hasTask;
@@ -513,6 +521,105 @@ namespace Founders
             Parts.Prim(PrimitiveType.Capsule, figure, new Vector3(-0.08f, 0.18f, 0), new Vector3(0.11f, 0.2f, 0.11f), "Skin");
             Parts.Prim(PrimitiveType.Capsule, figure, new Vector3(0.08f, 0.18f, 0), new Vector3(0.11f, 0.2f, 0.11f), "Skin");
             return root.gameObject.AddComponent<Villager>();
+        }
+    }
+
+    /// <summary>
+    /// A round survival bubble over a villager's head (hunger, cold, tiredness): a dark disc with
+    /// a white icon that always faces the camera and bobs gently.
+    /// </summary>
+    public class NeedBubble : MonoBehaviour
+    {
+        static Texture2D disc;
+        static readonly Dictionary<string, Material> materials = new Dictionary<string, Material>();
+        static Mesh quad;
+        Transform icon;
+        string shown;
+        float phase;
+
+        static Texture2D Disc()
+        {
+            if (disc != null) return disc;
+            const int n = 64;
+            disc = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(n / 2f, n / 2f)) / (n / 2f);
+                    float a = Mathf.Clamp01((1f - d) * 18f);
+                    var c = d > 0.88f ? new Color(1f, 1f, 1f, a) : new Color(0.12f, 0.13f, 0.15f, a * 0.92f);
+                    disc.SetPixel(x, y, c);
+                }
+            disc.Apply();
+            return disc;
+        }
+
+        static Material MaterialFor(string key, Texture tex)
+        {
+            if (materials.TryGetValue(key, out var m) && m != null) return m;
+            m = new Material(Palette.Get("Mist")) { name = "Need_" + key };
+            m.SetTexture("_BaseMap", tex);
+            m.SetColor("_BaseColor", Color.white);
+            m.renderQueue = 3100;
+            return materials[key] = m;
+        }
+
+        static Mesh Quad()
+        {
+            if (quad != null) return quad;
+            quad = new Mesh { name = "NeedQuad" };
+            quad.vertices = new[] { new Vector3(-0.5f, -0.5f), new Vector3(0.5f, -0.5f), new Vector3(-0.5f, 0.5f), new Vector3(0.5f, 0.5f) };
+            quad.uv = new[] { new Vector2(0, 0), new Vector2(1, 0), new Vector2(0, 1), new Vector2(1, 1) };
+            quad.triangles = new[] { 0, 2, 1, 2, 3, 1 };
+            quad.RecalculateBounds();
+            return quad;
+        }
+
+        static GameObject Card(Transform parent, Material m, float size, float z)
+        {
+            var go = new GameObject("Card");
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = new Vector3(0, 0, z);
+            go.transform.localScale = Vector3.one * size;
+            go.AddComponent<MeshFilter>().sharedMesh = Quad();
+            var r = go.AddComponent<MeshRenderer>();
+            r.sharedMaterial = m;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+            return go;
+        }
+
+        public static NeedBubble Attach(Transform villager)
+        {
+            var go = new GameObject("Need");
+            go.transform.SetParent(villager, false);
+            go.transform.localPosition = new Vector3(0, 2.35f, 0);
+            var b = go.AddComponent<NeedBubble>();
+            Card(go.transform, MaterialFor("disc", Disc()), 0.62f, 0.01f);
+            b.phase = Random.value * 6f;
+            go.SetActive(false);
+            return b;
+        }
+
+        /// <summary>Shows an icon (e.g. "food", "winter") or hides the bubble with null.</summary>
+        public void Show(string iconName)
+        {
+            if (iconName == shown) return;
+            shown = iconName;
+            if (icon != null) Destroy(icon.gameObject);
+            icon = null;
+            gameObject.SetActive(iconName != null);
+            if (iconName == null) return;
+            var tex = UI.Theme.Icon(iconName);
+            if (tex != null) icon = Card(transform, MaterialFor(iconName, tex), 0.38f, 0f).transform;
+        }
+
+        void LateUpdate()
+        {
+            var cam = Camera.main;
+            if (cam == null) return;
+            transform.rotation = Quaternion.LookRotation(transform.position - cam.transform.position, Vector3.up);
+            transform.localPosition = new Vector3(0, 2.35f + Mathf.Sin(Time.time * 2.2f + phase) * 0.06f, 0);
         }
     }
 

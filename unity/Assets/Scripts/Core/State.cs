@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -207,6 +208,12 @@ namespace Founders.Core
         public int Chapter = 1;
         /// <summary>Chapter whose opening scene the player has not seen yet, or null.</summary>
         public string PendingStory;
+        /// <summary>Amount taken from each natural resource cell (key: y·width + x).</summary>
+        public Dictionary<int, double> NodeTaken = new Dictionary<int, double>();
+        /// <summary>Forest cells that were cut down, with the time they were cleared (they grow back).</summary>
+        public Dictionary<int, double> NodeCleared = new Dictionary<int, double>();
+        /// <summary>Cells the player marked to be harvested first, in order.</summary>
+        public List<int> HarvestOrders = new List<int>();
 
         public PlacedBuilding Building(int id) => Buildings.FirstOrDefault(b => b.Id == id);
 
@@ -264,6 +271,9 @@ namespace Founders.Core
                 d["nextPersonId"] = NextPersonId;
             }
             if (Chapter != 1) d["chapter"] = Chapter;
+            if (NodeTaken.Count > 0) d["nodeTaken"] = NodeTaken.Select(kv => (object)new List<object> { kv.Key, kv.Value }).ToList();
+            if (NodeCleared.Count > 0) d["nodeCleared"] = NodeCleared.Select(kv => (object)new List<object> { kv.Key, kv.Value }).ToList();
+            if (HarvestOrders.Count > 0) d["harvestOrders"] = HarvestOrders.Select(x => (object)x).ToList();
             if (PendingStory != null) d["pendingStory"] = PendingStory;
             if (Decorations.Count > 0 || NextDecorationId > 0)
             {
@@ -337,6 +347,11 @@ namespace Founders.Core
             if (o.Has("decorations")) s.Decorations = o.Objs("decorations").Select(PlacedDecoration.FromJson).ToList();
             s.NextDecorationId = o.OptInt("nextDecorationId") ?? 0;
             s.Chapter = o.OptInt("chapter") ?? 1;
+            if (o.Has("nodeTaken"))
+                foreach (var pair in o.Arr("nodeTaken")) { var l = (List<object>)pair; s.NodeTaken[Convert.ToInt32(l[0])] = Convert.ToDouble(l[1]); }
+            if (o.Has("nodeCleared"))
+                foreach (var pair in o.Arr("nodeCleared")) { var l = (List<object>)pair; s.NodeCleared[Convert.ToInt32(l[0])] = Convert.ToDouble(l[1]); }
+            if (o.Has("harvestOrders")) s.HarvestOrders = o.Arr("harvestOrders").Select(x => Convert.ToInt32(x)).ToList();
             s.PendingStory = o.OptStr("pendingStory");
             s.Legacy = o.Objs("legacy").Select(l => new LegacyEntry
             {

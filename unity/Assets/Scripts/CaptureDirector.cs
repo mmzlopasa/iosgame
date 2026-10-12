@@ -392,6 +392,23 @@ namespace Founders
                 yield return Shot("06p_watermill", false);
             }
 
+            // 3e. Survival: tap a stand of trees and send the woodcutters there; hunger over the heads.
+            var stand = Enumerable.Range(0, 400).Select(i => (x: i % 20, y: i / 20))
+                .FirstOrDefault(c => game.NodeAt(c.x, c.y)?.Terrain == TerrainType.Forest && game.IsRevealed(c.x, c.y));
+            store.SelectedNode = (stand.x, stand.y);
+            game.ToggleHarvestOrder(stand.x, stand.y);
+            store.Refresh();
+            Focus(Grid.CellCenter(stand.x, stand.y), 18f);
+            yield return Shot("06q_tree_order", true);
+            store.SelectedNode = null;
+            game.State.FoodShortage = true;
+            store.Refresh();
+            Focus(Camp(), 12f);
+            yield return Shot("06r_hunger", false);
+            game.State.FoodShortage = false;
+            game.DebugGrant(new ResourceBundle(200, 0, 0, 0));
+            store.Refresh();
+
             // 3c. Day, night and the seasons.
             SetTime(game, 2, 0.3f);   // autumn, morning
             yield return new WaitForSeconds(1.5f);

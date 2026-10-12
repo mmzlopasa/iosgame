@@ -108,6 +108,7 @@ namespace Founders
             buildings.Clear();
             decorations.Clear();
             tallDecor.Clear();
+            harvestMarkers.Clear();
             occupancyKey = null;
             selection.Clear();
             ghost.Clear();
@@ -463,16 +464,41 @@ namespace Founders
             return used;
         }
 
+        readonly Dictionary<int, GameObject> harvestMarkers = new Dictionary<int, GameObject>();
+
+        /// <summary>Gold frames on the trees, rocks and veins the player marked to gather first.</summary>
+        void UpdateHarvestMarkers(Game game)
+        {
+            var orders = new HashSet<int>(game.State.HarvestOrders);
+            foreach (var key in harvestMarkers.Keys.Where(k => !orders.Contains(k)).ToList())
+            {
+                Destroy(harvestMarkers[key]);
+                harvestMarkers.Remove(key);
+            }
+            int w = game.Content.Map.Width;
+            foreach (int key in orders)
+                if (!harvestMarkers.ContainsKey(key)) harvestMarkers[key] = Marker(key % w, key / w, "Select");
+        }
+
         /// <summary>Trees, rocks and grass disappear from cells the player builds on.</summary>
         void UpdateOccupancy(Game game)
         {
+            // Standing nature changes slowly: refresh when something is built, cut down or grows back,
+            // and every few seconds while gatherers are at work.
             string key = string.Join(",", game.State.Buildings.Select(b => $"{b.X}:{b.Y}:{b.Rotation}")) + "#" +
-                         string.Join(",", game.State.Decorations.Select(d => $"{d.X}:{d.Y}"));
+                         string.Join(",", game.State.Decorations.Select(d => $"{d.X}:{d.Y}")) + "#" +
+                         game.State.NodeCleared.Count + ":" + (int)(Time.unscaledTime / 4f);
             if (key == occupancyKey) return;
             bool first = occupancyKey == null;
             occupancyKey = key;
             var used = OccupiedCells(game);
-            nature.SetBlocked((x, y) => used.Contains((x, y)));
+            nature.SetStanding((x, y) =>
+            {
+                if (used.Contains((x, y))) return 0f;
+                var node = game.NodeAt(x, y);
+                return node == null || double.IsInfinity(node.Remaining) ? 1f : (float)node.Fraction;
+            });
+            UpdateHarvestMarkers(game);
             if (!first) grassDirty = true;
         }
 
@@ -564,6 +590,10 @@ namespace Founders
                 Destroy(villagers[villagers.Count - 1].gameObject);
                 villagers.RemoveAt(villagers.Count - 1);
             }
+            // Survival needs over the heads: hunger when food runs out, cold without firewood.
+            string needIcon = game.State.FoodShortage ? "food" : game.Freezing ? "winter" : null;
+            for (int i = 0; i < villagers.Count; i++)
+                villagers[i].SetNeed(needIcon != null && i % 2 == 0 ? needIcon : null);
         }
 
         // MARK: - Villager jobs (people go where their work is, and do it)
@@ -677,8 +707,20 @@ namespace Founders
                         task.Duration = 2.5f;
                         return task;
                     }
-                    var terrain = job == JobType.Woodcutting ? TerrainType.Forest : job == JobType.Mining ? TerrainType.Ore : TerrainType.Rock;
-                    task.Spot = NearTerrain(center, terrain) is Vector3 res ? Around(res, Random.Range(0.6f, 1.2f)) : Around(center, reach + 0.8f);
+                    // Go to the cells this job is actually gathering from (the player's marks first).
+                    var cells = game.GatherCells(job.Value);
+                    if (cells.Count > 0)
+                    {
+                        var pick = cells[Mathf.Min(cells.Count - 1, (index + trip) % Mathf.Min(4, cells.Count))];
+                        task.Spot = Around(Grid.CellCenter(pick.x, pick.y), Random.Range(0.6f, 1.1f));
+                    }
+                    else
+                    {
+                        task.Spot = Around(center, reach + 0.8f);
+                        task.Action = "Watch";
+                        task.Tool = null;
+                        return task;
+                    }
                     task.Action = "Chop";
                     task.Tool = job == JobType.Woodcutting ? "Prop_Axe" : "Prop_Pickaxe";
                     return task;

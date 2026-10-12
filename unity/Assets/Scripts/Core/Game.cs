@@ -129,6 +129,7 @@ namespace Founders.Core
             foreach (var t in ResourceTypes.All)
                 res[t] = Math.Min(caps[t], Math.Max(0, res[t] + net[t] * dt));
             State.Resources = res;
+            AdvanceNodes(dt);
 
             // Food shortage: warning + productivity penalty, never deaths.
             bool shortage = State.Resources.Food <= 1e-6 && net.Food < 0;

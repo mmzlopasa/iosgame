@@ -117,7 +117,7 @@ namespace Founders.Core
                 if (cells.Any(c => !IsRevealed(c.x, c.y))) issues.Add(PlacementIssue.Unexplored);
                 foreach (var c in cells)
                 {
-                    var t = map.Terrain(c.x, c.y);
+                    var t = TerrainNow(c.x, c.y);
                     if (t.HasValue && !def.AllowedTerrain.Contains(t.Value))
                     {
                         issues.Add(PlacementIssue.InvalidTerrain(t.Value));
@@ -145,7 +145,7 @@ namespace Founders.Core
                 {
                     int nx = c.x + dx, ny = c.y + dy;
                     if (occupied.Contains((nx, ny))) continue;
-                    if (Content.Map.Terrain(nx, ny) == terrain && IsRevealed(nx, ny)) return true;
+                    if (TerrainNow(nx, ny) == terrain && IsRevealed(nx, ny)) return true;
                 }
             }
             return false;

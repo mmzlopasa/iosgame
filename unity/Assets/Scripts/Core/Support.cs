@@ -42,7 +42,7 @@ namespace Founders.Core
     public enum GameErrorKind
     {
         UnknownContent, Placement, Unaffordable, ConstructionQueueFull, NotUpgradeable, BuildingBusy, LockedByTech,
-        TooManyWorkers, NoJobSlots, ResearchAlreadyDone, ResearchInProgress, MissingPrerequisites, NoPendingEvent,
+        TooManyWorkers, NoJobSlots, NothingLeft, ResearchAlreadyDone, ResearchInProgress, MissingPrerequisites, NoPendingEvent,
         OptionUnavailable, ExpeditionInProgress, RegionAlreadyExplored, RegionNotAdjacent, MilestoneAlreadyReached,
         RequirementsNotMet,
     }
@@ -74,6 +74,8 @@ namespace Founders.Core
             new GameError(GameErrorKind.NoJobSlots, $"No room for more workers (capacity {capacity}). Build more workplaces.");
         public static readonly GameError ResearchAlreadyDone = new GameError(GameErrorKind.ResearchAlreadyDone, "Already researched.");
         public static readonly GameError ResearchInProgress = new GameError(GameErrorKind.ResearchInProgress, "Another research project is in progress.");
+        public static readonly GameError NothingLeft = new GameError(GameErrorKind.NothingLeft, "Nothing is left to gather here.");
+
         public static GameError MissingPrerequisites(List<string> names) =>
             new GameError(GameErrorKind.MissingPrerequisites, $"Research first: {string.Join(", ", names)}.");
         public static readonly GameError NoPendingEvent = new GameError(GameErrorKind.NoPendingEvent, "There is no decision waiting.");

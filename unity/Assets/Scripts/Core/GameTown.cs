@@ -75,7 +75,7 @@ namespace Founders.Core
             var map = Content.Map;
             if (x < 0 || y < 0 || x >= map.Width || y >= map.Height) { issues.Add(PlacementIssue.OutOfBounds); return issues; }
             if (!IsRevealed(x, y)) issues.Add(PlacementIssue.Unexplored);
-            var t = map.Terrain(x, y);
+            var t = TerrainNow(x, y);
             if (t.HasValue && !def.AllowedTerrain.Contains(t.Value)) issues.Add(PlacementIssue.InvalidTerrain(t.Value));
             if (BuildingIdAt(x, y) != null || DecorationAt(x, y) != null) issues.Add(PlacementIssue.Overlaps);
             if (!State.Resources.Covers(def.Cost)) issues.Add(PlacementIssue.Unaffordable(State.Resources.Shortfall(def.Cost)));

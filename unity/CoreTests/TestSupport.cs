@@ -29,6 +29,7 @@ namespace Founders.Tests
                 c.Balance.ApprovalAffectsWork = false;
                 c.Balance.SkillBonusPerLevel = 0;
                 c.Balance.RoadWorkBonus = 0;
+                c.Balance.ForestWood = c.Balance.RockStone = c.Balance.VeinOre = 0; // endless land (NodeTests cover it)
             }
             configure?.Invoke(c);
             var clock = new ManualClock();

@@ -129,6 +129,7 @@ namespace Founders.Core
             {
                 if (cfg.Output == null) continue;
                 double made = SkilledWorkers(cfg.Job) * RatePerWorker(cfg.Job, productivity);
+                if (exhaustedJobs.Contains(cfg.Job)) made = 0; // nothing left to gather within reach
                 production[cfg.Output.Value] += made;
                 if (cfg.Byproduct.HasValue) production[cfg.Byproduct.Value] += made * cfg.ByproductRatio;
             }

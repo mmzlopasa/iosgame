@@ -596,6 +596,12 @@ namespace Founders.Core
         public double SkillSecondsPerLevel = 120;
         /// <summary>Extra output for workplaces next to a road.</summary>
         public double RoadWorkBonus = 0.1;
+        /// <summary>Wood in one forest cell, stone in one rock cell, ore in one ore cell (0 = endless).</summary>
+        public double ForestWood = 0, RockStone = 0, VeinOre = 0;
+        /// <summary>Seconds until a cut forest cell has grown back.</summary>
+        public double TreeRegrowSeconds = 1440;
+        /// <summary>How far (cells) gatherers walk from their workplace to find trees, rock or ore.</summary>
+        public int GatherReach = 7;
 
         internal static BalanceConfig FromJson(JObj o) => new BalanceConfig
         {
@@ -623,6 +629,11 @@ namespace Founders.Core
             SkillBonusPerLevel = o.OptNum("skillBonusPerLevel") ?? 0.1,
             SkillSecondsPerLevel = o.OptNum("skillSecondsPerLevel") ?? 120,
             RoadWorkBonus = o.OptNum("roadWorkBonus") ?? 0.1,
+            ForestWood = o.OptNum("forestWood") ?? 0,
+            RockStone = o.OptNum("rockStone") ?? 0,
+            VeinOre = o.OptNum("veinOre") ?? 0,
+            TreeRegrowSeconds = o.OptNum("treeRegrowSeconds") ?? 1440,
+            GatherReach = (int)(o.OptNum("gatherReach") ?? 7),
             Seasons = o.Has("seasons") ? o.Objs("seasons").Select(SeasonDefinition.FromJson).ToList() : new List<SeasonDefinition>(),
         };
     }

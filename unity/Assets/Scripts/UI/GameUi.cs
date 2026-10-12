@@ -704,6 +704,11 @@ namespace Founders.UI
                 var issues = store.PlacementIssues();
                 return $"place|{store.PlacingBuildingId}|{(issues.Count > 0 ? issues[0].Message : "ok")}|{store.PlacementRotation}|{ev}";
             }
+            if (store.SelectedNode is (int nx, int ny) && store.SelectedBuildingId == null)
+            {
+                var n = G.NodeAt(nx, ny);
+                return n == null ? "none|" + ev : $"node|{nx},{ny}|{n.Ordered}|{(int)Math.Min(1e6, n.Remaining)}|{G.IsExhausted(n.Job)}|{G.JobCapacity(n.Job)}|{ev}";
+            }
             if (store.SelectedBuildingId != null)
             {
                 var b = G.State.Building(store.SelectedBuildingId.Value);
@@ -734,6 +739,7 @@ namespace Founders.UI
             if (store.DecoratingId != null) DecorationCard(host);
             else if (store.PlacingBuildingId != null) PlacementCard(host);
             else if (store.SelectedBuildingId != null) BuildingCard(host);
+            else if (store.SelectedNode != null) NodeCard(host);
         }
 
         void PlacementCard(VisualElement host)
@@ -799,6 +805,54 @@ namespace Founders.UI
             buttons.Add(trash);
             buttons.Add(E.Button("Done", Act(store.EndDecorating), E.Kind.Gold, 44, "check").Grow());
             card.Add(buttons);
+            host.Add(card);
+        }
+
+        /// <summary>A tapped tree stand, rock or ore vein: what is left and an order to gather it first.</summary>
+        void NodeCard(VisualElement host)
+        {
+            var (x, y) = store.SelectedNode.Value;
+            var n = G.NodeAt(x, y);
+            if (n == null) { store.SelectedNode = null; return; }
+            string title = n.Terrain == TerrainType.Forest ? "Forest" : n.Terrain == TerrainType.Rock ? "Stone Outcrop" : "Ore Vein";
+            string icon = n.Terrain == TerrainType.Forest ? "tree" : n.Terrain == TerrainType.Rock ? "stone" : "ore";
+            var card = E.Div().Col().Glass(22).Pad(14);
+            var head = E.Div().Row().Ignore();
+            var tile = E.Div().Size(46, 46).Radius(14).Center().Bg(Theme.Alpha(TintFor(n.Resource), 0.2f)).Ignore();
+            tile.Add(E.Icon(icon, 24, TintFor(n.Resource)));
+            head.Add(tile);
+            var names = E.Div().Col().Grow().Ignore();
+            names.style.marginLeft = 12;
+            names.Add(E.Eyebrow(n.Ordered ? "Marked to gather first" : "Natural resource", n.Ordered ? Theme.Gold : Theme.Muted, 9.5f));
+            names.Add(E.Text(title, 18, Theme.Ink, Theme.F.Display).Margin(2));
+            head.Add(names);
+            head.Add(E.IconButton("close", Act(() => store.SelectedNode = null), 34));
+            card.Add(head);
+
+            bool endless = double.IsInfinity(n.Remaining);
+            var row = E.Div().Row().Between().Margin(12).Ignore();
+            row.Add(E.Text($"{n.Resource.DisplayName()} left", 12, Theme.Body));
+            row.Add(E.Mono(endless ? "plenty" : n.Depleted ? (n.Terrain == TerrainType.Forest ? "grows back" : "mined out") : $"{Fmt.Amount(n.Remaining)} / {Fmt.Amount(n.Capacity)}",
+                           12, n.Depleted ? Theme.Error : Theme.Ink));
+            card.Add(row);
+            if (!endless)
+            {
+                var bar = E.Bar(out var fill, 6, Theme.GoldFill);
+                E.SetFill(fill, n.Fraction);
+                bar.style.marginTop = 6;
+                card.Add(bar);
+            }
+            string jobName = G.Content.JobConfig(n.Job)?.Name ?? n.Job.Id();
+            if (G.JobCapacity(n.Job) == 0)
+                card.Add(Notice("build", $"No one can gather this yet: build a workplace for {jobName}.", Theme.Gold).Margin(10));
+            else if (G.IsExhausted(n.Job))
+                card.Add(Notice("alert", $"{jobName}: nothing left near the workplaces. Mark this to send them here.", Theme.Error).Margin(10));
+            if (!n.Depleted)
+            {
+                string verb = n.Terrain == TerrainType.Forest ? "Cut these trees first" : n.Terrain == TerrainType.Rock ? "Quarry this rock first" : "Mine this vein first";
+                card.Add(E.Button(n.Ordered ? "Cancel the order" : verb, Act(() => store.ToggleHarvest(x, y)),
+                                  n.Ordered ? E.Kind.Ghost : E.Kind.Gold, 44, n.Ordered ? "close" : n.Terrain == TerrainType.Forest ? "axe" : "pickaxe").Margin(12));
+            }
             host.Add(card);
         }
 
