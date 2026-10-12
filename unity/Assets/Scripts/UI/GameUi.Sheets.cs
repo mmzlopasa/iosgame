@@ -9,9 +9,11 @@ using UnityEngine.UIElements;
 namespace Founders.UI
 {
     /// <summary>
-    /// Side sheets (People, Goals, World, Profile, Settings) opened from the HUD: in landscape they slide in
-    /// from the right edge, about a portrait phone wide, so the content keeps its comfortable column width
-    /// and the settlement stays visible on the left.
+    /// Windows opened from the HUD (People, Goals, Research, Customs, Weather, World, Profile, Settings),
+    /// after the kit's popup frame: a parchment window centred under the top strip (never the whole
+    /// screen: the world shows around it), a wooden plank with the title and the red close button,
+    /// a tab strip under it (or along the bottom for Goals, like the kit's task screens) and the golden
+    /// back arrow bottom-left, outside the window.
     /// </summary>
     public partial class GameUi
     {
@@ -19,56 +21,83 @@ namespace Founders.UI
         bool sheetShown;
         string buildTab = "All";
         float confirmResetUntil;
-        VisualElement sheetHeader;
+        int peopleTab = 1, goalsTab, mapTab;
+        VisualElement scrim, sheet, sheetHead, sheetFixed, sheetTabsBottom, backArrow;
+        ScrollView sheetScroll;
 
-        /// <summary>Width of the side sheet's content (the safe-area inset on the right comes on top).</summary>
-        float SheetWidth => Mathf.Clamp(PanelW * 0.56f, 400, 480);
+        /// <summary>Panels drawn in the fixed (non-scrolling) body: they scroll inside themselves.</summary>
+        bool FixedPanel => store.ActivePanel == Panel.Research || store.ActivePanel == Panel.Customs;
+
+        bool WindowPanel => SheetOpen && store.ActivePanel != Panel.Build;
+
+        float WindowW => Mathf.Clamp(SafeWidth - 116, 500, 620);
 
         void BuildSheet()
         {
-            scrim = E.Div("scrim").Fill().Bg(new Color(0.03f, 0.035f, 0.05f, 0.5f));
+            scrim = E.Div("scrim").Fill().Bg(Theme.Scrim);
             Tap(scrim, () => store.ActivePanel = Panel.None);
             sheetLayer.Add(scrim);
 
-            sheet = E.Div("sheet").Abs(null, 8, 0, 0).Col().BgImage(Theme.SheetFill).Bg(Theme.Hex("#0F1117"));
-            sheet.style.borderTopLeftRadius = 26;
-            sheet.style.borderBottomLeftRadius = 26;
-            sheet.style.borderTopWidth = 1;
-            sheet.style.borderLeftWidth = 1;
-            sheet.style.borderTopColor = new Color(1, 1, 1, 0.2f);
-            sheet.style.borderLeftColor = new Color(1, 1, 1, 0.12f);
-            sheet.style.overflow = Overflow.Hidden;
-            sheet.Transition(320, "translate", "opacity");
+            sheet = E.Panel().Abs().Pad(0, 10, 10, 10);
+            sheet.name = "window";
+            sheet.Transition(220, "translate", "opacity", "scale");
+            sheetHead = E.Div("window-head").Col().Ignore();
+            sheetHead.style.flexShrink = 0;
+            AddRegion(sheetHead, () => WindowPanel ? $"{store.ActivePanel}|{peopleTab}|{mapTab}|{HeaderKey()}" : "", BuildSheetHeader);
+            sheet.Add(sheetHead);
 
-            sheetHeader = E.Div("sheet-header").Ignore();
-            AddRegion(sheetHeader, () => SheetOpen && !DrawerPanel ? store.ActivePanel + "|" + HeaderKey() : "", BuildSheetHeader);
-            sheet.Add(sheetHeader);
-
-            sheetScroll = new ScrollView(ScrollViewMode.Vertical);
-            sheetScroll.verticalScrollerVisibility = ScrollerVisibility.Hidden;
-            sheetScroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            sheetScroll.touchScrollBehavior = ScrollView.TouchScrollBehavior.Elastic;
+            sheetScroll = E.Scroll(ScrollViewMode.Vertical);
             sheetScroll.style.flexGrow = 1;
-            sheetScroll.contentContainer.style.paddingLeft = 16;
-            sheetScroll.contentContainer.style.paddingRight = 16;
-            sheetScroll.contentContainer.style.paddingBottom = 24;
+            sheetScroll.style.flexShrink = 1;
+            sheetScroll.style.minHeight = 0;
+            sheetScroll.contentContainer.style.paddingTop = 6;
+            sheetScroll.contentContainer.style.paddingBottom = 6;
             sheet.Add(sheetScroll);
-            AddRegion(sheetScroll.contentContainer, () => SheetOpen && !DrawerPanel ? store.ActivePanel + "|" + PanelKey() : "", BuildPanelContent);
+            AddRegion(sheetScroll.contentContainer, () => WindowPanel && !FixedPanel ? $"{store.ActivePanel}|{peopleTab}|{goalsTab}|{mapTab}|{PanelKey()}" : "", BuildPanelContent);
 
+            sheetFixed = E.Div("window-fixed").Col().Ignore();
+            sheetFixed.style.flexGrow = 1;
+            sheetFixed.style.flexShrink = 1;
+            sheetFixed.style.minHeight = 0;
+            sheetFixed.style.paddingTop = 6;
+            sheet.Add(sheetFixed);
+            AddRegion(sheetFixed, () => WindowPanel && FixedPanel ? $"{store.ActivePanel}|{DrawerKey()}" : "", BuildFixedContent);
             sheetLayer.Add(sheet);
+
+            // Bottom tabs (the kit's task screens) sit under the window's lower edge.
+            sheetTabsBottom = E.Div("window-tabs").Row(0, Align.FlexEnd).Ignore().Abs();
+            AddRegion(sheetTabsBottom, () => WindowPanel && store.ActivePanel == Panel.Objectives ? $"g{goalsTab}" : "", BuildBottomTabs);
+            sheetLayer.Add(sheetTabsBottom);
+
+            backArrow = E.Icon("back", 46).Abs();
+            backArrow.name = "back";
+            Tap(backArrow, () => store.ActivePanel = Panel.None);
+            sheetLayer.Add(backArrow);
             BuildDrawer();
-            LayoutSheet();
         }
 
-        /// <summary>Sizes the side sheet for the screen and keeps its content clear of the notch and home indicator.</summary>
+        /// <summary>Sizes and places the window (every tick; only changes are written).</summary>
         void LayoutSheet()
         {
             if (sheet == null) return;
-            sheet.style.top = SafeTop + 8;
-            sheet.style.width = SheetWidth + SafeRight;
-            sheetHeader.style.paddingRight = SafeRight;
-            sheetScroll.contentContainer.style.paddingRight = 16 + SafeRight;
-            sheetScroll.contentContainer.style.paddingBottom = 24 + SafeBottom;
+            bool window = WindowPanel;
+            sheet.Hidden(!window);
+            sheetTabsBottom.Hidden(!window || store.ActivePanel != Panel.Objectives);
+            float w = WindowW;
+            float bottomTabs = store.ActivePanel == Panel.Objectives ? 24 : 0;
+            float top = PopupTop, bottom = BottomPad + 8 + bottomTabs;
+            float maxH = 430;
+            float h = PanelH - top - bottom;
+            if (h > maxH) { top += (h - maxH) / 2; bottom += (h - maxH) / 2; }
+            float left = SafeLeft + (SafeWidth - w) / 2;
+            Place(sheet, left, top, null, bottom);
+            if (!Mathf.Approximately(sheet.style.width.value.value, w)) sheet.style.width = w;
+            Place(sheetTabsBottom, left + 14, null, null, bottom - bottomTabs - 4);
+            bool roomForBack = (SafeWidth - w) / 2 >= 52;
+            backArrow.Hidden(!window || !roomForBack);
+            Place(backArrow, SafeLeft + 6, null, null, BottomPad + 2);
+            sheetScroll.Hidden(!window || FixedPanel);
+            sheetFixed.Hidden(!window || !FixedPanel);
         }
 
         /// <summary>Visibility of layers and the open animation, run once per tick before regions.</summary>
@@ -81,114 +110,150 @@ namespace Founders.UI
                 sheetScroll.scrollOffset = Vector2.zero;
                 buildTab = pendingTab ?? "All";
                 pendingTab = null;
+                if (open) Pop(store.ActivePanel == Panel.Build ? drawer : sheet);
             }
             if (open != sheetShown)
             {
                 sheetShown = open;
                 sheetLayer.Hidden(!open);
-                if (open)
-                {
-                    sheet.style.translate = new Translate(60, 0);
-                    sheet.style.opacity = 0;
-                    sheet.schedule.Execute(() =>
-                    {
-                        sheet.style.translate = new Translate(0, 0);
-                        sheet.style.opacity = 1;
-                    }).StartingIn(16);
-                }
             }
+            LayoutHud();
+            LayoutSheet();
             UpdateDrawer();
             UpdateHeatOverlay();
-            LayoutOverlays();
             modalLayer.Hidden(ModalKey() == "");
         }
 
-        string HeaderKey()
+        /// <summary>The opening animation of a popup: a short rise and fade.</summary>
+        static void Pop(VisualElement e)
         {
-            switch (store.ActivePanel)
+            e.style.translate = new Translate(0, 14);
+            e.style.opacity = 0;
+            e.schedule.Execute(() =>
             {
-                case Panel.Build: return $"{G.ActiveConstructionCount()}";
-                case Panel.Research: return "";
-                default: return "";
-            }
+                e.style.translate = new Translate(0, 0);
+                e.style.opacity = 1;
+            }).StartingIn(16);
         }
+
+        string HeaderKey() => store.ActivePanel switch
+        {
+            Panel.People => $"{G.State.People.Count}|{G.IdleWorkers}",
+            Panel.Customs => $"{G.State.Laws.Count}",
+            _ => "",
+        };
+
+        // MARK: - Header: plank, close, tabs
 
         void BuildSheetHeader(VisualElement host)
         {
-            if (!SheetOpen || DrawerPanel) return;
-            string eyebrow, title;
-            Color accent = Theme.Gold;
+            if (!WindowPanel) return;
+            string title = store.ActivePanel switch
+            {
+                Panel.People => "People & Work",
+                Panel.Research => "Research",
+                Panel.Objectives => "Chapter Tasks",
+                Panel.Weather => "Weather & Warmth",
+                Panel.Customs => "Book of Customs",
+                Panel.Map => "World & Legacy",
+                Panel.Profile => "Founder",
+                _ => "Settings",
+            };
+            var plank = E.Plank(title, null, 16, WindowW);
+            plank.style.marginLeft = -14;
+            plank.style.marginRight = -14;
+            plank.style.marginTop = -4;
+            host.Add(plank);
+            var close = E.Close(Act(() => store.ActivePanel = Panel.None)).Abs(null, -9, -10);
+            host.Add(close);
+
+            var row = E.Div().Row(0, Align.FlexEnd).Ignore();
+            row.style.marginTop = 4;
+            void TabRow(params (string label, int index, string count)[] tabs)
+            {
+                int current = store.ActivePanel == Panel.People ? peopleTab : mapTab;
+                foreach (var (label, index, count) in tabs)
+                {
+                    int i = index;
+                    var t = E.Tab(label, i == current, Act(() => { if (store.ActivePanel == Panel.People) peopleTab = i; else mapTab = i; sheetScroll.scrollOffset = Vector2.zero; }), count);
+                    t.style.flexGrow = 1;
+                    t.style.flexBasis = 0;
+                    if (row.childCount > 0) t.style.marginLeft = 4;
+                    row.Add(t);
+                }
+            }
             switch (store.ActivePanel)
             {
-                case Panel.Build: eyebrow = "Construction"; title = "Build"; break;
-                case Panel.People: eyebrow = "Community"; title = "People & Work"; break;
-                case Panel.Research: eyebrow = "Knowledge"; title = "Research"; accent = Theme.Lavender; break;
-                case Panel.Objectives: eyebrow = "The long rise"; title = "Goals"; break;
-                case Panel.Weather: eyebrow = "Climate"; title = "Weather & Warmth"; accent = Icy; break;
-                case Panel.Map: eyebrow = G.Content.Map.Name ?? "Riverside"; title = "World & Legacy"; break;
-                case Panel.Profile: eyebrow = "Founder"; title = "Profile"; break;
-                default: eyebrow = "Founders"; title = "Settings"; break;
+                case Panel.People:
+                    TabRow(("Work", 0, G.IdleWorkers > 0 ? $"{G.IdleWorkers} idle" : null), ("Villagers", 1, G.State.People.Count.ToString(Inv)), ("Wellbeing", 2, null));
+                    break;
+                case Panel.Map:
+                    TabRow(("Explore", 0, null), ("Legacy", 1, G.State.Legacy.Count.ToString(Inv)));
+                    break;
+                case Panel.Research:
+                {
+                    var know = E.Capsule(24);
+                    know.Add(E.Icon("knowledge", 18));
+                    know.Add(Live(() => $"{Fmt.Compact(G.State.Resources.Knowledge)}  {Fmt.PerMinute(econ.Net.Knowledge)}", 12).Margin(0, 0, 0, 4));
+                    row.Add(LiveFit(() => $"{G.State.Researched.Count}/{G.Content.Technologies.Count} discovered · {G.HeartName} Lv.{G.HeartLevel}", 12, WindowW - 200, Theme.Pale).Grow());
+                    row.Add(know);
+                    break;
+                }
+                case Panel.Customs:
+                {
+                    var chip = E.Capsule(24);
+                    var icon = E.Icon("clock", 16);
+                    chip.Add(icon);
+                    chip.Add(Live(() => G.LawCooldownLeft > 0 ? $"Next law in {Fmt.Clock(G.LawCooldownLeft)}" : "A law can be signed", 11.5f).Margin(0, 0, 0, 4));
+                    row.Add(LiveFit(() =>
+                    {
+                        string d = G.HasDiscontent ? $" · discontent {(int)Math.Round(G.State.Discontent)}" : "";
+                        return $"{G.State.Laws.Count}/{G.Content.Laws.Count} customs signed{d}";
+                    }, 12, WindowW - 220, Theme.Pale).Grow());
+                    row.Add(chip);
+                    break;
+                }
+                case Panel.Weather when G.HasClimate:
+                {
+                    var chip = E.Capsule(24);
+                    chip.Add(E.Icon("thermometer", 17));
+                    chip.Add(Live(() => Deg(G.Temperature), 12).Margin(0, 0, 0, 3));
+                    row.Add(LiveFit(() => G.Season == null ? "" : $"{G.Season.Name} · Year {G.Year} · next season in {Fmt.Clock(G.SecondsUntilNextSeason)}", 12, WindowW - 120, Theme.Pale).Grow());
+                    row.Add(chip);
+                    break;
+                }
             }
-            var row = E.Div().Row().Pad(12, 16, 12, 20).Ignore();
-            var col = E.Div().Col().Grow().Ignore();
-            col.Add(E.Eyebrow(eyebrow, accent));
-            var t = E.Title(title, 22);
-            t.style.marginTop = 2;
-            col.Add(t);
-            row.Add(col);
+            if (row.childCount > 0) host.Add(row);
+        }
 
-            if (store.ActivePanel == Panel.Build)
+        void BuildBottomTabs(VisualElement host)
+        {
+            if (!WindowPanel || store.ActivePanel != Panel.Objectives) return;
+            foreach (var (label, i) in new[] { ("Chapter", 0), ("Milestones", 1), ("First Steps", 2) })
             {
-                var chip = E.Div().Row().Radius(999).Pad(6, 10).Bg(Theme.Fill).Border(new Color(1, 1, 1, 0.1f)).Ignore();
-                chip.style.marginRight = 8;
-                chip.Add(E.Text("Building", 12, Theme.Body).Margin(0, 6));
-                chip.Add(Live(() => $"{G.ActiveConstructionCount()}", 12, Theme.Ink, Theme.F.Mono));
-                row.Add(chip);
+                int index = i;
+                var t = E.Tab(label, goalsTab == i, Act(() => { goalsTab = index; sheetScroll.scrollOffset = Vector2.zero; }),
+                              i == 1 && MilestoneReady() ? "!" : null, 26);
+                t.style.width = 112;
+                t.style.marginRight = 4;
+                host.Add(t);
             }
-            else if (store.ActivePanel == Panel.Research)
-            {
-                var chip = E.Div().Row().Radius(999).Pad(6, 11).Bg(Theme.Alpha(Theme.Lavender, 0.12f)).Border(Theme.Alpha(Theme.Lavender, 0.28f)).Ignore();
-                chip.style.marginRight = 8;
-                chip.Add(E.Icon("knowledge", 13, Theme.LavenderLight));
-                var v = Live(() => Fmt.Amount(G.State.Resources.Knowledge), 13, Theme.LavenderLight, Theme.F.Mono);
-                v.style.marginLeft = 5;
-                chip.Add(v);
-                var r = Live(() => " " + Fmt.PerMinute(econ.Net.Knowledge), 10.5f, Theme.Mint, Theme.F.Mono);
-                chip.Add(r);
-                row.Add(chip);
-            }
-            else if (store.ActivePanel == Panel.Weather && G.HasClimate)
-            {
-                var chip = E.Div().Row().Radius(999).Pad(6, 11).Bg(Theme.Alpha(Icy, 0.1f)).Border(Theme.Alpha(Icy, 0.28f)).Ignore();
-                chip.style.marginRight = 8;
-                chip.Add(E.Icon("thermometer", 13, Icy));
-                var v = Live(() => Deg(G.Temperature), 13, Theme.Ink, Theme.F.Mono);
-                v.style.marginLeft = 5;
-                chip.Add(v);
-                row.Add(chip);
-            }
-            row.Add(E.IconButton("close", Act(() => store.ActivePanel = Panel.None), 36));
-            host.Add(row);
         }
 
         string PanelKey()
         {
             switch (store.ActivePanel)
             {
-                case Panel.Build:
-                    return buildTab + "|" + string.Join(",", G.Content.Buildings.Where(b => b.Buildable).Select(d =>
-                        $"{G.State.Resources.Covers(d.Cost)}{G.IsUnlocked(d)}{G.Count(d.Id, true)}")) + "|" +
-                        string.Join("", G.Content.Decorations.Select(d => $"{(G.State.Resources.Covers(d.Cost) ? 1 : 0)}{(DecorationUnlocked(d) ? 1 : 0)}"));
                 case Panel.People:
-                    return expandedPerson + "|" + string.Join(",", G.State.People.Select(p => $"{p.Job}{SkillSum(p)}")) + $"|{G.SeasonIndex}|{G.Freezing}|{string.Join(",", G.ApprovalFactors().Select(f => f.Label + f.Points))}|{G.IdleWorkers}|{G.State.Population}|{G.HousingCapacity()}|{G.State.FoodShortage}|" +
-                           string.Join(",", Enums.Jobs.Select(j => $"{G.State.Assignments[j]}/{G.JobCapacity(j)}")) + "|" + SurvivalPeopleKey();
+                    if (peopleTab == 0)
+                        return $"{G.IdleWorkers}|{G.State.Population}|{G.State.FoodShortage}|{G.HousingCapacity()}|" + string.Join(",", Enums.Jobs.Select(j => $"{G.State.Assignments[j]}/{G.JobCapacity(j)}"));
+                    if (peopleTab == 1)
+                        return expandedPerson + "|" + string.Join(",", G.State.People.Select(p => $"{p.Job}{SkillSum(p)}{(p.Sick ? "s" : "")}")) + "|" + SurvivalPeopleKey();
+                    return $"{G.SeasonIndex}|{G.Freezing}|{string.Join(",", G.ApprovalFactors().Select(f => f.Label + f.Points))}|{G.State.FoodShortage}|{SurvivalPeopleKey()}";
                 case Panel.Weather:
                     return WeatherKey();
-                case Panel.Research:
-                    return $"{G.State.ActiveResearch?.TechId}|" + string.Join(",", G.Content.Technologies.Select(t =>
-                        $"{G.GetResearchStatus(t.Id).State}{G.State.Resources.Covers(t.Cost)}"));
                 case Panel.Objectives:
-                    return $"{G.State.Chapter}|{G.Year}|" + string.Join("", G.ChapterRequirements().Select(r => r.Met ? "1" : "0")) + "|" +
+                    return $"{G.State.Chapter}|" + string.Join("", G.ChapterRequirements().Select(r => r.Met ? "1" : "0")) + "|" +
                            string.Join(",", G.State.CompletedObjectives) + "|" + G.CurrentObjective?.Id + "|" +
                            string.Join(",", G.Content.Milestones.Select(m => $"{G.CanClaimMilestone(m.Id)}{G.State.ReachedMilestones.Contains(m.Id)}")) + "|" +
                            (G.CurrentObjective == null ? "" : string.Join("", G.Status(G.CurrentObjective.Conditions).Select(s => s.Met ? "1" : "0"))) + "|" +
@@ -205,676 +270,531 @@ namespace Founders.UI
 
         void BuildPanelContent(VisualElement host)
         {
-            if (!SheetOpen || DrawerPanel) return;
+            if (!WindowPanel || FixedPanel) return;
             switch (store.ActivePanel)
             {
-                case Panel.Build: BuildBuildPanel(host); break;
-                case Panel.People: BuildPeoplePanel(host); break;
-                case Panel.Research: BuildResearchPanel(host); break;
+                case Panel.People:
+                    if (peopleTab == 0) BuildWorkTab(host);
+                    else if (peopleTab == 1) BuildVillagers(host);
+                    else BuildWellbeing(host);
+                    break;
                 case Panel.Objectives: BuildGoalsPanel(host); break;
                 case Panel.Weather: BuildWeatherPanel(host); break;
-                case Panel.Map: BuildWorldPanel(host); break;
+                case Panel.Map: if (mapTab == 0) BuildWorldPanel(host); else BuildLegacy(host); break;
                 case Panel.Profile: BuildProfilePanel(host); break;
                 default: BuildSettingsPanel(host); break;
             }
         }
 
-        static VisualElement Card(float radius = 20) => E.Div().Col().Glass(radius).Pad(14).Margin(0, 0, 10);
-
-        static VisualElement SectionLabel(string text)
+        void BuildFixedContent(VisualElement host)
         {
-            var l = E.Eyebrow(text, Theme.Muted);
-            l.style.marginTop = 10;
-            l.style.marginBottom = 8;
-            l.style.marginLeft = 4;
-            return l;
+            if (!WindowPanel || !FixedPanel) return;
+            if (store.ActivePanel == Panel.Customs) BuildCustoms(host);
+            else BuildResearch(host);
         }
 
-        // MARK: - Build
-
-        void BuildBuildPanel(VisualElement host)
+        /// <summary>A section with a margin under it, for window bodies.</summary>
+        static VisualElement Block(string title, out VisualElement body, VisualElement extra = null)
         {
-            var defs = G.Content.Buildings.Where(b => b.Buildable).ToList();
-            var decorTabs = G.Content.Decorations.Select(d => d.Category).Distinct().ToList();
-            var tabs = new[] { "All" }.Concat(defs.Select(Category).Distinct()).Concat(decorTabs).ToList();
-            var tabRow = E.Div().Row().Margin(0, 0, 12).Ignore();
-            tabRow.style.flexWrap = Wrap.Wrap;
-            foreach (var tab in tabs)
-            {
-                bool on = tab == buildTab;
-                var t = E.Div().Row().Radius(999).Pad(8, 13);
-                t.style.marginRight = 6;
-                t.style.marginBottom = 4;
-                if (on) t.BgImage(Theme.GoldFill); else t.Bg(Theme.Fill).Border(new Color(1, 1, 1, 0.1f));
-                t.Add(E.Text(tab, 12.5f, on ? Theme.OnGold : Theme.Body, Theme.F.TextBold));
-                string name = tab;
-                Tap(t, () => buildTab = name);
-                tabRow.Add(t);
-            }
-            host.Add(tabRow);
-
-            bool decorTab = decorTabs.Contains(buildTab);
-            foreach (var def in defs.Where(d => !decorTab && (buildTab == "All" || Category(d) == buildTab)))
-            {
-                bool affordable = G.State.Resources.Covers(def.Cost);
-                bool unlocked = G.IsUnlocked(def);
-                int count = G.Count(def.Id, true);
-                bool limit = def.MaxCount.HasValue && count >= def.MaxCount.Value;
-
-                var card = E.Div().Row(0, Align.FlexStart).Glass(20, affordable && unlocked && !limit ? (Color?)null : Theme.EdgeSoft).Pad(12).Margin(0, 0, 10);
-                if (!unlocked) card.style.opacity = 0.6f;
-                var tile = BuildingTile(def, 70);
-                var countTag = E.Mono(def.MaxCount.HasValue ? $"{count}/{def.MaxCount}" : $"{count}", 10, Theme.GoldLight);
-                var tag = E.Div().Ignore().Radius(999).Pad(2, 6).Bg(new Color(0.05f, 0.06f, 0.08f, 0.75f)).Abs(null, null, 4, 4);
-                tag.Add(countTag);
-                tile.Add(tag);
-                card.Add(tile);
-
-                var col = E.Div().Col().Grow().Ignore();
-                col.style.marginLeft = 12;
-                var top = E.Div().Row().Between().Ignore();
-                top.Add(E.Text(def.Name, 15, Theme.Ink, Theme.F.Display).NoWrap().Grow());
-                top.Add(E.Mono(Fmt.Clock(G.EstimatedSeconds(def.BuildSeconds)), 11, Theme.Muted));
-                col.Add(top);
-                var desc = E.Text(def.Description, 12, Theme.Body);
-                desc.style.marginTop = 4;
-                col.Add(desc);
-                if (def.Footprint.Width > 1 || def.Footprint.Height > 1)
-                    col.Add(E.Text($"Size {def.Footprint.Width}×{def.Footprint.Height}", 11, Theme.Muted).Margin(3));
-
-                var bottom = E.Div().Row().Between().Margin(8).Ignore();
-                bottom.Add(CostChips(def.Cost).Grow());
-                string label; E.Kind kind; Action act = null;
-                if (!unlocked) { label = "Locked"; kind = E.Kind.Disabled; }
-                else if (limit) { label = "Limit"; kind = E.Kind.Disabled; }
-                else if (!affordable) { label = "Need more"; kind = E.Kind.Disabled; }
-                else { label = "Place"; kind = E.Kind.Gold; string id = def.Id; act = Act(() => store.BeginPlacement(id)); }
-                bottom.Add(E.Button(label, act, kind, 32, null, 12).Pad(0, 14));
-                col.Add(bottom);
-                if (!unlocked)
-                    col.Add(E.Text($"Requires research: {G.Content.Technology(def.RequiresTech ?? "")?.Name ?? "?"}", 11.5f, Theme.Lavender).Margin(4));
-                card.Add(col);
-                host.Add(card);
-            }
-
-            if (buildTab == "All" || decorTab) BuildDecorations(host, decorTab ? buildTab : null);
-
-            var hint = E.Div().Row().Radius(14).Pad(10, 14).Bg(Theme.Alpha(Theme.Lavender, 0.08f)).Border(Theme.Alpha(Theme.Lavender, 0.18f)).Margin(4);
-            hint.Add(E.Icon("knowledge", 15, Theme.Lavender));
-            var ht = E.Text("Pick a building, then tap the ground to move it. Resources are spent only when you confirm.", 12, Theme.Lavender).Grow();
-            ht.style.marginLeft = 8;
-            hint.Add(ht);
-            host.Add(hint);
+            var s = E.Section(title, out body, extra);
+            s.style.marginBottom = 6;
+            return s;
         }
 
-        bool DecorationUnlocked(DecorationDefinition d) => d.RequiresTech == null || G.State.Researched.Contains(d.RequiresTech);
-
-        static readonly Dictionary<string, string> DecorIcon = new Dictionary<string, string>
+        /// <summary>A small stat box: value over a label.</summary>
+        VisualElement StatBox(string icon, string label, Func<string> value, Func<Color> color = null)
         {
-            ["Roads"] = "road", ["Fences"] = "fence", ["Lights"] = "lantern", ["Nature"] = "tree", ["Monuments"] = "landmark",
+            var c = E.Inset().Row().Grow();
+            c.Add(E.Icon(icon, 24));
+            var col = E.Div().Col().Grow().Ignore();
+            col.style.marginLeft = 6;
+            var v = Live(value, 15);
+            if (color != null) Bind(() => v.style.color = color());
+            col.Add(v);
+            col.Add(E.T(label, 10, Theme.Pale));
+            c.Add(col);
+            return c;
+        }
+
+        /// <summary>A reward/resource cell with the amount at the bottom (the kit's rarity cells).</summary>
+        static VisualElement RewardCell(string icon, E.Cell kind, string amount, float size = 36)
+        {
+            var c = E.Slot(icon, size, kind, 0.6f);
+            c.style.justifyContent = Justify.FlexStart;
+            c.ElementAt(0).style.marginTop = 3;
+            if (amount != null)
+            {
+                var l = E.T(amount, 9.5f).Fit(size - 2, 7).Align(TextAnchor.MiddleCenter).Abs(0, null, 0, 3);
+                c.Add(l);
+            }
+            return c;
+        }
+
+        // MARK: - People: Work
+
+        static string JobIcon(JobType job) => job switch
+        {
+            JobType.Foraging => "food",
+            JobType.Farming => "wheat",
+            JobType.Fishing => "fish",
+            JobType.Hunting => "spear",
+            JobType.Herding => "hides",
+            JobType.Woodcutting => "axe",
+            JobType.Stonecutting => "stone",
+            JobType.Mining => "pickaxe",
+            JobType.Crafting => "settings",
+            JobType.Construction => "build",
+            JobType.Healing => "sick",
+            JobType.Research => "knowledge",
+            _ => "people",
         };
 
-        /// <summary>Roads, fences, lights, plants and monuments: laid out freely like in a town builder.</summary>
-        void BuildDecorations(VisualElement host, string category)
+        void BuildWorkTab(VisualElement host)
         {
-            host.Add(SectionLabel(category == null ? "Roads & decorations" : category));
-            var grid = E.Div().Row().Ignore();
-            grid.style.flexWrap = Wrap.Wrap;
-            grid.style.justifyContent = Justify.SpaceBetween;
-            foreach (var d in G.Content.Decorations.Where(x => category == null || x.Category == category))
-            {
-                bool unlocked = DecorationUnlocked(d);
-                bool affordable = G.State.Resources.Covers(d.Cost);
-                var card = E.Div().Col().Glass(18, affordable && unlocked ? (Color?)null : Theme.EdgeSoft).Pad(10).Margin(0, 0, 8);
-                card.style.width = Length.Percent(48.5f);
-                if (!unlocked) card.style.opacity = 0.55f;
-                var top = E.Div().Row().Ignore();
-                var tile = E.Div().Size(34, 34).Radius(11).Center().Bg(Theme.Alpha(Theme.Gold, 0.14f)).Ignore();
-                tile.Add(E.Icon(DecorIcon.TryGetValue(d.Category ?? "", out var ic) ? ic : "sparkle", 17, Theme.GoldLight));
-                top.Add(tile);
-                var names = E.Div().Col().Grow().Ignore();
-                names.style.marginLeft = 8;
-                names.Add(E.Text(d.Name, 13, Theme.Ink, Theme.F.TextBold).NoWrap());
-                names.Add(E.Text(d.Beauty > 0 ? $"Beauty +{d.Beauty}" : d.IsRoad ? "Road" : d.Category, 10.5f, Theme.Muted));
-                top.Add(names);
-                card.Add(top);
-                if (d.Cost.Entries.Any()) card.Add(CostChips(d.Cost).Margin(6));
-                else card.Add(E.Text("Free", 11, Theme.Mint).Margin(6));
-                if (!unlocked)
-                    card.Add(E.Text($"Needs {G.Content.Technology(d.RequiresTech)?.Name ?? "research"}", 10.5f, Theme.Lavender).Margin(4));
-                else
-                {
-                    string id = d.Id;
-                    Tap(card, () => store.BeginDecorating(id));
-                }
-                grid.Add(card);
-            }
-            host.Add(grid);
-            var remove = E.Button("Remove decorations", Act(() => store.BeginDecorating(GameStore.RemoveTool)), E.Kind.Ghost, 38, "trash").Margin(4);
-            host.Add(remove);
-        }
+            var stats = E.Div().Row().Ignore().Margin(0, 0, 6);
+            stats.Add(StatBox("people", "People / beds", () => $"{G.State.Population}/{G.HousingCapacity()}"));
+            stats.Add(StatBox("user", "Idle", () => $"{G.IdleWorkers}", () => G.IdleWorkers > 0 ? Theme.Gold : Color.white).Margin(0, 0, 0, 6));
+            stats.Add(StatBox("food", "Food", () => Fmt.PerMinute(econ.Net.Food), () => econ.Net.Food < 0 ? Theme.Bad : Theme.Up).Margin(0, 0, 0, 6));
+            host.Add(stats);
 
-        int SkillSum(Person p) => Enums.Jobs.Sum(j => G.SkillLevel(p, j));
-
-        // MARK: - People
-
-        void BuildPeoplePanel(VisualElement host)
-        {
-            BuildWellbeing(host);
-            var summary = Card();
-            var row = E.Div().Row().Ignore();
-            row.Add(Stat("Population", () => $"{G.State.Population}/{G.HousingCapacity()}", Theme.Ink));
-            row.Add(Stat("Idle", () => $"{G.IdleWorkers}", G.IdleWorkers > 0 ? Theme.Gold : Theme.Ink).Margin(0, 0, 0, 8));
-            row.Add(Stat("Food", () => Fmt.PerMinute(econ.Net.Food), econ.Net.Food < 0 ? Theme.Error : Theme.Mint).Margin(0, 0, 0, 8));
-            summary.Add(row);
-
-            bool blocked = G.State.Population >= G.HousingCapacity();
-            if (G.State.FoodShortage)
-                summary.Add(Notice("alert", "Food has run out. All work is slower until food is restored.", Theme.Error));
-            else if (blocked)
-                summary.Add(Notice("home", "Build or upgrade shelters so the community can grow.", Theme.Gold));
+            if (G.State.FoodShortage) host.Add(Notice("alert", "Food has run out. All work is slower until food is restored.", true));
+            else if (G.State.Population >= G.HousingCapacity()) host.Add(Notice("home", "Build or upgrade shelters so the community can grow."));
             else
             {
-                var g = E.Div().Row().Between().Margin(12).Ignore();
-                g.Add(E.Text("Next newcomer", 12, Theme.Body));
-                g.Add(Live(() => $"{G.State.GrowthProgress * 100:0}%", 12, Theme.Mint, Theme.F.Mono));
-                summary.Add(g);
-                summary.Add(LiveBar(() => G.State.GrowthProgress, 5, Theme.MintFill).Margin(6));
+                var g = E.Inset().Row().Margin(0, 0, 6);
+                g.Add(E.Icon("people", 18));
+                g.Add(E.T("Next newcomer", 11.5f).Margin(0, 0, 0, 5).Grow());
+                var bar = LiveLabeledBar(() => G.State.GrowthProgress, () => $"{G.State.GrowthProgress * 100:0}%", 13);
+                bar.style.width = 150;
+                g.Add(bar);
+                host.Add(g);
             }
-            host.Add(summary);
-            BuildHealth(host);
 
-            host.Add(SectionLabel("Work"));
-            foreach (var job in Enums.Jobs) host.Add(JobRow(job, false).Margin(0, 0, 8));
-            host.Add(E.Text("Workplaces set how many people each job can take. Changes apply at once.", 11.5f, Theme.Muted).Margin(4, 4, 0, 4));
-
-            BuildVillagers(host);
-
-            host.Add(SectionLabel("Upkeep"));
-            var up = Card();
-            var r1 = E.Div().Row().Between().Ignore();
-            r1.Add(E.Text("Eating", 13, Theme.Body));
-            r1.Add(Live(() => Fmt.PerMinute(-G.State.Population * G.Content.Balance.FoodPerPersonPerSecond), 13, Theme.Error, Theme.F.Mono));
-            up.Add(r1);
-            var r2 = E.Div().Row().Between().Margin(8).Ignore();
-            r2.Add(E.Text("Spoiling", 13, Theme.Body));
-            r2.Add(Live(() => Fmt.PerMinute(-econ.Spoilage), 13, Theme.Error, Theme.F.Mono));
-            up.Add(r2);
-            host.Add(up);
+            var sec = Block("Work", out var rows, E.T("Places from workplaces", 10.5f, Theme.Pale));
+            bool sep = false;
+            foreach (var job in Enums.Jobs) { rows.Add(JobRow(job, sep)); sep = true; }
+            host.Add(sec);
         }
 
-        /// <summary>Every villager by name: what they do and what they are good at (skills grow with work).</summary>
+        /// <summary>One job: icon, name and effect, the −/+ stepper with workers/places.</summary>
+        VisualElement JobRow(JobType job, bool separator)
+        {
+            var config = G.Content.JobConfig(job);
+            var row = E.Line(separator, 40);
+            row.Add(E.Slot(JobIcon(job), 30, E.Cell.Slot, 0.7f));
+            var col = E.Div().Col().Grow().Ignore();
+            col.style.marginLeft = 6;
+            col.Add(E.T(config?.Name ?? job.Id(), 12));
+            var effect = LiveFit(() => EffectText(job, G.State.Assignments[job]), 10, WindowW - 220, Theme.Pale);
+            col.Add(effect);
+            row.Add(col);
+            int workers = G.State.Assignments[job];
+            int capacity = G.JobCapacity(job);
+            bool unlimited = config?.UnlimitedSlots ?? false;
+            row.Add(E.Square("minus", workers > 0 ? Act(() => store.SetWorkers(job, G.State.Assignments[job] - 1)) : null, workers > 0 ? E.Kind.Red : E.Kind.Grey, 28));
+            var count = E.Capsule(24).Pad(0, 6);
+            count.style.width = 62;
+            count.style.justifyContent = Justify.Center;
+            count.style.marginLeft = -2; count.style.marginRight = -2;
+            count.Add(E.T(unlimited ? $"{workers}" : $"{workers}/{capacity}", 12).Fit(52, 8));
+            row.Add(count);
+            bool canAdd = G.IdleWorkers > 0 && workers < capacity;
+            row.Add(E.Square("plus", canAdd ? Act(() => store.SetWorkers(job, G.State.Assignments[job] + 1)) : null, canAdd ? E.Kind.Green : E.Kind.Grey, 28));
+            return row;
+        }
+
+        // MARK: - People: Villagers
+
+        int SkillSum(Person p) => Enums.Jobs.Sum(j => G.SkillLevel(p, j));
+        int expandedPerson = -1;
+
         void BuildVillagers(VisualElement host)
         {
-            host.Add(SectionLabel($"Villagers · {G.State.People.Count}"));
-            var list = Card();
+            var grid = E.Div().Row(0, Align.FlexStart).Ignore();
+            grid.style.flexWrap = Wrap.Wrap;
+            grid.style.justifyContent = Justify.SpaceBetween;
+            float cellW = (WindowW - 20 - 6) / 2;
             int shown = 0;
             // The sick first (the gravest on top), then the most skilled.
             foreach (var p in G.State.People.OrderByDescending(x => x.Sick).ThenByDescending(x => x.Sick ? x.Severity : 0).ThenByDescending(SkillSum))
             {
-                if (shown++ >= 40) break;
-                var row = E.Div().Row().Margin(shown == 1 ? 0 : 8).Ignore();
-                if (p.Sick && p.Severity > 0.5)
-                    row.Radius(12).Pad(5, 6).Bg(Theme.Alpha(Theme.Error, 0.1f)).Border(Theme.Alpha(Theme.Error, 0.3f));
-                var av = E.Div().Size(32, 32).Radius(16).Center().Bg(Theme.Alpha(p.Sick ? Theme.Error : p.Female ? Theme.Lavender : Theme.Gold, 0.18f)).Ignore();
-                av.Add(E.Text(p.Name.Substring(0, 1), 14, p.Sick ? Theme.Error : p.Female ? Theme.LavenderLight : Theme.GoldLight, Theme.F.TextBold));
-                if (p.Sick)
-                {
-                    var badge = E.Div().Size(15, 15).Radius(7.5f).Center().Bg(Notify).Border(Color.white, 1f).Abs(null, null, -3, -3).Ignore();
-                    badge.Add(E.Icon("sick", 9, Color.white));
-                    av.Add(badge);
-                }
-                row.Add(av);
+                if (shown++ >= 60) break;
+                var cell = E.Inset().Row().Pad(5, 8);
+                cell.style.width = cellW;
+                cell.style.marginBottom = 6;
+                cell.style.minHeight = 50;
+                var face = E.Slot(FaceFor(p), 38, E.Cell.Slot, 0.86f);
+                if (p.Sick) face.Add(E.Icon("sick", 16).Abs(null, null, -4, -2));
+                cell.Add(face);
                 var col = E.Div().Col().Grow().Ignore();
-                col.style.marginLeft = 10;
-                col.Add(E.Text(p.Name, 13.5f, Theme.Ink, Theme.F.TextBold).NoWrap());
+                col.style.marginLeft = 8;
+                col.Add(E.T(p.Name, 12.5f).Fit(cellW - 140, 8));
                 var job = p.Job == null ? null : Enums.Jobs.Cast<JobType?>().FirstOrDefault(j => j.Value.Id() == p.Job);
                 string doing = job == null ? "Idle" : G.Content.JobConfig(job.Value)?.Name ?? p.Job;
-                col.Add(E.Text(doing, 11, job == null ? Theme.Gold : Theme.Body));
-                if (p.Sick) SickLine(col, p);
-                row.Add(col);
+                col.Add(E.T(doing, 10.5f, job == null ? Theme.Gold : Theme.Pale).Fit(cellW - 140, 7));
+                if (p.Sick) SickLine(col, p, cellW - 140);
+                cell.Add(col);
                 var best = G.BestSkill(p);
                 if (best != null)
                 {
                     int lv = G.SkillLevel(p, best.Value);
-                    var skill = E.Div().Col(Align.FlexEnd).Ignore();
-                    skill.Add(E.Text($"{SkillTitle(best.Value)} · Lv {lv}", 11.5f, Theme.GoldLight, Theme.F.TextBold).NoWrap());
-                    var bar = E.Bar(out var fill, 4, Theme.GoldFill);
+                    var skill = E.Div().Col(Align.FlexEnd).Ignore().Size(84);
+                    skill.Add(E.T($"{SkillTitle(best.Value)} <color=#D7F25A>Lv.{lv}</color>", 10.5f).Fit(84, 7));
+                    var bar = E.Bar(out var fill, 8, E.FillKind.Gold);
                     E.SetFill(fill, G.SkillProgress(p, best.Value));
-                    bar.style.width = 84;
-                    bar.style.marginTop = 4;
+                    bar.style.width = 70;
+                    bar.style.marginTop = 3;
                     skill.Add(bar);
-                    row.Add(skill);
+                    cell.Add(skill);
                 }
                 int pid = p.Id;
-                Tap(row, () => expandedPerson = expandedPerson == pid ? -1 : pid);
-                row.pickingMode = PickingMode.Position;
-                list.Add(row);
-                if (expandedPerson == p.Id) list.Add(PersonSkills(p));
+                Tap(cell, () => expandedPerson = expandedPerson == pid ? -1 : pid);
+                grid.Add(cell);
+                if (expandedPerson == p.Id)
+                {
+                    var skills = PersonSkills(p);
+                    skills.style.width = Length.Percent(100);
+                    grid.Add(skills);
+                }
             }
-            if (G.State.People.Count == 0) list.Add(E.Text("No one lives here yet.", 12, Theme.Muted));
-            host.Add(list);
-            host.Add(E.Text($"Tap someone to see their skills. Every job has its own skill up to level {G.Content.Balance.MaxSkillLevel}: each level adds " +
-                            $"{G.Content.Balance.SkillBonusPerLevel * 100:0}% output and perks come at levels 2, 4, 6, 8 and 10. The most skilled idle people take new jobs first.",
-                            11.5f, Theme.Muted).Margin(0, 4, 0, 4));
+            if (G.State.People.Count == 0) grid.Add(E.Ink("No one lives here yet."));
+            host.Add(grid);
+            host.Add(E.Ink($"Tap someone to see their skills. Every job has its own skill up to level {G.Content.Balance.MaxSkillLevel}: each level adds " +
+                           $"{G.Content.Balance.SkillBonusPerLevel * 100:0}% output and perks come at levels 2, 4, 6, 8 and 10. The most skilled idle people take new jobs first.",
+                           10.5f).Margin(2, 4, 0, 4));
         }
-
-        int expandedPerson = -1;
 
         /// <summary>One person's skills: level, progress to the next and the perks earned in each job.</summary>
         VisualElement PersonSkills(Person p)
         {
-            var box = E.Div().Col().Radius(14).Pad(10).Margin(8).Bg(new Color(1, 1, 1, 0.04f)).Border(Theme.EdgeSoft);
+            var box = E.Section($"{p.Name}'s skills", out var rows);
+            box.style.marginBottom = 6;
             var jobs = Enums.Jobs.Where(j => Game.Experience(p, j) > 0).OrderByDescending(j => Game.Experience(p, j)).ToList();
-            if (jobs.Count == 0) box.Add(E.Text("No experience yet.", 11.5f, Theme.Muted));
+            if (jobs.Count == 0) rows.Add(E.Ink("No experience yet.").Margin(4, 0, 4));
+            bool sep = false;
             foreach (var job in jobs)
             {
                 int lv = G.SkillLevel(p, job);
-                var line = E.Div().Row().Margin(4).Ignore();
-                line.Add(E.Text(SkillTitle(job), 12, Theme.Ink, Theme.F.TextBold).Grow());
-                line.Add(E.Mono($"Lv {lv}/{G.Content.Balance.MaxSkillLevel}", 11, Theme.GoldLight));
-                box.Add(line);
-                var bar = E.Bar(out var fill, 4, Theme.GoldFill);
+                var line = E.Line(sep, 26);
+                sep = true;
+                line.Add(E.Icon(JobIcon(job), 16).Margin(0, 5));
+                line.Add(E.T(SkillTitle(job), 11.5f).Grow());
+                var bar = E.Bar(out var fill, 8, E.FillKind.Gold);
                 E.SetFill(fill, G.SkillProgress(p, job));
-                bar.style.marginTop = 3;
-                box.Add(bar);
+                bar.style.width = 80;
+                bar.style.marginRight = 8;
+                line.Add(bar);
+                line.Add(E.T($"Lv.{lv}/{G.Content.Balance.MaxSkillLevel}", 11, Theme.Lv));
+                rows.Add(line);
                 var skill = G.Content.Skill(job);
                 if (skill == null) continue;
-                var perks = E.Div().Row().Margin(4).Ignore();
+                var perks = E.Div().Row().Ignore().Margin(0, 0, 4);
                 perks.style.flexWrap = Wrap.Wrap;
                 foreach (var perk in skill.Perks)
                 {
                     bool has = perk.Level <= lv;
-                    var chip = E.Div().Row().Radius(999).Pad(3, 7).Margin(0, 4, 4, 0).Ignore()
-                        .Bg(has ? Theme.Alpha(Theme.Gold, 0.16f) : new Color(1, 1, 1, 0.04f));
-                    chip.Add(E.Text($"{perk.Level} · {perk.Name}", 10, has ? Theme.GoldLight : Theme.Faint, Theme.F.TextMedium));
+                    var chip = E.Capsule(20).Pad(0, 7).Margin(0, 4, 3, 0);
+                    chip.Add(E.T($"{perk.Level} · {perk.Name}", 10, has ? Theme.Gold : Theme.Hex("#B9A898")));
                     perks.Add(chip);
                 }
-                box.Add(perks);
+                rows.Add(perks);
             }
             return box;
         }
 
         string SkillTitle(JobType job) => G.Content.Skill(job)?.Title ?? SkillTitleFallback(job);
 
-        static string SkillTitleFallback(JobType job)
+        static string SkillTitleFallback(JobType job) => job switch
         {
-            switch (job)
-            {
-                case JobType.Foraging: return "Forager";
-                case JobType.Farming: return "Farmer";
-                case JobType.Fishing: return "Fisher";
-                case JobType.Hunting: return "Hunter";
-                case JobType.Herding: return "Herder";
-                case JobType.Woodcutting: return "Woodcutter";
-                case JobType.Stonecutting: return "Quarrier";
-                case JobType.Mining: return "Miner";
-                case JobType.Crafting: return "Toolmaker";
-                case JobType.Construction: return "Builder";
-                case JobType.Healing: return "Healer";
-                case JobType.Research: return "Thinker";
-                default: return job.Id();
-            }
-        }
+            JobType.Foraging => "Forager",
+            JobType.Farming => "Farmer",
+            JobType.Fishing => "Fisher",
+            JobType.Hunting => "Hunter",
+            JobType.Herding => "Herder",
+            JobType.Woodcutting => "Woodcutter",
+            JobType.Stonecutting => "Quarrier",
+            JobType.Mining => "Miner",
+            JobType.Crafting => "Toolmaker",
+            JobType.Construction => "Builder",
+            JobType.Healing => "Healer",
+            JobType.Research => "Thinker",
+            _ => job.Id(),
+        };
 
-        /// <summary>Approval with its causes, and what the season asks of the settlement.</summary>
+        // MARK: - People: Wellbeing (approval, discontent, health, season, upkeep)
+
         void BuildWellbeing(VisualElement host)
         {
-            var card = Card();
-            var head = E.Div().Row().Ignore();
-            head.Add(E.Icon("approval", 18, Theme.Gold));
-            var t = E.Text("Approval", 15, Theme.Ink, Theme.F.Display).Grow();
-            t.style.marginLeft = 8;
-            head.Add(t);
-            var pct = E.Mono("", 18);
-            Bind(() => { int a = ApprovalNow; pct.text = a + "%"; pct.style.color = ApprovalColor(a); });
-            head.Add(pct);
-            card.Add(head);
-            var bar = E.Bar(out var fill, 6, null, Theme.Gold);
-            fill.style.backgroundImage = StyleKeyword.None;
-            Bind(() => { int a = ApprovalNow; E.SetFill(fill, a / 100.0); fill.style.backgroundColor = ApprovalColor(a); });
-            bar.style.marginTop = 10;
-            card.Add(bar);
+            var pct = E.T("", 12);
+            Bind(() => { int a = ApprovalNow; string s = a + "%"; if (pct.text != s) pct.text = s; pct.style.color = ApprovalColor(a); });
+            var card = Block("Hope", out var rows, pct);
+            var bar = E.Bar(out var fill, 11, E.FillKind.Green);
+            Bind(() => { int a = ApprovalNow; E.SetFill(fill, a / 100.0); });
+            bar.style.marginTop = 6;
+            rows.Add(bar);
             var effect = Live(() =>
             {
                 int a = ApprovalNow;
                 int work = (int)Math.Round((G.ApprovalProductivity(a) - 1) * 100);
                 string growth = a < 30 ? "no newcomers" : $"growth ×{G.ApprovalGrowth(a):0.0}";
                 return $"Work {(work >= 0 ? "+" : "")}{work}% · {growth}";
-            }, 11.5f, Theme.Body);
-            effect.style.marginTop = 6;
-            card.Add(effect);
-            card.Add(E.Div().Size(null, 1).Bg(new Color(1, 1, 1, 0.07f)).Margin(10).Ignore());
-            var baseRow = E.Div().Row().Between().Margin(8).Ignore();
-            baseRow.Add(E.Text("Base", 12.5f, Theme.Muted));
-            baseRow.Add(E.Mono(Game.ApprovalBase.ToString(CultureInfo.InvariantCulture), 12.5f, Theme.Muted));
-            card.Add(baseRow);
+            }, 11, Theme.Pale);
+            effect.style.marginTop = 3;
+            effect.style.marginBottom = 2;
+            rows.Add(effect);
+            rows.Add(E.StatRow("approval", "Base", Game.ApprovalBase.ToString(Inv), null, true, Theme.Pale));
             foreach (var f in G.ApprovalFactors())
-            {
-                var r = E.Div().Row().Between().Margin(6).Ignore();
-                r.Add(E.Text(f.Label, 12.5f, Theme.Ink).Grow());
-                r.Add(E.Mono((f.Points > 0 ? "+" : f.Points < 0 ? "−" : "") + Math.Abs(f.Points), 12.5f, f.Points > 0 ? Theme.Mint : f.Points < 0 ? Theme.Error : Theme.Muted));
-                card.Add(r);
-            }
+                rows.Add(E.StatRow(null, f.Label, (f.Points > 0 ? "+" : f.Points < 0 ? "−" : "") + Math.Abs(f.Points), null, true,
+                                   f.Points > 0 ? Theme.Up : f.Points < 0 ? Theme.Bad : Theme.Pale));
             host.Add(card);
             BuildDiscontent(host);
+            BuildHealth(host);
 
             var season = G.Season;
             if (season != null)
             {
-                var sc = Card();
-                var sh = E.Div().Row().Ignore();
-                sh.Add(E.Icon(SeasonIcon(season.Id), 18, SeasonTint(season.Id)));
-                var st = E.Text($"{season.Name} · Year {G.Year}", 15, Theme.Ink, Theme.F.Display).Grow();
-                st.style.marginLeft = 8;
-                sh.Add(st);
-                sh.Add(Live(() => Fmt.Clock(G.SecondsUntilNextSeason), 12, Theme.Muted, Theme.F.Mono));
-                sc.Add(sh);
-                if (!string.IsNullOrEmpty(season.Description)) sc.Add(E.Text(season.Description, 12, Theme.Body).Margin(6));
-                var chips = E.Div().Row().Margin(10).Ignore();
-                chips.style.flexWrap = Wrap.Wrap;
-                chips.Add(StatChip("food", $"Foraging ×{season.Foraging:0.##}"));
-                chips.Add(StatChip("spring", season.Farming <= 0 ? "No farming" : $"Farming ×{season.Farming:0.##}"));
-                if (season.FuelPerPersonPerSecond > 0)
-                    chips.Add(StatChip("flame", $"Firewood {G.FuelPerSecond * 60:0.#}/m"));
-                sc.Add(chips);
-                if (G.Freezing) sc.Add(Notice("alert", "The woodpile is empty and people are freezing. Put more people on Wood Gathering.", Theme.Error));
+                var sc = Block($"{season.Name} · Year {G.Year}", out var srows, Live(() => Fmt.Clock(G.SecondsUntilNextSeason), 11, Theme.Pale));
+                if (!string.IsNullOrEmpty(season.Description)) srows.Add(E.Ink(season.Description, 10.5f).Margin(4, 0, 2));
+                srows.Add(E.StatRow("food", "Foraging", $"×{season.Foraging:0.##}", null, true));
+                srows.Add(E.StatRow("wheat", "Farming", season.Farming <= 0 ? "None" : $"×{season.Farming:0.##}", null, true, season.Farming <= 0 ? Theme.Bad : (Color?)null));
+                if (season.FuelPerPersonPerSecond > 0) srows.Add(E.StatRow("flame", "Firewood", $"{G.FuelPerSecond * 60:0.#}/m", null, true));
+                if (G.Freezing) srows.Add(Notice("alert", "The woodpile is empty and people are freezing. Put more people on Wood Gathering.", true));
                 host.Add(sc);
             }
+
+            var up = Block("Upkeep", out var urows);
+            var r1 = E.Line(false);
+            r1.Add(E.Icon("food", 15).Margin(0, 5));
+            r1.Add(E.T("Eating", 11.5f).Grow());
+            r1.Add(Live(() => Fmt.PerMinute(-G.State.Population * G.Content.Balance.FoodPerPersonPerSecond), 12, Theme.Bad));
+            urows.Add(r1);
+            var r2 = E.Line(true);
+            r2.Add(E.Icon("storage", 15).Margin(0, 5));
+            r2.Add(E.T("Spoiling", 11.5f).Grow());
+            r2.Add(Live(() => Fmt.PerMinute(-econ.Spoilage), 12, Theme.Bad));
+            urows.Add(r2);
+            host.Add(up);
         }
 
-        VisualElement Stat(string label, Func<string> value, Color color)
-        {
-            var c = E.Div().Col().Grow().Radius(14).Pad(10).Bg(new Color(1, 1, 1, 0.04f)).Ignore();
-            c.Add(E.Eyebrow(label, Theme.Muted, 9.5f));
-            var v = Live(value, 16, color, Theme.F.Mono);
-            v.style.marginTop = 4;
-            c.Add(v);
-            return c;
-        }
-
-        static VisualElement Notice(string icon, string text, Color color)
-        {
-            var n = E.Div().Row(0, Align.FlexStart).Radius(14).Pad(10, 12).Bg(Theme.Alpha(color, 0.08f)).Border(Theme.Alpha(color, 0.25f)).Margin(12).Ignore();
-            n.Add(E.Icon(icon, 15, color));
-            var t = E.Text(text, 12.5f, color).Grow();
-            t.style.marginLeft = 8;
-            n.Add(t);
-            return n;
-        }
-
-        // MARK: - Research
-
-        void BuildResearchPanel(VisualElement host)
-        {
-            var active = G.State.ActiveResearch;
-            if (active != null)
-            {
-                var tech = G.Content.Technology(active.TechId);
-                var card = E.Div().Col().Radius(20).Pad(14).BgImage(Theme.LavenderGlow).Border(Theme.Alpha(Theme.Lavender, 0.34f)).Margin(0, 0, 12);
-                var head = E.Div().Row().Between().Ignore();
-                head.Add(E.Eyebrow("In progress", Theme.Lavender));
-                head.Add(Live(() => $"{Fmt.Clock(G.State.ActiveResearch?.RemainingSeconds ?? 0)} left", 11.5f, Theme.LavenderLight, Theme.F.Mono));
-                card.Add(head);
-                card.Add(E.Text(tech?.Name ?? active.TechId, 17, Theme.Ink, Theme.F.Display).Margin(8));
-                card.Add(E.Text(tech?.Description ?? "", 12, Theme.Body).Margin(4));
-                card.Add(LiveBar(() => G.GetResearchStatus(active.TechId).Progress, 6, Theme.LavenderFill).Margin(10));
-                host.Add(card);
-            }
-            if (econ.Production.Knowledge <= 0)
-                host.Add(Notice("people", "Assign people to Research (People tab) to produce knowledge.", Theme.Gold).Margin(0, 0, 10));
-
-            host.Add(SectionLabel($"Era {Fmt.Roman(G.Content.Epoch(G.State.EpochId)?.Index ?? 1)} · {G.EpochName}"));
-            foreach (var tech in G.Content.Technologies)
-            {
-                var status = G.GetResearchStatus(tech.Id);
-                if (status.State == ResearchState.InProgress) continue;
-                bool affordable = G.State.Resources.Covers(tech.Cost);
-                bool busy = G.State.ActiveResearch != null;
-
-                Color edge, iconBg, iconFg; string icon;
-                switch (status.State)
-                {
-                    case ResearchState.Researched: edge = Theme.Alpha(Theme.Mint, 0.28f); iconBg = Theme.Alpha(Theme.Mint, 0.16f); iconFg = Theme.Mint; icon = "check"; break;
-                    case ResearchState.Available: edge = Theme.Alpha(Theme.Gold, 0.4f); iconBg = Theme.Alpha(Theme.Gold, 0.16f); iconFg = Theme.Gold; icon = "plus"; break;
-                    default: edge = Theme.EdgeSoft; iconBg = new Color(1, 1, 1, 0.06f); iconFg = Theme.Muted; icon = "lock"; break;
-                }
-                var card = E.Div().Col().Glass(18, edge).Pad(12).Margin(0, 0, 8);
-                if (status.State == ResearchState.Blocked) card.style.opacity = 0.7f;
-                var head = E.Div().Row().Ignore();
-                var tile = E.Div().Size(32, 32).Radius(10).Center().Bg(iconBg).Ignore();
-                tile.Add(E.Icon(icon, 16, iconFg));
-                head.Add(tile);
-                var col = E.Div().Col().Grow().Ignore();
-                col.style.marginLeft = 10;
-                col.Add(E.Text(tech.Name, 14.5f, status.State == ResearchState.Blocked ? Theme.Body : Theme.Ink, Theme.F.Display));
-                string meta = status.State == ResearchState.Researched ? "Researched"
-                    : status.State == ResearchState.Blocked ? "Needs " + string.Join(", ", status.Missing)
-                    : $"{Fmt.Clock(tech.ResearchSeconds)}";
-                col.Add(E.Text(meta, 11, status.State == ResearchState.Researched ? Theme.Mint : status.State == ResearchState.Blocked ? Theme.Faint : Theme.GoldLight,
-                               status.State == ResearchState.Available ? Theme.F.Mono : Theme.F.TextMedium).Margin(2));
-                head.Add(col);
-                card.Add(head);
-                card.Add(E.Text(tech.Description, 12, Theme.Body).Margin(8));
-                if (status.State == ResearchState.Available)
-                {
-                    var bottom = E.Div().Row().Between().Margin(10).Ignore();
-                    bottom.Add(CostChips(tech.Cost).Grow());
-                    bool can = affordable && !busy;
-                    string id = tech.Id;
-                    bottom.Add(E.Button(busy ? "One at a time" : affordable ? "Research" : "Need more",
-                                        can ? Act(() => store.StartResearch(id)) : null, can ? E.Kind.Gold : E.Kind.Disabled, 32, null, 12).Pad(0, 14));
-                    card.Add(bottom);
-                }
-                host.Add(card);
-            }
-        }
-
-        // MARK: - Goals
+        // MARK: - Goals (the kit's Chapter Tasks)
 
         void BuildGoalsPanel(VisualElement host)
         {
-            BuildChapters(host);
+            if (goalsTab == 0) BuildChapters(host);
+            else if (goalsTab == 1) BuildMilestones(host);
+            else BuildObjectives(host);
+        }
+
+        void BuildChapters(VisualElement host)
+        {
+            var current = G.CurrentChapter;
+            if (current == null) { host.Add(E.Ink("The story has not begun yet.")); return; }
+            // Banner: the chapter on dark wood, with the story button.
+            var banner = E.Div().Row().Radius(9).Border(Theme.Outline, 2).Pad(8, 10).Margin(0, 0, 6);
+            banner.BgImage(Theme.Gradient("banner", false, Theme.Hex("#4A2E1A"), Theme.Hex("#8A5A32")));
+            banner.style.minHeight = 64;
+            banner.Add(E.Icon("campfire", 44));
+            var col = E.Div().Col().Grow().Ignore();
+            col.style.marginLeft = 8;
+            col.Add(E.T($"Chapter {current.Number} · {current.Era}", 11, Theme.Gold));
+            col.Add(E.T(current.Title, 15).Fit(WindowW - 230, 9));
+            col.Add(E.T(current.Goal, 10.5f, Theme.Pale).Wrap());
+            banner.Add(col);
+            banner.Add(E.Button("Story", Act(() => G.State.PendingStory = current.Id), E.Kind.Orange, 32, "legacy", 12.5f, null, 92).Margin(0, 0, 0, 8));
+            host.Add(banner);
+
+            if (current.Locked) host.Add(Notice("lock", "The next era is still being built. Your settlement keeps growing until it arrives."));
+            else
+                foreach (var req in G.ChapterRequirements()) host.Add(TaskRow(req.Text, req.Met, () => store.ActivePanel = Panel.Build));
+
+            // The road ahead: every chapter, with the ones still to come.
+            var road = Block("The road ahead", out var rows);
+            road.style.marginTop = 4;
+            bool sep = false;
+            foreach (var ch in G.Content.Chapters)
+            {
+                bool done = ch.Number < current.Number;
+                bool now = ch.Number == current.Number;
+                var row = E.Line(sep);
+                sep = true;
+                row.Add(E.Icon(done ? "check" : ch.Locked ? "lock" : now ? "flame" : "next", 16).Margin(0, 6));
+                row.Add(E.T($"{ch.Number}. {ch.Title}", 11.5f, now ? Theme.Gold : done ? (Color?)null : Theme.Pale).Fit(WindowW - 200, 8).Grow());
+                row.Add(E.T(ch.Era, 10.5f, Theme.Pale));
+                rows.Add(row);
+            }
+            host.Add(road);
+        }
+
+        /// <summary>A task: title, then ✓ when done or a blue Go.</summary>
+        VisualElement TaskRow(string text, bool met, Action go)
+        {
+            var r = E.Inset().Row().Margin(0, 0, 5);
+            r.style.minHeight = 38;
+            r.Add(E.T(text, 12, met ? Theme.Up : (Color?)null).Fit(WindowW - 130, 8).Grow());
+            var pill = E.Capsule(20).Pad(0, 7);
+            pill.Add(E.T(met ? "1/1" : "0/1", 11, met ? Theme.Up : Color.white));
+            r.Add(pill);
+            var right = E.Div().Row().Center().Ignore().Size(58);
+            right.Add(met ? E.Icon("check", 24) : E.Button("Go", Act(go), E.Kind.Blue, 28, null, 13, null, 52));
+            r.Add(right);
+            return r;
+        }
+
+        void BuildMilestones(VisualElement host)
+        {
             foreach (var ms in G.Content.Milestones)
             {
                 bool reached = G.State.ReachedMilestones.Contains(ms.Id);
-                var card = E.Div().Col().Radius(22).Pad(16).BgImage(Theme.GoldGlow).Border(Theme.Alpha(Theme.Gold, 0.34f)).Margin(0, 0, 12);
-                var head = E.Div().Row().Ignore();
-                head.Add(E.Icon(reached ? "trophy" : "sparkle", 18, Theme.Gold));
-                var eb = E.Eyebrow(reached ? "Milestone reached" : "Milestone");
-                eb.style.marginLeft = 8;
-                head.Add(eb);
-                card.Add(head);
-                card.Add(E.Text(ms.Name, 20, Theme.Ink, Theme.F.Display).Margin(8));
-                if (!string.IsNullOrEmpty(ms.Description)) card.Add(E.Text(ms.Description, 12.5f, Theme.Body).Margin(4));
+                var head = reached ? E.T("Reached", 11, Theme.Up) : null;
+                var card = Block(ms.Name, out var rows, head);
+                if (!string.IsNullOrEmpty(ms.Description)) rows.Add(E.Ink(ms.Description, 10.5f).Margin(4, 0, 2));
                 if (!reached)
                 {
-                    foreach (var req in G.MilestoneRequirements(ms.Id)) card.Add(Check(req.Text, req.Met).Margin(8));
+                    bool sep = true;
+                    foreach (var req in G.MilestoneRequirements(ms.Id))
+                    {
+                        rows.Add(RequirementRow("goals", req.Text, req.Met, null, sep, WindowW));
+                        sep = true;
+                    }
                     bool can = G.CanClaimMilestone(ms.Id);
                     string id = ms.Id;
-                    card.Add(E.Button(can ? $"Claim: {ms.Name}" : "Not ready yet", can ? Act(() => { store.ClaimMilestone(id); store.ActivePanel = Panel.None; }) : null,
-                                      can ? E.Kind.Gold : E.Kind.Disabled, 46, can ? "sparkle" : null).Margin(14));
+                    var claim = E.Button(can ? "Claim" : "Not ready yet", can ? Act(() => { store.ClaimMilestone(id); store.ActivePanel = Panel.None; }) : null,
+                                         can ? E.Kind.Orange : E.Kind.Grey, 34, can ? "trophy" : null, 13);
+                    claim.style.marginTop = 4;
+                    claim.style.marginBottom = 4;
+                    claim.style.alignSelf = Align.Center;
+                    claim.style.minWidth = 180;
+                    rows.Add(claim);
                 }
+                else rows.Add(E.Div().Row().Center().Ignore().Margin(4, 0, 4).Kids(E.Icon("trophy", 30)));
                 host.Add(card);
             }
+        }
 
-            host.Add(SectionLabel("First steps"));
+        void BuildObjectives(VisualElement host)
+        {
             var current = G.CurrentObjective;
             foreach (var obj in G.Content.Objectives)
             {
                 bool done = G.State.CompletedObjectives.Contains(obj.Id);
                 bool isCurrent = current != null && current.Id == obj.Id;
-                var card = E.Div().Col().Glass(18, isCurrent ? Theme.Alpha(Theme.Gold, 0.4f) : done ? Theme.Alpha(Theme.Mint, 0.22f) : (Color?)Theme.EdgeSoft)
-                    .Pad(12).Margin(0, 0, 8);
-                if (!done && !isCurrent) card.style.opacity = 0.65f;
+                var card = E.Inset().Col().Margin(0, 0, 5);
+                if (!done && !isCurrent) card.style.opacity = 0.7f;
                 var head = E.Div().Row().Ignore();
-                var dot = E.Div().Size(26, 26).Radius(13).Center().Ignore()
-                    .Bg(done ? Theme.Alpha(Theme.Mint, 0.16f) : isCurrent ? Theme.Alpha(Theme.Gold, 0.18f) : new Color(1, 1, 1, 0.06f));
-                dot.Add(E.Icon(done ? "check" : isCurrent ? "goals" : "lock", 14, done ? Theme.Mint : isCurrent ? Theme.Gold : Theme.Muted));
-                head.Add(dot);
-                var t = E.Text(obj.Title, 14, Theme.Ink, isCurrent ? Theme.F.Display : Theme.F.TextMedium).Grow();
-                t.style.marginLeft = 10;
-                head.Add(t);
+                head.style.minHeight = 30;
+                head.Add(E.Icon(done ? "check" : isCurrent ? "goals" : "lock", 20));
+                head.Add(E.T(obj.Title, 12, isCurrent ? Theme.Gold : (Color?)null).Fit(WindowW - 200, 8).Grow().Margin(0, 0, 0, 6));
+                if (obj.Reward.HasValue && !done)
+                    foreach (var kv in obj.Reward.Value.Entries)
+                        head.Add(RewardCell(IconFor(kv.Key), CellFor(kv.Key), Fmt.Compact(kv.Value), 32).Margin(0, 0, 0, 4));
                 card.Add(head);
                 if (isCurrent)
                 {
-                    if (!string.IsNullOrEmpty(obj.Hint)) card.Add(E.Text(obj.Hint, 12, Theme.Body).Margin(8));
-                    foreach (var req in G.Status(obj.Conditions)) card.Add(Check(req.Text, req.Met).Margin(6));
-                }
-                if (obj.Reward.HasValue && !done)
-                {
-                    var rw = E.Div().Row().Margin(8).Ignore();
-                    rw.Add(E.Text("Reward", 11, Theme.Muted));
-                    var chips = CostChips(obj.Reward.Value);
-                    chips.style.marginLeft = 8;
-                    rw.Add(chips);
-                    card.Add(rw);
+                    if (!string.IsNullOrEmpty(obj.Hint)) card.Add(E.Ink(obj.Hint, 10.5f).Margin(3));
+                    bool sep = true;
+                    foreach (var req in G.Status(obj.Conditions)) card.Add(RequirementRow("next", req.Text, req.Met, null, sep, WindowW));
                 }
                 host.Add(card);
             }
-        }
-
-        /// <summary>The story: the current chapter with what it needs, and the road ahead.</summary>
-        void BuildChapters(VisualElement host)
-        {
-            var current = G.CurrentChapter;
-            if (current == null) return;
-            var card = E.Div().Col().Radius(22).Pad(16).BgImage(Theme.GoldGlow).Border(Theme.Alpha(Theme.Gold, 0.34f)).Margin(0, 0, 12);
-            var head = E.Div().Row().Between().Ignore();
-            head.Add(E.Eyebrow($"Chapter {current.Number} · {current.Era}"));
-            head.Add(E.Mono($"Year {G.Year}", 11, Theme.GoldLight));
-            card.Add(head);
-            card.Add(E.Text(current.Title, 20, Theme.Ink, Theme.F.Display).Margin(8));
-            card.Add(E.Text(current.Goal, 12.5f, Theme.Body).Margin(4));
-            if (current.Locked)
-                card.Add(Notice("lock", "The next era is still being built. Your settlement keeps growing until it arrives.", Theme.Lavender));
-            else
-                foreach (var req in G.ChapterRequirements()) card.Add(Check(req.Text, req.Met).Margin(8));
-            var story = E.Button("Read the story", Act(() => G.State.PendingStory = current.Id), E.Kind.Ghost, 38).Margin(12);
-            card.Add(story);
-            host.Add(card);
-
-            // The road ahead: every chapter, with the ones still to come.
-            var road = E.Div().Col().Glass(18).Pad(12).Margin(0, 0, 12);
-            foreach (var ch in G.Content.Chapters)
-            {
-                bool done = ch.Number < current.Number;
-                bool now = ch.Number == current.Number;
-                var row = E.Div().Row().Margin(ch.Number == 1 ? 0 : 7).Ignore();
-                if (!done && !now) row.style.opacity = 0.55f;
-                var dot = E.Div().Size(24, 24).Radius(12).Center().Ignore()
-                    .Bg(done ? Theme.Alpha(Theme.Mint, 0.16f) : now ? Theme.Alpha(Theme.Gold, 0.2f) : new Color(1, 1, 1, 0.06f));
-                dot.Add(E.Icon(done ? "check" : ch.Locked ? "lock" : now ? "goals" : "next", 12, done ? Theme.Mint : now ? Theme.Gold : Theme.Muted));
-                row.Add(dot);
-                var t = E.Text($"{ch.Number}. {ch.Title}", 13, now ? Theme.Ink : Theme.Body, now ? Theme.F.TextBold : Theme.F.TextMedium).Grow();
-                t.style.marginLeft = 9;
-                row.Add(t);
-                row.Add(E.Text(ch.Era, 10.5f, Theme.Muted));
-                road.Add(row);
-            }
-            host.Add(road);
-        }
-
-        static VisualElement Check(string text, bool met)
-        {
-            var r = E.Div().Row(0, Align.FlexStart).Ignore();
-            r.Add(E.Icon(met ? "check" : "next", 14, met ? Theme.Mint : Theme.Muted));
-            var t = E.Text(text, 12.5f, met ? Theme.Mint : Theme.Ink).Grow();
-            t.style.marginLeft = 7;
-            r.Add(t);
-            return r;
         }
 
         // MARK: - World & Legacy
 
         void BuildWorldPanel(VisualElement host)
         {
-            var info = Card();
+            var info = E.Inset().Col().Margin(0, 0, 6);
             var head = E.Div().Row().Ignore();
-            head.Add(E.Icon("world", 18, Theme.Gold));
-            var n = E.Text(G.State.SettlementName, 16, Theme.Ink, Theme.F.Display);
-            n.style.marginLeft = 8;
-            head.Add(n);
+            head.Add(E.Icon("world", 22));
+            head.Add(E.T(G.State.SettlementName, 14).Margin(0, 0, 0, 6).Grow());
+            head.Add(E.T(G.Content.Map.Name ?? "", 11, Theme.Pale));
             info.Add(head);
-            var traits = E.Div().Row().Margin(10).Ignore();
+            var traits = E.Div().Row().Ignore().Margin(4);
             traits.style.flexWrap = Wrap.Wrap;
-            foreach (var t in G.Content.Map.Traits) traits.Add(StatChip("compass", t));
+            foreach (var t in G.Content.Map.Traits)
+            {
+                var chip = E.Capsule(20).Pad(0, 7).Margin(0, 4, 3, 0);
+                chip.Add(E.T(t, 10.5f));
+                traits.Add(chip);
+            }
             info.Add(traits);
             host.Add(info);
 
-            host.Add(SectionLabel("Explore"));
             var active = G.State.ActiveExpedition;
             foreach (var region in G.Content.Regions.Where(r => !r.RevealedAtStart))
             {
                 bool explored = G.State.ExploredRegions.Contains(region.Id);
-                var card = E.Div().Col().Glass(18, explored ? Theme.Alpha(Theme.Mint, 0.24f) : (Color?)null).Pad(12).Margin(0, 0, 8);
-                var top = E.Div().Row().Between().Ignore();
-                top.Add(E.Text(region.Name, 14.5f, Theme.Ink, Theme.F.Display).Grow());
-                if (explored) top.Add(E.Eyebrow("Explored", Theme.Mint, 9.5f));
-                card.Add(top);
-                card.Add(E.Text(region.Description, 12, Theme.Body).Margin(4));
+                var card = Block(region.Name, out var rows, explored ? E.T("Explored", 11, Theme.Up) : null);
+                rows.Add(E.Ink(region.Description, 10.5f).Margin(4, 0, 2));
                 var finds = RegionFinds(region, explored);
-                if (finds != null) card.Add(finds);
+                if (finds != null) rows.Add(finds);
                 if (active != null && active.RegionId == region.Id)
                 {
-                    var r = E.Div().Row().Between().Margin(10).Ignore();
-                    r.Add(E.Text("Scouts away", 12, Theme.Mint));
-                    r.Add(Live(() => Fmt.Clock(G.State.ActiveExpedition?.RemainingSeconds ?? 0), 12, Theme.Mint, Theme.F.Mono));
-                    card.Add(r);
-                    card.Add(LiveBar(() => { var e = G.State.ActiveExpedition; return e == null ? 1 : 1 - e.RemainingSeconds / Math.Max(1, e.TotalSeconds); }, 5, Theme.MintFill).Margin(6));
+                    var r = E.Line(true);
+                    r.Add(E.Icon("compass", 15).Margin(0, 5));
+                    r.Add(E.T("Scouts away", 11.5f).Grow());
+                    r.Add(Live(() => Fmt.Clock(G.State.ActiveExpedition?.RemainingSeconds ?? 0), 12));
+                    rows.Add(r);
+                    rows.Add(LiveBar(() => { var e = G.State.ActiveExpedition; return e == null ? 1 : 1 - e.RemainingSeconds / Math.Max(1, e.TotalSeconds); }, 10).Margin(0, 0, 5));
                 }
                 else if (!explored)
                 {
-                    var bottom = E.Div().Row().Between().Margin(10).Ignore();
-                    bottom.Add(CostChips(region.Cost).Grow());
+                    var bottom = E.Line(true, 40);
+                    bottom.Add(CostLine(region.Cost, 11).Grow());
                     bool can = active == null && G.State.Resources.Covers(region.Cost);
                     string id = region.Id;
                     bottom.Add(E.Button(active != null ? "Scouts busy" : "Send scouts", can ? Act(() => store.Explore(id)) : null,
-                                        can ? E.Kind.Gold : E.Kind.Disabled, 32, can ? "compass" : null, 12).Pad(0, 14));
-                    card.Add(bottom);
-                    card.Add(E.Text(Fmt.Clock(region.ExpeditionSeconds) + " expedition", 11, Theme.Muted, Theme.F.Mono).Margin(4));
+                                        can ? E.Kind.Green : E.Kind.Grey, 34, null, 12.5f, SubLine("clock", Fmt.Clock(region.ExpeditionSeconds)), 130));
+                    rows.Add(bottom);
                 }
                 host.Add(card);
             }
+        }
 
-            host.Add(SectionLabel("Legacy Timeline"));
-            var line = E.Div().Col().Ignore();
+        void BuildLegacy(VisualElement host)
+        {
             var entries = Enumerable.Reverse(G.State.Legacy).ToList();
-            for (int i = 0; i < entries.Count; i++) line.Add(LegacyRow(entries[i], i == entries.Count - 1));
-            host.Add(line);
+            if (entries.Count == 0) host.Add(E.Ink("Nothing written yet: your choices will fill these pages."));
+            for (int i = 0; i < entries.Count; i++) host.Add(LegacyRow(entries[i], i == entries.Count - 1));
         }
 
         VisualElement LegacyRow(LegacyEntry entry, bool last)
         {
             var row = E.Div().Row(0, Align.Stretch).Ignore();
-            var rail = E.Div().Col(Align.Center).Size(22).Ignore();
-            rail.Add(E.Div().Size(12, 12).Radius(6).BgImage(Theme.GoldFill).Margin(4).Ignore());
+            var rail = E.Div().Col(Align.Center).Size(24).Ignore();
+            rail.Add(E.Icon("sparkle", 18).Margin(2));
             if (!last)
             {
-                var l = E.Div().Size(2).Grow().Bg(Theme.Alpha(Theme.Gold, 0.25f)).Margin(4).Ignore();
+                var l = E.Div().Ignore().Bg(Theme.Wood4);
+                l.style.width = 3;
+                l.style.flexGrow = 1;
+                l.style.marginTop = 2;
                 rail.Add(l);
             }
             row.Add(rail);
-            var body = E.Div().Col().Grow().Pad(0, 0, 16, 10).Ignore();
-            var head = E.Div().Row().Between().Ignore();
-            head.Add(E.Text(entry.Title, 13.5f, Theme.Ink, Theme.F.TextBold).Grow());
-            head.Add(E.Mono(Fmt.Clock(entry.SimTime), 10.5f, Theme.Muted));
+            var body = E.Inset().Col().Grow().Margin(0, 0, 5, 6);
+            var head = E.Div().Row().Ignore();
+            head.Add(E.T(entry.Title, 12).Fit(WindowW - 150, 8).Grow());
+            head.Add(E.T(Fmt.Clock(entry.SimTime), 10.5f, Theme.Pale));
             body.Add(head);
-            if (!string.IsNullOrEmpty(entry.Detail)) body.Add(E.Text(entry.Detail, 12, Theme.Body).Margin(3));
+            if (!string.IsNullOrEmpty(entry.Detail)) body.Add(E.Ink(entry.Detail, 10.5f).Margin(2));
             row.Add(body);
             return row;
         }
 
-        // MARK: - Profile
+        // MARK: - Founder (profile)
 
         void BuildProfilePanel(VisualElement host)
         {
-            var hero = E.Div().Col(Align.Center).Margin(4, 0, 14).Ignore();
-            hero.Add(Avatar(96, 34));
-            hero.Add(E.Text(G.State.SettlementName, 22, Theme.Ink, Theme.F.Display).Margin(12));
-            var id = E.Div().Row().Radius(999).Pad(5, 10).Bg(Theme.Fill).Border(new Color(1, 1, 1, 0.1f)).Margin(8).Ignore();
-            id.Add(E.Text("Founder ID", 11, Theme.Muted).Margin(0, 6));
-            id.Add(E.Mono(FounderId(), 11, Theme.Body));
+            var hero = E.Inset().Row().Margin(0, 0, 6);
+            hero.Add(E.Slot(G.State.EpochId == "epoch_medieval_kingdoms" ? "landmark" : "home", 56, E.Cell.Tile, 0.7f));
+            var col = E.Div().Col().Grow().Ignore();
+            col.style.marginLeft = 10;
+            col.Add(E.T(G.State.SettlementName, 17).Fit(WindowW - 200, 10));
+            col.Add(E.T($"{G.StageName} · Era {Fmt.Roman(G.Content.Epoch(G.State.EpochId)?.Index ?? 1)}", 11, Theme.Pale));
+            col.Add(E.Ink(G.EpochName, 10.5f));
+            hero.Add(col);
+            var id = E.Capsule(24);
+            id.Add(E.T("ID " + FounderId(), 11));
             hero.Add(id);
             host.Add(hero);
 
@@ -891,56 +811,30 @@ namespace Founders.UI
                 ("Legacy", () => $"{G.State.Legacy.Count}", "legacy"),
                 ("Time", () => Fmt.Clock(G.State.SimTime), "clock"),
             };
+            float w = (WindowW - 20 - 12) / 3;
             foreach (var s in stats)
             {
-                var c = E.Div().Col().Glass(16).Pad(12).Margin(0, 0, 8).Ignore();
-                c.style.width = Length.Percent(31.5f);
-                c.Add(E.Icon(s.icon, 16, Theme.Gold));
-                var v = Live(s.value, 17, Theme.Ink, Theme.F.Mono);
-                v.style.marginTop = 8;
-                c.Add(v);
-                c.Add(E.Text(s.label, 11, Theme.Muted).Margin(2));
+                var c = StatBox(s.icon, s.label, s.value);
+                c.style.flexGrow = 0;
+                c.style.width = w;
+                c.style.marginBottom = 6;
                 grid.Add(c);
             }
             host.Add(grid);
 
-            host.Add(SectionLabel("Settlement"));
-            var card = Card();
-            var r = E.Div().Row().Between().Ignore();
-            r.Add(E.Text(G.StageName, 15, Theme.Ink, Theme.F.Display));
-            r.Add(E.Eyebrow($"Era {Fmt.Roman(G.Content.Epoch(G.State.EpochId)?.Index ?? 1)}", Theme.Gold, 9.5f));
-            card.Add(r);
-            card.Add(E.Text(G.EpochName, 12, Theme.Body).Margin(4));
-            var traits = E.Div().Row().Margin(10).Ignore();
-            traits.style.flexWrap = Wrap.Wrap;
-            foreach (var t in G.Content.Map.Traits) traits.Add(StatChip("world", t));
-            card.Add(traits);
-            host.Add(card);
-
-            host.Add(SectionLabel("Milestones"));
-            var ms = E.Div().Row().Ignore();
+            var ms = Block("Milestones", out var mrows);
+            var cells = E.Div().Row().Ignore().Margin(5, 0, 4);
+            cells.style.flexWrap = Wrap.Wrap;
             foreach (var m in G.Content.Milestones)
             {
                 bool got = G.State.ReachedMilestones.Contains(m.Id);
-                var b = E.Div().Col(Align.Center).Grow().Glass(16, got ? Theme.Alpha(Theme.Gold, 0.4f) : (Color?)Theme.EdgeSoft).Pad(12).Margin(0, 8).Ignore();
-                b.Add(E.Icon(got ? "trophy" : "lock", 22, got ? Theme.Gold : Theme.Muted));
-                b.Add(E.Text(m.Name, 12, got ? Theme.Ink : Theme.Muted, Theme.F.TextBold).Align(TextAnchor.MiddleCenter).Margin(6));
-                ms.Add(b);
+                var c = E.Div().Col(Align.Center).Ignore().Size(96);
+                c.Add(E.Slot(got ? "trophy" : "lock", 40, got ? E.Cell.Legendary : E.Cell.Common, 0.62f, !got));
+                c.Add(E.T(m.Name, 10.5f, got ? (Color?)null : Theme.Pale).TwoLines(92, 7).Margin(2));
+                cells.Add(c);
             }
+            mrows.Add(cells);
             host.Add(ms);
-
-            host.Add(SectionLabel("Coming later"));
-            var later = E.Div().Row().Ignore();
-            foreach (var (label, icon) in new[] { ("Skins", "user"), ("Rankings", "trophy"), ("Alliance", "people") })
-            {
-                var b = E.Div().Col(Align.Center).Grow().Radius(16).Pad(12).Bg(new Color(1, 1, 1, 0.03f)).Border(Theme.EdgeSoft).Margin(0, 8).Ignore();
-                b.style.opacity = 0.6f;
-                b.Add(E.Icon(icon, 18, Theme.Muted));
-                b.Add(E.Text(label, 11.5f, Theme.Muted).Margin(5));
-                b.Add(E.Icon("lock", 11, Theme.Faint).Margin(4));
-                later.Add(b);
-            }
-            host.Add(later);
         }
 
         string FounderId()
@@ -954,51 +848,43 @@ namespace Founders.UI
 
         void BuildSettingsPanel(VisualElement host)
         {
-            host.Add(SectionLabel("Graphics"));
-            var seg = E.Div().Row().Radius(999).Pad(5).Bg(Theme.Fill).Border(new Color(1, 1, 1, 0.1f)).Margin(0, 0, 10);
+            var gfx = Block("Graphics", out var grows);
+            var seg = E.Div().Row(0, Align.FlexEnd).Ignore().Margin(6, 0, 6);
             string[] names = { "Smooth", "Balanced", "Cinematic" };
             for (int i = 0; i < names.Length; i++)
             {
-                bool on = Prefs.Quality == i;
-                var b = E.Div().Grow().Center().Radius(999);
-                b.style.height = 36;
-                if (on) b.BgImage(Theme.GoldFill);
-                b.Add(E.Text(names[i], 12.5f, on ? Theme.OnGold : Theme.Body, Theme.F.TextBold));
                 int q = i;
-                Tap(b, () => { Prefs.Quality = q; Prefs.Apply(); });
-                seg.Add(b);
+                var t = E.Tab(names[i], Prefs.Quality == i, Act(() => { Prefs.Quality = q; Prefs.Apply(); }));
+                t.style.flexGrow = 1;
+                t.style.flexBasis = 0;
+                if (i > 0) t.style.marginLeft = 4;
+                seg.Add(t);
             }
-            host.Add(seg);
+            grows.Add(seg);
+            host.Add(gfx);
 
-            host.Add(SectionLabel("Game"));
-            var toggles = E.Div().Col().Glass(20).Margin(0, 0, 10);
-            toggles.style.overflow = Overflow.Hidden;
-            toggles.Add(Toggle("Battery saver", "30 fps, lighter on the battery", Prefs.BatterySaver, v => { Prefs.BatterySaver = v; Prefs.Apply(); }, false));
-            toggles.Add(Toggle("Haptics", "A tap of vibration on milestones", Prefs.Haptics, v => Prefs.Haptics = v, true));
-            toggles.Add(Toggle("Music", "Calm themes between the seasons", AudioDirector.MusicOn, v => AudioDirector.MusicOn = v, true));
-            toggles.Add(Toggle("Sound", "Fire, river, birds, wind and taps", AudioDirector.SoundOn, v => AudioDirector.SoundOn = v, true));
-            host.Add(toggles);
+            var game = Block("Game", out var rows);
+            rows.Add(ToggleRow("Battery saver", "30 fps, lighter on the battery", Prefs.BatterySaver, v => { Prefs.BatterySaver = v; Prefs.Apply(); }, false));
+            rows.Add(ToggleRow("Haptics", "A tap of vibration on milestones", Prefs.Haptics, v => Prefs.Haptics = v, true));
+            rows.Add(ToggleRow("Music", "Calm themes between the seasons", AudioDirector.MusicOn, v => AudioDirector.MusicOn = v, true));
+            rows.Add(ToggleRow("Sound", "Fire, river, birds, wind and taps", AudioDirector.SoundOn, v => AudioDirector.SoundOn = v, true));
+            host.Add(game);
 
-            host.Add(SectionLabel("Account"));
-            var info = E.Div().Col().Glass(20).Margin(0, 0, 10);
-            info.style.overflow = Overflow.Hidden;
-            info.Add(InfoRow("Founder ID", FounderId(), false));
-            info.Add(InfoRow("Save", store.SaveStatus, true));
-            info.Add(InfoRow("Language", "English", true));
-            host.Add(info);
+            var acc = Block("Account", out var arows);
+            arows.Add(E.StatRow("user", "Founder ID", FounderId(), null, false));
+            arows.Add(E.StatRow("storage", "Save", store.SaveStatus, null, true, Theme.Pale));
+            arows.Add(E.StatRow("world", "Language", "English", null, true));
+            host.Add(acc);
 
-            host.Add(SectionLabel("Developer"));
-            var dev = E.Div().Col().Glass(20).Pad(12).Margin(0, 0, 10);
-            var r1 = E.Div().Row().Ignore();
-            r1.Add(E.Button("Save now", Act(store.Save), E.Kind.Ghost, 38, null, 12.5f).Grow());
-            r1.Add(E.Button("+50 all", Act(store.DebugGrant), E.Kind.Ghost, 38, null, 12.5f).Grow().Margin(0, 0, 0, 8));
-            dev.Add(r1);
-            var r2 = E.Div().Row().Margin(8).Ignore();
-            r2.Add(E.Button("+1 min", Act(() => store.DebugFastForward(1)), E.Kind.Ghost, 38, null, 12.5f).Grow());
-            r2.Add(E.Button("+10 min", Act(() => store.DebugFastForward(10)), E.Kind.Ghost, 38, null, 12.5f).Grow().Margin(0, 0, 0, 8));
-            dev.Add(r2);
+            var dev = Block("Developer", out var drows);
+            var r1 = E.Div().Row().Ignore().Margin(6);
+            r1.Add(Share(E.Button("Save now", Act(store.Save), E.Kind.Blue, 32, null, 12), r1));
+            r1.Add(Share(E.Button("+50 all", Act(store.DebugGrant), E.Kind.Blue, 32, null, 12), r1));
+            r1.Add(Share(E.Button("+1 min", Act(() => store.DebugFastForward(1)), E.Kind.Blue, 32, null, 12), r1));
+            r1.Add(Share(E.Button("+10 min", Act(() => store.DebugFastForward(10)), E.Kind.Blue, 32, null, 12), r1));
+            drows.Add(r1);
             bool armed = Time.unscaledTime < confirmResetUntil;
-            dev.Add(E.Button(armed ? "Tap again to erase this settlement" : "Reset settlement", Act(() =>
+            var reset = E.Button(armed ? "Tap again to erase this settlement" : "Reset settlement", Act(() =>
             {
                 if (Time.unscaledTime < confirmResetUntil) { confirmResetUntil = 0; store.ResetPrototype(); store.ActivePanel = Panel.None; }
                 else
@@ -1006,37 +892,31 @@ namespace Founders.UI
                     confirmResetUntil = Time.unscaledTime + 4f;
                     sheet.schedule.Execute(() => dirty = true).StartingIn(4100);
                 }
-            }), E.Kind.Danger, 40, null, 12.5f).Margin(8));
+            }), E.Kind.Red, 32, "trash", 12);
+            reset.style.marginTop = 6;
+            reset.style.marginBottom = 6;
+            drows.Add(reset);
             host.Add(dev);
 
-            var foot = E.Text($"{G.Content.Branding.Title} · {G.Content.Branding.Subtitle} · v{Application.version}\nContent {G.Content.ContentVersion} · Save format {SaveCodec.CurrentVersion} · Unity {Application.unityVersion}",
-                              10.5f, Theme.Faint, Theme.F.Mono).Align(TextAnchor.MiddleCenter).Margin(8);
-            host.Add(foot);
+            host.Add(E.Ink($"{G.Content.Branding.Title} · {G.Content.Branding.Subtitle} · v{Application.version}\nContent {G.Content.ContentVersion} · Save format {SaveCodec.CurrentVersion} · Unity {Application.unityVersion}",
+                           10, Theme.InkSoft).Align(TextAnchor.MiddleCenter).Margin(2));
         }
 
-        VisualElement Toggle(string label, string hint, bool value, Action<bool> set, bool separator)
+        /// <summary>A setting with the kit's ON/OFF switch.</summary>
+        VisualElement ToggleRow(string label, string hint, bool value, Action<bool> set, bool separator)
         {
-            var row = E.Div().Row().Pad(13, 14);
-            if (separator) { row.style.borderTopWidth = 1; row.style.borderTopColor = new Color(1, 1, 1, 0.07f); }
+            var row = E.Line(separator, 38);
             var col = E.Div().Col().Grow().Ignore();
-            col.Add(E.Text(label, 14, Theme.Ink, Theme.F.TextMedium));
-            col.Add(E.Text(hint, 11.5f, Theme.Muted).Margin(2));
+            col.Add(E.T(label, 12));
+            col.Add(E.T(hint, 10, Theme.Pale).Fit(WindowW - 150, 7));
             row.Add(col);
-            var track = E.Div().Size(46, 28).Radius(14).Ignore();
-            if (value) track.BgImage(Theme.GoldFill); else track.Bg(new Color(1, 1, 1, 0.1f)).Border(new Color(1, 1, 1, 0.1f));
-            var knob = E.Div().Size(22, 22).Radius(11).Bg(Theme.Ink).Abs(value ? 21 : 3, 3).Ignore();
-            track.Add(knob);
-            row.Add(track);
+            var sw = E.Div().Row().Skin(value ? "btn_green" : "btn_grey").Pad(0, 4, 3, 6).Size(58, 26).Ignore();
+            var knob = E.Div().Skin("slot").Size(18, 18).Ignore();
+            var text = E.T(value ? "ON" : "OFF", 10.5f).Grow().Align(TextAnchor.MiddleCenter);
+            if (value) { sw.Add(text); sw.Add(knob); }
+            else { sw.Add(knob); sw.Add(text); }
+            row.Add(sw);
             Tap(row, () => set(!value));
-            return row;
-        }
-
-        static VisualElement InfoRow(string label, string value, bool separator)
-        {
-            var row = E.Div().Row().Between().Pad(13, 14).Ignore();
-            if (separator) { row.style.borderTopWidth = 1; row.style.borderTopColor = new Color(1, 1, 1, 0.07f); }
-            row.Add(E.Text(label, 14, Theme.Ink));
-            row.Add(E.Text(value, 12.5f, Theme.Muted, Theme.F.Mono).NoWrap());
             return row;
         }
     }

@@ -37,10 +37,11 @@ namespace Founders.UI
         {
             this.layer = layer;
             layer.pickingMode = PickingMode.Position;
-            layer.Cover(Theme.Image("loading_bg"));
+            layer.style.backgroundImage = new StyleBackground(Theme.Image("loading_bg"));
+            layer.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
             layer.style.backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center);
             layer.style.backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Center);
-            layer.style.backgroundColor = Theme.Bg;
+            layer.style.backgroundColor = Theme.Hex("#0D0F14");
             layer.Transition(420, "opacity");
 
             // A montage of the valley plays behind the title (fades in once the first frame is ready).
@@ -52,7 +53,7 @@ namespace Founders.UI
             video.Transition(900, "opacity");
             layer.Add(video);
             var topShade = E.Div().Abs(0, 0, 0).BgImage(Theme.TopShade).Ignore();
-            topShade.style.height = Length.Percent(55);
+            topShade.style.height = Length.Percent(45);
             layer.Add(topShade);
             var bottomShade = E.Div().Abs(0, null, 0, 0).BgImage(Theme.BottomShade).Ignore();
             bottomShade.style.height = Length.Percent(45);
@@ -63,32 +64,26 @@ namespace Founders.UI
             var brand = E.Div().Col(Align.Center).Ignore();
             brand.style.position = Position.Absolute;
             brand.style.left = 0; brand.style.right = 0;
-            brand.style.top = Length.Percent(7);
-            brand.Add(E.Image(Theme.Image("logo_mark"), 76, 76));
-            var word = E.Text("FOUNDERS", 32, Theme.Ink, Theme.F.DisplayBold, 5.5f).Margin(12);
+            brand.style.top = Length.Percent(9);
+            brand.Add(E.Image(Theme.Image("logo_mark"), 70, 70));
+            var word = E.T("FOUNDERS", 38);
+            word.style.letterSpacing = 4;
+            word.style.marginTop = 6;
             brand.Add(word);
-            var sub = E.Div().Row().Margin(8).Ignore();
-            sub.Add(E.Div().Size(28, 1).Bg(Theme.Alpha(Theme.Gold, 0.6f)).Ignore());
-            var subText = E.Text("THE LONG RISE", 12, Theme.Gold, Theme.F.TextBold, 3.6f);
-            subText.style.marginLeft = 10; subText.style.marginRight = 10;
-            sub.Add(subText);
-            sub.Add(E.Div().Size(28, 1).Bg(Theme.Alpha(Theme.Gold, 0.6f)).Ignore());
+            var sub = E.T("THE LONG RISE", 14, Theme.Gold);
+            sub.style.letterSpacing = 3;
             brand.Add(sub);
-            var tagline = E.Text("Build a world that outlives you.", 13, Theme.Body).Margin(10);
-            tagline.style.unityFontStyleAndWeight = FontStyle.Italic;
-            brand.Add(tagline);
+            brand.Add(E.T("Build a world that outlives you.", 12.5f, Theme.Pale).Margin(6));
             layer.Add(brand);
 
             tipRow = E.Div().Col(Align.Center).Pad(0, 24).Abs(0, null, 0, 76).Ignore();
-            card = E.Div().Row(0, Align.Center).Glass(16).Pad(9, 14).Ignore();
+            card = E.Panel().Row().Pad(5, 12, 9, 10).Ignore();
             card.style.maxWidth = 560;
-            var tile = E.Div().Size(26, 26).Radius(9).Center().Bg(Theme.Alpha(Theme.Gold, 0.16f)).Ignore();
-            tile.Add(E.Icon("knowledge", 14, Theme.Gold));
-            card.Add(tile);
+            card.Add(E.Icon("knowledge", 26));
             var tipCol = E.Div().Col().Grow().Ignore();
-            tipCol.style.marginLeft = 10;
-            tipCol.Add(E.Eyebrow("Founder’s tip", Theme.Gold, 9.5f));
-            tipCol.Add(E.Text(Tips[Random.Range(0, Tips.Length)], 12.5f, Theme.Ink).Margin(2));
+            tipCol.style.marginLeft = 8;
+            tipCol.Add(E.T("Founder's tip", 11, Theme.Gold));
+            tipCol.Add(E.T(Tips[Random.Range(0, Tips.Length)], 11.5f).Wrap());
             card.Add(tipCol);
             tipRow.Add(card);
             layer.Add(tipRow);
@@ -98,18 +93,18 @@ namespace Founders.UI
             progress.style.width = Length.Percent(100);
             progress.style.maxWidth = 520;
             var labels = E.Div().Row().Between().Ignore();
-            status = E.Text("Kindling the hearth…", 12, Theme.Body);
+            status = E.T("Kindling the hearth…", 12, Theme.Pale);
             labels.Add(status);
-            percent = E.Mono("0%", 12, Theme.GoldLight);
+            percent = E.T("0%", 12, Theme.Gold);
             labels.Add(percent);
             progress.Add(labels);
-            var bar = E.Bar(out fill, 6, Theme.GoldFill);
-            bar.style.marginTop = 8;
+            var bar = E.Bar(out fill, 12);
+            bar.style.marginTop = 4;
             progress.Add(bar);
             progressRow.Add(progress);
             layer.Add(progressRow);
 
-            version = E.Text($"v{Application.version} · ERA I — FIRST COMMUNITIES", 10.5f, Theme.Muted, Theme.F.Mono, 0.6f)
+            version = E.T($"v{Application.version} · Era I — First Communities", 10, Theme.Pale)
                 .Align(TextAnchor.MiddleCenter).Abs(0, null, 0, 10);
             layer.Add(version);
         }

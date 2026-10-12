@@ -1,75 +1,127 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.TextCore.LowLevel;
+using UnityEngine.TextCore.Text;
 using UnityEngine.UIElements;
 
 namespace Founders.UI
 {
     /// <summary>
-    /// Design tokens of the Founders UI (night navy glass + gold, after the approved design
-    /// canvas). Sizes are in panel units: the game runs in landscape and the panel is scaled so a
-    /// phone screen is 390 units tall (and about 690–850 wide); see <see cref="GameUi.MatchFor"/>.
+    /// Design tokens of the Founders UI, after a casual mobile strategy kit: warm parchment popups under a
+    /// wooden title plank, inset sections with a tan header band, chunky outlined buttons (green primary,
+    /// blue secondary, orange premium, grey disabled, red cancel), rarity cells behind icons, painted icons
+    /// and one typeface (Changa One), white with a dark outline and a hard drop.
+    ///
+    /// Sizes are in panel units: the game runs in landscape and the panel is scaled so a phone screen is
+    /// 390 units tall (690–850 wide); see <see cref="GameUi.MatchFor"/>. The skins (9-slice textures) and
+    /// the font advances come from tools/ui/build_ui_assets.py through <see cref="UiGenerated"/>.
     /// </summary>
     public static class Theme
     {
-        public static readonly Color Bg = Hex("#0D0F14");
-        public static readonly Color Navy = Hex("#14161D");
-        public static readonly Color Navy2 = Hex("#1A1D25");
-        public static readonly Color Navy3 = Hex("#262A35");
-        public static readonly Color Ink = Hex("#F5F2FF");
-        public static readonly Color Body = Hex("#B8B4DD");
-        public static readonly Color Muted = Hex("#8F8BBA");
-        public static readonly Color Faint = Hex("#6F6B98");
-        public static readonly Color Lavender = Hex("#C4BBFF");
-        public static readonly Color LavenderLight = Hex("#E2DDFF");
-        public static readonly Color Gold = Hex("#FFD76A");
-        public static readonly Color GoldLight = Hex("#FFE7A0");
-        public static readonly Color GoldPale = Hex("#FFF0B8");
-        public static readonly Color GoldDeep = Hex("#E9B84A");
-        public static readonly Color OnGold = Hex("#1B1530");
-        public static readonly Color Error = Hex("#FF9AA8");
-        public static readonly Color Mint = Hex("#8EF0C8");
+        // MARK: - Palette
 
-        public static readonly Color Glass = new Color(0.16f, 0.17f, 0.22f, 0.78f);
-        public static readonly Color GlassSolid = new Color(0.11f, 0.12f, 0.16f, 0.96f);
-        public static readonly Color Edge = new Color(1, 1, 1, 0.14f);
-        public static readonly Color EdgeSoft = new Color(1, 1, 1, 0.08f);
-        public static readonly Color Fill = new Color(1, 1, 1, 0.05f);
-        public static readonly Color Track = new Color(1, 1, 1, 0.09f);
+        /// <summary>The dark brown of every outline (panels, buttons, text).</summary>
+        public static readonly Color Outline = Hex("#3A2314");
+        /// <summary>Plain text on parchment (paragraphs).</summary>
+        public static readonly Color InkText = Hex("#5A3A1E");
+        public static readonly Color InkSoft = Hex("#8A6038");
+        /// <summary>Secondary outlined text (sub-lines, inactive tabs).</summary>
+        public static readonly Color Pale = Hex("#F3E6D2");
+        /// <summary>"Lv.3" in titles.</summary>
+        public static readonly Color Lv = Hex("#D7F25A");
+        /// <summary>Next values, gains, met requirements.</summary>
+        public static readonly Color Up = Hex("#B6F25A");
+        /// <summary>Missing resources, losses, danger.</summary>
+        public static readonly Color Bad = Hex("#FF6A5A");
+        public static readonly Color Gold = Hex("#FFE07A");
+        public static readonly Color Icy = Hex("#A9DCFF");
+        public static readonly Color Ember = Hex("#FFB066");
+        public static readonly Color Lilac = Hex("#E6C3FF");
+
+        // The kit's UI ramp (dark → light) and button colours.
+        public static readonly Color Wood5 = Hex("#A17F61");
+        public static readonly Color Wood4 = Hex("#CB8A55");
+        public static readonly Color Wood3 = Hex("#E0A265");
+        public static readonly Color Wood2 = Hex("#E4BF91");
+        public static readonly Color Wood1 = Hex("#E8CEAD");
+        public static readonly Color GreenBtn = Hex("#9ACC41");
+        public static readonly Color BlueBtn = Hex("#94B9EF");
+        public static readonly Color OrangeBtn = Hex("#FDB939");
+        public static readonly Color GreyBtn = Hex("#B3B3B3");
+        public static readonly Color RedBtn = Hex("#DD5444");
+
+        public static readonly Color SectionHead = Hex("#D9A266");
+        public static readonly Color SectionLine = Hex("#BF884E");
+        public static readonly Color RowLine = Hex("#CFA878");
+        public static readonly Color Scrim = new Color(0.10f, 0.06f, 0.03f, 0.45f);
 
         public static Color Hex(string hex) => ColorUtility.TryParseHtmlString(hex, out var c) ? c : Color.magenta;
         public static Color Alpha(Color c, float a) => new Color(c.r, c.g, c.b, a);
 
-        // MARK: - Fonts
+        // MARK: - Font
 
-        public enum F { Display, DisplayBold, Text, TextMedium, TextBold, Mono }
-        static readonly Dictionary<F, FontDefinition> fonts = new Dictionary<F, FontDefinition>();
+        static FontDefinition font;
+        static bool fontLoaded;
 
-        public static FontDefinition Font(F f)
+        /// <summary>
+        /// Changa One as an SDF font asset with a wide padding (15 at 90 pt), so the outline can reach
+        /// ~16% of the font size (UI Toolkit clamps outlines to the atlas padding). Falls back to the
+        /// default dynamic asset if the runtime font asset cannot be made.
+        /// </summary>
+        public static FontDefinition Font
         {
-            if (fonts.TryGetValue(f, out var def)) return def;
-            string file = f switch
+            get
             {
-                F.Display => "Sora-SemiBold",
-                F.DisplayBold => "Sora-Bold",
-                F.TextMedium => "Geist-Medium",
-                F.TextBold => "Geist-SemiBold",
-                F.Mono => "GeistMono-SemiBold",
-                _ => "Geist-Regular",
-            };
-            var font = UnityEngine.Resources.Load<Font>("UI/Fonts/" + file);
-            def = font != null ? FontDefinition.FromFont(font) : default;
-            fonts[f] = def;
-            return def;
+                if (fontLoaded) return font;
+                fontLoaded = true;
+                var f = UnityEngine.Resources.Load<UnityEngine.Font>("UI/Fonts/ChangaOne-Regular");
+                if (f == null) { Debug.LogWarning("[FOUNDERS] UI font missing"); return font = default; }
+                FontAsset asset = null;
+                try { asset = FontAsset.CreateFontAsset(f, 90, 15, GlyphRenderMode.SDFAA, 1024, 1024); }
+                catch (Exception e) { Debug.LogWarning("[FOUNDERS] UI font asset: " + e.Message); }
+                font = asset != null ? FontDefinition.FromSDFFont(asset) : FontDefinition.FromFont(f);
+                return font;
+            }
+        }
+
+        /// <summary>Outline width for outlined text of a size (the kit's outline is about an eighth of the size).</summary>
+        public static float OutlineFor(float size) => Mathf.Clamp(size * 0.12f, 1f, 2.2f);
+
+        /// <summary>Width of a string in Changa One (plus its outline), from the measured advances.</summary>
+        public static float TextWidth(string s, float size, bool outlined = true)
+        {
+            if (string.IsNullOrEmpty(s)) return 0;
+            float em = 0;
+            bool tag = false;
+            foreach (char c in s)
+            {
+                // Rich-text tags (<color=…>) take no room.
+                if (c == '<') { tag = true; continue; }
+                if (tag) { if (c == '>') tag = false; continue; }
+                em += UiGenerated.Advance(c);
+            }
+            return em * size + (outlined ? 2 * Mathf.Ceil(OutlineFor(size)) : 0) + 1;
+        }
+
+        /// <summary>The largest size (at most <paramref name="size"/>, at least <paramref name="min"/>) at which a line fits a width.</summary>
+        public static float FitSize(string s, float maxWidth, float size, float min = 7f)
+        {
+            if (maxWidth <= 0) return size;
+            float w = TextWidth(s, size);
+            if (w <= maxWidth) return size;
+            return Mathf.Max(min, Mathf.Floor(size * maxWidth / w * 4f) / 4f);
         }
 
         // MARK: - Textures
 
         static readonly Dictionary<string, Texture2D> icons = new Dictionary<string, Texture2D>();
+        static readonly Dictionary<string, Texture2D> skins = new Dictionary<string, Texture2D>();
         static readonly Dictionary<string, Texture2D> gradients = new Dictionary<string, Texture2D>();
 
         public static Texture2D Icon(string name)
         {
+            if (name == null) return null;
             if (icons.TryGetValue(name, out var t)) return t;
             t = UnityEngine.Resources.Load<Texture2D>("UI/Icons/" + name);
             if (t == null) Debug.LogWarning($"[FOUNDERS] UI icon missing: {name}");
@@ -77,13 +129,22 @@ namespace Founders.UI
             return t;
         }
 
+        public static Texture2D SkinTexture(string name)
+        {
+            if (skins.TryGetValue(name, out var t)) return t;
+            t = UnityEngine.Resources.Load<Texture2D>("UI/Skin/" + name);
+            if (t == null) Debug.LogWarning($"[FOUNDERS] UI skin missing: {name}");
+            skins[name] = t;
+            return t;
+        }
+
         public static Texture2D Image(string name) => UnityEngine.Resources.Load<Texture2D>("UI/Images/" + name);
 
-        /// <summary>Horizontal gradient (left → right) through evenly spaced stops.</summary>
+        /// <summary>A gradient through evenly spaced stops (vertical: top → bottom).</summary>
         public static Texture2D Gradient(string key, bool vertical, params Color[] stops)
         {
             if (gradients.TryGetValue(key, out var t)) return t;
-            const int n = 128;
+            const int n = 64;
             t = vertical ? new Texture2D(1, n, TextureFormat.RGBA32, false) : new Texture2D(n, 1, TextureFormat.RGBA32, false);
             t.wrapMode = TextureWrapMode.Clamp;
             t.filterMode = FilterMode.Bilinear;
@@ -92,7 +153,6 @@ namespace Founders.UI
                 float u = i / (float)(n - 1) * (stops.Length - 1);
                 int a = Mathf.Min(stops.Length - 2, (int)u);
                 var c = Color.Lerp(stops[a], stops[a + 1], u - a);
-                // Textures run bottom-up; vertical gradients are given top → bottom.
                 if (vertical) t.SetPixel(0, n - 1 - i, c); else t.SetPixel(i, 0, c);
             }
             t.Apply(false, true);
@@ -100,16 +160,8 @@ namespace Founders.UI
             return t;
         }
 
-        public static Texture2D GoldFill => Gradient("gold", false, GoldPale, Gold, Gold, GoldDeep);
-        public static Texture2D LavenderFill => Gradient("lav", false, LavenderLight, Lavender);
-        public static Texture2D MintFill => Gradient("mint", false, Hex("#C8F7E4"), Mint);
-        public static Texture2D GlassFill => Gradient("glass", true, new Color(0.22f, 0.23f, 0.29f, 0.86f), new Color(0.13f, 0.14f, 0.19f, 0.86f), new Color(0.16f, 0.17f, 0.22f, 0.88f));
-        public static Texture2D SheetFill => Gradient("sheet", true, new Color(0.10f, 0.11f, 0.15f, 0.97f), new Color(0.05f, 0.06f, 0.08f, 0.99f));
-        public static Texture2D DockFill => Gradient("dock", true, new Color(0.17f, 0.19f, 0.24f, 0.90f), new Color(0.09f, 0.10f, 0.13f, 0.94f));
-        public static Texture2D GoldGlow => Gradient("goldglow", true, Alpha(Gold, 0.16f), Alpha(Gold, 0.03f), new Color(1, 1, 1, 0.03f));
-        public static Texture2D LavenderGlow => Gradient("lavglow", true, Alpha(Lavender, 0.20f), Alpha(Lavender, 0.05f), new Color(1, 1, 1, 0.03f));
-        public static Texture2D TopShade => Gradient("topshade", true, new Color(0.05f, 0.06f, 0.08f, 0.82f), new Color(0.05f, 0.06f, 0.08f, 0.45f), new Color(0.05f, 0.06f, 0.08f, 0f));
-        public static Texture2D BottomShade => Gradient("botshade", true, new Color(0.05f, 0.06f, 0.08f, 0f), new Color(0.05f, 0.06f, 0.08f, 0.55f), new Color(0.05f, 0.06f, 0.08f, 0.85f));
+        public static Texture2D TopShade => Gradient("topshade", true, new Color(0.08f, 0.05f, 0.02f, 0.55f), new Color(0.08f, 0.05f, 0.02f, 0f));
+        public static Texture2D BottomShade => Gradient("botshade", true, new Color(0.08f, 0.05f, 0.02f, 0f), new Color(0.08f, 0.05f, 0.02f, 0.6f));
     }
 
     /// <summary>Fluent style helpers so screens read like the design markup.</summary>
@@ -154,12 +206,11 @@ namespace Founders.UI
         public static T Size<T>(this T e, float? w, float? h = null) where T : VisualElement
         {
             if (w.HasValue) { e.style.width = w.Value; e.style.flexShrink = 0; }
-            if (h.HasValue) e.style.height = h.Value;
+            if (h.HasValue) { e.style.height = h.Value; e.style.flexShrink = 0; }
             return e;
         }
 
-        public static T WidthPct<T>(this T e, float pct) where T : VisualElement { e.style.width = Length.Percent(pct); return e; }
-        public static T Grow<T>(this T e, float g = 1) where T : VisualElement { e.style.flexGrow = g; e.style.flexShrink = 1; e.style.minWidth = 0; return e; }
+        public static T Grow<T>(this T e, float g = 1) where T : VisualElement { e.style.flexGrow = g; e.style.flexShrink = 1; e.style.flexBasis = 0; e.style.minWidth = 0; return e; }
         public static T NoShrink<T>(this T e) where T : VisualElement { e.style.flexShrink = 0; return e; }
 
         public static T Pad<T>(this T e, float all) where T : VisualElement => e.Pad(all, all, all, all);
@@ -176,12 +227,7 @@ namespace Founders.UI
             return e;
         }
 
-        public static T Radius<T>(this T e, float r) where T : VisualElement
-        {
-            e.style.borderTopLeftRadius = r; e.style.borderTopRightRadius = r;
-            e.style.borderBottomLeftRadius = r; e.style.borderBottomRightRadius = r;
-            return e;
-        }
+        public static T Radius<T>(this T e, float r) where T : VisualElement => e.Radius(r, r);
 
         public static T Radius<T>(this T e, float top, float bottom) where T : VisualElement
         {
@@ -192,18 +238,10 @@ namespace Founders.UI
 
         public static T Bg<T>(this T e, Color c) where T : VisualElement { e.style.backgroundColor = c; return e; }
 
-        public static T BgImage<T>(this T e, Texture2D tex, Color? tint = null) where T : VisualElement
+        public static T BgImage<T>(this T e, Texture2D tex) where T : VisualElement
         {
             e.style.backgroundImage = new StyleBackground(tex);
             e.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100));
-            if (tint.HasValue) e.style.unityBackgroundImageTintColor = tint.Value;
-            return e;
-        }
-
-        public static T Cover<T>(this T e, Texture2D tex) where T : VisualElement
-        {
-            e.style.backgroundImage = new StyleBackground(tex);
-            e.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
             return e;
         }
 
@@ -214,16 +252,31 @@ namespace Founders.UI
             return e;
         }
 
-        /// <summary>Glass card: translucent navy, hairline edge, brighter top edge (the inset highlight).</summary>
-        public static T Glass<T>(this T e, float radius = 20, Color? edge = null) where T : VisualElement
+        /// <summary>
+        /// Gives an element a 9-slice skin (see tools/ui/build_ui_assets.py): the texture is drawn over the
+        /// whole element with its slices (in points, drawn at 3 pixels per point) kept at their size.
+        /// </summary>
+        public static T Skin<T>(this T e, string name) where T : VisualElement
         {
-            e.BgImage(Theme.GlassFill).Radius(radius).Border(edge ?? Theme.Edge);
-            if (!edge.HasValue) e.style.borderTopColor = new Color(1, 1, 1, 0.24f);
+            var tex = Theme.SkinTexture(name);
+            if (tex == null) return e;
+            e.style.backgroundImage = new StyleBackground(tex);
+            e.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100));
+            if (UiGenerated.Skins.TryGetValue(name, out var s))
+            {
+                int k = UiGenerated.SkinScale;
+                e.style.unitySliceLeft = s.Left * k;
+                e.style.unitySliceTop = s.Top * k;
+                e.style.unitySliceRight = s.Right * k;
+                e.style.unitySliceBottom = s.Bottom * k;
+                e.style.unitySliceScale = 1f / k;
+            }
             return e;
         }
 
         public static T Opacity<T>(this T e, float o) where T : VisualElement { e.style.opacity = o; return e; }
         public static T Ignore<T>(this T e) where T : VisualElement { e.pickingMode = PickingMode.Ignore; return e; }
+
         public static T Hidden<T>(this T e, bool hidden) where T : VisualElement
         {
             var d = hidden ? DisplayStyle.None : DisplayStyle.Flex;
@@ -233,7 +286,7 @@ namespace Founders.UI
 
         public static T Gap<T>(this T e, float gap) where T : VisualElement
         {
-            // Unity's flexbox has no gap: children get a leading margin instead (see Add).
+            // Unity's flexbox has no gap: children get a leading margin instead (see Kids).
             e.userData = gap;
             return e;
         }
@@ -242,7 +295,7 @@ namespace Founders.UI
         public static T Kids<T>(this T parent, params VisualElement[] children) where T : VisualElement
         {
             float gap = parent.userData is float g ? g : 0;
-            bool row = parent.resolvedStyle.flexDirection == FlexDirection.Row || parent.style.flexDirection == FlexDirection.Row;
+            bool row = parent.style.flexDirection == FlexDirection.Row;
             foreach (var c in children)
             {
                 if (c == null) continue;
@@ -278,48 +331,127 @@ namespace Founders.UI
             e.AddManipulator(new Clickable(() => action()));
             return e;
         }
+
+        /// <summary>Runs a setup step on an element inline and returns it.</summary>
+        public static T Also<T>(this T e, Action<T> a) where T : VisualElement { a(e); return e; }
     }
 
-    /// <summary>Element factory.</summary>
+    /// <summary>Element factory: the kit's components.</summary>
     public static class E
     {
         public static VisualElement Div(string name = null) => new VisualElement { name = name };
 
-        public static Label Text(string text, float size = 13, Color? color = null, Theme.F font = Theme.F.Text, float spacing = 0)
+        static Label Bare(string text, float size, Color color)
         {
             var l = new Label(text);
             l.style.fontSize = size;
-            l.style.color = color ?? Theme.Ink;
-            l.style.unityFontDefinition = Theme.Font(font);
-            l.style.whiteSpace = WhiteSpace.Normal;
+            l.style.color = color;
+            l.style.unityFontDefinition = Theme.Font;
             l.style.marginLeft = 0; l.style.marginRight = 0; l.style.marginTop = 0; l.style.marginBottom = 0;
             l.style.paddingLeft = 0; l.style.paddingRight = 0; l.style.paddingTop = 0; l.style.paddingBottom = 0;
-            if (spacing != 0) l.style.letterSpacing = spacing;
+            l.style.whiteSpace = WhiteSpace.NoWrap;
+            l.style.textOverflow = TextOverflow.Clip;
             l.pickingMode = PickingMode.Ignore;
             return l;
         }
 
-        public static Label Eyebrow(string text, Color? color = null, float size = 10.5f) =>
-            Text(text.ToUpperInvariant(), size, color ?? Theme.Gold, Theme.F.TextBold, 1.2f);
-
-        public static Label Title(string text, float size = 22) => Text(text, size, Theme.Ink, Theme.F.Display);
-        public static Label Mono(string text, float size = 12, Color? color = null) => Text(text, size, color ?? Theme.Ink, Theme.F.Mono);
-
-        public static Label NoWrap(this Label l)
+        /// <summary>The kit's text: white (or a colour) with a dark outline and a hard drop; one line.</summary>
+        public static Label T(string text, float size = 12, Color? color = null)
         {
-            l.style.whiteSpace = WhiteSpace.NoWrap;
+            var l = Bare(text, size, color ?? Color.white);
+            Outline(l, size);
+            return l;
+        }
+
+        /// <summary>Sets the outline and drop for a size (call again when the size changes).</summary>
+        public static void Outline(Label l, float size)
+        {
+            float w = Theme.OutlineFor(size);
+            l.style.unityTextOutlineWidth = w;
+            l.style.unityTextOutlineColor = Theme.Outline;
+            l.style.textShadow = new TextShadow { offset = new Vector2(0, w + 1f), blurRadius = 0, color = Theme.Outline };
+            // Room for the outline at both ends, so a clipped (overflow: hidden) label never cuts it.
+            float pad = Mathf.Ceil(w);
+            l.style.paddingLeft = pad;
+            l.style.paddingRight = pad;
+        }
+
+        /// <summary>Plain dark text on parchment for sentences; wraps.</summary>
+        public static Label Ink(string text, float size = 11, Color? color = null)
+        {
+            var l = Bare(text, size, color ?? Theme.InkText);
+            l.style.whiteSpace = WhiteSpace.Normal;
+            return l;
+        }
+
+        /// <summary>Lets an outlined label wrap (sentences in outlined text).</summary>
+        public static Label Wrap(this Label l)
+        {
+            l.style.whiteSpace = WhiteSpace.Normal;
+            return l;
+        }
+
+        /// <summary>Shrinks the label's font until one line fits the width (no ellipsis anywhere).</summary>
+        public static Label Fit(this Label l, float maxWidth, float min = 7f)
+        {
+            float size = l.style.fontSize.value.value;
+            float fit = Theme.FitSize(l.text, maxWidth, size, min);
+            if (!Mathf.Approximately(fit, size)) { l.style.fontSize = fit; if (l.style.unityTextOutlineWidth.value > 0) Outline(l, fit); }
+            l.style.maxWidth = maxWidth;
             l.style.overflow = Overflow.Hidden;
-            l.style.textOverflow = TextOverflow.Ellipsis;
+            return l;
+        }
+
+        /// <summary>
+        /// Two lines at most in a fixed box: the size shrinks until the longest word fits the width and the
+        /// whole text fits two lines (estimated conservatively).
+        /// </summary>
+        public static Label TwoLines(this Label l, float width, float min = 7f)
+        {
+            float size = l.style.fontSize.value.value;
+            string s = l.text ?? "";
+            float longest = 0;
+            foreach (var word in s.Split(' ')) longest = Mathf.Max(longest, Theme.TextWidth(word, 1, false));
+            float total = Theme.TextWidth(s, 1, false);
+            float fit = size;
+            // Every word on a line of its own must fit; the whole must fit 2 lines with 15% slack for wrapping.
+            if (longest * fit + 2 * Theme.OutlineFor(fit) > width) fit = (width - 4) / Mathf.Max(0.01f, longest);
+            if (total * fit * 1.15f > width * 2) fit = Mathf.Min(fit, width * 2 / (total * 1.15f));
+            fit = Mathf.Clamp(Mathf.Floor(fit * 4) / 4, min, size);
+            l.style.fontSize = fit;
+            if (l.style.unityTextOutlineWidth.value > 0) Outline(l, fit);
+            l.style.whiteSpace = WhiteSpace.Normal;
+            l.style.width = width;
+            l.style.height = fit * 2.2f;
+            l.style.unityTextAlign = TextAnchor.MiddleCenter;
+            l.style.overflow = Overflow.Hidden;
             return l;
         }
 
         public static Label Align(this Label l, TextAnchor a) { l.style.unityTextAlign = a; return l; }
 
-        public static VisualElement Icon(string name, float size, Color color)
+        // MARK: - Icons
+
+        public static VisualElement Icon(string name, float size)
         {
             var e = Div().Size(size, size).Ignore();
             var tex = Theme.Icon(name);
-            if (tex != null) e.BgImage(tex, color);
+            if (tex != null) e.BgImage(tex);
+            return e;
+        }
+
+        /// <summary>Swaps the picture of an icon made by <see cref="Icon"/>.</summary>
+        public static void SetIcon(VisualElement e, string name)
+        {
+            var tex = Theme.Icon(name);
+            if (tex != null) e.style.backgroundImage = new StyleBackground(tex);
+        }
+
+        /// <summary>An icon greyed out (locked states).</summary>
+        public static VisualElement IconDim(string name, float size)
+        {
+            var e = Icon(name, size);
+            e.style.unityBackgroundImageTintColor = new Color(0.62f, 0.58f, 0.54f, 0.85f);
             return e;
         }
 
@@ -330,79 +462,231 @@ namespace Founders.UI
             return e;
         }
 
-        /// <summary>Thin progress track; returns the fill so it can be bound.</summary>
-        public static VisualElement Bar(out VisualElement fill, float height = 5, Texture2D fillTex = null, Color? fillColor = null)
+        // MARK: - Containers
+
+        /// <summary>The parchment popup body (padding covers the outline and lip).</summary>
+        public static VisualElement Panel() => Div("panel").Col().Skin("panel").Pad(4, 8, 8, 8);
+
+        /// <summary>The wooden title strip: name and an optional "Lv.N" in yellow-green.</summary>
+        public static VisualElement Plank(string title, int? level = null, float size = 15, float width = 0)
         {
-            var track = Div().Ignore().Radius(height).Bg(Theme.Track);
-            track.style.height = height;
-            track.style.overflow = Overflow.Hidden;
-            fill = Div().Ignore().Radius(height);
-            fill.style.height = Length.Percent(100);
-            fill.style.width = Length.Percent(0);
-            if (fillTex != null) fill.BgImage(fillTex); else fill.Bg(fillColor ?? Theme.Gold);
-            track.Add(fill);
-            return track;
+            var p = Div("plank").Row().Center().Skin("plank").Pad(0, 30, 3, 30).Ignore();
+            p.style.height = 30;
+            p.style.flexShrink = 0;
+            string text = level.HasValue ? $"{title} <color=#D7F25A>Lv.{level.Value}</color>" : title;
+            var l = T(text, size);
+            if (width > 0) l.Fit(width - 64, 9);
+            p.Add(l);
+            return p;
         }
 
-        public static void SetFill(VisualElement fill, double value) =>
-            fill.style.width = Length.Percent(Mathf.Clamp01((float)value) * 100f);
-
-        public enum Kind { Gold, Glass, Ghost, Danger, Lavender, Mint, Disabled }
-
-        /// <summary>Pill button.</summary>
-        public static VisualElement Button(string label, Action onTap, Kind kind = Kind.Gold, float height = 44, string icon = null, float fontSize = 14)
+        /// <summary>An inset section: tan header band with the title (and extras on the right) over a body.</summary>
+        public static VisualElement Section(string title, out VisualElement body, VisualElement extra = null)
         {
-            var b = Div("button").Row().Center().Radius(height / 2).Pad(0, 18);
+            var s = Div("section").Col().Skin("section");
+            s.style.flexShrink = 0;
+            var head = Div().Row().Ignore().Bg(Theme.SectionHead).Radius(7, 0).Pad(0, 8);
+            head.style.height = 20;
+            head.style.borderBottomWidth = 1;
+            head.style.borderBottomColor = Theme.SectionLine;
+            head.style.marginLeft = 1; head.style.marginRight = 1; head.style.marginTop = 1;
+            head.Add(T(title, 11.5f).Grow().Also(l => l.style.overflow = Overflow.Hidden));
+            if (extra != null) head.Add(extra.NoShrink());
+            s.Add(head);
+            body = Div().Col().Pad(0, 8, 3, 8);
+            s.Add(body);
+            return s;
+        }
+
+        /// <summary>A plain inset box (no header).</summary>
+        public static VisualElement Inset() { var s = Div().Col().Skin("section").Pad(5, 8); s.style.flexShrink = 0; return s; }
+
+        /// <summary>A section row: icon, label on the left, content on the right; a hairline above unless first.</summary>
+        public static VisualElement Line(bool separator, float height = 23)
+        {
+            var r = Div().Row(0).Ignore();
+            r.style.minHeight = height;
+            r.style.flexShrink = 0;
+            if (separator) { r.style.borderTopWidth = 1; r.style.borderTopColor = Theme.RowLine; }
+            return r;
+        }
+
+        /// <summary>Stat row: "Label:  now ➜ next" (the next value green), right-aligned values.</summary>
+        public static VisualElement StatRow(string icon, string label, string now, string next = null, bool separator = true, Color? nowColor = null)
+        {
+            var r = Line(separator);
+            if (icon != null) r.Add(Icon(icon, 15).Margin(0, 5));
+            r.Add(T(label, 11.5f).Grow().Also(l => l.style.overflow = Overflow.Hidden));
+            r.Add(T(now, 12, nowColor).NoShrink());
+            if (next != null)
+            {
+                r.Add(Icon("arrow", 13).Margin(0, 4, 0, 4));
+                r.Add(T(next, 12, Theme.Up).NoShrink());
+            }
+            return r;
+        }
+
+        // MARK: - Buttons
+
+        public enum Kind { Green, Blue, Orange, Grey, Red, Brown }
+
+        static string SkinOf(Kind k) => k switch
+        {
+            Kind.Green => "btn_green",
+            Kind.Blue => "btn_blue",
+            Kind.Orange => "btn_orange",
+            Kind.Red => "btn_red",
+            Kind.Brown => "btn_brown",
+            _ => "btn_grey",
+        };
+
+        /// <summary>
+        /// The kit's chunky button: label, optional icon and an optional second line (a cost or a timer).
+        /// Grey buttons swallow taps but do nothing. The label shrinks to the width it is given (<paramref name="width"/>).
+        /// </summary>
+        public static VisualElement Button(string label, Action onTap, Kind kind = Kind.Green, float height = 34, string icon = null,
+                                           float size = 13, VisualElement sub = null, float width = 0)
+        {
+            var b = Div("button").Col().Center().Skin(SkinOf(kind)).Pad(0, 8, 3, 8);
             b.style.height = height;
             b.style.flexShrink = 0;
-            Color text;
-            switch (kind)
-            {
-                case Kind.Gold: b.BgImage(Theme.GoldFill); text = Theme.OnGold; break;
-                case Kind.Lavender: b.BgImage(Theme.LavenderFill); text = Theme.OnGold; break;
-                case Kind.Mint: b.BgImage(Theme.MintFill); text = Hex("#0D2A1F"); break;
-                case Kind.Danger: b.Bg(Theme.Alpha(Theme.Error, 0.08f)).Border(Theme.Alpha(Theme.Error, 0.32f)); text = Theme.Error; break;
-                case Kind.Ghost: b.Bg(Theme.Fill).Border(Theme.Edge); text = Theme.Body; break;
-                case Kind.Disabled: b.Bg(new Color(1, 1, 1, 0.06f)).Border(Theme.EdgeSoft); text = Theme.Muted; break;
-                default: b.Glass(height / 2); text = Theme.Ink; break;
-            }
-            if (icon != null)
-            {
-                var i = Icon(icon, fontSize + 2, text);
-                i.style.marginRight = 7;
-                b.Add(i);
-            }
-            b.Add(Text(label, fontSize, text, Theme.F.TextBold).NoWrap());
-            if (onTap != null && kind != Kind.Disabled) b.OnTap(onTap);
+            if (width > 0) b.style.width = width;
+            var top = Div().Row().Center().Ignore();
+            if (icon != null) top.Add(Icon(icon, size + 5).Margin(0, 4));
+            var l = T(label, size);
+            if (width > 0) l.Fit(width - 18 - (icon != null ? size + 9 : 0), 8);
+            top.Add(l);
+            b.Add(top);
+            if (sub != null) { sub.style.marginTop = -1; b.Add(sub); }
+            if (onTap != null && kind != Kind.Grey) b.OnTap(onTap);
             else b.pickingMode = PickingMode.Position; // still swallows taps
             return b;
         }
 
-        static Color Hex(string h) => Theme.Hex(h);
-
-        /// <summary>Round glass icon button (back, close, settings…).</summary>
-        public static VisualElement IconButton(string icon, Action onTap, float size = 40, Color? tint = null, bool solid = false)
+        /// <summary>A square button with an icon (close, −, +, rotate, trash…).</summary>
+        public static VisualElement Square(string icon, Action onTap, Kind kind = Kind.Brown, float size = 30)
         {
-            var b = Div("icon-button").Size(size, size).Center().Radius(size / 2);
-            if (solid) b.Bg(new Color(0.05f, 0.06f, 0.08f, 0.6f)).Border(Theme.Edge);
-            else b.Glass(size / 2);
-            b.Add(Icon(icon, size * 0.45f, tint ?? Theme.Ink));
-            b.OnTap(onTap);
+            var b = Div("square").Center().Skin(SkinOf(kind)).Pad(0, 0, 3, 0).Size(size, size);
+            b.Add(Icon(icon, Mathf.Round(size * 0.6f)));
+            if (onTap != null && kind != Kind.Grey) b.OnTap(onTap);
+            else b.pickingMode = PickingMode.Position;
             return b;
         }
+
+        /// <summary>The red close button that sits on a popup's top-right corner.</summary>
+        public static VisualElement Close(Action onTap) => Square("close", onTap, Kind.Red, 30);
+
+        /// <summary>A tab: raised gold when selected, flat brown otherwise; text may carry a counter.</summary>
+        public static VisualElement Tab(string label, bool on, Action onTap, string count = null, float height = 26, float size = 12, string icon = null)
+        {
+            var t = Div("tab").Row().Center().Skin(on ? "tab_on" : "tab_off").Pad(0, 8, on ? 3 : 2, 8);
+            t.style.height = on ? height + 2 : height;
+            t.style.flexShrink = 0;
+            t.style.alignSelf = UnityEngine.UIElements.Align.FlexEnd;
+            if (icon != null) t.Add(Icon(icon, 18));
+            if (!string.IsNullOrEmpty(label))
+            {
+                string text = count != null ? $"{label} <color=#D7F25A>{count}</color>" : label;
+                var l = T(text, size, on ? Color.white : Theme.Pale);
+                if (icon != null) l.style.marginLeft = 3;
+                t.Add(l);
+            }
+            if (onTap != null) t.OnTap(onTap);
+            return t;
+        }
+
+        // MARK: - Slots, cells, badges
+
+        public enum Cell { Slot, Tile, Common, Uncommon, Rare, Epic, Legendary }
+
+        static string SkinOf(Cell c) => c switch
+        {
+            Cell.Tile => "tile",
+            Cell.Common => "cell_common",
+            Cell.Uncommon => "cell_uncommon",
+            Cell.Rare => "cell_rare",
+            Cell.Epic => "cell_epic",
+            Cell.Legendary => "cell_legendary",
+            _ => "slot",
+        };
+
+        /// <summary>A square slot (parchment, wooden tile or a rarity cell) with an icon filling about two thirds.</summary>
+        public static VisualElement Slot(string icon, float size, Cell kind = Cell.Slot, float iconShare = 0.66f, bool dim = false)
+        {
+            var s = Div("slot").Center().Skin(SkinOf(kind)).Pad(0, 0, 3, 0).Size(size, size);
+            if (icon != null) s.Add(dim ? IconDim(icon, Mathf.Round(size * iconShare)) : Icon(icon, Mathf.Round(size * iconShare)));
+            return s;
+        }
+
+        /// <summary>A small badge: green level square or red notification dot, with a number or "!".</summary>
+        public static VisualElement Badge(string text, bool red = true, float size = 16)
+        {
+            var b = Div("badge").Center().Skin(red ? "badge_red" : "badge_green").Pad(0, 3, 1, 3).Ignore();
+            b.style.minWidth = size;
+            b.style.height = size;
+            b.style.flexShrink = 0;
+            b.Add(T(text, Mathf.Round(size * 0.66f)));
+            return b;
+        }
+
+        /// <summary>The dark translucent HUD capsule.</summary>
+        public static VisualElement Capsule(float height = 28)
+        {
+            var c = Div("capsule").Row().Skin("capsule").Pad(0, 9);
+            c.style.height = height;
+            c.style.flexShrink = 0;
+            return c;
+        }
+
+        // MARK: - Progress
+
+        public enum FillKind { Green, Gold, Blue, Red }
+
+        static string SkinOf(FillKind k) => k switch { FillKind.Gold => "fill_gold", FillKind.Blue => "fill_blue", FillKind.Red => "fill_red", _ => "fill_green" };
+
+        /// <summary>A progress bar (dark track, coloured fill); returns the fill for <see cref="SetFill"/>.</summary>
+        public static VisualElement Bar(out VisualElement fill, float height = 10, FillKind kind = FillKind.Green)
+        {
+            var track = Div("bar").Skin("bar_track").Ignore();
+            track.style.height = height;
+            track.style.flexShrink = 0;
+            fill = Div().Skin(SkinOf(kind)).Ignore().Abs(0, 0, null, 0);
+            fill.style.minWidth = height;
+            fill.style.width = Length.Percent(0);
+            fill.style.display = DisplayStyle.None;
+            track.Add(fill);
+            return track;
+        }
+
+        /// <summary>A bar with a centred outlined label ("73%"); returns the fill and the label.</summary>
+        public static VisualElement LabeledBar(out VisualElement fill, out Label label, float height = 12, FillKind kind = FillKind.Green)
+        {
+            var bar = Bar(out fill, height, kind);
+            label = T("", Mathf.Max(8, height - 2)).Align(TextAnchor.MiddleCenter);
+            label.Fill();
+            bar.Add(label);
+            return bar;
+        }
+
+        public static void SetFill(VisualElement fill, double value)
+        {
+            float v = Mathf.Clamp01((float)value);
+            fill.Hidden(v <= 0.001f);
+            fill.style.width = Length.Percent(v * 100f);
+        }
+
+        public static void SetFillKind(VisualElement fill, FillKind kind) => fill.Skin(SkinOf(kind));
+
+        // MARK: - Scrolling
 
         /// <summary>
         /// Vertical scroll view exactly as tall as its content, which flex-shrinks (and then scrolls) when its
         /// column runs out of room: for cards and dialog panes that must never be taller than the short
-        /// landscape screen. The height is set from the content's measured size, so it works whether or not
-        /// the scroll view would size itself to its content.
+        /// landscape screen. The height is set from the content's measured size.
         /// </summary>
         public static ScrollView FitScroll()
         {
-            var s = new ScrollView(ScrollViewMode.Vertical);
-            s.verticalScrollerVisibility = ScrollerVisibility.Hidden;
-            s.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            s.touchScrollBehavior = ScrollView.TouchScrollBehavior.Elastic;
+            var s = Scroll(ScrollViewMode.Vertical);
             s.style.flexGrow = 0;
             s.style.flexShrink = 1;
             s.style.minHeight = 0;
@@ -418,22 +702,14 @@ namespace Founders.UI
             return s;
         }
 
-        /// <summary>Small numeric badge.</summary>
-        public static VisualElement Badge(string text, Color bg, Color fg)
+        public static ScrollView Scroll(ScrollViewMode mode)
         {
-            var b = Div().Ignore().Center().Radius(9).Bg(bg).Pad(0, 5);
-            b.style.minWidth = 18;
-            b.style.height = 18;
-            b.Add(Text(text, 10, fg, Theme.F.TextBold).NoWrap());
-            return b;
-        }
-
-        /// <summary>Resource cost chips: red when the stockpile can't cover it.</summary>
-        public static VisualElement Chip(string text, Color fg, Color? bg = null)
-        {
-            var c = Div().Ignore().Row().Radius(999).Pad(4, 9).Bg(bg ?? new Color(1, 1, 1, 0.06f));
-            c.Add(Mono(text, 11, fg));
-            return c;
+            var s = new ScrollView(mode);
+            s.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            s.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            s.touchScrollBehavior = ScrollView.TouchScrollBehavior.Elastic;
+            if (mode == ScrollViewMode.Horizontal) s.contentContainer.style.flexDirection = FlexDirection.Row;
+            return s;
         }
     }
 }

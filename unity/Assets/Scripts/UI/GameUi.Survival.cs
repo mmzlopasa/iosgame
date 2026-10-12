@@ -10,7 +10,8 @@ namespace Founders.UI
 {
     /// <summary>
     /// The survival layer (after Frostpunk): weather and warmth, stoking the heart, illness and
-    /// healers, discontent beside approval (hope), the Book of Customs and the people's petitions.
+    /// healers, discontent beside hope (approval), the Book of Customs and the people's petitions,
+    /// drawn with the same kit components as everything else.
     ///
     /// Expensive core queries (the warmth of every home, approval, discontent factors, the
     /// patients under care, the law statuses) are computed at most once per UI tick and shared by
@@ -19,12 +20,10 @@ namespace Founders.UI
     public partial class GameUi
     {
         static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
-        static readonly Color Icy = Theme.Hex("#9CCBFF");
-        static readonly Color Ember = Theme.Hex("#FFA25C");
 
         // MARK: - Entry points (capture tour, deep links)
 
-        /// <summary>Opens the Weather & Warmth sheet.</summary>
+        /// <summary>Opens the Weather & Warmth window.</summary>
         public void ShowWeather() => OpenPanel(Panel.Weather);
 
         /// <summary>Opens the Book of Customs, optionally on one law (and on its confirm step).</summary>
@@ -35,8 +34,12 @@ namespace Founders.UI
             OpenPanel(Panel.Customs);
         }
 
-        /// <summary>Opens People & Work (villagers, health, approval and discontent).</summary>
-        public void ShowPeople() => OpenPanel(Panel.People);
+        /// <summary>Opens People & Work on its wellbeing tab (health, hope and discontent).</summary>
+        public void ShowPeople()
+        {
+            peopleTab = 2;
+            OpenPanel(Panel.People);
+        }
 
         /// <summary>Selects the heart and shows its card (warmth and the stoke button).</summary>
         public void ShowHeart()
@@ -76,7 +79,7 @@ namespace Founders.UI
 
         /// <summary>
         /// Shows the reach of every fire on the ground while warmth matters to what the player is doing:
-        /// the Weather sheet is open, a home or a fire is being placed, or the heart is selected. Only
+        /// the Weather window is open, a home or a fire is being placed, or the heart is selected. Only
         /// changes are written, so others (the capture tour) may set the overlay themselves in between.
         /// </summary>
         void UpdateHeatOverlay()
@@ -185,20 +188,29 @@ namespace Founders.UI
         static string PerHour(double v) => v.ToString("+0.0;−0.0;0.0", Inv) + "/h";
         static string Num(double v) => v.ToString("0.#", Inv);
 
+        /// <summary>Text colours for how warm it feels (outlined text on parchment or the dark capsule).</summary>
         static Color ExposureColor(Exposure e) => e switch
         {
-            Exposure.Comfortable => Theme.Hex("#FFC27A"),
-            Exposure.Chilly => Theme.Hex("#E3ECF5"),
-            Exposure.Cold => Icy,
-            _ => Theme.Error,
+            Exposure.Comfortable => Theme.Hex("#FFD27A"),
+            Exposure.Chilly => Theme.Hex("#E8F2FA"),
+            Exposure.Cold => Theme.Icy,
+            _ => Theme.Bad,
+        };
+
+        static E.Cell ExposureCell(Exposure e) => e switch
+        {
+            Exposure.Comfortable => E.Cell.Legendary,
+            Exposure.Chilly => E.Cell.Common,
+            Exposure.Cold => E.Cell.Rare,
+            _ => E.Cell.Epic,
         };
 
         static Color MoodColor(string mood) => mood switch
         {
-            "Revolt" => Theme.Error,
-            "Unrest" => Theme.Hex("#F0A35E"),
+            "Revolt" => Theme.Bad,
+            "Unrest" => Theme.Hex("#FFB066"),
             "Grumbling" => Theme.Gold,
-            _ => Theme.Mint,
+            _ => Theme.Up,
         };
 
         ColdSnapDefinition CurrentSnap()
@@ -216,155 +228,34 @@ namespace Founders.UI
             return m < 60 ? $"{m}m" : $"{m / 60}h{m % 60:00}";
         }
 
-        // MARK: - HUD pieces
+        // MARK: - The promise card (left rail)
 
-        /// <summary>Outside temperature, coloured by how it feels; a snowflake while a cold snap lasts.</summary>
-        VisualElement ThermoChip()
-        {
-            // Compact: it shares the season card's narrow top line with the season's name.
-            var chip = E.Div().Row().Radius(999).Pad(0, 5, 0, 3).Bg(new Color(0.04f, 0.05f, 0.07f, 0.6f)).Ignore().NoShrink();
-            chip.style.height = 16;
-            var icon = E.Icon("thermometer", 10, Color.white);
-            chip.Add(icon);
-            var t = Bold("", 10.5f);
-            t.style.marginLeft = 1;
-            chip.Add(t);
-            int lastSnap = -1;
-            Bind(() =>
-            {
-                double temp = G.Temperature;
-                bool snap = CurrentSnap() != null;
-                var c = snap ? Icy : ExposureColor(G.ExposureOf(temp));
-                string s = Deg(temp);
-                if (t.text != s) t.text = s;
-                t.style.color = c;
-                icon.style.unityBackgroundImageTintColor = c;
-                if ((snap ? 1 : 0) != lastSnap)
-                {
-                    lastSnap = snap ? 1 : 0;
-                    icon.style.backgroundImage = new StyleBackground(Theme.Icon(snap ? "winter" : "thermometer"));
-                    chip.Border(Theme.Alpha(c, snap ? 0.8f : 0.45f));
-                }
-            });
-            return chip;
-        }
-
-        /// <summary>A Frostpunk-style meter: icon, thin bar (with threshold ticks) and the value.</summary>
-        VisualElement Meter(string icon, Func<double> value, Func<Color> color, float[] ticks)
-        {
-            var row = E.Div().Row().Ignore();
-            row.style.height = 11;
-            var ic = E.Icon(icon, 11, Theme.Body);
-            row.Add(ic);
-            var bar = E.Bar(out var fill, 4, null, Theme.Gold).Grow();
-            bar.style.marginLeft = 4;
-            bar.style.marginRight = 4;
-            if (ticks != null)
-                foreach (float k in ticks)
-                {
-                    var tick = E.Div().Ignore().Bg(new Color(0, 0, 0, 0.55f)).Abs(null, 0, null, 0);
-                    tick.style.width = 1;
-                    tick.style.left = Length.Percent(k * 100);
-                    bar.Add(tick);
-                }
-            row.Add(bar);
-            var v = E.Mono("", 9.5f).Align(TextAnchor.MiddleRight);
-            v.style.width = 20;
-            row.Add(v);
-            Bind(() =>
-            {
-                double x = value();
-                var c = color();
-                E.SetFill(fill, x / 100.0);
-                fill.style.backgroundColor = c;
-                ic.style.unityBackgroundImageTintColor = c;
-                string s = ((int)Math.Round(x)).ToString(Inv);
-                if (v.text != s) v.text = s;
-                v.style.color = c;
-            });
-            return row;
-        }
-
-        /// <summary>Hope (approval) and discontent, stacked (tap: People & wellbeing).</summary>
-        VisualElement HudMeters()
-        {
-            var m = E.Div("meters").Col();
-            m.Add(Meter("approval", () => ApprovalNow, () => ApprovalColor(ApprovalNow), null));
-            if (G.HasDiscontent)
-            {
-                var d = G.Content.Balance.Discontent;
-                var dm = Meter("discontent", () => G.State.Discontent, () => MoodColor(G.DiscontentMood),
-                               new[] { (float)(d.Grumbling / 100), (float)(d.Unrest / 100) });
-                dm.style.marginTop = 3;
-                m.Add(dm);
-            }
-            Tap(m, () => store.ActivePanel = Panel.People);
-            return m;
-        }
-
-        /// <summary>Red badge with the sick count, in the status bar (hidden while nobody is ill).</summary>
-        VisualElement SickChip(float size)
-        {
-            var c = E.Div().Row().Ignore();
-            c.style.marginLeft = 6;
-            var dot = E.Div().Size(20, 20).Radius(10).Center().Bg(Notify).Border(Color.white, 1.5f).Ignore();
-            dot.Add(E.Icon("sick", 12, Color.white));
-            c.Add(dot);
-            var n = Bold("", size, Theme.Hex("#FFB3B3"));
-            n.style.marginLeft = 3;
-            c.Add(n);
-            Bind(() =>
-            {
-                int sick = G.SickCount;
-                c.Hidden(sick == 0);
-                string s = sick.ToString(Inv);
-                if (n.text != s) n.text = s;
-            });
-            return c;
-        }
-
-        float SickChipWidth(float size) => G.HasHealth && G.SickCount > 0 ? 29 + TextWidth(G.SickCount.ToString(Inv), size) : 0;
-
-        /// <summary>Size of the wooden tiles on the right so all of them fit between the top row and the Build button.</summary>
-        float TileSize()
-        {
-            int n = HasCustoms ? 4 : 3;
-            float gap = TileGap();
-            float room = PanelH - SafeTop - HudTop - BottomPad - BottomRowH - 4;
-            return Mathf.Clamp(Mathf.Floor((room - (n - 1) * gap) / n), 44, TileW);
-        }
-
-        float TileGap() => HasCustoms ? 8 : 10;
-
-        /// <summary>The promise made to the people: what is still owed and the time left (left rail).</summary>
+        /// <summary>The promise made to the people: what is still owed and the time left.</summary>
         VisualElement PromiseCard()
         {
             var p = G.ActivePetitionDefinition;
             if (p == null || G.State.ActivePetition == null) return null;
-            var card = E.Div().Col().Radius(14).Pad(7, 10).BgImage(Theme.Gradient("parchment", true, Theme.Hex("#F7E7C4"), Theme.Hex("#E7CC98")))
-                .Border(Ruby, 2f);
+            var card = E.Panel().Pad(5, 9, 9, 9);
             card.style.width = LeftRailW;
-            card.style.marginBottom = 8;
             var head = E.Div().Row().Ignore();
-            head.Add(E.Icon("discontent", 14, Ruby));
-            var t = E.Text($"Promise: {p.Title}", 12, Theme.Hex("#3A220E"), Theme.F.TextBold).NoWrap().Grow();
-            t.style.marginLeft = 6;
-            head.Add(t);
-            var left = E.Mono("", 10.5f, InkSoft);
-            left.style.marginLeft = 6;
+            head.Add(E.Icon("discontent", 18));
+            head.Add(E.T($"Promise: {p.Title}", 11.5f).Fit(LeftRailW - 18 - 40 - 30, 8).Grow().Margin(0, 0, 0, 5));
+            var left = E.T("", 10.5f);
             Bind(() =>
             {
                 double s = (G.State.ActivePetition?.DeadlineSimTime ?? 0) - G.State.SimTime;
                 string txt = Fmt.Clock(s);
                 if (left.text != txt) left.text = txt;
-                left.style.color = s < 600 ? Ruby : InkSoft;
+                left.style.color = s < 600 ? Theme.Bad : Color.white;
             });
             head.Add(left);
             card.Add(head);
-            var goal = E.Text("", 10.5f, InkSoft, Theme.F.TextMedium).NoWrap();
-            goal.style.marginTop = 3;
-            var bar = E.Bar(out var fill, 5, null, Theme.Hex("#6FB24A"));
-            bar.style.marginTop = 5;
+            var goal = E.T("", 10, Theme.Pale);
+            goal.style.marginTop = 2;
+            goal.style.maxWidth = LeftRailW - 18;
+            goal.style.overflow = Overflow.Hidden;
+            var bar = E.Bar(out var fill, 8);
+            bar.style.marginTop = 3;
             Bind(() =>
             {
                 var pd = G.ActivePetitionDefinition;
@@ -373,12 +264,18 @@ namespace Founders.UI
                 int met = st.Count(x => x.Met);
                 var open = st.FirstOrDefault(x => !x.Met);
                 string txt = st.Count == 0 ? "" : open.Text != null ? open.Text : "Kept: waiting for the people to see it";
-                if (goal.text != txt) goal.text = txt;
+                if (goal.text != txt)
+                {
+                    goal.text = txt;
+                    float fit = Theme.FitSize(txt, LeftRailW - 18, 10, 7);
+                    goal.style.fontSize = fit;
+                    E.Outline(goal, fit);
+                }
                 E.SetFill(fill, st.Count == 0 ? 0 : met / (double)st.Count);
             });
             card.Add(goal);
             card.Add(bar);
-            Tap(card, () => store.ActivePanel = Panel.People);
+            Tap(card, () => { peopleTab = 2; store.ActivePanel = Panel.People; });
             return card;
         }
 
@@ -401,178 +298,82 @@ namespace Founders.UI
             return $"{G.IsStoked}{G.StokeReadyIn > 0}{G.State.Resources.Wood >= StokeNeed}{lit}";
         }
 
-        /// <summary>Frostpunk's overdrive: what stoking gives and costs, the time left while it roars, the rest after.</summary>
-        VisualElement StokeBlock()
+        /// <summary>Frostpunk's overdrive in the heart's card: what stoking gives and costs, and its state.</summary>
+        VisualElement FireSection()
         {
             var w = G.Content.Balance.Warmth;
             bool stoked = G.IsStoked;
-            var box = E.Div().Col().Radius(18).Pad(12).Margin(10);
-            if (stoked) box.Bg(Theme.Alpha(Ember, 0.12f)).Border(Theme.Alpha(Ember, 0.45f));
-            else box.BgImage(Theme.GoldGlow).Border(Theme.Alpha(Theme.Gold, 0.3f));
-            var head = E.Div().Row().Ignore();
-            head.Add(E.Icon("flame", 16, stoked ? Ember : Theme.Gold));
-            var t = E.Text(stoked ? "The fire roars" : "Stoke the fire", 14, Theme.Ink, Theme.F.Display).Grow();
-            t.style.marginLeft = 7;
-            head.Add(t);
-            box.Add(head);
-            string cheer = w.StokeApproval > 0.01 ? $" People cheer it (+{Num(w.StokeApproval)} approval)." : "";
-            box.Add(E.Text($"Burns {Fmt.Amount(w.StokeWoodPerSecond * 3600)} wood per hour for {Game.Duration(w.StokeSeconds)}: " +
-                           $"{SignedDeg(w.StokeHeat)} warmth and {Num(w.StokeRadius)} more cells of reach.{cheer}", 11.5f, Theme.Body).Margin(6));
-
-            bool lit = G.Heart?.IsOperational ?? false;
+            var sec = E.Section(stoked ? "The fire roars" : "Stoke the fire", out var rows, LiveFire());
+            sec.style.marginTop = 6;
+            string cheer = w.StokeApproval > 0.01 ? $" People cheer it (+{Num(w.StokeApproval)} hope)." : "";
+            rows.Add(E.Ink($"Burns {Fmt.Amount(w.StokeWoodPerSecond * 3600)} wood per hour for {Game.Duration(w.StokeSeconds)}: " +
+                           $"{SignedDeg(w.StokeHeat)} warmth and {Num(w.StokeRadius)} more cells of reach.{cheer}", 10.5f).Margin(4, 0, 3));
             if (stoked)
             {
-                var row = E.Div().Row().Between().Margin(8).Ignore();
-                row.Add(E.Text("Roaring", 12, Ember, Theme.F.TextBold));
-                row.Add(Live(() => $"{Fmt.Clock(G.State.StokedUntilSimTime - G.State.SimTime)} left", 12, Ember, Theme.F.Mono));
-                box.Add(row);
-                var bar = E.Bar(out var fill, 5, null, Ember);
-                bar.style.marginTop = 6;
-                Bind(() => E.SetFill(fill, (G.State.StokedUntilSimTime - G.State.SimTime) / Math.Max(1, w.StokeSeconds)));
-                box.Add(bar);
+                var bar = LiveLabeledBar(() => (G.State.StokedUntilSimTime - G.State.SimTime) / Math.Max(1, w.StokeSeconds),
+                                         () => $"{Fmt.Clock(G.State.StokedUntilSimTime - G.State.SimTime)} left", 13, E.FillKind.Red);
+                bar.style.marginBottom = 5;
+                rows.Add(bar);
             }
             else if (G.StokeReadyIn > 0)
             {
-                var row = E.Div().Row().Between().Margin(8).Ignore();
-                row.Add(E.Text("The fire rests", 12, Theme.Muted, Theme.F.TextBold));
-                row.Add(Live(() => $"again in {Fmt.Clock(G.StokeReadyIn)}", 12, Theme.Body, Theme.F.Mono));
-                box.Add(row);
+                var r = E.Line(true);
+                r.Add(E.Icon("clock", 15).Margin(0, 5));
+                r.Add(E.T("The fire rests", 11.5f).Grow());
+                r.Add(Live(() => $"again in {Fmt.Clock(G.StokeReadyIn)}", 11.5f));
+                rows.Add(r);
             }
-            else if (!lit)
-                box.Add(E.Button($"The {G.HeartName} is not burning", null, E.Kind.Disabled, 40).Margin(10));
-            else
-            {
-                bool can = G.State.Resources.Wood >= StokeNeed;
-                box.Add(E.Button(can ? "Stoke the fire" : $"Need {Fmt.Amount(Math.Ceiling(StokeNeed))} wood", can ? Act(store.StokeHeart) : null,
-                                 can ? E.Kind.Gold : E.Kind.Disabled, 42, can ? "flame" : null).Margin(10));
-            }
-            return box;
+            return sec;
         }
 
-        // MARK: - Building and decoration cards
-
-        VisualElement LiveChip(string icon, Func<string> text, Color? tint = null)
+        /// <summary>The heart's live warmth and reach for the section header.</summary>
+        Label LiveFire() => Live(() =>
         {
-            var c = E.Div().Row().Radius(999).Pad(5, 10).Bg(new Color(1, 1, 1, 0.06f)).Ignore();
-            c.style.marginRight = 6;
-            c.style.marginBottom = 4;
-            c.Add(E.Icon(icon, 13, tint ?? Theme.GoldLight));
-            var t = Live(text, 11.5f, Theme.Ink, Theme.F.TextMedium);
-            t.style.marginLeft = 5;
-            c.Add(t);
-            return c;
-        }
+            var (heat, radius) = G.HeartFire();
+            return heat <= 0 ? "No warmth" : $"{SignedDeg(heat)} · {Num(radius)} cells";
+        }, 11, Theme.Gold);
 
-        /// <summary>Warmth inside a home, the heart's warmth and reach (and its stoke button), a fire's warmth.</summary>
-        void WarmthSection(VisualElement card, PlacedBuilding b, BuildingDefinition def)
+        /// <summary>The orange Stoke button (the kit's "Finish Now" slot): wood cost, or the time until it can roar again.</summary>
+        VisualElement StokeButton()
         {
-            if (!G.HasWarmth) return;
-            int id = b.Id;
-            if (def.HousingValue > 0)
+            bool lit = G.Heart?.IsOperational ?? false;
+            if (G.IsStoked)
             {
-                var box = E.Div().Col().Radius(16).Pad(10, 12).Bg(new Color(1, 1, 1, 0.045f)).Border(Theme.EdgeSoft).Margin(8);
-                var row = E.Div().Row().Ignore();
-                var icon = E.Icon("thermometer", 15, Theme.Body);
-                row.Add(icon);
-                var label = E.Text("", 13, Theme.Ink, Theme.F.TextBold).Grow();
-                label.style.marginLeft = 7;
-                row.Add(label);
-                box.Add(row);
-                var sub = E.Text("", 11, Theme.Muted);
-                sub.style.marginTop = 3;
-                box.Add(sub);
-                Bind(() =>
-                {
-                    HomeWarmth? home = null;
-                    foreach (var h in Warm.Homes) if (h.Building.Id == id) { home = h; break; }
-                    string text, detail;
-                    Color c;
-                    if (home is HomeWarmth hw)
-                    {
-                        c = ExposureColor(hw.Exposure);
-                        text = $"Warmth inside: {Deg(hw.Warmth)} ({hw.Exposure})";
-                        detail = hw.Occupants == 0 ? "Nobody lives here yet" : hw.Occupants == 1 ? "1 person lives here" : $"{hw.Occupants} people live here";
-                        detail += $" · outside {Deg(Warm.Temperature)}";
-                    }
-                    else
-                    {
-                        c = Theme.Muted;
-                        text = "Warmth inside: not lived in yet";
-                        detail = $"Outside {Deg(Warm.Temperature)}";
-                    }
-                    if (label.text != text) label.text = text;
-                    if (sub.text != detail) sub.text = detail;
-                    label.style.color = c;
-                    icon.style.unityBackgroundImageTintColor = c;
-                });
-                var chips = E.Div().Row().Margin(8).Ignore();
-                chips.style.flexWrap = Wrap.Wrap;
-                chips.Add(StatChip("home", $"Walls {SignedDeg(G.InsulationOf(b, def))}"));
-                var w = G.Content.Balance.Warmth;
-                if (w.InsulationPerLevel > 0 && b.Level < def.MaxLevel)
-                    chips.Add(StatChip("level_up", $"+{w.InsulationPerLevel.ToString("0.#", Inv)}° per level"));
-                box.Add(chips);
-                card.Add(box);
+                var b = E.Button("Roaring", null, E.Kind.Grey, 36, null, 13, SubLine("flame", ""));
+                var l = b.ElementAt(1).ElementAt(1) as Label;
+                Bind(() => { string s = Fmt.Clock(G.State.StokedUntilSimTime - G.State.SimTime); if (l != null && l.text != s) l.text = s; });
+                return b;
             }
-            if (def.Heart)
+            if (G.StokeReadyIn > 0)
             {
-                var chips = E.Div().Row().Margin(8).Ignore();
-                chips.style.flexWrap = Wrap.Wrap;
-                chips.Add(LiveChip("flame", () =>
-                {
-                    var (heat, radius) = G.HeartFire();
-                    return heat <= 0 ? "Gives no warmth" : $"Warmth {SignedDeg(heat)} within {Num(radius)} cells";
-                }, Ember));
-                card.Add(chips);
-                if (b.Status == BuildingStatus.Complete || b.IsOperational) card.Add(StokeBlock());
+                var b = E.Button("Stoke", null, E.Kind.Grey, 36, null, 13, SubLine("clock", ""));
+                var l = b.ElementAt(1).ElementAt(1) as Label;
+                Bind(() => { string s = Fmt.Clock(G.StokeReadyIn); if (l != null && l.text != s) l.text = s; });
+                return b;
             }
-            else if (def.Heat != null)
-            {
-                var chips = E.Div().Row().Margin(8).Ignore();
-                chips.Add(StatChip("flame", $"Warmth {SignedDeg(def.Heat.Heat)} within {Num(def.Heat.Radius)} cells"));
-                card.Add(chips);
-            }
-        }
-
-        /// <summary>Braziers and fire pits: how much warmth they give and how far.</summary>
-        VisualElement HeatChips(DecorationDefinition def)
-        {
-            if (def?.Heat == null) return null;
-            var row = E.Div().Row().Margin(8).Ignore();
-            row.style.flexWrap = Wrap.Wrap;
-            row.Add(StatChip("flame", $"Warmth {SignedDeg(def.Heat.Heat)} within {Num(def.Heat.Radius)} cells"));
-            if (def.Heat.WoodPerSecond > 0) row.Add(StatChip("wood", $"{Num(def.Heat.WoodPerSecond * 3600)} wood/h in the cold"));
-            return row;
+            if (!lit) return E.Button("Stoke", null, E.Kind.Grey, 36, null, 13, SubLine("alert", "Not lit", Theme.Pale));
+            bool can = G.State.Resources.Wood >= StokeNeed;
+            return E.Button("Stoke", can ? Act(store.StokeHeart) : null, can ? E.Kind.Orange : E.Kind.Grey, 36, null, 13,
+                            SubLine("wood", Fmt.Compact(Math.Ceiling(StokeNeed)), can ? (Color?)null : Theme.Bad));
         }
 
         // MARK: - Expeditions
-
-        /// <summary>"2 survivors, 40 food" (null when the region holds nothing).</summary>
-        static string FindsText(RegionDefinition r)
-        {
-            var parts = new List<string>();
-            if (r.Survivors > 0) parts.Add(r.Survivors == 1 ? "1 survivor" : $"{r.Survivors} survivors");
-            foreach (var kv in r.Loot.Entries)
-                if (kv.Value > 0) parts.Add($"{Fmt.Amount(kv.Value)} {kv.Key.DisplayName().ToLowerInvariant()}");
-            return parts.Count == 0 ? null : string.Join(", ", parts);
-        }
 
         VisualElement RegionFinds(RegionDefinition r, bool explored)
         {
             if (explored)
             {
                 if (string.IsNullOrEmpty(r.Finding)) return null;
-                var f = E.Text(r.Finding, 11.5f, Theme.Mint).Margin(6);
-                f.style.unityFontStyleAndWeight = FontStyle.Italic;
-                return f;
+                return E.T(r.Finding, 10.5f, Theme.Up).Wrap().Margin(2, 0, 4);
             }
-            string finds = FindsText(r);
-            if (finds == null) return null;
-            var row = E.Div().Row(0, Align.FlexStart).Margin(6).Ignore();
-            row.Add(E.Icon(r.Survivors > 0 ? "people" : "compass", 13, Theme.GoldLight));
-            var t = E.Text($"Scouts may find: {finds}", 11.5f, Theme.GoldLight, Theme.F.TextMedium).Grow();
-            t.style.marginLeft = 6;
-            row.Add(t);
+            var cells = new List<VisualElement>();
+            if (r.Survivors > 0) cells.Add(RewardCell("people", E.Cell.Rare, r.Survivors.ToString(Inv), 34));
+            foreach (var kv in r.Loot.Entries)
+                if (kv.Value > 0) cells.Add(RewardCell(IconFor(kv.Key), CellFor(kv.Key), Fmt.Compact(kv.Value), 34));
+            if (cells.Count == 0) return null;
+            var row = E.Div().Row().Ignore().Margin(2, 0, 4);
+            row.Add(E.T("Scouts may find", 10.5f, Theme.Pale).Margin(0, 6));
+            foreach (var c in cells) { c.style.marginRight = 4; row.Add(c); }
             return row;
         }
 
@@ -592,35 +393,31 @@ namespace Founders.UI
         {
             if (!G.HasDiscontent) return;
             var d = G.Content.Balance.Discontent;
-            var card = Card();
-            var head = E.Div().Row().Ignore();
-            var icon = E.Icon("discontent", 18, Theme.Mint);
-            head.Add(icon);
-            var t = E.Text("Discontent", 15, Theme.Ink, Theme.F.Display).Grow();
-            t.style.marginLeft = 8;
-            head.Add(t);
-            var value = E.Mono("", 15);
-            head.Add(value);
-            card.Add(head);
-            var bar = E.Bar(out var fill, 6, null, Theme.Mint);
+            var value = E.T("", 12);
+            var card = Block("Discontent", out var rows, value);
+            var bar = E.Bar(out var fill, 11, E.FillKind.Green);
             foreach (double k in new[] { d.Grumbling, d.Unrest })
             {
-                var tick = E.Div().Ignore().Bg(new Color(0, 0, 0, 0.6f)).Abs(null, 0, null, 0);
+                var tick = E.Div().Ignore().Bg(Theme.Outline).Abs(null, 2, null, 2);
                 tick.style.width = 2;
                 tick.style.left = Length.Percent((float)k);
                 bar.Add(tick);
             }
-            bar.style.marginTop = 10;
-            card.Add(bar);
+            bar.style.marginTop = 6;
+            rows.Add(bar);
+            string lastMood = null;
             Bind(() =>
             {
-                var c = MoodColor(G.DiscontentMood);
-                string s = $"{(int)Math.Round(G.State.Discontent)} · {G.DiscontentMood}";
+                string mood = G.DiscontentMood;
+                string s = $"{(int)Math.Round(G.State.Discontent)} · {mood}";
                 if (value.text != s) value.text = s;
-                value.style.color = c;
-                icon.style.unityBackgroundImageTintColor = c;
+                value.style.color = MoodColor(mood);
                 E.SetFill(fill, G.State.Discontent / 100);
-                fill.style.backgroundColor = c;
+                if (mood != lastMood)
+                {
+                    lastMood = mood;
+                    E.SetFillKind(fill, mood == "Revolt" || mood == "Unrest" ? E.FillKind.Red : mood == "Grumbling" ? E.FillKind.Gold : E.FillKind.Green);
+                }
             });
             var effect = Live(() =>
             {
@@ -632,38 +429,34 @@ namespace Founders.UI
                     case "Grumbling": return $"{trend} · work {Fmt.Signed((G.DiscontentWork - 1) * 100)}%";
                     default: return $"{trend} · calm";
                 }
-            }, 11.5f, Theme.Body);
-            effect.style.marginTop = 6;
-            card.Add(effect);
-            card.Add(E.Div().Size(null, 1).Bg(new Color(1, 1, 1, 0.07f)).Margin(10).Ignore());
+            }, 11, Theme.Pale);
+            effect.style.marginTop = 3;
+            effect.style.marginBottom = 2;
+            rows.Add(effect);
             var factors = DiscFactors;
             for (int i = 0; i < factors.Count; i++)
             {
                 int index = i;
                 bool up = factors[i].PerHour > 0;
-                var r = E.Div().Row().Between().Margin(6).Ignore();
-                r.Add(E.Text(factors[i].Label, 12.5f, Theme.Ink).Grow());
-                r.Add(Live(() => { var f = DiscFactors; return index < f.Count ? PerHour(f[index].PerHour) : ""; }, 12.5f, up ? Theme.Error : Theme.Mint, Theme.F.Mono));
-                card.Add(r);
+                var r = E.Line(true);
+                r.Add(E.T(factors[i].Label, 11.5f).Fit(WindowW - 120, 8).Grow());
+                r.Add(Live(() => { var f = DiscFactors; return index < f.Count ? PerHour(f[index].PerHour) : ""; }, 12, up ? Theme.Bad : Theme.Up));
+                rows.Add(r);
             }
 
             var promise = G.ActivePetitionDefinition;
             if (promise != null && G.State.ActivePetition != null)
             {
-                var box = E.Div().Col().Radius(14).Pad(10, 12).Bg(Theme.Alpha(Theme.Gold, 0.08f)).Border(Theme.Alpha(Theme.Gold, 0.3f)).Margin(12);
-                var ph = E.Div().Row().Ignore();
-                ph.Add(E.Icon("goals", 14, Theme.Gold));
-                var pt = E.Text($"You promised: {promise.Promise}", 12.5f, Theme.Ink, Theme.F.TextBold).Grow();
-                pt.style.marginLeft = 7;
-                ph.Add(pt);
-                ph.Add(Live(() => Fmt.Clock((G.State.ActivePetition?.DeadlineSimTime ?? 0) - G.State.SimTime), 11.5f, Theme.Gold, Theme.F.Mono));
-                box.Add(ph);
-                foreach (var req in G.PetitionGoalStatus(promise)) box.Add(Check(req.Text, req.Met).Margin(6));
-                box.Add(E.Text($"Kept: −{Num(d.KeptRelief)} discontent and +{Num(d.KeptApproval)} approval. Broken: +{Num(d.BrokenAnger)} discontent.", 11, Theme.Muted).Margin(6));
-                card.Add(box);
+                var r = E.Line(true, 27);
+                r.Add(E.Icon("goals", 16).Margin(0, 5));
+                r.Add(E.T($"You promised: {promise.Promise}", 11.5f, Theme.Gold).Fit(WindowW - 150, 8).Grow());
+                r.Add(Live(() => Fmt.Clock((G.State.ActivePetition?.DeadlineSimTime ?? 0) - G.State.SimTime), 11.5f));
+                rows.Add(r);
+                foreach (var req in G.PetitionGoalStatus(promise)) rows.Add(RequirementRow("next", req.Text, req.Met, null, true, WindowW));
+                rows.Add(E.Ink($"Kept: −{Num(d.KeptRelief)} discontent and +{Num(d.KeptApproval)} hope. Broken: +{Num(d.BrokenAnger)} discontent.", 10).Margin(3, 0, 2));
             }
-            card.Add(E.Text($"Hunger, cold, illness and homelessness stir discontent; content people calm it. From {Num(d.Grumbling)} people grumble and work slower, " +
-                            $"from {Num(d.Unrest)} there is unrest, and at 100 families leave. Customs and promises calm them.", 11, Theme.Muted).Margin(10));
+            rows.Add(E.Ink($"Hunger, cold, illness and homelessness stir discontent; content people calm it. From {Num(d.Grumbling)} people grumble and work slower, " +
+                           $"from {Num(d.Unrest)} there is unrest, and at 100 families leave. Customs and promises calm them.", 10).Margin(3, 0, 3));
             host.Add(card);
         }
 
@@ -671,46 +464,33 @@ namespace Founders.UI
         void BuildHealth(VisualElement host)
         {
             if (!G.HasHealth) return;
-            var card = Card();
-            var head = E.Div().Row().Ignore();
-            head.Add(E.Icon("sick", 18, Theme.Error));
-            var t = E.Text("Health", 15, Theme.Ink, Theme.F.Display).Grow();
-            t.style.marginLeft = 8;
-            head.Add(t);
-            if (G.State.Deaths > 0) head.Add(E.Text($"{G.State.Deaths} lost", 11.5f, Theme.Muted));
-            card.Add(head);
-            var row = E.Div().Row().Margin(10).Ignore();
-            row.Add(Stat("Ill", () => $"{G.SickCount}", G.SickCount > 0 ? Theme.Error : Theme.Ink));
-            row.Add(Stat("Under care", () => $"{Math.Min(G.SickCount, G.CareCapacity)}/{G.SickCount}", Theme.Mint).Margin(0, 0, 0, 8));
-            row.Add(Stat("Falling ill", () => (G.IllnessRate() * 3600).ToString("0.0", Inv) + "/h", Theme.Body).Margin(0, 0, 0, 8));
-            card.Add(row);
+            var card = Block("Health", out var rows, G.State.Deaths > 0 ? E.T($"{G.State.Deaths} lost", 11, Theme.Pale) : null);
+            var row = E.Div().Row().Ignore().Margin(5, 0, 4);
+            row.Add(StatBox("sick", "Ill", () => $"{G.SickCount}", () => G.SickCount > 0 ? Theme.Bad : Color.white));
+            row.Add(StatBox("check", "Under care", () => $"{Math.Min(G.SickCount, G.CareCapacity)}/{G.SickCount}").Margin(0, 0, 0, 6));
+            row.Add(StatBox("alert", "Falling ill", () => (G.IllnessRate() * 3600).ToString("0.0", Inv) + "/h").Margin(0, 0, 0, 6));
+            rows.Add(row);
             var hut = G.Content.Building("healers_hut");
             int per = G.Content.Balance.Health.PatientsPerHealer;
             if (G.SickCount > G.CareCapacity)
-                card.Add(Notice("sick", G.State.Assignments[JobType.Healing] > 0
+                rows.Add(Notice("sick", G.State.Assignments[JobType.Healing] > 0
                     ? $"More are ill than the healers can tend ({per} each). Add healers or build another {hut?.Name ?? "healer's hut"}."
-                    : $"Nobody tends the sick. Build a {hut?.Name ?? "healer's hut"} and assign healers: each tends {per}.", Theme.Error));
-            card.Add(E.Text("People in cold homes, without a home or without food fall ill. Under a healer's care they get well quickly; " +
-                            "left alone in the cold an illness grows grave and may kill.", 11, Theme.Muted).Margin(10));
+                    : $"Nobody tends the sick. Build a {hut?.Name ?? "healer's hut"} and assign healers: each tends {per}.", true).Margin(0, 0, 4));
+            rows.Add(E.Ink("People in cold homes, without a home or without food fall ill. Under a healer's care they get well quickly; " +
+                           "left alone in the cold an illness grows grave and may kill.", 10).Margin(2, 0, 3));
             host.Add(card);
         }
 
         /// <summary>Under a villager's name: ill, under care or not, and how far along the recovery is.</summary>
-        void SickLine(VisualElement col, Person p)
+        void SickLine(VisualElement col, Person p, float width)
         {
             bool treated = Treated.Contains(p.Id);
             bool grave = p.Severity > 0.5;
-            var status = E.Div().Row().Ignore();
-            status.style.marginTop = 2;
-            status.Add(E.Icon("sick", 11, treated ? Theme.Mint : Theme.Error));
-            var st = E.Text(treated ? "Ill · under care" : grave ? "Gravely ill · untreated" : "Ill · untreated", 11, treated ? Theme.Mint : Theme.Error, Theme.F.TextBold);
-            st.style.marginLeft = 4;
-            status.Add(st);
-            col.Add(status);
+            col.Add(E.T(treated ? "Ill · under care" : grave ? "Gravely ill · untreated" : "Ill · untreated", 10, treated ? Theme.Up : Theme.Bad).Fit(width, 7));
             int pid = p.Id;
-            var bar = E.Bar(out var fill, 3, Theme.MintFill);
-            bar.style.marginTop = 4;
-            bar.style.marginRight = 8;
+            var bar = E.Bar(out var fill, 6, E.FillKind.Green);
+            bar.style.marginTop = 2;
+            bar.style.width = Mathf.Min(width, 90);
             Bind(() =>
             {
                 Person who = null;
@@ -720,7 +500,7 @@ namespace Founders.UI
             col.Add(bar);
         }
 
-        // MARK: - Weather & Warmth sheet
+        // MARK: - Weather & Warmth window
 
         string WeatherKey()
         {
@@ -736,81 +516,58 @@ namespace Founders.UI
         {
             if (!G.HasClimate)
             {
-                host.Add(Notice("summer", "The weather is mild here: nobody needs to worry about the cold.", Theme.Mint).Margin(0));
+                host.Add(Notice("summer", "The weather is mild here: nobody needs to worry about the cold."));
                 return;
             }
             var clim = G.Content.Balance.Climate;
-            var season = G.Season;
 
-            // Now
-            var hero = Card();
-            var row = E.Div().Row().Ignore();
-            var bigIcon = E.Icon("thermometer", 38, Theme.Body);
-            row.Add(bigIcon);
-            var col = E.Div().Col().Grow().Ignore();
-            col.style.marginLeft = 10;
-            col.Add(E.Eyebrow("Outside now", Theme.Muted, 9.5f));
-            var temp = E.Text("", 32, Theme.Ink, Theme.F.Display);
+            // Now and the forecast, in one block.
+            var forecast = G.Forecast();
+            double hours = forecast.Count * clim.PeriodSeconds / 3600.0;
+            var now = Block($"Forecast · next {Num(hours)} hours", out var rows);
+            var hero = E.Div().Row().Ignore().Margin(5, 0, 4);
+            var big = E.Slot("thermometer", 52, E.Cell.Rare, 0.7f);
+            hero.Add(big);
+            var col = E.Div().Col().Ignore().Margin(0, 10, 0, 8);
+            col.Add(E.T("Outside now", 10.5f, Theme.Pale));
+            var temp = E.T("", 24);
             col.Add(temp);
-            var feel = E.Text("", 12, Theme.Body);
+            var feel = E.T("", 10.5f, Theme.Pale);
             col.Add(feel);
-            row.Add(col);
-            if (season != null)
-            {
-                var sc = E.Div().Col(Align.FlexEnd).Ignore();
-                sc.Add(E.Icon(SeasonIcon(season.Id), 22, SeasonTint(season.Id)));
-                sc.Add(E.Text($"{season.Name} · Y{G.Year}", 11.5f, Theme.Ink, Theme.F.TextBold).Margin(4));
-                sc.Add(Live(() => $"next season {Fmt.Clock(G.SecondsUntilNextSeason)}", 10.5f, Theme.Muted, Theme.F.Mono).Margin(2));
-                row.Add(sc);
-            }
+            hero.Add(col);
             Bind(() =>
             {
                 double t = G.Temperature;
                 var e = G.ExposureOf(t);
-                var c = ExposureColor(e);
                 string s = Deg(t);
                 if (temp.text != s) temp.text = s;
-                temp.style.color = c;
-                bigIcon.style.unityBackgroundImageTintColor = c;
-                string f = $"Feels {e.ToString().ToLowerInvariant()} outside";
+                temp.style.color = ExposureColor(e);
+                string f = $"Feels {e.ToString().ToLowerInvariant()}";
                 if (feel.text != f) feel.text = f;
             });
-            hero.Add(row);
-            var snapNow = CurrentSnap();
-            if (snapNow != null)
-                hero.Add(Notice("winter", $"{snapNow.Name}: {Num(snapNow.Drop)}° colder than usual. Keep the woodpile full and the fires burning.", Icy));
-            else if (G.Freezing)
-                hero.Add(Notice("alert", "The woodpile is empty: the fires are out and people are freezing.", Theme.Error));
-            host.Add(hero);
-
-            // Forecast
-            var forecast = G.Forecast();
-            double hours = forecast.Count * clim.PeriodSeconds / 3600.0;
-            host.Add(SectionLabel($"Forecast · next {Num(hours)} hours"));
-            var strip = E.Div().Row(0, Align.Stretch).Margin(0, 0, 6).Ignore();
+            // The forecast strip: one small cell per period.
+            var strip = E.Div().Row(0, Align.FlexStart).Grow().Ignore();
             foreach (var period in forecast)
             {
                 var exposure = G.ExposureOf(period.Temperature);
-                var c = ExposureColor(exposure);
                 bool snap = period.Snap != null;
-                var cell = E.Div().Col(Align.Center).Grow().Radius(12).Pad(6, 0, 0, 0).Ignore();
-                cell.style.marginRight = 3;
-                cell.style.overflow = Overflow.Hidden;
-                if (snap) cell.Bg(Theme.Alpha(Icy, 0.16f)).Border(Theme.Alpha(Icy, 0.55f));
-                else cell.Bg(new Color(1, 1, 1, 0.045f)).Border(Theme.EdgeSoft);
+                var cell = E.Div().Col(Align.Center).Grow().Ignore();
                 double start = period.StartSimTime;
-                cell.Add(Live(() => Until(start - G.State.SimTime), 9.5f, snap ? Icy : Theme.Muted, Theme.F.Mono));
-                cell.Add(E.Icon(snap ? "winter" : "thermometer", 14, snap ? Icy : c).Margin(4));
-                cell.Add(E.Mono(Deg(period.Temperature), 12.5f, c).Margin(3));
-                var under = E.Div().Ignore().Bg(c);
-                under.style.height = 3;
-                under.style.alignSelf = Align.Stretch;
-                under.style.marginTop = 6;
-                cell.Add(under);
+                cell.Add(Live(() => Until(start - G.State.SimTime), 10, snap ? Theme.Icy : Theme.Pale));
+                var slot = E.Slot(snap ? "winter" : "thermometer", 30, snap ? E.Cell.Rare : ExposureCell(exposure), 0.62f);
+                slot.style.marginTop = 2;
+                cell.Add(slot);
+                cell.Add(E.T(Deg(period.Temperature), 11, ExposureColor(exposure)).Margin(1));
                 strip.Add(cell);
             }
-            host.Add(strip);
-            // Cold snaps in sight, one pill per spell.
+            hero.Add(strip);
+            rows.Add(hero);
+            var snapNow = CurrentSnap();
+            if (snapNow != null)
+                rows.Add(Notice("winter", $"{snapNow.Name}: {Num(snapNow.Drop)}° colder than usual. Keep the woodpile full and the fires burning.").Margin(0, 0, 4));
+            else if (G.Freezing)
+                rows.Add(Notice("alert", "The woodpile is empty: the fires are out and people are freezing.", true).Margin(0, 0, 4));
+            // Cold snaps in sight, one row per spell.
             bool anySnap = false;
             for (int i = 0; i < forecast.Count; i++)
             {
@@ -821,120 +578,105 @@ namespace Founders.UI
                 anySnap = true;
                 double start = forecast[i].StartSimTime, end = forecast[j].EndSimTime;
                 bool lastsBeyond = j == forecast.Count - 1;
-                var pill = E.Div().Row().Radius(12).Pad(7, 10).Bg(Theme.Alpha(Icy, 0.1f)).Border(Theme.Alpha(Icy, 0.4f)).Margin(4).Ignore();
-                pill.Add(E.Icon("winter", 14, Icy));
-                var name = E.Text(snap.Name, 12.5f, Theme.Ink, Theme.F.TextBold);
-                name.style.marginLeft = 7;
-                pill.Add(name);
-                var when = Live(() =>
+                var r = E.Line(true);
+                r.Add(E.Icon("winter", 16).Margin(0, 5));
+                r.Add(E.T(snap.Name, 11.5f, Theme.Icy));
+                r.Add(Live(() =>
                 {
-                    double now = G.State.SimTime;
-                    return start <= now
-                        ? (lastsBeyond ? "now" : $"now · ends in {Game.Duration(end - now)}")
-                        : $"in {Game.Duration(start - now)}";
-                }, 11.5f, Icy, Theme.F.TextMedium).Grow();
-                when.style.marginLeft = 7;
-                pill.Add(when);
-                pill.Add(E.Mono($"−{Num(snap.Drop)}°", 11.5f, Icy));
-                host.Add(pill);
+                    double t = G.State.SimTime;
+                    return start <= t ? (lastsBeyond ? "now" : $"now · ends in {Game.Duration(end - t)}") : $"in {Game.Duration(start - t)}";
+                }, 11, Theme.Pale).Margin(0, 0, 0, 6).Grow());
+                r.Add(E.T($"−{Num(snap.Drop)}°", 12, Theme.Icy));
+                rows.Add(r);
             }
-            if (!anySnap) host.Add(E.Text("No cold snaps in sight.", 11.5f, Theme.Muted).Margin(2, 4, 0, 4));
+            if (!anySnap) rows.Add(E.StatRow("winter", "Cold snaps", "None in sight", null, true, Theme.Pale));
+            host.Add(now);
 
             if (!G.HasWarmth) return;
             var wc = G.Content.Balance.Warmth;
 
-            // Homes
-            host.Add(SectionLabel("Homes"));
-            var homes = Card();
-            var grid = E.Div().Row().Ignore();
+            // Homes: people by how warm they sleep, then the coldest homes.
+            var homes = Block("Homes", out var hrows);
+            var grid = E.Div().Row().Ignore().Margin(5, 0, 4);
             foreach (Exposure e in new[] { Exposure.Comfortable, Exposure.Chilly, Exposure.Cold, Exposure.Freezing })
             {
-                var c = ExposureColor(e);
-                var cell = E.Div().Col(Align.Center).Grow().Radius(12).Pad(8, 2).Bg(Theme.Alpha(c, 0.08f)).Border(Theme.Alpha(c, 0.25f)).Ignore();
-                if (e != Exposure.Comfortable) cell.style.marginLeft = 6;
                 int k = (int)e;
-                cell.Add(Live(() => Warm.People[k].ToString(Inv), 17, c, Theme.F.Mono));
-                cell.Add(E.Text(e.ToString(), 10.5f, Theme.Body).Margin(2));
-                grid.Add(cell);
+                var c = E.Div().Col(Align.Center).Grow().Ignore();
+                var cell = E.Slot("people", 40, ExposureCell(e), 0.55f);
+                cell.style.justifyContent = Justify.FlexStart;
+                cell.ElementAt(0).style.marginTop = 2;
+                var n = Live(() => Warm.People[k].ToString(Inv), 11).Align(TextAnchor.MiddleCenter).Abs(0, null, 0, 3);
+                cell.Add(n);
+                c.Add(cell);
+                c.Add(E.T(e.ToString(), 10.5f, ExposureColor(e)).Margin(2));
+                grid.Add(c);
             }
-            homes.Add(grid);
+            hrows.Add(grid);
             if (Warm.Homeless > 0)
-                homes.Add(Notice("people", "", Theme.Error).Also(n =>
-                {
-                    var l = n.Q<Label>();
-                    Bind(() =>
-                    {
-                        var w = Warm;
-                        string s = $"{w.Homeless} without a home sleep beside the fire ({Deg(w.HomelessWarmth)}). Build shelters.";
-                        if (l.text != s) l.text = s;
-                    });
-                }));
-            // Coldest homes first (tap one to see it).
-            var list = Warm.Homes.Where(h => h.Occupants > 0).OrderBy(h => h.Warmth).Take(6).ToList();
-            if (list.Count > 0)
             {
-                homes.Add(E.Eyebrow("Coldest homes", Theme.Muted, 9.5f).Margin(12, 0, 2, 0));
-                foreach (var h in list)
-                {
-                    int id = h.Building.Id;
-                    var r = E.Div().Row().Radius(10).Pad(6, 4).Margin(2);
-                    r.Add(E.Icon("home", 13, Theme.Body));
-                    var n = E.Text($"{G.DisplayName(h.Building)} · {h.Occupants}", 12, Theme.Ink).NoWrap().Grow();
-                    n.style.marginLeft = 7;
-                    r.Add(n);
-                    var v = E.Mono("", 12);
-                    Bind(() =>
-                    {
-                        foreach (var x in Warm.Homes)
-                            if (x.Building.Id == id)
-                            {
-                                string s = $"{Deg(x.Warmth)} {x.Exposure}";
-                                if (v.text != s) v.text = s;
-                                v.style.color = ExposureColor(x.Exposure);
-                                return;
-                            }
-                    });
-                    r.Add(v);
-                    Tap(r, () => store.FocusBuilding(id));
-                    homes.Add(r);
-                }
+                var hl = E.Line(true, 27);
+                hl.Add(E.Icon("people", 16).Margin(0, 5));
+                hl.Add(Live(() => $"{Warm.Homeless} without a home sleep beside the fire ({Deg(Warm.HomelessWarmth)}). Build shelters.", 11, Theme.Bad).Grow());
+                hrows.Add(hl);
             }
-            homes.Add(E.Text($"Comfortable from {Deg(wc.Comfortable)}, cold below {Deg(wc.Cold)}, freezing below {Deg(wc.Freezing)}. " +
-                             "Better walls (levels) and fires nearby keep homes warm; cold homes make people ill and discontent.", 11, Theme.Muted).Margin(10));
+            // Coldest homes first (tap one to see it).
+            foreach (var h in Warm.Homes.Where(x => x.Occupants > 0).OrderBy(x => x.Warmth).Take(6))
+            {
+                int id = h.Building.Id;
+                var r = E.Line(true);
+                r.pickingMode = PickingMode.Position;
+                r.Add(E.Icon("home", 15).Margin(0, 5));
+                r.Add(E.T($"{G.DisplayName(h.Building)} · {h.Occupants}", 11.5f).Fit(WindowW - 170, 8).Grow());
+                var v = E.T("", 12);
+                Bind(() =>
+                {
+                    foreach (var x in Warm.Homes)
+                        if (x.Building.Id == id)
+                        {
+                            string s = $"{Deg(x.Warmth)} {x.Exposure}";
+                            if (v.text != s) v.text = s;
+                            v.style.color = ExposureColor(x.Exposure);
+                            return;
+                        }
+                });
+                r.Add(v);
+                Tap(r, () => store.FocusBuilding(id));
+                hrows.Add(r);
+            }
+            hrows.Add(E.Ink($"Comfortable from {Deg(wc.Comfortable)}, cold below {Deg(wc.Cold)}, freezing below {Deg(wc.Freezing)}. " +
+                            "Better walls (levels) and fires nearby keep homes warm; cold homes make people ill and discontent.", 10).Margin(3, 0, 3));
             host.Add(homes);
 
-            // The heart
-            host.Add(SectionLabel(G.HeartName));
-            var heart = Card();
-            var hr = E.Div().Row().Ignore();
-            hr.Add(E.Icon("flame", 18, Ember));
-            var ht = Live(() =>
-            {
-                var (heat, radius) = G.HeartFire();
-                return heat <= 0 ? "The fire gives no warmth" : $"Warms {SignedDeg(heat)} within {Num(radius)} cells";
-            }, 14, Theme.Ink, Theme.F.Display).Grow();
-            ht.style.marginLeft = 8;
-            hr.Add(ht);
-            heart.Add(hr);
-            var fuel = E.Div().Row().Between().Margin(10).Ignore();
-            fuel.Add(E.Text("Firewood burnt", 12, Theme.Body));
-            fuel.Add(Live(() => $"{(G.FuelPerSecond * 60).ToString("0.0", Inv)}/m", 12, Theme.Ink, Theme.F.Mono));
-            heart.Add(fuel);
-            var lasts = E.Div().Row().Between().Margin(6).Ignore();
-            lasts.Add(E.Text("Woodpile lasts", 12, Theme.Body));
+            // The heart.
+            var heart = Block(G.HeartName, out var frows, LiveFire());
+            var fuel = E.Line(false);
+            fuel.Add(E.Icon("wood", 15).Margin(0, 5));
+            fuel.Add(E.T("Firewood burnt", 11.5f).Grow());
+            fuel.Add(Live(() => $"{(G.FuelPerSecond * 60).ToString("0.0", Inv)}/m", 12));
+            frows.Add(fuel);
+            var lasts = E.Line(true);
+            lasts.Add(E.Icon("clock", 15).Margin(0, 5));
+            lasts.Add(E.T("Woodpile lasts", 11.5f).Grow());
             lasts.Add(Live(() =>
             {
                 double burn = G.FuelPerSecond, net = econ.Net.Wood;
-                if (burn <= 0) return "no fires needed";
-                if (net >= 0) return "growing";
+                if (burn <= 0) return "No fires needed";
+                if (net >= 0) return "Growing";
                 return Fmt.Clock(G.State.Resources.Wood / -net);
-            }, 12, Theme.Ink, Theme.F.Mono));
-            heart.Add(lasts);
-            if (G.Heart != null) heart.Add(StokeBlock());
+            }, 12));
+            frows.Add(lasts);
+            if (G.Heart != null)
+            {
+                var stoke = E.Line(true, 42);
+                stoke.Add(E.T(G.IsStoked ? "The fire roars" : "Stoke for more warmth", 11.5f).Grow());
+                var b = StokeButton();
+                b.style.width = 130;
+                stoke.Add(b);
+                frows.Add(stoke);
+            }
             var brazier = G.Content.Decorations.FirstOrDefault(d => d.Heat != null);
             if (brazier != null)
-                heart.Add(E.Text($"{brazier.Name}s (Build › {brazier.Category}) warm the homes around them: {SignedDeg(brazier.Heat.Heat)} within {Num(brazier.Heat.Radius)} cells.",
-                                 11, Theme.Muted).Margin(10));
+                frows.Add(E.Ink($"{brazier.Name}s (Build › {brazier.Category}) warm the homes around them: {SignedDeg(brazier.Heat.Heat)} within {Num(brazier.Heat.Radius)} cells.", 10).Margin(3, 0, 3));
             host.Add(heart);
         }
 
@@ -945,70 +687,45 @@ namespace Founders.UI
         string CustomsKey()
         {
             var sb = new System.Text.StringBuilder();
-            sb.Append(selectedLaw).Append('|').Append(confirmLaw).Append('|').Append(G.LawCooldownLeft > 0).Append('|');
+            sb.Append(selectedLaw).Append('|').Append(confirmLaw).Append('|').Append(G.LawCooldownLeft > 0).Append('|').Append(WindowW).Append('|');
             foreach (var s in LawsNow) sb.Append((int)s.State).Append(s.Reasons.Count);
             return sb.ToString();
         }
 
         static bool Excludes(LawDefinition a, LawDefinition b) => a.Excludes.Contains(b.Id) || b.Excludes.Contains(a.Id);
 
-        void BuildDrawerCustoms(VisualElement host)
+        const float LawDetailW = 214;
+
+        void BuildCustoms(VisualElement host)
         {
             var statuses = LawsNow;
             if (statuses.Count == 0) return;
             if (selectedLaw == null || statuses.All(s => s.Law.Id != selectedLaw))
                 selectedLaw = (statuses.FirstOrDefault(s => s.State == LawState.Available) ?? statuses[0]).Law.Id;
 
-            var chip = E.Div().Row().Radius(999).Pad(4, 9).Bg(Theme.Alpha(InkBrown, 0.1f)).Ignore();
-            var clockIcon = E.Icon("clock", 12, InkSoft);
-            chip.Add(clockIcon);
-            var ct = Ink("", 11, InkBrown, Theme.F.Mono);
-            ct.style.marginLeft = 4;
-            Bind(() =>
-            {
-                double left = G.LawCooldownLeft;
-                string s = left > 0 ? $"Next law in {Fmt.Clock(left)}" : "A law can be signed";
-                if (ct.text != s) ct.text = s;
-                ct.style.color = left > 0 ? InkBrown : Leaf;
-                clockIcon.style.unityBackgroundImageTintColor = left > 0 ? InkSoft : Leaf;
-            });
-            chip.Add(ct);
-            host.Add(DrawerHeader("customs", "Book of Customs", () =>
-            {
-                int signed = G.State.Laws.Count;
-                string d = G.HasDiscontent ? $" · discontent {(int)Math.Round(G.State.Discontent)} ({G.DiscontentMood})" : "";
-                return $"{signed}/{G.Content.Laws.Count} customs signed{d}";
-            }, chip));
-
             var body = E.Div().Row(0, Align.Stretch).Ignore();
             body.style.flexGrow = 1;
-            body.style.flexShrink = 1;
             body.style.minHeight = 0;
 
-            var board = new ScrollView(ScrollViewMode.Vertical);
-            board.verticalScrollerVisibility = ScrollerVisibility.Hidden;
-            board.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            board.touchScrollBehavior = ScrollView.TouchScrollBehavior.Elastic;
+            var board = E.Scroll(ScrollViewMode.Vertical);
             board.style.flexGrow = 1;
             board.style.flexShrink = 1;
             board.style.minWidth = 0;
             board.contentContainer.style.flexDirection = FlexDirection.Row;
             board.contentContainer.style.alignItems = Align.FlexStart;
-            board.contentContainer.style.paddingLeft = 8;
-            board.contentContainer.style.paddingRight = 4;
-            board.contentContainer.style.paddingTop = 6;
-            board.contentContainer.style.paddingBottom = 8;
-            foreach (var branch in statuses.Select(s => s.Law.Branch).Distinct())
+            board.contentContainer.style.paddingBottom = 6;
+            var branches = statuses.Select(s => s.Law.Branch).Distinct().ToList();
+            float colW = (WindowW - 20 - LawDetailW - 6 - 5 * (branches.Count - 1)) / Math.Max(1, branches.Count);
+            for (int bi = 0; bi < branches.Count; bi++)
             {
+                string branch = branches[bi];
                 var laws = statuses.Where(s => s.Law.Branch == branch).ToList();
-                var col = E.Div().Col().Ignore().Grow();
-                col.style.flexBasis = 0;
-                col.style.marginRight = 6;
-                var head = E.Div().Row().Center().Radius(8).Pad(3, 6).Margin(0, 0, 5).Bg(Theme.Alpha(InkBrown, 0.08f)).Ignore();
-                head.Add(E.Icon(branch == "Community" ? "people" : "flame", 11, InkSoft));
-                var hl = Ink($"{branch} · {laws.Count(s => s.State == LawState.Signed)}/{laws.Count}", 10, InkSoft);
-                hl.style.marginLeft = 4;
-                head.Add(hl);
+                var col = E.Div().Col().Ignore().Size(colW);
+                if (bi > 0) col.style.marginLeft = 5;
+                var head = E.Div().Row().Center().Ignore();
+                head.style.height = 20;
+                head.Add(E.Icon(branch == "Community" ? "people" : "flame", 15));
+                head.Add(E.T($"{branch} {laws.Count(s => s.State == LawState.Signed)}/{laws.Count}", 11).Fit(colW - 20, 7).Margin(0, 0, 0, 3));
                 col.Add(head);
                 // Laws that rule each other out are drawn together, joined by "or".
                 var done = new HashSet<string>();
@@ -1018,12 +735,13 @@ namespace Founders.UI
                     var group = new List<LawStatus> { s };
                     foreach (var o in laws)
                         if (!done.Contains(o.Law.Id) && Excludes(s.Law, o.Law)) { group.Add(o); done.Add(o.Law.Id); }
-                    if (group.Count == 1) { col.Add(LawNode(s)); continue; }
-                    var box = E.Div().Col().Radius(14).Pad(4).Margin(0, 0, 5).Bg(Theme.Alpha(InkBrown, 0.05f)).Border(Theme.Alpha(InkBrown, 0.3f), 1.5f).Ignore();
+                    if (group.Count == 1) { col.Add(LawNode(s, colW)); continue; }
+                    var box = E.Div().Col().Ignore().Radius(10).Border(Theme.Wood4, 1.5f).Pad(3).Margin(0, 0, 5);
+                    box.style.backgroundColor = Theme.Alpha(Theme.Wood4, 0.18f);
                     for (int i = 0; i < group.Count; i++)
                     {
                         if (i > 0) box.Add(OrConnector());
-                        var node = LawNode(group[i]);
+                        var node = LawNode(group[i], colW - 8);
                         node.style.marginBottom = 0;
                         box.Add(node);
                     }
@@ -1033,15 +751,11 @@ namespace Founders.UI
             }
             body.Add(board);
 
-            var side = new ScrollView(ScrollViewMode.Vertical);
-            side.verticalScrollerVisibility = ScrollerVisibility.Hidden;
-            side.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
-            side.touchScrollBehavior = ScrollView.TouchScrollBehavior.Elastic;
-            side.style.width = Mathf.Clamp((PanelW - SafeLeft - SafeRight) * 0.36f, 230, 290);
+            var side = E.Scroll(ScrollViewMode.Vertical);
+            side.style.width = LawDetailW;
             side.style.flexShrink = 0;
-            side.contentContainer.style.paddingRight = 8;
-            side.contentContainer.style.paddingTop = 6;
-            side.contentContainer.style.paddingBottom = 8;
+            side.style.marginLeft = 6;
+            side.contentContainer.style.paddingBottom = 6;
             side.Add(LawDetail(statuses.First(s => s.Law.Id == selectedLaw)));
             body.Add(side);
             host.Add(body);
@@ -1049,71 +763,40 @@ namespace Founders.UI
 
         static VisualElement OrConnector()
         {
-            var row = E.Div().Row().Ignore();
+            var row = E.Div().Row().Center().Ignore();
             row.style.height = 16;
-            var l1 = E.Div().Ignore().Grow().Bg(Theme.Alpha(InkBrown, 0.25f));
-            l1.style.height = 1;
-            row.Add(l1);
-            var pill = E.Div().Ignore().Radius(999).Pad(0, 7).Bg(Theme.Alpha(InkBrown, 0.12f));
-            pill.Add(Ink("or", 9.5f, InkSoft, Theme.F.TextBold));
-            pill.style.marginLeft = 4;
-            pill.style.marginRight = 4;
+            var pill = E.Capsule(15).Pad(0, 7);
+            pill.Add(E.T("or", 9.5f, Theme.Gold));
             row.Add(pill);
-            var l2 = E.Div().Ignore().Grow().Bg(Theme.Alpha(InkBrown, 0.25f));
-            l2.style.height = 1;
-            row.Add(l2);
             return row;
         }
 
-        /// <summary>The wax seal of a law: red and stamped once signed.</summary>
-        static VisualElement Seal(LawState state, float size)
+        static (E.Cell cell, string icon) LawLook(LawState s) => s switch
         {
-            var s = E.Div().Size(size, size).Radius(size / 2).Center().Ignore();
-            switch (state)
-            {
-                case LawState.Signed:
-                    s.BgImage(Theme.Gradient("waxseal", true, Theme.Hex("#DE5A42"), Theme.Hex("#9A2A1C"))).Border(Theme.Hex("#6E1A10"), 2f);
-                    s.Add(E.Icon("check", size * 0.5f, Theme.Hex("#FFE3D6")));
-                    break;
-                case LawState.Available:
-                    s.BgImage(Theme.Gradient("goldround", true, GoldTop, GoldBottom)).Border(GoldEdge, 1.5f);
-                    s.Add(E.Icon("customs", size * 0.52f, Theme.Hex("#5A3208")));
-                    break;
-                default:
-                    s.Bg(Theme.Alpha(InkBrown, 0.3f));
-                    s.Add(E.Icon("lock", size * 0.5f, Color.white));
-                    break;
-            }
-            return s;
-        }
+            LawState.Signed => (E.Cell.Uncommon, "check"),
+            LawState.Available => (E.Cell.Legendary, "customs"),
+            _ => (E.Cell.Common, "lock"),
+        };
 
-        VisualElement LawNode(LawStatus st)
+        VisualElement LawNode(LawStatus st, float width)
         {
             var law = st.Law;
             bool sel = law.Id == selectedLaw;
-            Color fill, edge;
-            switch (st.State)
-            {
-                case LawState.Signed: fill = Theme.Hex("#F6DCCB"); edge = Theme.Alpha(Ruby, 0.7f); break;
-                case LawState.Available: fill = Theme.Hex("#FFF3CF"); edge = GoldBottom; break;
-                default: fill = Theme.Hex("#E9D9B6"); edge = Theme.Alpha(InkBrown, 0.3f); break;
-            }
-            var n = E.Div().Row().Radius(11).Pad(5, 6).Margin(0, 0, 5).Bg(fill).Border(sel ? InkBrown : edge, sel ? 2.5f : 1.5f);
-            n.Add(Seal(st.State, 24));
+            var (cell, icon) = LawLook(st.State);
+            var n = E.Div().Row().Skin(sel ? "slot" : "section").Pad(4, 4, sel ? 6 : 4, 4).Margin(0, 0, 5);
+            n.style.minHeight = 44;
+            n.Add(E.Slot(icon, 30, cell, 0.62f));
             var col = E.Div().Col().Grow().Ignore();
-            col.style.marginLeft = 6;
-            var name = Ink(law.Name, 11, st.State == LawState.Locked ? InkSoft : InkBrown);
-            name.style.whiteSpace = WhiteSpace.Normal;
-            col.Add(name);
+            col.style.marginLeft = 5;
+            col.Add(E.T(law.Name, 11, st.State == LawState.Locked ? Theme.Pale : (Color?)null).TwoLines(width - 50, 7).Also(l => l.style.unityTextAlign = TextAnchor.MiddleLeft));
             string meta; Color mc;
             switch (st.State)
             {
-                case LawState.Signed: meta = "Signed"; mc = Ruby; break;
-                case LawState.Available: meta = "Can be signed"; mc = Leaf; break;
-                default: meta = st.Reasons.FirstOrDefault() ?? "Locked"; mc = InkSoft; break;
+                case LawState.Signed: meta = "Signed"; mc = Theme.Up; break;
+                case LawState.Available: meta = "Can be signed"; mc = Theme.Gold; break;
+                default: meta = st.Reasons.FirstOrDefault() ?? "Locked"; mc = Theme.Pale; break;
             }
-            var m = Ink(meta, 9.5f, mc, Theme.F.TextMedium).NoWrap();
-            col.Add(m);
+            col.Add(E.T(meta, 9.5f, mc).Fit(width - 50, 7));
             n.Add(col);
             string id = law.Id;
             Tap(n, () => { selectedLaw = id; confirmLaw = null; });
@@ -1144,7 +827,7 @@ namespace Founders.UI
                     case EffectKind.SpoilageMultiplier: list.Add(($"{pct} spoilage", v < 1)); break;
                     case EffectKind.StorageMultiplier: list.Add(($"{pct} {e.Resource?.DisplayName().ToLowerInvariant()} storage", v > 1)); break;
                     case EffectKind.ConstructionSpeedMultiplier: list.Add(($"{pct} building speed", v > 1)); break;
-                    case EffectKind.ApprovalBonus: list.Add(($"{pts} approval", v > 0)); break;
+                    case EffectKind.ApprovalBonus: list.Add(($"{pts} hope", v > 0)); break;
                     case EffectKind.DiscontentPerHour: list.Add(($"{pts} discontent per hour", v < 0)); break;
                     case EffectKind.HeatBonus: list.Add(($"{SignedDeg(v)} warmth from the {G.HeartName}", v > 0)); break;
                 }
@@ -1156,122 +839,80 @@ namespace Founders.UI
         VisualElement LawDetail(LawStatus st)
         {
             var law = st.Law;
-            var card = E.Div().Col().Radius(16).Pad(10, 12).Bg(Theme.Hex("#FFF6DE")).Border(Theme.Alpha(InkBrown, 0.35f), 1.5f);
-            card.style.flexShrink = 0;
+            var (cell, icon) = LawLook(st.State);
+            var card = E.Inset().Col().Pad(7, 8);
             var head = E.Div().Row().Ignore();
+            head.Add(E.Slot(icon, 40, cell, 0.62f));
             var names = E.Div().Col().Grow().Ignore();
-            names.Add(Ink(law.Branch.ToUpperInvariant(), 9, InkSoft, Theme.F.TextBold));
-            var title = Ink(law.Name, 15, InkBrown, Theme.F.DisplayBold);
-            title.style.whiteSpace = WhiteSpace.Normal;
-            names.Add(title);
+            names.style.marginLeft = 6;
+            names.Add(E.T(law.Branch, 10, Theme.Pale));
+            names.Add(E.T(law.Name, 13).TwoLines(LawDetailW - 70, 8).Also(l => l.style.unityTextAlign = TextAnchor.MiddleLeft));
             head.Add(names);
-            head.Add(Seal(st.State, 34));
             card.Add(head);
-            var desc = Ink(law.Description, 10.5f, InkSoft, Theme.F.TextMedium).Margin(5);
-            desc.style.whiteSpace = WhiteSpace.Normal;
-            card.Add(desc);
+            card.Add(E.Ink(law.Description, 10.5f).Margin(4));
 
             foreach (var (text, good) in LawEffects(law))
             {
-                var r = E.Div().Row().Margin(4).Ignore();
-                r.Add(E.Icon(good ? "check" : "alert", 11, good ? Leaf : Ruby));
-                var t = Ink(text, 10.5f, good ? Leaf : Ruby).Grow();
-                t.style.marginLeft = 5;
-                t.style.whiteSpace = WhiteSpace.Normal;
-                r.Add(t);
+                var r = E.Div().Row(0, Align.FlexStart).Ignore().Margin(3);
+                r.Add(E.Icon(good ? "check" : "alert", 15));
+                r.Add(E.T(text, 10.5f, good ? Theme.Up : Theme.Bad).Wrap().Grow().Margin(0, 0, 0, 4));
                 card.Add(r);
             }
             var rivals = G.Content.Laws.Where(o => o.Id != law.Id && Excludes(law, o)).Select(o => o.Name).ToList();
             if (rivals.Count > 0)
-            {
-                var x = Ink($"Either this or {string.Join(", ", rivals)}: signing one rules out the other for good.", 10, Plum, Theme.F.TextMedium).Margin(6);
-                x.style.whiteSpace = WhiteSpace.Normal;
-                card.Add(x);
-            }
+                card.Add(E.Ink($"Either this or {string.Join(", ", rivals)}: signing one rules out the other for good.", 10, Theme.InkSoft).Margin(5));
             if (law.RequiresLaw != null)
-                card.Add(Ink($"Follows {G.Content.Law(law.RequiresLaw)?.Name ?? law.RequiresLaw}.", 10, InkSoft, Theme.F.TextMedium).Margin(4));
+                card.Add(E.Ink($"Follows {G.Content.Law(law.RequiresLaw)?.Name ?? law.RequiresLaw}.", 10, Theme.InkSoft).Margin(3));
 
-            var bottom = E.Div().Col().Margin(10).Ignore();
+            var bottom = E.Div().Col().Ignore().Margin(6);
             string id = law.Id;
             switch (st.State)
             {
                 case LawState.Signed:
-                {
-                    var r = E.Div().Row().Ignore();
-                    r.Add(E.Icon("customs", 14, Ruby));
-                    var t = Ink("Signed into custom", 12, Ruby);
-                    t.style.marginLeft = 6;
-                    r.Add(t);
-                    bottom.Add(r);
+                    bottom.Add(E.Div().Row().Ignore().Kids(E.Icon("customs", 18), E.T("Signed into custom", 12, Theme.Up).Margin(0, 0, 0, 5)));
                     if (!string.IsNullOrEmpty(law.LegacyText))
                     {
-                        var lt = Ink(law.LegacyText, 10.5f, InkSoft, Theme.F.Text).Margin(5);
-                        lt.style.whiteSpace = WhiteSpace.Normal;
+                        var lt = E.Ink(law.LegacyText, 10.5f).Margin(4);
                         lt.style.unityFontStyleAndWeight = FontStyle.Italic;
                         bottom.Add(lt);
                     }
                     break;
-                }
                 case LawState.Locked:
                     foreach (var reason in st.Reasons)
                     {
-                        var r = E.Div().Row().Margin(3).Ignore();
-                        r.Add(E.Icon("lock", 11, Ruby));
-                        var t = Ink(reason, 10.5f, Ruby).Grow();
-                        t.style.marginLeft = 5;
-                        t.style.whiteSpace = WhiteSpace.Normal;
-                        r.Add(t);
+                        var r = E.Div().Row(0, Align.FlexStart).Ignore().Margin(2);
+                        r.Add(E.Icon("lock", 15));
+                        r.Add(E.T(reason, 10.5f, Theme.Pale).Wrap().Grow().Margin(0, 0, 0, 4));
                         bottom.Add(r);
                     }
                     break;
                 default:
                     if (confirmLaw == id)
                     {
-                        var warn = E.Div().Row(0, Align.FlexStart).Radius(12).Pad(8, 10).Bg(Theme.Alpha(Ruby, 0.1f)).Border(Theme.Alpha(Ruby, 0.45f), 1.5f).Ignore();
-                        warn.Add(E.Icon("alert", 14, Ruby));
-                        var wt = Ink($"A custom is for good: once signed, {law.Name} can never be revoked.", 10.5f, Ruby).Grow();
-                        wt.style.marginLeft = 6;
-                        wt.style.whiteSpace = WhiteSpace.Normal;
-                        warn.Add(wt);
-                        bottom.Add(warn);
-                        var buttons = E.Div().Row().Margin(8).Ignore();
-                        buttons.Add(ParchButton("Cancel", () => confirmLaw = null));
-                        var sign = E.Button("Sign for good", Act(() =>
+                        bottom.Add(Notice("alert", $"A custom is for good: once signed, {law.Name} can never be revoked.", true).Margin(0));
+                        var buttons = E.Div().Row().Ignore().Margin(6);
+                        buttons.Add(Share(E.Button("Cancel", Act(() => confirmLaw = null), E.Kind.Red, 34, null, 12.5f), buttons));
+                        buttons.Add(Share(E.Button("Sign", Act(() =>
                         {
                             confirmLaw = null;
                             store.SignLaw(id);
-                        }), E.Kind.Gold, 36, "customs", 12.5f).Grow();
-                        sign.style.marginLeft = 8;
-                        buttons.Add(sign);
+                        }), E.Kind.Green, 34, "customs", 12.5f), buttons));
                         bottom.Add(buttons);
                     }
                     else if (G.LawCooldownLeft > 0)
                     {
-                        var b = E.Button("", null, E.Kind.Disabled, 36, "clock", 12.5f);
-                        var l = b.Q<Label>();
-                        Bind(() => { string s = $"Next custom in {Fmt.Clock(G.LawCooldownLeft)}"; if (l.text != s) l.text = s; });
+                        var b = E.Button("Sign", null, E.Kind.Grey, 34, null, 13, SubLine("clock", ""));
+                        var l = b.ElementAt(1).ElementAt(1) as Label;
+                        Bind(() => { string s = Fmt.Clock(G.LawCooldownLeft); if (l != null && l.text != s) l.text = s; });
                         bottom.Add(b);
-                        var hint = Ink("The people need time to get used to each new custom.", 10, InkSoft, Theme.F.TextMedium).Margin(5);
-                        hint.style.whiteSpace = WhiteSpace.Normal;
-                        bottom.Add(hint);
+                        bottom.Add(E.Ink("The people need time to get used to each new custom.", 10, Theme.InkSoft).Margin(4));
                     }
                     else
-                        bottom.Add(E.Button("Sign the custom", Act(() => confirmLaw = id), E.Kind.Gold, 36, "customs", 12.5f));
+                        bottom.Add(E.Button("Sign the custom", Act(() => confirmLaw = id), E.Kind.Green, 34, "customs", 12.5f));
                     break;
             }
             card.Add(bottom);
             return card;
-        }
-
-        /// <summary>A quiet pill button for parchment (the dark ghost button would vanish on it).</summary>
-        VisualElement ParchButton(string label, Action onTap)
-        {
-            var b = E.Div().Row().Center().Radius(18).Pad(0, 16).Bg(Theme.Alpha(InkBrown, 0.1f)).Border(Theme.Alpha(InkBrown, 0.35f), 1.5f);
-            b.style.height = 36;
-            b.style.flexShrink = 0;
-            b.Add(Ink(label, 12.5f, InkBrown).NoWrap());
-            Tap(b, onTap);
-            return b;
         }
 
         // MARK: - Petition dialog
@@ -1282,85 +923,51 @@ namespace Founders.UI
         {
             var p = G.PendingPetition;
             var d = G.Content.Balance.Discontent;
-            var c = DialogShell(out var left, out var right, 40);
-
-            left.BgImage(Theme.Gradient("petitionart", true, Theme.Hex("#3b2a2a"), Theme.Hex("#18141a")));
-            left.Add(E.Div().Abs(0, 0, 0, 0).BgImage(Theme.GoldGlow).Opacity(0.5f).Ignore());
-            var story = PaneBody(16, 18, 16);
-            var tag = E.Div().Row().Radius(999).Pad(6, 10).Bg(new Color(0.05f, 0.06f, 0.08f, 0.6f)).Border(Theme.Alpha(Theme.Error, 0.45f)).Ignore();
-            tag.style.alignSelf = Align.FlexStart;
-            tag.Add(E.Eyebrow("Petition", Theme.Error, 9.5f));
-            story.Add(tag);
-            var mark = E.Icon("discontent", 40, MoodColor(G.DiscontentMood)).Margin(12);
-            mark.style.alignSelf = Align.Center;
-            story.Add(mark);
-            story.Add(E.Text(p.Title, 21, Theme.Ink, Theme.F.Display).Margin(10));
-            var text = E.Text(p.Text, 13, Theme.Body).Margin(6);
+            var c = DialogShell(p.Title, 600, out var body, out var foot);
+            var row = E.Div().Row(0, Align.FlexStart).Ignore();
+            // Left: the people's words and the mood.
+            var left = E.Div().Col().Ignore().Size(210);
+            var art = E.Div().Row().Center().Radius(9).Border(Theme.Outline, 2).Ignore();
+            art.style.height = 70;
+            art.BgImage(Theme.Gradient("petitionart", true, Theme.Hex("#8A5A32"), Theme.Hex("#4A2E1A")));
+            art.Add(E.Icon("people", 46));
+            art.Add(E.Icon("discontent", 30).Margin(0, 0, 0, -6));
+            left.Add(art);
+            var text = E.Ink(p.Text, 11).Margin(5);
             text.style.unityFontStyleAndWeight = FontStyle.Italic;
-            story.Add(text);
-            var mood = E.Div().Row().Margin(12).Ignore();
-            mood.Add(E.Icon("discontent", 13, Theme.Muted));
-            var mt = Live(() => $"Discontent {(int)Math.Round(G.State.Discontent)} · {G.DiscontentMood}", 11.5f, Theme.Muted);
-            mt.style.marginLeft = 6;
-            mood.Add(mt);
-            story.Add(mood);
-            left.Add(story);
-
-            var body = PaneBody(14, 16, 2);
-            body.Add(E.Eyebrow("The people ask", Theme.Muted).Margin(2, 0, 0, 4));
-            var ask = E.Div().Col().Radius(18).Pad(12, 14).BgImage(Theme.GoldGlow).Border(Theme.Alpha(Theme.Gold, 0.5f)).Margin(10);
-            var ah = E.Div().Row(0, Align.FlexStart).Ignore();
-            ah.Add(E.Icon("goals", 16, Theme.Gold));
-            var at = E.Text(p.Promise, 14, Theme.Ink, Theme.F.TextBold).Grow();
-            at.style.marginLeft = 8;
-            ah.Add(at);
-            ask.Add(ah);
-            var due = E.Div().Row().Margin(8).Ignore();
-            due.Add(E.Icon("clock", 12, Theme.GoldLight));
-            var dt = E.Text($"To be kept within {Game.Duration(p.DeadlineSeconds)}", 12, Theme.GoldLight, Theme.F.TextMedium);
-            dt.style.marginLeft = 6;
-            due.Add(dt);
-            ask.Add(due);
-            foreach (var req in G.PetitionGoalStatus(p)) ask.Add(Check(req.Text, req.Met).Margin(6));
-            body.Add(ask);
+            left.Add(text);
+            var mood = E.Div().Row().Ignore().Margin(5);
+            mood.Add(E.Icon("discontent", 16));
+            mood.Add(Live(() => $"Discontent {(int)Math.Round(G.State.Discontent)} · {G.DiscontentMood}", 11, MoodColor(G.DiscontentMood)).Margin(0, 0, 0, 4));
+            left.Add(mood);
+            row.Add(left);
+            // Right: the ask, what it needs and what follows.
+            var right = E.Div().Col().Grow().Ignore();
+            right.style.marginLeft = 10;
+            var ask = E.Section("The people ask", out var rows, E.Div().Row().Ignore().Kids(E.Icon("clock", 14), E.T(Game.Duration(p.DeadlineSeconds), 11).Margin(0, 0, 0, 3)));
+            rows.Add(E.T(p.Promise, 12.5f, Theme.Gold).Wrap().Margin(4, 0, 2));
+            foreach (var req in G.PetitionGoalStatus(p)) rows.Add(RequirementRow("next", req.Text, req.Met, null, true, 340));
+            right.Add(ask);
             if (d != null)
             {
-                body.Add(Consequence("check", $"Promise: discontent −{Num(d.PromiseRelief)} now; kept, −{Num(d.KeptRelief)} more and +{Num(d.KeptApproval)} approval.", Theme.Mint).Margin(10));
-                body.Add(Consequence("alert", $"A broken promise: +{Num(d.BrokenAnger)} discontent. Refusing: +{Num(d.RefusedAnger)} now.", Theme.Error).Margin(6));
+                right.Add(Consequence("check", $"Promise: discontent −{Num(d.PromiseRelief)} now; kept, −{Num(d.KeptRelief)} more and +{Num(d.KeptApproval)} hope.", Theme.Up).Margin(6));
+                right.Add(Consequence("alert", $"A broken promise: +{Num(d.BrokenAnger)} discontent. Refusing: +{Num(d.RefusedAnger)} now.", Theme.Bad).Margin(4));
             }
-            right.Add(body);
+            row.Add(right);
+            body.Add(row);
 
-            var foot = PaneFooter(16);
-            var buttons = E.Div().Row(0, Align.Stretch).Ignore();
-            var refuse = E.Button("Refuse", Act(() => store.AnswerPetition(false)), E.Kind.Ghost, 48);
-            refuse.style.height = StyleKeyword.Auto;
-            refuse.style.minHeight = 48;
-            buttons.Add(refuse);
-            var promise = E.Div().Row().Center().Radius(18).Pad(7, 14).BgImage(Theme.GoldFill).Grow();
-            promise.style.minHeight = 48;
-            promise.style.marginLeft = 10;
-            promise.Add(E.Text($"Promise: {p.Promise} ({Game.Duration(p.DeadlineSeconds)})", 13, Theme.OnGold, Theme.F.TextBold).Align(TextAnchor.MiddleCenter).Grow());
-            Tap(promise, () => store.AnswerPetition(true));
-            buttons.Add(promise);
-            foot.Add(buttons);
-            right.Add(foot);
+            foot.Add(Share(E.Button("Refuse", Act(() => store.AnswerPetition(false)), E.Kind.Red, 38, null, 13.5f), foot));
+            foot.Add(Share(E.Button("Promise", Act(() => store.AnswerPetition(true)), E.Kind.Green, 38, "goals", 13.5f,
+                                    SubLine("clock", Game.Duration(p.DeadlineSeconds))), foot));
             return c;
         }
 
         static VisualElement Consequence(string icon, string text, Color color)
         {
             var r = E.Div().Row(0, Align.FlexStart).Ignore();
-            r.Add(E.Icon(icon, 13, color));
-            var t = E.Text(text, 11.5f, Theme.Body).Grow();
-            t.style.marginLeft = 7;
-            r.Add(t);
+            r.Add(E.Icon(icon, 16));
+            r.Add(E.T(text, 10.5f, color).Wrap().Grow().Margin(0, 0, 0, 5));
             return r;
         }
-    }
-
-    static class SurvivalUx
-    {
-        /// <summary>Runs a setup step on an element inline and returns it.</summary>
-        public static T Also<T>(this T e, Action<T> a) where T : VisualElement { a(e); return e; }
     }
 }
