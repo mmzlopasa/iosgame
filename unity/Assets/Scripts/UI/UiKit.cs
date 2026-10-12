@@ -479,7 +479,8 @@ namespace Founders.UI
             float fit = size;
             // Every word on a line of its own must fit; the whole must fit 2 lines with 15% slack for wrapping.
             if (longest * fit + 2 * Theme.OutlineFor(fit) > width) fit = (width - 4) / Mathf.Max(0.01f, longest);
-            if (total * fit * 1.15f > width * 2) fit = Mathf.Min(fit, width * 2 / (total * 1.15f));
+            // Words wrap whole, so a line holds less than its width: allow for that generously.
+            if (total * fit * 1.4f > width * 2) fit = Mathf.Min(fit, width * 2 / (total * 1.4f));
             fit = Mathf.Clamp(Mathf.Floor(fit * 4) / 4, min, size);
             l.style.fontSize = fit;
             if (l.style.unityTextOutlineWidth.value > 0) Outline(l, fit);

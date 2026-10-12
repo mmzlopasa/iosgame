@@ -123,14 +123,14 @@ namespace Founders
                 key.type = LightType.Directional;
                 key.transform.rotation = Quaternion.Euler(48f, -35f, 0f);
                 key.color = new Color(1f, 0.96f, 0.88f);
-                key.intensity = 1.55f;
+                key.intensity = 2.1f;
                 key.shadows = LightShadows.Soft;
                 var fill = new GameObject("Fill").AddComponent<Light>();
                 fill.transform.SetParent(root.transform, false);
                 fill.type = LightType.Directional;
                 fill.transform.rotation = Quaternion.Euler(25f, 150f, 0f);
                 fill.color = new Color(0.75f, 0.82f, 1f);
-                fill.intensity = 0.45f;
+                fill.intensity = 0.7f;
                 fill.shadows = LightShadows.None;
 
                 rt = new RenderTexture(Size, Size, 24, RenderTextureFormat.ARGB32) { antiAliasing = 4, name = "ThumbRT" };
@@ -179,9 +179,29 @@ namespace Founders
                 // Three-quarter view from the front-left and above, as the camera usually looks at the town.
                 var dir = Quaternion.Euler(32f, 45f, 0f) * Vector3.back;
                 float radius = Mathf.Max(0.3f, bounds.extents.magnitude);
-                float dist = radius / Mathf.Sin(cam.fieldOfView * 0.5f * Mathf.Deg2Rad) * 0.98f;
+                float dist = radius / Mathf.Sin(cam.fieldOfView * 0.5f * Mathf.Deg2Rad);
                 cam.transform.position = bounds.center + dir * dist;
                 cam.transform.LookAt(bounds.center);
+                // Fill the picture: measure the box on screen and move in until it spans ~84% (room for the outline).
+                for (int pass = 0; pass < 2; pass++)
+                {
+                    float minX = 1f, maxX = 0f, minY = 1f, maxY = 0f;
+                    for (int c = 0; c < 8; c++)
+                    {
+                        var corner = bounds.center + Vector3.Scale(bounds.extents, new Vector3((c & 1) == 0 ? -1 : 1, (c & 2) == 0 ? -1 : 1, (c & 4) == 0 ? -1 : 1));
+                        var v = cam.WorldToViewportPoint(corner);
+                        minX = Mathf.Min(minX, v.x); maxX = Mathf.Max(maxX, v.x);
+                        minY = Mathf.Min(minY, v.y); maxY = Mathf.Max(maxY, v.y);
+                    }
+                    float span = Mathf.Max(maxX - minX, maxY - minY);
+                    // Centre the box on screen, then scale the distance to the wanted span.
+                    var mid = cam.ViewportToWorldPoint(new Vector3((minX + maxX) * 0.5f, (minY + maxY) * 0.5f, dist));
+                    var shift = mid - cam.ViewportToWorldPoint(new Vector3(0.5f, 0.5f, dist));
+                    var target = bounds.center + shift;
+                    dist *= Mathf.Clamp(span / 0.84f, 0.3f, 2f);
+                    cam.transform.position = target + dir * dist;
+                    cam.transform.LookAt(target);
+                }
 
                 // Black and white backgrounds give the true transparency (works whatever the pipeline does with alpha).
                 var dark = Grab(Color.black);
