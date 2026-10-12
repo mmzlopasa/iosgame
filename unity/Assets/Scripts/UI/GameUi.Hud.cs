@@ -189,7 +189,7 @@ namespace Founders.UI
             return c;
         }
 
-        /// <summary>Day and hour of the game clock (one day is a few real minutes).</summary>
+        /// <summary>Day and hour of the game clock (one day lasts six real hours).</summary>
         string GameClock()
         {
             double t = G.State.SimTime / Atmosphere.DayLength;

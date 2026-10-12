@@ -181,7 +181,10 @@ namespace Founders.Core
         {
             var b = Content.Balance;
             int builders = State.Assignments[JobType.Construction];
-            double speed = b.BaseConstructionSpeed + b.ConstructionSpeedPerBuilder * builders;
+            // Builders share the sites, and only so many fit around one (no hall goes up in an hour).
+            int sites = Math.Max(1, ActiveConstructionCount());
+            double perSite = b.MaxBuildersPerSite > 0 ? Math.Min((double)builders / sites, b.MaxBuildersPerSite) : builders;
+            double speed = b.BaseConstructionSpeed + b.ConstructionSpeedPerBuilder * perSite;
             foreach (var e in ActiveEffects())
                 if (e.Kind == EffectKind.ConstructionSpeedMultiplier && builders >= (e.MinBuilders ?? 0)) speed *= e.Value ?? 1;
             return speed;

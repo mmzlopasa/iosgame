@@ -30,6 +30,8 @@ namespace Founders.Tests
                 c.Balance.SkillBonusPerLevel = 0;
                 c.Balance.RoadWorkBonus = 0;
                 c.Balance.ForestWood = c.Balance.RockStone = c.Balance.VeinOre = 0; // endless land (NodeTests cover it)
+                c.Balance.Nodes.Clear();
+                foreach (var t in c.Technologies) t.HeartLevel = null; // research rules without the heart's pacing
             }
             configure?.Invoke(c);
             var clock = new ManualClock();

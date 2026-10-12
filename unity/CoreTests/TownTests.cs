@@ -65,6 +65,9 @@ namespace Founders.Tests
             var camp = game.AddCompleted("wood_camp", 4, 5);
             int slots = game.JobCapacity(JobType.Woodcutting);
             game.TestGrant(new ResourceBundle(50, 50, 50, 0));
+            // Nothing outgrows the heart: the campfire must reach level 2 first.
+            Assert.That(game.UpgradeLevel(camp.Id).Error?.Kind, Is.EqualTo(GameErrorKind.RequirementsNotMet));
+            game.State.Buildings.First(b => b.DefinitionId == "campfire").Level = 2;
             Expect.Success(game.UpgradeLevel(camp.Id));
             Assert.That(camp.Status, Is.EqualTo(BuildingStatus.Upgrading));
             game.Run(120, clock);

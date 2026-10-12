@@ -12,8 +12,8 @@ namespace Founders
     /// </summary>
     public class Atmosphere : MonoBehaviour
     {
-        /// <summary>Seconds of game time per full day.</summary>
-        public const float DayLength = 150f;
+        /// <summary>Seconds of game time per full day: six real hours (one season, so a year is four days).</summary>
+        public const float DayLength = 6 * 3600f;
 
         /// <summary>0 by day, 1 at midnight (read by villagers and audio).</summary>
         public static float Nightness { get; private set; }

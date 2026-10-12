@@ -17,6 +17,7 @@ namespace Founders.Tests
             game.State.SimTime = 11 * 4 * game.Content.Balance.SeasonSeconds + 1;
             game.TestResearch("bronze_working", "written_law");
             game.State.Population = 40;
+            game.State.Buildings.First(b => b.DefinitionId == "campfire").Level = 30;
             return game;
         }
 

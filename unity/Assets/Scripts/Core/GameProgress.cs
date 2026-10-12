@@ -48,6 +48,8 @@ namespace Founders.Core
                 case ConditionKind.ChapterAtLeast: return State.Chapter >= amount;
                 case ConditionKind.RoadCellsAtLeast: return RoadCount() >= amount;
                 case ConditionKind.BeautyAtLeast: return Beauty() >= amount;
+                case ConditionKind.HeartLevelAtLeast: return HeartLevel >= amount;
+                case ConditionKind.BuildingLevelAtLeast: return BestLevel(id) >= amount;
                 default: return false;
             }
         }
@@ -85,6 +87,9 @@ namespace Founders.Core
                     return $"Reach chapter {amount}: {Content.Chapters.FirstOrDefault(c => c.Number == (int)amount)?.Title ?? "?"}";
                 case ConditionKind.RoadCellsAtLeast: return $"Road tiles {RoadCount()}/{amount}";
                 case ConditionKind.BeautyAtLeast: return $"Beauty {Beauty()}/{amount}";
+                case ConditionKind.HeartLevelAtLeast: return $"{HeartName} level {HeartLevel}/{amount}";
+                case ConditionKind.BuildingLevelAtLeast:
+                    return $"{Content.Building(id)?.Name ?? (c.Id ?? "?")} level {BestLevel(id)}/{amount}";
                 default: return c.Kind.ToString();
             }
         }
@@ -189,6 +194,7 @@ namespace Founders.Core
             var era = tech.Epoch == null ? null : Content.Epoch(tech.Epoch);
             var now = Content.Epoch(State.EpochId);
             if (era != null && now != null && era.Index > now.Index) missing.Insert(0, $"the {era.Name} era");
+            if (tech.HeartLevel.HasValue && HeartLevel < tech.HeartLevel.Value) missing.Insert(0, $"{HeartName} level {tech.HeartLevel.Value}");
             return missing;
         }
 

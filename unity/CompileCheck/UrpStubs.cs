@@ -27,7 +27,8 @@ namespace UnityEngine.Rendering.Universal
     public enum ColorGradingMode { LowDynamicRange, HighDynamicRange }
     public enum AntialiasingMode { None, FastApproximateAntialiasing, SubpixelMorphologicalAntiAliasing, TemporalAntiAliasing }
     public enum TonemappingMode { None, Neutral, ACES }
-    public abstract class ScriptableRendererFeature : ScriptableObject { }
+    public enum UpscalingFilterSelection { Auto, Linear, Point, FSR, STP }
+    public abstract class ScriptableRendererFeature : ScriptableObject { public bool isActive => true; public void SetActive(bool active) { } }
     public class ScreenSpaceAmbientOcclusion : ScriptableRendererFeature { }
     public abstract class ScriptableRendererData : ScriptableObject { public List<ScriptableRendererFeature> rendererFeatures { get; } = new List<ScriptableRendererFeature>(); }
     public class UniversalRendererData : ScriptableRendererData { }
@@ -37,6 +38,7 @@ namespace UnityEngine.Rendering.Universal
         public static UniversalRenderPipelineAsset Create(ScriptableRendererData rendererData = null) => null;
         public ScriptableRendererData LoadBuiltinRendererData(RendererType type = RendererType.UniversalRenderer) => null;
         public bool supportsHDR { get; set; }
+        public UpscalingFilterSelection upscalingFilter { get; set; }
         public int msaaSampleCount { get; set; }
         public float renderScale { get; set; }
         public bool supportsCameraDepthTexture { get; set; }

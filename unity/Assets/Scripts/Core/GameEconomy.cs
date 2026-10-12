@@ -24,18 +24,27 @@ namespace Founders.Core
 
     public sealed partial class Game
     {
-        /// <summary>Effects from researched technologies plus active event modifiers.</summary>
+        /// <summary>Within one simulation step the effects and approval are worked out once.</summary>
+        List<Effect> stepEffects;
+        int? stepApproval;
+        bool simulating;
+
+        /// <summary>Effects from researched technologies, active event modifiers and earned perks.</summary>
         internal List<Effect> ActiveEffects()
         {
+            if (stepEffects != null) return stepEffects;
             var effects = new List<Effect>();
             foreach (var id in State.Researched)
             {
                 var tech = Content.Technology(id);
                 if (tech != null) effects.AddRange(tech.Effects);
             }
-            effects.AddRange(State.Modifiers.Select(m => m.Effect));
+            foreach (var m in State.Modifiers) effects.Add(m.Effect);
+            effects.AddRange(PerkEffects());
             return effects;
         }
+
+        int CurrentApproval => stepApproval ?? Approval;
 
         /// <summary>Product of all multipliers of a kind (filtered by job/resource; null matches only null).</summary>
         public double Multiplier(EffectKind kind, JobType? job = null, ResourceType? resource = null)
@@ -79,7 +88,7 @@ namespace Founders.Core
         }
 
         /// <summary>Output per worker per second, including all current bonuses and penalties.</summary>
-        public double RatePerWorker(JobType job) => RatePerWorker(job, ApprovalProductivity(Approval));
+        public double RatePerWorker(JobType job) => RatePerWorker(job, ApprovalProductivity(CurrentApproval));
 
         double RatePerWorker(JobType job, double productivity)
         {
@@ -113,7 +122,7 @@ namespace Founders.Core
         }
 
         /// <summary>Current per-second economy.</summary>
-        public EconomySnapshot Economy() => EconomyCore(ApprovalProductivity(Approval));
+        public EconomySnapshot Economy() => EconomyCore(ApprovalProductivity(CurrentApproval));
 
         /// <summary>The economy at a given work speed (approval uses the neutral speed to avoid a loop).</summary>
         EconomySnapshot EconomyCore(double productivity)
@@ -129,7 +138,8 @@ namespace Founders.Core
             {
                 if (cfg.Output == null) continue;
                 double made = SkilledWorkers(cfg.Job) * RatePerWorker(cfg.Job, productivity);
-                if (exhaustedJobs.Contains(cfg.Job)) made = 0; // nothing left to gather within reach
+                // Shown as stopped when nothing is left within reach; the simulation takes what it finds (AdvanceNodes).
+                if (!simulating && exhaustedJobs.Contains(cfg.Job)) made = 0;
                 production[cfg.Output.Value] += made;
                 if (cfg.Byproduct.HasValue) production[cfg.Byproduct.Value] += made * cfg.ByproductRatio;
             }

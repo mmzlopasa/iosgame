@@ -173,6 +173,8 @@ namespace Founders.Core
         RoadCellsAtLeast,       // amount
         BeautyAtLeast,          // amount (sum of decoration beauty)
         ChapterAtLeast,         // amount (story chapter number)
+        HeartLevelAtLeast,      // amount (level of the settlement's heart: campfire, then hearth)
+        BuildingLevelAtLeast,   // id, amount (a completed building of that id at this level or higher)
     }
 
     public sealed class Condition
@@ -225,9 +227,22 @@ namespace Founders.Core
         public string FoodSource;
         /// <summary>Animals kept here (herding buildings): cow, sheep, pig, horse, llama.</summary>
         public List<string> Animals = new List<string>();
-        /// <summary>Upgrades to level 2, 3… (index 0 = cost of level 2). Each level adds 50 % capacity.</summary>
+        /// <summary>Upgrades to level 2, 3… (index 0 = cost of level 2). Each level adds 25 % capacity.</summary>
         public List<LevelDefinition> Levels = new List<LevelDefinition>();
         public int MaxLevel => 1 + Levels.Count;
+        /// <summary>The settlement's heart (the campfire, later the hearth): its level opens the eras,
+        /// and no other building may rise above it (as the furnace in Whiteout Survival).</summary>
+        public bool Heart;
+        /// <summary>How the building looks from a level on (a tent becomes a hut, a cottage, a house).</summary>
+        public List<LevelLook> Looks = new List<LevelLook>();
+
+        /// <summary>The model shown at a level: the last look whose level has been reached.</summary>
+        public string SpriteAt(int level)
+        {
+            string sprite = Sprite;
+            foreach (var look in Looks) if (level >= look.Level) sprite = look.Sprite;
+            return sprite;
+        }
 
         public int HousingValue => Housing ?? 0;
         public double StorageValue => Storage ?? 0;
@@ -264,6 +279,9 @@ namespace Founders.Core
                 FoodSource = o.OptStr("foodSource"),
                 Animals = o.Has("animals") ? o.Strs("animals") : new List<string>(),
                 Levels = o.Has("levels") ? o.Objs("levels").Select(LevelDefinition.FromJson).ToList() : new List<LevelDefinition>(),
+                Heart = o.OptBool("heart", false),
+                Looks = o.Has("looks") ? o.Objs("looks").Select(l => new LevelLook { Level = l.Int("level"), Sprite = l.Str("sprite"), Name = l.OptStr("name") })
+                                                    .OrderBy(l => l.Level).ToList() : new List<LevelLook>(),
             };
         }
     }
@@ -272,11 +290,89 @@ namespace Founders.Core
     {
         public ResourceBundle Cost;
         public double BuildSeconds;
+        /// <summary>What must be true before this level can be built (people, research, other buildings).</summary>
+        public List<Condition> Requirements = new List<Condition>();
 
         internal static LevelDefinition FromJson(JObj o) => new LevelDefinition
         {
             Cost = ResourceBundle.FromJson(o.OptObj("cost")),
             BuildSeconds = o.Num("buildSeconds"),
+            Requirements = o.Has("requirements") ? o.Objs("requirements").Select(Condition.FromJson).ToList() : new List<Condition>(),
+        };
+    }
+
+    /// <summary>From this level on the building is drawn with another model (and may take another name).</summary>
+    public sealed class LevelLook
+    {
+        public int Level;
+        public string Sprite, Name;
+    }
+
+    /// <summary>
+    /// A kind of natural resource to gather from the land: trees, rock, ore, berry bushes, fish,
+    /// game. Density below 1 means only some cells of the terrain hold it (e.g. berry bushes on
+    /// grass). Cells that share a terrain use different slots so their stocks are kept apart.
+    /// </summary>
+    public sealed class NodeDefinition
+    {
+        public string Id, Name;
+        public TerrainType Terrain;
+        public ResourceType Resource;
+        public JobType Job;
+        public double Capacity;
+        /// <summary>Seconds until a used-up cell is full again (0 = never).</summary>
+        public double RegrowSeconds;
+        public double Density = 1;
+        public int Slot;
+        /// <summary>Cutting the last of it clears the land (a felled forest is open ground).</summary>
+        public bool ClearsTerrain;
+
+        internal static NodeDefinition FromJson(JObj o) => new NodeDefinition
+        {
+            Id = o.Str("id"),
+            Name = o.OptStr("name") ?? o.Str("id"),
+            Terrain = Enums.ParseTerrain(o.Str("terrain")),
+            Resource = ResourceTypes.Parse(o.Str("resource")),
+            Job = Enums.ParseJob(o.Str("job")),
+            Capacity = o.Num("capacity"),
+            RegrowSeconds = o.OptNum("regrowSeconds") ?? 0,
+            Density = o.OptNum("density") ?? 1,
+            Slot = o.OptInt("slot") ?? 0,
+        };
+    }
+
+    /// <summary>A perk a worker earns at a skill level of a job (Foundation-style specialists).</summary>
+    public sealed class PerkDefinition
+    {
+        public int Level;
+        public string Name, Description;
+        /// <summary>Extra output of the person who has the perk (0.1 = +10 %).</summary>
+        public double Bonus;
+        /// <summary>Settlement-wide effects while at least one person has the perk.</summary>
+        public List<Effect> Effects = new List<Effect>();
+
+        internal static PerkDefinition FromJson(JObj o) => new PerkDefinition
+        {
+            Level = o.Int("level"),
+            Name = o.Str("name"),
+            Description = o.Str("description"),
+            Bonus = o.OptNum("bonus") ?? 0,
+            Effects = o.Has("effects") ? o.Objs("effects").Select(Effect.FromJson).ToList() : new List<Effect>(),
+        };
+    }
+
+    /// <summary>The skill of one job: a title per rank and the perks on the way to mastery.</summary>
+    public sealed class SkillDefinition
+    {
+        public JobType Job;
+        public string Title;
+        public List<PerkDefinition> Perks = new List<PerkDefinition>();
+
+        internal static SkillDefinition FromJson(JObj o) => new SkillDefinition
+        {
+            Job = Enums.ParseJob(o.Str("job")),
+            Title = o.Str("title"),
+            Perks = o.Objs("perks").Select(PerkDefinition.FromJson).OrderBy(p => p.Level).ToList(),
         };
     }
 
@@ -291,6 +387,10 @@ namespace Founders.Core
         public List<TerrainType> AllowedTerrain = new List<TerrainType>();
         /// <summary>Roads: villagers walk faster and adjacent workplaces work better.</summary>
         public bool IsRoad;
+        /// <summary>Bridges span water and must touch land or another bridge.</summary>
+        public bool IsBridge;
+        /// <summary>Fences and walls: people walk around them.</summary>
+        public bool Blocks;
 
         internal static DecorationDefinition FromJson(JObj o) => new DecorationDefinition
         {
@@ -305,6 +405,8 @@ namespace Founders.Core
             AllowedTerrain = o.Has("allowedTerrain") ? o.Strs("allowedTerrain").Select(Enums.ParseTerrain).ToList()
                                                      : new List<TerrainType> { TerrainType.Grass, TerrainType.Sand, TerrainType.Forest },
             IsRoad = o.OptBool("road", false),
+            IsBridge = o.OptBool("bridge", false),
+            Blocks = o.OptBool("blocks", false),
         };
     }
 
@@ -313,6 +415,8 @@ namespace Founders.Core
         public string Id, Name, Description;
         /// <summary>Optional: the era (epoch) the settlement must have reached before this can be studied.</summary>
         public string Epoch;
+        /// <summary>Optional: the heart (campfire/hearth) must have reached this level first.</summary>
+        public int? HeartLevel;
         public ResourceBundle Cost;
         public double ResearchSeconds;
         public List<string> Prerequisites = new List<string>();
@@ -324,6 +428,7 @@ namespace Founders.Core
             Name = o.Str("name"),
             Description = o.Str("description"),
             Epoch = o.OptStr("epoch"),
+            HeartLevel = o.OptInt("heartLevel"),
             Cost = ResourceBundle.FromJson(o.OptObj("cost")),
             ResearchSeconds = o.Num("researchSeconds"),
             Prerequisites = o.Strs("prerequisites"),
@@ -583,6 +688,8 @@ namespace Founders.Core
         public double BaseConstructionSpeed;
         public double ConstructionSpeedPerBuilder;
         public int MaxConcurrentConstructions;
+        /// <summary>Most builders that can work on one site at once (0 = no limit).</summary>
+        public double MaxBuildersPerSite;
         public double CraftingBonusPerCrafter;
         public double MaxCraftingBonus;
         public ResourceBundle CraftingInputPerCrafterPerSecond;
@@ -606,6 +713,10 @@ namespace Founders.Core
         public double TreeRegrowSeconds = 1440;
         /// <summary>How far (cells) gatherers walk from their workplace to find trees, rock or ore.</summary>
         public int GatherReach = 7;
+        /// <summary>Highest skill level a person can reach in a job.</summary>
+        public int MaxSkillLevel = 10;
+        /// <summary>Food, game and fish to gather besides wood, stone and ore.</summary>
+        public List<NodeDefinition> Nodes = new List<NodeDefinition>();
 
         internal static BalanceConfig FromJson(JObj o) => new BalanceConfig
         {
@@ -622,6 +733,7 @@ namespace Founders.Core
             BaseConstructionSpeed = o.Num("baseConstructionSpeed"),
             ConstructionSpeedPerBuilder = o.Num("constructionSpeedPerBuilder"),
             MaxConcurrentConstructions = o.Int("maxConcurrentConstructions"),
+            MaxBuildersPerSite = o.OptNum("maxBuildersPerSite") ?? 0,
             CraftingBonusPerCrafter = o.Num("craftingBonusPerCrafter"),
             MaxCraftingBonus = o.Num("maxCraftingBonus"),
             CraftingInputPerCrafterPerSecond = ResourceBundle.FromJson(o.Obj("craftingInputPerCrafterPerSecond")),
@@ -638,6 +750,8 @@ namespace Founders.Core
             VeinOre = o.OptNum("veinOre") ?? 0,
             TreeRegrowSeconds = o.OptNum("treeRegrowSeconds") ?? 1440,
             GatherReach = (int)(o.OptNum("gatherReach") ?? 7),
+            MaxSkillLevel = o.OptInt("maxSkillLevel") ?? 10,
+            Nodes = o.Has("nodes") ? o.Objs("nodes").Select(NodeDefinition.FromJson).ToList() : new List<NodeDefinition>(),
             Seasons = o.Has("seasons") ? o.Objs("seasons").Select(SeasonDefinition.FromJson).ToList() : new List<SeasonDefinition>(),
         };
     }
@@ -666,7 +780,9 @@ namespace Founders.Core
         public List<RegionDefinition> Regions = new List<RegionDefinition>();
         public List<DecorationDefinition> Decorations = new List<DecorationDefinition>();
         public List<ChapterDefinition> Chapters = new List<ChapterDefinition>();
+        public List<SkillDefinition> Skills = new List<SkillDefinition>();
         public MapDefinition Map;
+        public SkillDefinition Skill(JobType job) => Skills.FirstOrDefault(s => s.Job == job);
         public DecorationDefinition Decoration(string id) => Decorations.FirstOrDefault(d => d.Id == id);
 
         public BuildingDefinition Building(string id) => Buildings.FirstOrDefault(b => b.Id == id);
@@ -706,6 +822,7 @@ namespace Founders.Core
                 Regions = o.Objs("regions").Select(RegionDefinition.FromJson).ToList(),
                 Chapters = o.Has("chapters") ? o.Objs("chapters").Select(ChapterDefinition.FromJson).OrderBy(c => c.Number).ToList() : new List<ChapterDefinition>(),
                 Decorations = o.Has("decorations") ? o.Objs("decorations").Select(DecorationDefinition.FromJson).ToList() : new List<DecorationDefinition>(),
+                Skills = o.Has("skills") ? o.Objs("skills").Select(SkillDefinition.FromJson).ToList() : new List<SkillDefinition>(),
                 Map = MapDefinition.FromJson(o.Obj("map")),
             };
         }

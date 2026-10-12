@@ -17,14 +17,13 @@ namespace Founders.Tests
         }
 
         [Test]
-        public void TheVillageCannotBeFoundedInTheFirstYear()
+        public void TheVillageNeedsTheCampfireAtLevelTen()
         {
             var (game, _) = Fixtures.NewGame(full: true);
-            var yearGate = game.MilestoneRequirements("stable_village").Single(r => r.Text.StartsWith("Reach year"));
-            Assert.That(yearGate.Met, Is.False);
-            game.State.SimTime = 4 * game.Content.Balance.SeasonSeconds;
-            Assert.That(game.Year, Is.EqualTo(2));
-            Assert.That(game.MilestoneRequirements("stable_village").Single(r => r.Text.StartsWith("Reach year")).Met, Is.True);
+            var gate = game.MilestoneRequirements("stable_village").Single(r => r.Text.Contains(" level ") && r.Text.EndsWith("/10"));
+            Assert.That(gate.Met, Is.False);
+            game.State.Buildings.First(b => b.DefinitionId == "campfire").Level = 10;
+            Assert.That(game.MilestoneRequirements("stable_village").Single(r => r.Text.Contains(" level ") && r.Text.EndsWith("/10")).Met, Is.True);
         }
 
         [Test]

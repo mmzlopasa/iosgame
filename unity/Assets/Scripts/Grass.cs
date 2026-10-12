@@ -21,7 +21,8 @@ namespace Founders
         }
 
         const float Radius = 96f;   // covers the whole valley (64 m half-width, corners at ~91 m)
-        const float Step = 0.66f;
+        // Tufts are sent to the GPU every frame: fewer, slightly bigger ones keep the meadow look at 60 fps.
+        const float Step = 1.0f;
         Mesh mesh, flat;
         Layer grass, flowers;
         WorldTerrain ground;
@@ -69,7 +70,7 @@ namespace Founders
                 {
                     float jx = ((float)rng.NextDouble() - 0.5f) * Step, jz = ((float)rng.NextDouble() - 0.5f) * Step;
                     double roll = rng.NextDouble();
-                    float size = 0.75f + (float)rng.NextDouble() * 0.6f;
+                    float size = 1.0f + (float)rng.NextDouble() * 0.7f;
                     float yaw = (float)rng.NextDouble() * 180f;
                     var p = new Vector3(center.x + x + jx, 0, center.z + z + jz);
                     float d = new Vector2(x, z).magnitude;
@@ -80,7 +81,7 @@ namespace Founders
                     float density = type switch
                     {
                         TerrainType.Grass => 0.8f,
-                        TerrainType.Forest => 0.25f,
+                        TerrainType.Forest => 0.15f,
                         TerrainType.Rock => 0.12f,
                         TerrainType.Mountain => 0.1f,
                         _ => 0f,

@@ -114,10 +114,10 @@
     "count": 1
    }
   ],
-  "baseStorage": 120,
-  "knowledgeCap": 200,
+  "baseStorage": 200,
+  "knowledgeCap": 600,
   "foodPerPersonPerSecond": 0.05,
-  "growthSecondsPerPerson": 40,
+  "growthSecondsPerPerson": 150,
   "growthMinFood": 20,
   "shortageProductivityMultiplier": 0.6,
   "spoilageRatePerSecond": 0.0005,
@@ -130,7 +130,7 @@
    "wood": 0.03,
    "stone": 0.02
   },
-  "maxOfflineSeconds": 14400,
+  "maxOfflineSeconds": 43200,
   "simulationStepSeconds": 1.0,
   "jobs": [
    {
@@ -224,7 +224,7 @@
     "unlimitedSlots": false
    }
   ],
-  "seasonSeconds": 360,
+  "seasonSeconds": 21600,
   "seasons": [
    {
     "id": "spring",
@@ -271,11 +271,47 @@
     "hunting": 0.8
    }
   ],
-  "forestWood": 60,
-  "rockStone": 120,
+  "forestWood": 100,
+  "rockStone": 160,
   "veinOre": 90,
   "treeRegrowSeconds": 1440,
-  "gatherReach": 7
+  "gatherReach": 7,
+  "skillSecondsPerLevel": 150,
+  "skillBonusPerLevel": 0.05,
+  "maxSkillLevel": 10,
+  "maxBuildersPerSite": 4,
+  "nodes": [
+   {
+    "id": "berries",
+    "name": "Berry Bush",
+    "terrain": "grass",
+    "resource": "food",
+    "job": "foraging",
+    "capacity": 50,
+    "regrowSeconds": 600,
+    "density": 0.14
+   },
+   {
+    "id": "fish",
+    "name": "Fishing Water",
+    "terrain": "water",
+    "resource": "food",
+    "job": "fishing",
+    "capacity": 30,
+    "regrowSeconds": 600
+   },
+   {
+    "id": "game",
+    "name": "Game Trail",
+    "terrain": "forest",
+    "resource": "food",
+    "job": "hunting",
+    "capacity": 20,
+    "regrowSeconds": 900,
+    "density": 0.6,
+    "slot": 1
+   }
+  ]
  },
  "buildings": [
   {
@@ -308,10 +344,779 @@
     {
      "job": "research",
      "count": 1
+    },
+    {
+     "job": "stonecutting",
+     "count": 1
     }
    ],
    "successorId": "village_hearth",
-   "community": 4
+   "community": 4,
+   "heart": true,
+   "levels": [
+    {
+     "cost": {
+      "wood": 30
+     },
+     "buildSeconds": 72.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 7
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 30
+     },
+     "buildSeconds": 96.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 8
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 50
+     },
+     "buildSeconds": 120.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 10
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 120,
+      "stone": 65
+     },
+     "buildSeconds": 144.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 11
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 520,
+      "stone": 280
+     },
+     "buildSeconds": 2448.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 12
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 2
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 2
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 650,
+      "stone": 340,
+      "hides": 18
+     },
+     "buildSeconds": 3329.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 13
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 3
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 2
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 800,
+      "stone": 430,
+      "hides": 25
+     },
+     "buildSeconds": 4528.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 14
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 4
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 3
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 2
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 990,
+      "stone": 530,
+      "hides": 30
+     },
+     "buildSeconds": 6158.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 16
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 5
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 3
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 3
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 1230,
+      "stone": 660,
+      "hides": 35
+     },
+     "buildSeconds": 8375.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 17
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 6
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 4
+      },
+      {
+       "kind": "techResearched",
+       "id": "permanent_settlement"
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 4
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 1530,
+      "stone": 810,
+      "hides": 45
+     },
+     "buildSeconds": 11390.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 19
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 7
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 4
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 5
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 1890,
+      "stone": 1010,
+      "hides": 55,
+      "ore": 55
+     },
+     "buildSeconds": 15490.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 21
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 8
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 5
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 6
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 2350,
+      "stone": 1250,
+      "hides": 65,
+      "ore": 65
+     },
+     "buildSeconds": 21066.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 23
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 9
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 5
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 7
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 2900,
+      "stone": 1550,
+      "hides": 85,
+      "ore": 85
+     },
+     "buildSeconds": 28650.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 25
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 10
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 6
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 8
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 3600,
+      "stone": 1930,
+      "hides": 105,
+      "ore": 105
+     },
+     "buildSeconds": 38964.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 27
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 11
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 6
+      },
+      {
+       "kind": "techResearched",
+       "id": "agriculture"
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 9
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 4500,
+      "stone": 2400,
+      "hides": 130,
+      "ore": 130,
+      "food": 430
+     },
+     "buildSeconds": 52991.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 29
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 12
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 7
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 10
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 5550,
+      "stone": 2950,
+      "hides": 160,
+      "ore": 160,
+      "food": 530
+     },
+     "buildSeconds": 72067.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 31
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 13
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 7
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 11
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 6900,
+      "stone": 3650,
+      "hides": 195,
+      "ore": 195,
+      "food": 660
+     },
+     "buildSeconds": 98012.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 33
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 14
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 8
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 12
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 8550,
+      "stone": 4550,
+      "hides": 240,
+      "ore": 240,
+      "food": 810
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 35
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 15
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 8
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 13
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 10600,
+      "stone": 5650,
+      "hides": 300,
+      "ore": 300,
+      "food": 1010
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 37
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 16
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 9
+      },
+      {
+       "kind": "techResearched",
+       "id": "bronze_working"
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 14
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 13100,
+      "stone": 7000,
+      "hides": 370,
+      "ore": 370,
+      "food": 1250
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 39
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 3
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 9
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 14700,
+      "stone": 7850,
+      "hides": 420,
+      "ore": 420,
+      "food": 1400
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 41
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 4
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 10
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 16450,
+      "stone": 8800,
+      "hides": 470,
+      "ore": 470,
+      "food": 1570
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 43
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 5
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 10
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 18450,
+      "stone": 9850,
+      "hides": 530,
+      "ore": 530,
+      "food": 1760
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 45
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 6
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 11
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 20650,
+      "stone": 11000,
+      "hides": 590,
+      "ore": 590,
+      "food": 1970
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 47
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 7
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 11
+      },
+      {
+       "kind": "techResearched",
+       "id": "pottery"
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 23150,
+      "stone": 12350,
+      "hides": 660,
+      "ore": 660,
+      "food": 2200
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 49
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 8
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 12
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 25900,
+      "stone": 13800,
+      "hides": 740,
+      "ore": 740,
+      "food": 2450
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 51
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 9
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 12
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 29000,
+      "stone": 15450,
+      "hides": 830,
+      "ore": 830,
+      "food": 2750
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 53
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 10
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 13
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 32500,
+      "stone": 17350,
+      "hides": 930,
+      "ore": 930,
+      "food": 3100
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 55
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 11
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 13
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 36400,
+      "stone": 19400,
+      "hides": 1040,
+      "ore": 1040,
+      "food": 3450
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 57
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 12
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 14
+      },
+      {
+       "kind": "techResearched",
+       "id": "written_law"
+      }
+     ]
+    }
+   ],
+   "storage": 100,
+   "looks": [
+    {
+     "level": 5,
+     "sprite": "campfire_ring",
+     "name": "Stone Campfire"
+    }
+   ]
   },
   {
    "id": "shelter",
@@ -338,16 +1143,179 @@
    "levels": [
     {
      "cost": {
-      "wood": 10
+      "wood": 9
      },
-     "buildSeconds": 15
+     "buildSeconds": 16.0
+    },
+    {
+     "cost": {
+      "wood": 12,
+      "stone": 5
+     },
+     "buildSeconds": 20.0
     },
     {
      "cost": {
       "wood": 15,
+      "stone": 6
+     },
+     "buildSeconds": 24.0
+    },
+    {
+     "cost": {
+      "wood": 18,
+      "stone": 7
+     },
+     "buildSeconds": 28.0
+    },
+    {
+     "cost": {
+      "wood": 25,
+      "stone": 9
+     },
+     "buildSeconds": 36.0
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 12
+     },
+     "buildSeconds": 46.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 16,
+      "hides": 2
+     },
+     "buildSeconds": 59.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 20,
+      "hides": 3
+     },
+     "buildSeconds": 75.0
+    },
+    {
+     "cost": {
+      "wood": 65,
+      "stone": 25,
       "hides": 4
      },
-     "buildSeconds": 20
+     "buildSeconds": 96.0
+    },
+    {
+     "cost": {
+      "wood": 85,
+      "stone": 35,
+      "hides": 5
+     },
+     "buildSeconds": 123.0
+    },
+    {
+     "cost": {
+      "wood": 115,
+      "stone": 45,
+      "hides": 7,
+      "ore": 9
+     },
+     "buildSeconds": 158.0
+    },
+    {
+     "cost": {
+      "wood": 145,
+      "stone": 60,
+      "hides": 9,
+      "ore": 12
+     },
+     "buildSeconds": 202.0
+    },
+    {
+     "cost": {
+      "wood": 190,
+      "stone": 75,
+      "hides": 11,
+      "ore": 15
+     },
+     "buildSeconds": 258.0
+    },
+    {
+     "cost": {
+      "wood": 250,
+      "stone": 100,
+      "hides": 15,
+      "ore": 20
+     },
+     "buildSeconds": 331.0
+    },
+    {
+     "cost": {
+      "wood": 320,
+      "stone": 130,
+      "hides": 19,
+      "ore": 25
+     },
+     "buildSeconds": 423.0
+    },
+    {
+     "cost": {
+      "wood": 420,
+      "stone": 170,
+      "hides": 25,
+      "ore": 35
+     },
+     "buildSeconds": 542.0
+    },
+    {
+     "cost": {
+      "wood": 550,
+      "stone": 220,
+      "hides": 35,
+      "ore": 45
+     },
+     "buildSeconds": 693.0
+    },
+    {
+     "cost": {
+      "wood": 710,
+      "stone": 280,
+      "hides": 45,
+      "ore": 55
+     },
+     "buildSeconds": 887.0
+    },
+    {
+     "cost": {
+      "wood": 920,
+      "stone": 370,
+      "hides": 55,
+      "ore": 75
+     },
+     "buildSeconds": 1136.0
+    }
+   ],
+   "looks": [
+    {
+     "level": 5,
+     "sprite": "woven_shelter",
+     "name": "Hut"
+    },
+    {
+     "level": 10,
+     "sprite": "daub_house",
+     "name": "Cottage"
+    },
+    {
+     "level": 15,
+     "sprite": "medieval_cottage",
+     "name": "Timber House"
+    },
+    {
+     "level": 20,
+     "sprite": "medieval_house",
+     "name": "Two-Storey House"
     }
    ]
   },
@@ -378,17 +1346,175 @@
    "levels": [
     {
      "cost": {
+      "wood": 11,
+      "stone": 4
+     },
+     "buildSeconds": 20.0
+    },
+    {
+     "cost": {
       "wood": 15,
       "stone": 5
      },
-     "buildSeconds": 20
+     "buildSeconds": 25.0
+    },
+    {
+     "cost": {
+      "wood": 19,
+      "stone": 6
+     },
+     "buildSeconds": 30.0
     },
     {
      "cost": {
       "wood": 20,
+      "stone": 8
+     },
+     "buildSeconds": 35.0
+    },
+    {
+     "cost": {
+      "wood": 30,
       "stone": 10
      },
-     "buildSeconds": 25
+     "buildSeconds": 45.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 13
+     },
+     "buildSeconds": 57.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 16,
+      "hides": 4
+     },
+     "buildSeconds": 73.0
+    },
+    {
+     "cost": {
+      "wood": 65,
+      "stone": 20,
+      "hides": 5
+     },
+     "buildSeconds": 94.0
+    },
+    {
+     "cost": {
+      "wood": 85,
+      "stone": 30,
+      "hides": 7
+     },
+     "buildSeconds": 120.0
+    },
+    {
+     "cost": {
+      "wood": 110,
+      "stone": 35,
+      "hides": 9
+     },
+     "buildSeconds": 154.0
+    },
+    {
+     "cost": {
+      "wood": 140,
+      "stone": 45,
+      "hides": 11,
+      "ore": 15
+     },
+     "buildSeconds": 197.0
+    },
+    {
+     "cost": {
+      "wood": 185,
+      "stone": 60,
+      "hides": 15,
+      "ore": 20
+     },
+     "buildSeconds": 252.0
+    },
+    {
+     "cost": {
+      "wood": 240,
+      "stone": 80,
+      "hides": 19,
+      "ore": 25
+     },
+     "buildSeconds": 323.0
+    },
+    {
+     "cost": {
+      "wood": 310,
+      "stone": 105,
+      "hides": 25,
+      "ore": 35
+     },
+     "buildSeconds": 413.0
+    },
+    {
+     "cost": {
+      "wood": 400,
+      "stone": 135,
+      "hides": 30,
+      "ore": 45
+     },
+     "buildSeconds": 529.0
+    },
+    {
+     "cost": {
+      "wood": 520,
+      "stone": 175,
+      "hides": 40,
+      "ore": 55
+     },
+     "buildSeconds": 677.0
+    },
+    {
+     "cost": {
+      "wood": 680,
+      "stone": 230,
+      "hides": 55,
+      "ore": 75
+     },
+     "buildSeconds": 867.0
+    },
+    {
+     "cost": {
+      "wood": 890,
+      "stone": 300,
+      "hides": 70,
+      "ore": 95
+     },
+     "buildSeconds": 1109.0
+    },
+    {
+     "cost": {
+      "wood": 1150,
+      "stone": 380,
+      "hides": 90,
+      "ore": 125
+     },
+     "buildSeconds": 1420.0
+    }
+   ],
+   "looks": [
+    {
+     "level": 10,
+     "sprite": "daub_house",
+     "name": "Cottage"
+    },
+    {
+     "level": 15,
+     "sprite": "medieval_cottage",
+     "name": "Timber House"
+    },
+    {
+     "level": 20,
+     "sprite": "medieval_house",
+     "name": "Two-Storey House"
     }
    ]
   },
@@ -420,16 +1546,157 @@
    "levels": [
     {
      "cost": {
-      "wood": 15
+      "wood": 8
      },
-     "buildSeconds": 15
+     "buildSeconds": 12.0
+    },
+    {
+     "cost": {
+      "wood": 10,
+      "stone": 4
+     },
+     "buildSeconds": 15.0
+    },
+    {
+     "cost": {
+      "wood": 12,
+      "stone": 5
+     },
+     "buildSeconds": 18.0
+    },
+    {
+     "cost": {
+      "wood": 15,
+      "stone": 6
+     },
+     "buildSeconds": 21.0
+    },
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 8
+     },
+     "buildSeconds": 27.0
     },
     {
      "cost": {
       "wood": 25,
-      "stone": 5
+      "stone": 10
      },
-     "buildSeconds": 20
+     "buildSeconds": 34.0
+    },
+    {
+     "cost": {
+      "wood": 35,
+      "stone": 13,
+      "hides": 2
+     },
+     "buildSeconds": 44.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 17,
+      "hides": 3
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 55,
+      "stone": 20,
+      "hides": 3
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 30,
+      "hides": 4
+     },
+     "buildSeconds": 92.0
+    },
+    {
+     "cost": {
+      "wood": 95,
+      "stone": 40,
+      "hides": 6,
+      "ore": 8
+     },
+     "buildSeconds": 118.0
+    },
+    {
+     "cost": {
+      "wood": 120,
+      "stone": 50,
+      "hides": 7,
+      "ore": 10
+     },
+     "buildSeconds": 151.0
+    },
+    {
+     "cost": {
+      "wood": 160,
+      "stone": 65,
+      "hides": 10,
+      "ore": 13
+     },
+     "buildSeconds": 194.0
+    },
+    {
+     "cost": {
+      "wood": 210,
+      "stone": 85,
+      "hides": 12,
+      "ore": 17
+     },
+     "buildSeconds": 248.0
+    },
+    {
+     "cost": {
+      "wood": 270,
+      "stone": 110,
+      "hides": 16,
+      "ore": 20
+     },
+     "buildSeconds": 317.0
+    },
+    {
+     "cost": {
+      "wood": 350,
+      "stone": 140,
+      "hides": 20,
+      "ore": 30
+     },
+     "buildSeconds": 406.0
+    },
+    {
+     "cost": {
+      "wood": 450,
+      "stone": 180,
+      "hides": 25,
+      "ore": 35
+     },
+     "buildSeconds": 520.0
+    },
+    {
+     "cost": {
+      "wood": 590,
+      "stone": 240,
+      "hides": 35,
+      "ore": 45
+     },
+     "buildSeconds": 666.0
+    },
+    {
+     "cost": {
+      "wood": 770,
+      "stone": 310,
+      "hides": 45,
+      "ore": 60
+     },
+     "buildSeconds": 852.0
     }
    ]
   },
@@ -462,17 +1729,157 @@
    "levels": [
     {
      "cost": {
-      "wood": 15,
+      "wood": 8
+     },
+     "buildSeconds": 12.0
+    },
+    {
+     "cost": {
+      "wood": 10,
+      "stone": 4
+     },
+     "buildSeconds": 15.0
+    },
+    {
+     "cost": {
+      "wood": 12,
       "stone": 5
      },
-     "buildSeconds": 15
+     "buildSeconds": 18.0
+    },
+    {
+     "cost": {
+      "wood": 15,
+      "stone": 6
+     },
+     "buildSeconds": 21.0
     },
     {
      "cost": {
       "wood": 20,
+      "stone": 8
+     },
+     "buildSeconds": 27.0
+    },
+    {
+     "cost": {
+      "wood": 25,
       "stone": 10
      },
-     "buildSeconds": 20
+     "buildSeconds": 34.0
+    },
+    {
+     "cost": {
+      "wood": 35,
+      "stone": 13,
+      "hides": 2
+     },
+     "buildSeconds": 44.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 17,
+      "hides": 3
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 55,
+      "stone": 20,
+      "hides": 3
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 30,
+      "hides": 4
+     },
+     "buildSeconds": 92.0
+    },
+    {
+     "cost": {
+      "wood": 95,
+      "stone": 40,
+      "hides": 6,
+      "ore": 8
+     },
+     "buildSeconds": 118.0
+    },
+    {
+     "cost": {
+      "wood": 120,
+      "stone": 50,
+      "hides": 7,
+      "ore": 10
+     },
+     "buildSeconds": 151.0
+    },
+    {
+     "cost": {
+      "wood": 160,
+      "stone": 65,
+      "hides": 10,
+      "ore": 13
+     },
+     "buildSeconds": 194.0
+    },
+    {
+     "cost": {
+      "wood": 210,
+      "stone": 85,
+      "hides": 12,
+      "ore": 17
+     },
+     "buildSeconds": 248.0
+    },
+    {
+     "cost": {
+      "wood": 270,
+      "stone": 110,
+      "hides": 16,
+      "ore": 20
+     },
+     "buildSeconds": 317.0
+    },
+    {
+     "cost": {
+      "wood": 350,
+      "stone": 140,
+      "hides": 20,
+      "ore": 30
+     },
+     "buildSeconds": 406.0
+    },
+    {
+     "cost": {
+      "wood": 450,
+      "stone": 180,
+      "hides": 25,
+      "ore": 35
+     },
+     "buildSeconds": 520.0
+    },
+    {
+     "cost": {
+      "wood": 590,
+      "stone": 240,
+      "hides": 35,
+      "ore": 45
+     },
+     "buildSeconds": 666.0
+    },
+    {
+     "cost": {
+      "wood": 770,
+      "stone": 310,
+      "hides": 45,
+      "ore": 60
+     },
+     "buildSeconds": 852.0
     }
    ]
   },
@@ -506,16 +1913,157 @@
    "levels": [
     {
      "cost": {
-      "wood": 20
+      "wood": 11
      },
-     "buildSeconds": 20
+     "buildSeconds": 16.0
+    },
+    {
+     "cost": {
+      "wood": 15,
+      "stone": 6
+     },
+     "buildSeconds": 20.0
+    },
+    {
+     "cost": {
+      "wood": 19,
+      "stone": 8
+     },
+     "buildSeconds": 24.0
+    },
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 9
+     },
+     "buildSeconds": 28.0
     },
     {
      "cost": {
       "wood": 30,
-      "stone": 10
+      "stone": 12
      },
-     "buildSeconds": 25
+     "buildSeconds": 36.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 15
+     },
+     "buildSeconds": 46.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 20,
+      "hides": 3
+     },
+     "buildSeconds": 59.0
+    },
+    {
+     "cost": {
+      "wood": 65,
+      "stone": 25,
+      "hides": 4
+     },
+     "buildSeconds": 75.0
+    },
+    {
+     "cost": {
+      "wood": 85,
+      "stone": 35,
+      "hides": 5
+     },
+     "buildSeconds": 96.0
+    },
+    {
+     "cost": {
+      "wood": 110,
+      "stone": 45,
+      "hides": 7
+     },
+     "buildSeconds": 123.0
+    },
+    {
+     "cost": {
+      "wood": 140,
+      "stone": 55,
+      "hides": 8,
+      "ore": 11
+     },
+     "buildSeconds": 158.0
+    },
+    {
+     "cost": {
+      "wood": 185,
+      "stone": 75,
+      "hides": 11,
+      "ore": 15
+     },
+     "buildSeconds": 202.0
+    },
+    {
+     "cost": {
+      "wood": 240,
+      "stone": 95,
+      "hides": 14,
+      "ore": 19
+     },
+     "buildSeconds": 258.0
+    },
+    {
+     "cost": {
+      "wood": 310,
+      "stone": 125,
+      "hides": 19,
+      "ore": 25
+     },
+     "buildSeconds": 331.0
+    },
+    {
+     "cost": {
+      "wood": 400,
+      "stone": 160,
+      "hides": 25,
+      "ore": 30
+     },
+     "buildSeconds": 423.0
+    },
+    {
+     "cost": {
+      "wood": 520,
+      "stone": 210,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 542.0
+    },
+    {
+     "cost": {
+      "wood": 680,
+      "stone": 270,
+      "hides": 40,
+      "ore": 55
+     },
+     "buildSeconds": 693.0
+    },
+    {
+     "cost": {
+      "wood": 890,
+      "stone": 350,
+      "hides": 55,
+      "ore": 70
+     },
+     "buildSeconds": 887.0
+    },
+    {
+     "cost": {
+      "wood": 1150,
+      "stone": 460,
+      "hides": 70,
+      "ore": 90
+     },
+     "buildSeconds": 1136.0
     }
    ]
   },
@@ -539,15 +2087,163 @@
     "sand"
    ],
    "buildable": true,
-   "storage": 100,
+   "storage": 150,
    "protectedFood": 40,
    "levels": [
     {
      "cost": {
-      "wood": 20,
+      "wood": 11,
+      "stone": 6
+     },
+     "buildSeconds": 20.0
+    },
+    {
+     "cost": {
+      "wood": 15,
+      "stone": 8
+     },
+     "buildSeconds": 25.0
+    },
+    {
+     "cost": {
+      "wood": 19,
       "stone": 10
      },
-     "buildSeconds": 20
+     "buildSeconds": 30.0
+    },
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 12
+     },
+     "buildSeconds": 35.0
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 16
+     },
+     "buildSeconds": 45.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 20
+     },
+     "buildSeconds": 57.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 25,
+      "hides": 5
+     },
+     "buildSeconds": 73.0
+    },
+    {
+     "cost": {
+      "wood": 65,
+      "stone": 35,
+      "hides": 6
+     },
+     "buildSeconds": 94.0
+    },
+    {
+     "cost": {
+      "wood": 85,
+      "stone": 45,
+      "hides": 8
+     },
+     "buildSeconds": 120.0
+    },
+    {
+     "cost": {
+      "wood": 110,
+      "stone": 60,
+      "hides": 10
+     },
+     "buildSeconds": 154.0
+    },
+    {
+     "cost": {
+      "wood": 140,
+      "stone": 75,
+      "hides": 13,
+      "ore": 17
+     },
+     "buildSeconds": 197.0
+    },
+    {
+     "cost": {
+      "wood": 185,
+      "stone": 100,
+      "hides": 17,
+      "ore": 25
+     },
+     "buildSeconds": 252.0
+    },
+    {
+     "cost": {
+      "wood": 240,
+      "stone": 125,
+      "hides": 20,
+      "ore": 30
+     },
+     "buildSeconds": 323.0
+    },
+    {
+     "cost": {
+      "wood": 310,
+      "stone": 165,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 413.0
+    },
+    {
+     "cost": {
+      "wood": 400,
+      "stone": 220,
+      "hides": 35,
+      "ore": 50
+     },
+     "buildSeconds": 529.0
+    },
+    {
+     "cost": {
+      "wood": 520,
+      "stone": 280,
+      "hides": 50,
+      "ore": 65
+     },
+     "buildSeconds": 677.0
+    },
+    {
+     "cost": {
+      "wood": 680,
+      "stone": 360,
+      "hides": 65,
+      "ore": 85
+     },
+     "buildSeconds": 867.0
+    },
+    {
+     "cost": {
+      "wood": 890,
+      "stone": 470,
+      "hides": 80,
+      "ore": 110
+     },
+     "buildSeconds": 1109.0
+    },
+    {
+     "cost": {
+      "wood": 1150,
+      "stone": 610,
+      "hides": 105,
+      "ore": 140
+     },
+     "buildSeconds": 1420.0
     }
    ]
   },
@@ -580,10 +2276,158 @@
    "levels": [
     {
      "cost": {
+      "wood": 15,
+      "stone": 9
+     },
+     "buildSeconds": 28.0
+    },
+    {
+     "cost": {
       "wood": 20,
+      "stone": 12
+     },
+     "buildSeconds": 35.0
+    },
+    {
+     "cost": {
+      "wood": 25,
       "stone": 15
      },
-     "buildSeconds": 25
+     "buildSeconds": 42.0
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 18
+     },
+     "buildSeconds": 49.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 25
+     },
+     "buildSeconds": 63.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 30
+     },
+     "buildSeconds": 80.0
+    },
+    {
+     "cost": {
+      "wood": 65,
+      "stone": 40,
+      "hides": 6
+     },
+     "buildSeconds": 103.0
+    },
+    {
+     "cost": {
+      "wood": 85,
+      "stone": 50,
+      "hides": 8
+     },
+     "buildSeconds": 132.0
+    },
+    {
+     "cost": {
+      "wood": 110,
+      "stone": 65,
+      "hides": 11
+     },
+     "buildSeconds": 168.0
+    },
+    {
+     "cost": {
+      "wood": 145,
+      "stone": 85,
+      "hides": 14
+     },
+     "buildSeconds": 216.0
+    },
+    {
+     "cost": {
+      "wood": 190,
+      "stone": 115,
+      "hides": 18,
+      "ore": 25
+     },
+     "buildSeconds": 276.0
+    },
+    {
+     "cost": {
+      "wood": 240,
+      "stone": 145,
+      "hides": 25,
+      "ore": 30
+     },
+     "buildSeconds": 353.0
+    },
+    {
+     "cost": {
+      "wood": 320,
+      "stone": 190,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 452.0
+    },
+    {
+     "cost": {
+      "wood": 410,
+      "stone": 250,
+      "hides": 40,
+      "ore": 55
+     },
+     "buildSeconds": 578.0
+    },
+    {
+     "cost": {
+      "wood": 540,
+      "stone": 320,
+      "hides": 50,
+      "ore": 70
+     },
+     "buildSeconds": 740.0
+    },
+    {
+     "cost": {
+      "wood": 700,
+      "stone": 420,
+      "hides": 65,
+      "ore": 90
+     },
+     "buildSeconds": 948.0
+    },
+    {
+     "cost": {
+      "wood": 910,
+      "stone": 550,
+      "hides": 85,
+      "ore": 115
+     },
+     "buildSeconds": 1213.0
+    },
+    {
+     "cost": {
+      "wood": 1180,
+      "stone": 710,
+      "hides": 115,
+      "ore": 150
+     },
+     "buildSeconds": 1553.0
+    },
+    {
+     "cost": {
+      "wood": 1540,
+      "stone": 920,
+      "hides": 145,
+      "ore": 195
+     },
+     "buildSeconds": 1988.0
     }
    ]
   },
@@ -614,7 +2458,119 @@
      "count": 3
     }
    ],
-   "community": 6
+   "community": 6,
+   "levels": [
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 15
+     },
+     "buildSeconds": 36.0
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 20
+     },
+     "buildSeconds": 45.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 25
+     },
+     "buildSeconds": 54.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 30
+     },
+     "buildSeconds": 63.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 40
+     },
+     "buildSeconds": 81.0
+    },
+    {
+     "cost": {
+      "wood": 75,
+      "stone": 50
+     },
+     "buildSeconds": 103.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 65,
+      "hides": 10
+     },
+     "buildSeconds": 132.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 85,
+      "hides": 13
+     },
+     "buildSeconds": 169.0
+    },
+    {
+     "cost": {
+      "wood": 165,
+      "stone": 110,
+      "hides": 17
+     },
+     "buildSeconds": 216.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 145,
+      "hides": 20
+     },
+     "buildSeconds": 277.0
+    },
+    {
+     "cost": {
+      "wood": 280,
+      "stone": 190,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 355.0
+    },
+    {
+     "cost": {
+      "wood": 370,
+      "stone": 240,
+      "hides": 35,
+      "ore": 50
+     },
+     "buildSeconds": 454.0
+    },
+    {
+     "cost": {
+      "wood": 480,
+      "stone": 320,
+      "hides": 50,
+      "ore": 65
+     },
+     "buildSeconds": 581.0
+    },
+    {
+     "cost": {
+      "wood": 620,
+      "stone": 410,
+      "hides": 60,
+      "ore": 85
+     },
+     "buildSeconds": 744.0
+    }
+   ]
   },
   {
    "id": "village_hearth",
@@ -634,7 +2590,7 @@
    ],
    "buildable": false,
    "maxCount": 1,
-   "storage": 50,
+   "storage": 150,
    "jobSlots": [
     {
      "job": "foraging",
@@ -647,9 +2603,782 @@
     {
      "job": "research",
      "count": 2
+    },
+    {
+     "job": "stonecutting",
+     "count": 1
     }
    ],
-   "community": 8
+   "community": 8,
+   "heart": true,
+   "levels": [
+    {
+     "cost": {
+      "wood": 30
+     },
+     "buildSeconds": 72.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 7
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 30
+     },
+     "buildSeconds": 96.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 8
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 50
+     },
+     "buildSeconds": 120.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 10
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 120,
+      "stone": 65
+     },
+     "buildSeconds": 144.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 11
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 1
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 520,
+      "stone": 280
+     },
+     "buildSeconds": 2448.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 12
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 2
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 2
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 650,
+      "stone": 340,
+      "hides": 18
+     },
+     "buildSeconds": 3329.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 13
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 3
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 2
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 800,
+      "stone": 430,
+      "hides": 25
+     },
+     "buildSeconds": 4528.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 14
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 4
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 3
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 2
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 990,
+      "stone": 530,
+      "hides": 30
+     },
+     "buildSeconds": 6158.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 16
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 5
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 3
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 3
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 1230,
+      "stone": 660,
+      "hides": 35
+     },
+     "buildSeconds": 8375.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 17
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 6
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 4
+      },
+      {
+       "kind": "techResearched",
+       "id": "permanent_settlement"
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 4
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 1530,
+      "stone": 810,
+      "hides": 45
+     },
+     "buildSeconds": 11390.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 19
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 7
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 4
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 5
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 1890,
+      "stone": 1010,
+      "hides": 55,
+      "ore": 55
+     },
+     "buildSeconds": 15490.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 21
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 8
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 5
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 6
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 2350,
+      "stone": 1250,
+      "hides": 65,
+      "ore": 65
+     },
+     "buildSeconds": 21066.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 23
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 9
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 5
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 7
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 2900,
+      "stone": 1550,
+      "hides": 85,
+      "ore": 85
+     },
+     "buildSeconds": 28650.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 25
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 10
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 6
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 8
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 3600,
+      "stone": 1930,
+      "hides": 105,
+      "ore": 105
+     },
+     "buildSeconds": 38964.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 27
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 11
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 6
+      },
+      {
+       "kind": "techResearched",
+       "id": "agriculture"
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 9
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 4500,
+      "stone": 2400,
+      "hides": 130,
+      "ore": 130,
+      "food": 430
+     },
+     "buildSeconds": 52991.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 29
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 12
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 7
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 10
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 5550,
+      "stone": 2950,
+      "hides": 160,
+      "ore": 160,
+      "food": 530
+     },
+     "buildSeconds": 72067.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 31
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 13
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 7
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 11
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 6900,
+      "stone": 3650,
+      "hides": 195,
+      "ore": 195,
+      "food": 660
+     },
+     "buildSeconds": 98012.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 33
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 14
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 8
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 12
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 8550,
+      "stone": 4550,
+      "hides": 240,
+      "ore": 240,
+      "food": 810
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 35
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 15
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 8
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 13
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 10600,
+      "stone": 5650,
+      "hides": 300,
+      "ore": 300,
+      "food": 1010
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 37
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "storage_pit",
+       "amount": 16
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 9
+      },
+      {
+       "kind": "techResearched",
+       "id": "bronze_working"
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "shelter",
+       "amount": 14
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 13100,
+      "stone": 7000,
+      "hides": 370,
+      "ore": 370,
+      "food": 1250
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 39
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 3
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 9
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 14700,
+      "stone": 7850,
+      "hides": 420,
+      "ore": 420,
+      "food": 1400
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 41
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 4
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 10
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 16450,
+      "stone": 8800,
+      "hides": 470,
+      "ore": 470,
+      "food": 1570
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 43
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 5
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 10
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 18450,
+      "stone": 9850,
+      "hides": 530,
+      "ore": 530,
+      "food": 1760
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 45
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 6
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 11
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 20650,
+      "stone": 11000,
+      "hides": 590,
+      "ore": 590,
+      "food": 1970
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 47
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 7
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 11
+      },
+      {
+       "kind": "techResearched",
+       "id": "pottery"
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 23150,
+      "stone": 12350,
+      "hides": 660,
+      "ore": 660,
+      "food": 2200
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 49
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 8
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 12
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 25900,
+      "stone": 13800,
+      "hides": 740,
+      "ore": 740,
+      "food": 2450
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 51
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 9
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 12
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 29000,
+      "stone": 15450,
+      "hides": 830,
+      "ore": 830,
+      "food": 2750
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 53
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 10
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 13
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 32500,
+      "stone": 17350,
+      "hides": 930,
+      "ore": 930,
+      "food": 3100
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 55
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 11
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 13
+      }
+     ]
+    },
+    {
+     "cost": {
+      "wood": 36400,
+      "stone": 19400,
+      "hides": 1040,
+      "ore": 1040,
+      "food": 3450
+     },
+     "buildSeconds": 129600.0,
+     "requirements": [
+      {
+       "kind": "populationAtLeast",
+       "amount": 57
+      },
+      {
+       "kind": "buildingLevelAtLeast",
+       "id": "granary",
+       "amount": 12
+      },
+      {
+       "kind": "techCountAtLeast",
+       "amount": 14
+      },
+      {
+       "kind": "techResearched",
+       "id": "written_law"
+      }
+     ]
+    }
+   ],
+   "looks": [
+    {
+     "level": 15,
+     "sprite": "hearth_pavilion",
+     "name": "Hearth Pavilion"
+    },
+    {
+     "level": 25,
+     "sprite": "hearth_great",
+     "name": "Great Hearth"
+    }
+   ]
   },
   {
    "id": "fishing_weir",
@@ -684,9 +3413,158 @@
    "levels": [
     {
      "cost": {
-      "wood": 20
+      "wood": 19,
+      "stone": 4
      },
-     "buildSeconds": 20
+     "buildSeconds": 20.0
+    },
+    {
+     "cost": {
+      "wood": 25,
+      "stone": 5
+     },
+     "buildSeconds": 25.0
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 6
+     },
+     "buildSeconds": 30.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 8
+     },
+     "buildSeconds": 35.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 10
+     },
+     "buildSeconds": 45.0
+    },
+    {
+     "cost": {
+      "wood": 65,
+      "stone": 13
+     },
+     "buildSeconds": 57.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 16,
+      "hides": 6
+     },
+     "buildSeconds": 73.0
+    },
+    {
+     "cost": {
+      "wood": 105,
+      "stone": 20,
+      "hides": 8
+     },
+     "buildSeconds": 94.0
+    },
+    {
+     "cost": {
+      "wood": 140,
+      "stone": 30,
+      "hides": 10
+     },
+     "buildSeconds": 120.0
+    },
+    {
+     "cost": {
+      "wood": 180,
+      "stone": 35,
+      "hides": 13
+     },
+     "buildSeconds": 154.0
+    },
+    {
+     "cost": {
+      "wood": 240,
+      "stone": 45,
+      "hides": 17,
+      "ore": 25
+     },
+     "buildSeconds": 197.0
+    },
+    {
+     "cost": {
+      "wood": 310,
+      "stone": 60,
+      "hides": 20,
+      "ore": 30
+     },
+     "buildSeconds": 252.0
+    },
+    {
+     "cost": {
+      "wood": 400,
+      "stone": 80,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 323.0
+    },
+    {
+     "cost": {
+      "wood": 520,
+      "stone": 105,
+      "hides": 35,
+      "ore": 50
+     },
+     "buildSeconds": 413.0
+    },
+    {
+     "cost": {
+      "wood": 670,
+      "stone": 135,
+      "hides": 50,
+      "ore": 65
+     },
+     "buildSeconds": 529.0
+    },
+    {
+     "cost": {
+      "wood": 870,
+      "stone": 175,
+      "hides": 65,
+      "ore": 85
+     },
+     "buildSeconds": 677.0
+    },
+    {
+     "cost": {
+      "wood": 1140,
+      "stone": 230,
+      "hides": 80,
+      "ore": 110
+     },
+     "buildSeconds": 867.0
+    },
+    {
+     "cost": {
+      "wood": 1480,
+      "stone": 300,
+      "hides": 105,
+      "ore": 140
+     },
+     "buildSeconds": 1109.0
+    },
+    {
+     "cost": {
+      "wood": 1920,
+      "stone": 380,
+      "hides": 140,
+      "ore": 185
+     },
+     "buildSeconds": 1420.0
     }
    ]
   },
@@ -710,7 +3588,163 @@
    ],
    "buildable": true,
    "requiresTech": "hide_working",
-   "protectedFood": 30
+   "protectedFood": 30,
+   "levels": [
+    {
+     "cost": {
+      "wood": 15
+     },
+     "buildSeconds": 12.0
+    },
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 8
+     },
+     "buildSeconds": 15.0
+    },
+    {
+     "cost": {
+      "wood": 25,
+      "stone": 10
+     },
+     "buildSeconds": 18.0
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 12
+     },
+     "buildSeconds": 21.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 16
+     },
+     "buildSeconds": 27.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 20
+     },
+     "buildSeconds": 34.0
+    },
+    {
+     "cost": {
+      "wood": 65,
+      "stone": 25,
+      "hides": 4
+     },
+     "buildSeconds": 44.0
+    },
+    {
+     "cost": {
+      "wood": 85,
+      "stone": 35,
+      "hides": 5
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 110,
+      "stone": 45,
+      "hides": 7
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 145,
+      "stone": 60,
+      "hides": 9
+     },
+     "buildSeconds": 92.0
+    },
+    {
+     "cost": {
+      "wood": 190,
+      "stone": 75,
+      "hides": 11,
+      "ore": 15
+     },
+     "buildSeconds": 118.0
+    },
+    {
+     "cost": {
+      "wood": 240,
+      "stone": 100,
+      "hides": 15,
+      "ore": 20
+     },
+     "buildSeconds": 151.0
+    },
+    {
+     "cost": {
+      "wood": 320,
+      "stone": 125,
+      "hides": 19,
+      "ore": 25
+     },
+     "buildSeconds": 194.0
+    },
+    {
+     "cost": {
+      "wood": 410,
+      "stone": 165,
+      "hides": 25,
+      "ore": 35
+     },
+     "buildSeconds": 248.0
+    },
+    {
+     "cost": {
+      "wood": 540,
+      "stone": 220,
+      "hides": 30,
+      "ore": 45
+     },
+     "buildSeconds": 317.0
+    },
+    {
+     "cost": {
+      "wood": 700,
+      "stone": 280,
+      "hides": 40,
+      "ore": 55
+     },
+     "buildSeconds": 406.0
+    },
+    {
+     "cost": {
+      "wood": 910,
+      "stone": 360,
+      "hides": 55,
+      "ore": 75
+     },
+     "buildSeconds": 520.0
+    },
+    {
+     "cost": {
+      "wood": 1180,
+      "stone": 470,
+      "hides": 70,
+      "ore": 95
+     },
+     "buildSeconds": 666.0
+    },
+    {
+     "cost": {
+      "wood": 1540,
+      "stone": 610,
+      "hides": 90,
+      "ore": 125
+     },
+     "buildSeconds": 852.0
+    }
+   ]
   },
   {
    "id": "elders_lodge",
@@ -740,7 +3774,119 @@
      "count": 3
     }
    ],
-   "community": 5
+   "community": 5,
+   "levels": [
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 19
+     },
+     "buildSeconds": 32.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 25
+     },
+     "buildSeconds": 40.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 30
+     },
+     "buildSeconds": 48.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 40
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 50
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 65
+     },
+     "buildSeconds": 92.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 80,
+      "hides": 13
+     },
+     "buildSeconds": 117.0
+    },
+    {
+     "cost": {
+      "wood": 170,
+      "stone": 105,
+      "hides": 17
+     },
+     "buildSeconds": 150.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 140,
+      "hides": 20
+     },
+     "buildSeconds": 192.0
+    },
+    {
+     "cost": {
+      "wood": 290,
+      "stone": 180,
+      "hides": 30
+     },
+     "buildSeconds": 246.0
+    },
+    {
+     "cost": {
+      "wood": 380,
+      "stone": 240,
+      "hides": 35,
+      "ore": 50
+     },
+     "buildSeconds": 315.0
+    },
+    {
+     "cost": {
+      "wood": 490,
+      "stone": 310,
+      "hides": 50,
+      "ore": 65
+     },
+     "buildSeconds": 404.0
+    },
+    {
+     "cost": {
+      "wood": 640,
+      "stone": 400,
+      "hides": 60,
+      "ore": 85
+     },
+     "buildSeconds": 517.0
+    },
+    {
+     "cost": {
+      "wood": 830,
+      "stone": 520,
+      "hides": 80,
+      "ore": 110
+     },
+     "buildSeconds": 661.0
+    }
+   ]
   },
   {
    "id": "longhouse",
@@ -768,10 +3914,165 @@
    "levels": [
     {
      "cost": {
-      "wood": 40,
-      "stone": 15
+      "wood": 60,
+      "stone": 20
      },
-     "buildSeconds": 40
+     "buildSeconds": 48.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 30
+     },
+     "buildSeconds": 60.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 40
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 120,
+      "stone": 45
+     },
+     "buildSeconds": 84.0
+    },
+    {
+     "cost": {
+      "wood": 155,
+      "stone": 60
+     },
+     "buildSeconds": 108.0
+    },
+    {
+     "cost": {
+      "wood": 200,
+      "stone": 75
+     },
+     "buildSeconds": 138.0
+    },
+    {
+     "cost": {
+      "wood": 260,
+      "stone": 100,
+      "hides": 20
+     },
+     "buildSeconds": 176.0
+    },
+    {
+     "cost": {
+      "wood": 340,
+      "stone": 130,
+      "hides": 30
+     },
+     "buildSeconds": 225.0
+    },
+    {
+     "cost": {
+      "wood": 450,
+      "stone": 165,
+      "hides": 35
+     },
+     "buildSeconds": 289.0
+    },
+    {
+     "cost": {
+      "wood": 580,
+      "stone": 220,
+      "hides": 50
+     },
+     "buildSeconds": 369.0
+    },
+    {
+     "cost": {
+      "wood": 750,
+      "stone": 280,
+      "hides": 60,
+      "ore": 85
+     },
+     "buildSeconds": 473.0
+    },
+    {
+     "cost": {
+      "wood": 980,
+      "stone": 370,
+      "hides": 80,
+      "ore": 110
+     },
+     "buildSeconds": 605.0
+    },
+    {
+     "cost": {
+      "wood": 1270,
+      "stone": 480,
+      "hides": 105,
+      "ore": 140
+     },
+     "buildSeconds": 775.0
+    },
+    {
+     "cost": {
+      "wood": 1650,
+      "stone": 620,
+      "hides": 135,
+      "ore": 180
+     },
+     "buildSeconds": 992.0
+    },
+    {
+     "cost": {
+      "wood": 2150,
+      "stone": 810,
+      "hides": 175,
+      "ore": 240
+     },
+     "buildSeconds": 1269.0
+    },
+    {
+     "cost": {
+      "wood": 2800,
+      "stone": 1050,
+      "hides": 230,
+      "ore": 310
+     },
+     "buildSeconds": 1625.0
+    },
+    {
+     "cost": {
+      "wood": 3650,
+      "stone": 1360,
+      "hides": 300,
+      "ore": 400
+     },
+     "buildSeconds": 2080.0
+    },
+    {
+     "cost": {
+      "wood": 4700,
+      "stone": 1770,
+      "hides": 390,
+      "ore": 520
+     },
+     "buildSeconds": 2662.0
+    },
+    {
+     "cost": {
+      "wood": 6150,
+      "stone": 2300,
+      "hides": 510,
+      "ore": 680
+     },
+     "buildSeconds": 3407.0
+    }
+   ],
+   "looks": [
+    {
+     "level": 15,
+     "sprite": "medieval_townhouse",
+     "name": "Great Longhouse"
     }
    ]
   },
@@ -802,17 +4103,169 @@
     {
      "cost": {
       "wood": 20,
-      "stone": 15
+      "stone": 8
      },
-     "buildSeconds": 30
+     "buildSeconds": 28.0
     },
     {
      "cost": {
       "wood": 30,
-      "stone": 25,
-      "ore": 5
+      "stone": 10
      },
-     "buildSeconds": 40
+     "buildSeconds": 35.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 12
+     },
+     "buildSeconds": 42.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 15
+     },
+     "buildSeconds": 49.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 20
+     },
+     "buildSeconds": 63.0
+    },
+    {
+     "cost": {
+      "wood": 75,
+      "stone": 25
+     },
+     "buildSeconds": 80.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 35,
+      "hides": 8
+     },
+     "buildSeconds": 103.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 45,
+      "hides": 10
+     },
+     "buildSeconds": 132.0
+    },
+    {
+     "cost": {
+      "wood": 165,
+      "stone": 55,
+      "hides": 13
+     },
+     "buildSeconds": 168.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 70,
+      "hides": 17
+     },
+     "buildSeconds": 216.0
+    },
+    {
+     "cost": {
+      "wood": 280,
+      "stone": 95,
+      "hides": 25,
+      "ore": 30
+     },
+     "buildSeconds": 276.0
+    },
+    {
+     "cost": {
+      "wood": 370,
+      "stone": 120,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 353.0
+    },
+    {
+     "cost": {
+      "wood": 480,
+      "stone": 160,
+      "hides": 40,
+      "ore": 50
+     },
+     "buildSeconds": 452.0
+    },
+    {
+     "cost": {
+      "wood": 620,
+      "stone": 210,
+      "hides": 50,
+      "ore": 65
+     },
+     "buildSeconds": 578.0
+    },
+    {
+     "cost": {
+      "wood": 810,
+      "stone": 270,
+      "hides": 65,
+      "ore": 85
+     },
+     "buildSeconds": 740.0
+    },
+    {
+     "cost": {
+      "wood": 1050,
+      "stone": 350,
+      "hides": 85,
+      "ore": 110
+     },
+     "buildSeconds": 948.0
+    },
+    {
+     "cost": {
+      "wood": 1360,
+      "stone": 450,
+      "hides": 110,
+      "ore": 145
+     },
+     "buildSeconds": 1213.0
+    },
+    {
+     "cost": {
+      "wood": 1770,
+      "stone": 590,
+      "hides": 140,
+      "ore": 190
+     },
+     "buildSeconds": 1553.0
+    },
+    {
+     "cost": {
+      "wood": 2300,
+      "stone": 770,
+      "hides": 185,
+      "ore": 250
+     },
+     "buildSeconds": 1988.0
+    }
+   ],
+   "looks": [
+    {
+     "level": 15,
+     "sprite": "medieval_cottage",
+     "name": "Timber House"
+    },
+    {
+     "level": 20,
+     "sprite": "medieval_house",
+     "name": "Two-Storey House"
     }
    ]
   },
@@ -844,9 +4297,157 @@
    "levels": [
     {
      "cost": {
-      "wood": 25
+      "wood": 20
      },
-     "buildSeconds": 25
+     "buildSeconds": 24.0
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 12
+     },
+     "buildSeconds": 30.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 15
+     },
+     "buildSeconds": 36.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 18
+     },
+     "buildSeconds": 42.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 25
+     },
+     "buildSeconds": 54.0
+    },
+    {
+     "cost": {
+      "wood": 75,
+      "stone": 30
+     },
+     "buildSeconds": 69.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 40,
+      "hides": 6
+     },
+     "buildSeconds": 88.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 50,
+      "hides": 8
+     },
+     "buildSeconds": 113.0
+    },
+    {
+     "cost": {
+      "wood": 165,
+      "stone": 65,
+      "hides": 10
+     },
+     "buildSeconds": 144.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 85,
+      "hides": 13
+     },
+     "buildSeconds": 185.0
+    },
+    {
+     "cost": {
+      "wood": 280,
+      "stone": 115,
+      "hides": 17,
+      "ore": 25
+     },
+     "buildSeconds": 236.0
+    },
+    {
+     "cost": {
+      "wood": 370,
+      "stone": 145,
+      "hides": 20,
+      "ore": 30
+     },
+     "buildSeconds": 303.0
+    },
+    {
+     "cost": {
+      "wood": 480,
+      "stone": 190,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 387.0
+    },
+    {
+     "cost": {
+      "wood": 620,
+      "stone": 250,
+      "hides": 35,
+      "ore": 50
+     },
+     "buildSeconds": 496.0
+    },
+    {
+     "cost": {
+      "wood": 810,
+      "stone": 320,
+      "hides": 50,
+      "ore": 65
+     },
+     "buildSeconds": 635.0
+    },
+    {
+     "cost": {
+      "wood": 1050,
+      "stone": 420,
+      "hides": 65,
+      "ore": 85
+     },
+     "buildSeconds": 812.0
+    },
+    {
+     "cost": {
+      "wood": 1360,
+      "stone": 550,
+      "hides": 80,
+      "ore": 110
+     },
+     "buildSeconds": 1040.0
+    },
+    {
+     "cost": {
+      "wood": 1770,
+      "stone": 710,
+      "hides": 105,
+      "ore": 140
+     },
+     "buildSeconds": 1331.0
+    },
+    {
+     "cost": {
+      "wood": 2300,
+      "stone": 920,
+      "hides": 140,
+      "ore": 185
+     },
+     "buildSeconds": 1704.0
     }
    ]
   },
@@ -886,7 +4487,155 @@
      "cost": {
       "wood": 25
      },
-     "buildSeconds": 25
+     "buildSeconds": 24.0
+    },
+    {
+     "cost": {
+      "wood": 35,
+      "stone": 14
+     },
+     "buildSeconds": 30.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 18
+     },
+     "buildSeconds": 36.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 20
+     },
+     "buildSeconds": 42.0
+    },
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 25
+     },
+     "buildSeconds": 54.0
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 35
+     },
+     "buildSeconds": 69.0
+    },
+    {
+     "cost": {
+      "wood": 115,
+      "stone": 45,
+      "hides": 7
+     },
+     "buildSeconds": 88.0
+    },
+    {
+     "cost": {
+      "wood": 150,
+      "stone": 60,
+      "hides": 9
+     },
+     "buildSeconds": 113.0
+    },
+    {
+     "cost": {
+      "wood": 195,
+      "stone": 80,
+      "hides": 12
+     },
+     "buildSeconds": 144.0
+    },
+    {
+     "cost": {
+      "wood": 250,
+      "stone": 100,
+      "hides": 15
+     },
+     "buildSeconds": 185.0
+    },
+    {
+     "cost": {
+      "wood": 330,
+      "stone": 130,
+      "hides": 20,
+      "ore": 25
+     },
+     "buildSeconds": 236.0
+    },
+    {
+     "cost": {
+      "wood": 430,
+      "stone": 170,
+      "hides": 25,
+      "ore": 35
+     },
+     "buildSeconds": 303.0
+    },
+    {
+     "cost": {
+      "wood": 560,
+      "stone": 220,
+      "hides": 35,
+      "ore": 45
+     },
+     "buildSeconds": 387.0
+    },
+    {
+     "cost": {
+      "wood": 720,
+      "stone": 290,
+      "hides": 45,
+      "ore": 60
+     },
+     "buildSeconds": 496.0
+    },
+    {
+     "cost": {
+      "wood": 940,
+      "stone": 380,
+      "hides": 55,
+      "ore": 75
+     },
+     "buildSeconds": 635.0
+    },
+    {
+     "cost": {
+      "wood": 1220,
+      "stone": 490,
+      "hides": 75,
+      "ore": 100
+     },
+     "buildSeconds": 812.0
+    },
+    {
+     "cost": {
+      "wood": 1590,
+      "stone": 640,
+      "hides": 95,
+      "ore": 125
+     },
+     "buildSeconds": 1040.0
+    },
+    {
+     "cost": {
+      "wood": 2050,
+      "stone": 830,
+      "hides": 125,
+      "ore": 165
+     },
+     "buildSeconds": 1331.0
+    },
+    {
+     "cost": {
+      "wood": 2700,
+      "stone": 1070,
+      "hides": 160,
+      "ore": 210
+     },
+     "buildSeconds": 1704.0
     }
    ]
   },
@@ -917,9 +4666,157 @@
     {
      "cost": {
       "wood": 30,
+      "stone": 15
+     },
+     "buildSeconds": 32.0
+    },
+    {
+     "cost": {
+      "wood": 40,
       "stone": 20
      },
-     "buildSeconds": 30
+     "buildSeconds": 40.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 25
+     },
+     "buildSeconds": 48.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 30
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 40
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 50
+     },
+     "buildSeconds": 92.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 65,
+      "hides": 12
+     },
+     "buildSeconds": 117.0
+    },
+    {
+     "cost": {
+      "wood": 170,
+      "stone": 85,
+      "hides": 15
+     },
+     "buildSeconds": 150.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 110,
+      "hides": 20
+     },
+     "buildSeconds": 192.0
+    },
+    {
+     "cost": {
+      "wood": 290,
+      "stone": 145,
+      "hides": 25
+     },
+     "buildSeconds": 246.0
+    },
+    {
+     "cost": {
+      "wood": 380,
+      "stone": 190,
+      "hides": 35,
+      "ore": 45
+     },
+     "buildSeconds": 315.0
+    },
+    {
+     "cost": {
+      "wood": 490,
+      "stone": 240,
+      "hides": 45,
+      "ore": 60
+     },
+     "buildSeconds": 404.0
+    },
+    {
+     "cost": {
+      "wood": 640,
+      "stone": 320,
+      "hides": 55,
+      "ore": 75
+     },
+     "buildSeconds": 517.0
+    },
+    {
+     "cost": {
+      "wood": 830,
+      "stone": 410,
+      "hides": 75,
+      "ore": 100
+     },
+     "buildSeconds": 661.0
+    },
+    {
+     "cost": {
+      "wood": 1080,
+      "stone": 540,
+      "hides": 95,
+      "ore": 130
+     },
+     "buildSeconds": 846.0
+    },
+    {
+     "cost": {
+      "wood": 1400,
+      "stone": 700,
+      "hides": 125,
+      "ore": 170
+     },
+     "buildSeconds": 1083.0
+    },
+    {
+     "cost": {
+      "wood": 1820,
+      "stone": 910,
+      "hides": 165,
+      "ore": 220
+     },
+     "buildSeconds": 1386.0
+    },
+    {
+     "cost": {
+      "wood": 2350,
+      "stone": 1180,
+      "hides": 210,
+      "ore": 280
+     },
+     "buildSeconds": 1775.0
+    },
+    {
+     "cost": {
+      "wood": 3050,
+      "stone": 1540,
+      "hides": 280,
+      "ore": 370
+     },
+     "buildSeconds": 2272.0
     }
    ]
   },
@@ -948,6 +4845,163 @@
     {
      "job": "crafting",
      "count": 2
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 19
+     },
+     "buildSeconds": 28.0
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 25
+     },
+     "buildSeconds": 35.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 30
+     },
+     "buildSeconds": 42.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 40
+     },
+     "buildSeconds": 49.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 50
+     },
+     "buildSeconds": 63.0
+    },
+    {
+     "cost": {
+      "wood": 75,
+      "stone": 65
+     },
+     "buildSeconds": 80.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 80,
+      "hides": 11
+     },
+     "buildSeconds": 103.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 105,
+      "hides": 14
+     },
+     "buildSeconds": 132.0
+    },
+    {
+     "cost": {
+      "wood": 165,
+      "stone": 140,
+      "hides": 18
+     },
+     "buildSeconds": 168.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 180,
+      "hides": 25
+     },
+     "buildSeconds": 216.0
+    },
+    {
+     "cost": {
+      "wood": 280,
+      "stone": 240,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 276.0
+    },
+    {
+     "cost": {
+      "wood": 370,
+      "stone": 310,
+      "hides": 40,
+      "ore": 55
+     },
+     "buildSeconds": 353.0
+    },
+    {
+     "cost": {
+      "wood": 480,
+      "stone": 400,
+      "hides": 50,
+      "ore": 70
+     },
+     "buildSeconds": 452.0
+    },
+    {
+     "cost": {
+      "wood": 620,
+      "stone": 520,
+      "hides": 70,
+      "ore": 90
+     },
+     "buildSeconds": 578.0
+    },
+    {
+     "cost": {
+      "wood": 810,
+      "stone": 670,
+      "hides": 90,
+      "ore": 120
+     },
+     "buildSeconds": 740.0
+    },
+    {
+     "cost": {
+      "wood": 1050,
+      "stone": 870,
+      "hides": 115,
+      "ore": 155
+     },
+     "buildSeconds": 948.0
+    },
+    {
+     "cost": {
+      "wood": 1360,
+      "stone": 1140,
+      "hides": 150,
+      "ore": 200
+     },
+     "buildSeconds": 1213.0
+    },
+    {
+     "cost": {
+      "wood": 1770,
+      "stone": 1480,
+      "hides": 195,
+      "ore": 260
+     },
+     "buildSeconds": 1553.0
+    },
+    {
+     "cost": {
+      "wood": 2300,
+      "stone": 1920,
+      "hides": 250,
+      "ore": 340
+     },
+     "buildSeconds": 1988.0
     }
    ]
   },
@@ -981,6 +5035,163 @@
      "job": "crafting",
      "count": 1
     }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 30
+     },
+     "buildSeconds": 36.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 40
+     },
+     "buildSeconds": 45.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 50
+     },
+     "buildSeconds": 54.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 60
+     },
+     "buildSeconds": 63.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 80
+     },
+     "buildSeconds": 81.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 100
+     },
+     "buildSeconds": 103.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 130,
+      "hides": 16
+     },
+     "buildSeconds": 132.0
+    },
+    {
+     "cost": {
+      "wood": 170,
+      "stone": 170,
+      "hides": 20
+     },
+     "buildSeconds": 169.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 220,
+      "hides": 25
+     },
+     "buildSeconds": 216.0
+    },
+    {
+     "cost": {
+      "wood": 290,
+      "stone": 290,
+      "hides": 35
+     },
+     "buildSeconds": 277.0
+    },
+    {
+     "cost": {
+      "wood": 380,
+      "stone": 380,
+      "hides": 45,
+      "ore": 60
+     },
+     "buildSeconds": 355.0
+    },
+    {
+     "cost": {
+      "wood": 490,
+      "stone": 490,
+      "hides": 60,
+      "ore": 80
+     },
+     "buildSeconds": 454.0
+    },
+    {
+     "cost": {
+      "wood": 640,
+      "stone": 640,
+      "hides": 75,
+      "ore": 100
+     },
+     "buildSeconds": 581.0
+    },
+    {
+     "cost": {
+      "wood": 830,
+      "stone": 830,
+      "hides": 100,
+      "ore": 130
+     },
+     "buildSeconds": 744.0
+    },
+    {
+     "cost": {
+      "wood": 1080,
+      "stone": 1080,
+      "hides": 130,
+      "ore": 170
+     },
+     "buildSeconds": 952.0
+    },
+    {
+     "cost": {
+      "wood": 1400,
+      "stone": 1400,
+      "hides": 170,
+      "ore": 220
+     },
+     "buildSeconds": 1219.0
+    },
+    {
+     "cost": {
+      "wood": 1820,
+      "stone": 1820,
+      "hides": 220,
+      "ore": 290
+     },
+     "buildSeconds": 1560.0
+    },
+    {
+     "cost": {
+      "wood": 2350,
+      "stone": 2350,
+      "hides": 280,
+      "ore": 380
+     },
+     "buildSeconds": 1997.0
+    },
+    {
+     "cost": {
+      "wood": 3050,
+      "stone": 3050,
+      "hides": 370,
+      "ore": 490
+     },
+     "buildSeconds": 2556.0
+    }
    ]
   },
   {
@@ -1010,6 +5221,118 @@
     {
      "job": "crafting",
      "count": 3
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 30
+     },
+     "buildSeconds": 40.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 40
+     },
+     "buildSeconds": 50.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 50
+     },
+     "buildSeconds": 60.0
+    },
+    {
+     "cost": {
+      "wood": 75,
+      "stone": 60
+     },
+     "buildSeconds": 70.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 80
+     },
+     "buildSeconds": 90.0
+    },
+    {
+     "cost": {
+      "wood": 125,
+      "stone": 100
+     },
+     "buildSeconds": 115.0
+    },
+    {
+     "cost": {
+      "wood": 165,
+      "stone": 130,
+      "hides": 18
+     },
+     "buildSeconds": 147.0
+    },
+    {
+     "cost": {
+      "wood": 210,
+      "stone": 170,
+      "hides": 25
+     },
+     "buildSeconds": 188.0
+    },
+    {
+     "cost": {
+      "wood": 280,
+      "stone": 220,
+      "hides": 30
+     },
+     "buildSeconds": 241.0
+    },
+    {
+     "cost": {
+      "wood": 360,
+      "stone": 290,
+      "hides": 40
+     },
+     "buildSeconds": 308.0
+    },
+    {
+     "cost": {
+      "wood": 470,
+      "stone": 380,
+      "hides": 50,
+      "ore": 70
+     },
+     "buildSeconds": 394.0
+    },
+    {
+     "cost": {
+      "wood": 610,
+      "stone": 490,
+      "hides": 65,
+      "ore": 90
+     },
+     "buildSeconds": 504.0
+    },
+    {
+     "cost": {
+      "wood": 800,
+      "stone": 640,
+      "hides": 85,
+      "ore": 115
+     },
+     "buildSeconds": 646.0
+    },
+    {
+     "cost": {
+      "wood": 1030,
+      "stone": 830,
+      "hides": 110,
+      "ore": 150
+     },
+     "buildSeconds": 826.0
     }
    ]
   },
@@ -1043,10 +5366,157 @@
    "levels": [
     {
      "cost": {
-      "wood": 20,
+      "wood": 19
+     },
+     "buildSeconds": 16.0
+    },
+    {
+     "cost": {
+      "wood": 25,
+      "stone": 10
+     },
+     "buildSeconds": 20.0
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 12
+     },
+     "buildSeconds": 24.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 15
+     },
+     "buildSeconds": 28.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 20
+     },
+     "buildSeconds": 36.0
+    },
+    {
+     "cost": {
+      "wood": 65,
+      "stone": 25
+     },
+     "buildSeconds": 46.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 35,
       "hides": 5
      },
-     "buildSeconds": 20
+     "buildSeconds": 59.0
+    },
+    {
+     "cost": {
+      "wood": 105,
+      "stone": 45,
+      "hides": 6
+     },
+     "buildSeconds": 75.0
+    },
+    {
+     "cost": {
+      "wood": 140,
+      "stone": 55,
+      "hides": 8
+     },
+     "buildSeconds": 96.0
+    },
+    {
+     "cost": {
+      "wood": 180,
+      "stone": 70,
+      "hides": 11
+     },
+     "buildSeconds": 123.0
+    },
+    {
+     "cost": {
+      "wood": 240,
+      "stone": 95,
+      "hides": 14,
+      "ore": 19
+     },
+     "buildSeconds": 158.0
+    },
+    {
+     "cost": {
+      "wood": 310,
+      "stone": 120,
+      "hides": 18,
+      "ore": 25
+     },
+     "buildSeconds": 202.0
+    },
+    {
+     "cost": {
+      "wood": 400,
+      "stone": 160,
+      "hides": 25,
+      "ore": 30
+     },
+     "buildSeconds": 258.0
+    },
+    {
+     "cost": {
+      "wood": 520,
+      "stone": 210,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 331.0
+    },
+    {
+     "cost": {
+      "wood": 670,
+      "stone": 270,
+      "hides": 40,
+      "ore": 55
+     },
+     "buildSeconds": 423.0
+    },
+    {
+     "cost": {
+      "wood": 870,
+      "stone": 350,
+      "hides": 50,
+      "ore": 70
+     },
+     "buildSeconds": 542.0
+    },
+    {
+     "cost": {
+      "wood": 1140,
+      "stone": 450,
+      "hides": 70,
+      "ore": 90
+     },
+     "buildSeconds": 693.0
+    },
+    {
+     "cost": {
+      "wood": 1480,
+      "stone": 590,
+      "hides": 90,
+      "ore": 120
+     },
+     "buildSeconds": 887.0
+    },
+    {
+     "cost": {
+      "wood": 1920,
+      "stone": 770,
+      "hides": 115,
+      "ore": 155
+     },
+     "buildSeconds": 1136.0
     }
    ]
   },
@@ -1083,9 +5553,157 @@
     {
      "cost": {
       "wood": 30,
+      "stone": 15
+     },
+     "buildSeconds": 32.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 20
+     },
+     "buildSeconds": 40.0
+    },
+    {
+     "cost": {
+      "wood": 50,
       "stone": 25
      },
-     "buildSeconds": 35
+     "buildSeconds": 48.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 30
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 40
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 50
+     },
+     "buildSeconds": 92.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 65,
+      "hides": 12
+     },
+     "buildSeconds": 117.0
+    },
+    {
+     "cost": {
+      "wood": 170,
+      "stone": 85,
+      "hides": 15
+     },
+     "buildSeconds": 150.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 110,
+      "hides": 20
+     },
+     "buildSeconds": 192.0
+    },
+    {
+     "cost": {
+      "wood": 290,
+      "stone": 145,
+      "hides": 25
+     },
+     "buildSeconds": 246.0
+    },
+    {
+     "cost": {
+      "wood": 380,
+      "stone": 190,
+      "hides": 35,
+      "ore": 45
+     },
+     "buildSeconds": 315.0
+    },
+    {
+     "cost": {
+      "wood": 490,
+      "stone": 240,
+      "hides": 45,
+      "ore": 60
+     },
+     "buildSeconds": 404.0
+    },
+    {
+     "cost": {
+      "wood": 640,
+      "stone": 320,
+      "hides": 55,
+      "ore": 75
+     },
+     "buildSeconds": 517.0
+    },
+    {
+     "cost": {
+      "wood": 830,
+      "stone": 410,
+      "hides": 75,
+      "ore": 100
+     },
+     "buildSeconds": 661.0
+    },
+    {
+     "cost": {
+      "wood": 1080,
+      "stone": 540,
+      "hides": 95,
+      "ore": 130
+     },
+     "buildSeconds": 846.0
+    },
+    {
+     "cost": {
+      "wood": 1400,
+      "stone": 700,
+      "hides": 125,
+      "ore": 170
+     },
+     "buildSeconds": 1083.0
+    },
+    {
+     "cost": {
+      "wood": 1820,
+      "stone": 910,
+      "hides": 165,
+      "ore": 220
+     },
+     "buildSeconds": 1386.0
+    },
+    {
+     "cost": {
+      "wood": 2350,
+      "stone": 1180,
+      "hides": 210,
+      "ore": 280
+     },
+     "buildSeconds": 1775.0
+    },
+    {
+     "cost": {
+      "wood": 3050,
+      "stone": 1540,
+      "hides": 280,
+      "ore": 370
+     },
+     "buildSeconds": 2272.0
     }
    ]
   },
@@ -1115,18 +5733,165 @@
    "levels": [
     {
      "cost": {
-      "wood": 30,
-      "stone": 40
+      "wood": 45,
+      "stone": 50
      },
-     "buildSeconds": 45
+     "buildSeconds": 56.0
     },
     {
      "cost": {
-      "wood": 40,
-      "stone": 60,
-      "ore": 5
+      "wood": 60,
+      "stone": 70
      },
-     "buildSeconds": 60
+     "buildSeconds": 70.0
+    },
+    {
+     "cost": {
+      "wood": 75,
+      "stone": 90
+     },
+     "buildSeconds": 84.0
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 105
+     },
+     "buildSeconds": 98.0
+    },
+    {
+     "cost": {
+      "wood": 115,
+      "stone": 135
+     },
+     "buildSeconds": 125.0
+    },
+    {
+     "cost": {
+      "wood": 150,
+      "stone": 175
+     },
+     "buildSeconds": 161.0
+    },
+    {
+     "cost": {
+      "wood": 200,
+      "stone": 230,
+      "hides": 25
+     },
+     "buildSeconds": 206.0
+    },
+    {
+     "cost": {
+      "wood": 260,
+      "stone": 300,
+      "hides": 35
+     },
+     "buildSeconds": 263.0
+    },
+    {
+     "cost": {
+      "wood": 330,
+      "stone": 390,
+      "hides": 45
+     },
+     "buildSeconds": 337.0
+    },
+    {
+     "cost": {
+      "wood": 430,
+      "stone": 510,
+      "hides": 55
+     },
+     "buildSeconds": 431.0
+    },
+    {
+     "cost": {
+      "wood": 560,
+      "stone": 660,
+      "hides": 75,
+      "ore": 100
+     },
+     "buildSeconds": 552.0
+    },
+    {
+     "cost": {
+      "wood": 730,
+      "stone": 860,
+      "hides": 95,
+      "ore": 125
+     },
+     "buildSeconds": 706.0
+    },
+    {
+     "cost": {
+      "wood": 950,
+      "stone": 1110,
+      "hides": 125,
+      "ore": 165
+     },
+     "buildSeconds": 904.0
+    },
+    {
+     "cost": {
+      "wood": 1240,
+      "stone": 1450,
+      "hides": 160,
+      "ore": 220
+     },
+     "buildSeconds": 1157.0
+    },
+    {
+     "cost": {
+      "wood": 1610,
+      "stone": 1880,
+      "hides": 210,
+      "ore": 280
+     },
+     "buildSeconds": 1481.0
+    },
+    {
+     "cost": {
+      "wood": 2100,
+      "stone": 2450,
+      "hides": 270,
+      "ore": 360
+     },
+     "buildSeconds": 1896.0
+    },
+    {
+     "cost": {
+      "wood": 2750,
+      "stone": 3200,
+      "hides": 350,
+      "ore": 470
+     },
+     "buildSeconds": 2426.0
+    },
+    {
+     "cost": {
+      "wood": 3550,
+      "stone": 4150,
+      "hides": 460,
+      "ore": 610
+     },
+     "buildSeconds": 3106.0
+    },
+    {
+     "cost": {
+      "wood": 4600,
+      "stone": 5350,
+      "hides": 600,
+      "ore": 800
+     },
+     "buildSeconds": 3975.0
+    }
+   ],
+   "looks": [
+    {
+     "level": 10,
+     "sprite": "medieval_house",
+     "name": "Townhouse"
     }
    ]
   },
@@ -1156,10 +5921,158 @@
    "levels": [
     {
      "cost": {
-      "wood": 50,
-      "stone": 60
+      "wood": 70,
+      "stone": 90
      },
-     "buildSeconds": 60
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 120
+     },
+     "buildSeconds": 90.0
+    },
+    {
+     "cost": {
+      "wood": 110,
+      "stone": 150
+     },
+     "buildSeconds": 108.0
+    },
+    {
+     "cost": {
+      "wood": 135,
+      "stone": 180
+     },
+     "buildSeconds": 126.0
+    },
+    {
+     "cost": {
+      "wood": 175,
+      "stone": 230
+     },
+     "buildSeconds": 161.0
+    },
+    {
+     "cost": {
+      "wood": 230,
+      "stone": 300
+     },
+     "buildSeconds": 206.0
+    },
+    {
+     "cost": {
+      "wood": 300,
+      "stone": 400,
+      "hides": 40
+     },
+     "buildSeconds": 264.0
+    },
+    {
+     "cost": {
+      "wood": 390,
+      "stone": 510,
+      "hides": 55
+     },
+     "buildSeconds": 338.0
+    },
+    {
+     "cost": {
+      "wood": 500,
+      "stone": 670,
+      "hides": 70
+     },
+     "buildSeconds": 433.0
+    },
+    {
+     "cost": {
+      "wood": 650,
+      "stone": 870,
+      "hides": 90
+     },
+     "buildSeconds": 554.0
+    },
+    {
+     "cost": {
+      "wood": 850,
+      "stone": 1130,
+      "hides": 120,
+      "ore": 160
+     },
+     "buildSeconds": 709.0
+    },
+    {
+     "cost": {
+      "wood": 1100,
+      "stone": 1470,
+      "hides": 155,
+      "ore": 210
+     },
+     "buildSeconds": 908.0
+    },
+    {
+     "cost": {
+      "wood": 1430,
+      "stone": 1910,
+      "hides": 200,
+      "ore": 270
+     },
+     "buildSeconds": 1162.0
+    },
+    {
+     "cost": {
+      "wood": 1860,
+      "stone": 2500,
+      "hides": 260,
+      "ore": 350
+     },
+     "buildSeconds": 1488.0
+    },
+    {
+     "cost": {
+      "wood": 2400,
+      "stone": 3250,
+      "hides": 340,
+      "ore": 450
+     },
+     "buildSeconds": 1904.0
+    },
+    {
+     "cost": {
+      "wood": 3150,
+      "stone": 4200,
+      "hides": 440,
+      "ore": 590
+     },
+     "buildSeconds": 2437.0
+    },
+    {
+     "cost": {
+      "wood": 4100,
+      "stone": 5450,
+      "hides": 570,
+      "ore": 760
+     },
+     "buildSeconds": 3120.0
+    },
+    {
+     "cost": {
+      "wood": 5300,
+      "stone": 7100,
+      "hides": 740,
+      "ore": 990
+     },
+     "buildSeconds": 3993.0
+    },
+    {
+     "cost": {
+      "wood": 6900,
+      "stone": 9200,
+      "hides": 970,
+      "ore": 1290
+     },
+     "buildSeconds": 5111.0
     }
    ]
   },
@@ -1190,11 +6103,168 @@
    "levels": [
     {
      "cost": {
-      "wood": 70,
-      "stone": 90,
+      "wood": 105,
+      "stone": 140,
+      "ore": 8
+     },
+     "buildSeconds": 96.0
+    },
+    {
+     "cost": {
+      "wood": 140,
+      "stone": 190,
       "ore": 10
      },
-     "buildSeconds": 80
+     "buildSeconds": 120.0
+    },
+    {
+     "cost": {
+      "wood": 175,
+      "stone": 240,
+      "ore": 12
+     },
+     "buildSeconds": 144.0
+    },
+    {
+     "cost": {
+      "wood": 210,
+      "stone": 280,
+      "ore": 15
+     },
+     "buildSeconds": 168.0
+    },
+    {
+     "cost": {
+      "wood": 270,
+      "stone": 370,
+      "ore": 20
+     },
+     "buildSeconds": 215.0
+    },
+    {
+     "cost": {
+      "wood": 350,
+      "stone": 480,
+      "ore": 25
+     },
+     "buildSeconds": 275.0
+    },
+    {
+     "cost": {
+      "wood": 460,
+      "stone": 630,
+      "ore": 35,
+      "hides": 65
+     },
+     "buildSeconds": 352.0
+    },
+    {
+     "cost": {
+      "wood": 600,
+      "stone": 810,
+      "ore": 45,
+      "hides": 85
+     },
+     "buildSeconds": 451.0
+    },
+    {
+     "cost": {
+      "wood": 780,
+      "stone": 1060,
+      "ore": 55,
+      "hides": 115
+     },
+     "buildSeconds": 577.0
+    },
+    {
+     "cost": {
+      "wood": 1010,
+      "stone": 1380,
+      "ore": 70,
+      "hides": 150
+     },
+     "buildSeconds": 739.0
+    },
+    {
+     "cost": {
+      "wood": 1320,
+      "stone": 1790,
+      "ore": 95,
+      "hides": 190
+     },
+     "buildSeconds": 946.0
+    },
+    {
+     "cost": {
+      "wood": 1710,
+      "stone": 2300,
+      "ore": 120,
+      "hides": 250
+     },
+     "buildSeconds": 1211.0
+    },
+    {
+     "cost": {
+      "wood": 2250,
+      "stone": 3000,
+      "ore": 160,
+      "hides": 320
+     },
+     "buildSeconds": 1550.0
+    },
+    {
+     "cost": {
+      "wood": 2900,
+      "stone": 3950,
+      "ore": 210,
+      "hides": 420
+     },
+     "buildSeconds": 1983.0
+    },
+    {
+     "cost": {
+      "wood": 3750,
+      "stone": 5100,
+      "ore": 270,
+      "hides": 550
+     },
+     "buildSeconds": 2539.0
+    },
+    {
+     "cost": {
+      "wood": 4900,
+      "stone": 6650,
+      "ore": 350,
+      "hides": 710
+     },
+     "buildSeconds": 3250.0
+    },
+    {
+     "cost": {
+      "wood": 6350,
+      "stone": 8650,
+      "ore": 450,
+      "hides": 930
+     },
+     "buildSeconds": 4159.0
+    },
+    {
+     "cost": {
+      "wood": 8250,
+      "stone": 11200,
+      "ore": 590,
+      "hides": 1200
+     },
+     "buildSeconds": 5324.0
+    },
+    {
+     "cost": {
+      "wood": 10750,
+      "stone": 14600,
+      "ore": 770,
+      "hides": 1570
+     },
+     "buildSeconds": 6815.0
     }
    ]
   },
@@ -1225,10 +6295,113 @@
    "levels": [
     {
      "cost": {
-      "wood": 80,
-      "stone": 80
+      "wood": 120,
+      "stone": 90
      },
-     "buildSeconds": 70
+     "buildSeconds": 88.0
+    },
+    {
+     "cost": {
+      "wood": 160,
+      "stone": 120
+     },
+     "buildSeconds": 110.0
+    },
+    {
+     "cost": {
+      "wood": 200,
+      "stone": 150
+     },
+     "buildSeconds": 132.0
+    },
+    {
+     "cost": {
+      "wood": 240,
+      "stone": 180
+     },
+     "buildSeconds": 154.0
+    },
+    {
+     "cost": {
+      "wood": 310,
+      "stone": 230
+     },
+     "buildSeconds": 197.0
+    },
+    {
+     "cost": {
+      "wood": 410,
+      "stone": 300
+     },
+     "buildSeconds": 252.0
+    },
+    {
+     "cost": {
+      "wood": 530,
+      "stone": 400,
+      "hides": 55
+     },
+     "buildSeconds": 323.0
+    },
+    {
+     "cost": {
+      "wood": 690,
+      "stone": 510,
+      "hides": 70
+     },
+     "buildSeconds": 413.0
+    },
+    {
+     "cost": {
+      "wood": 890,
+      "stone": 670,
+      "hides": 95
+     },
+     "buildSeconds": 529.0
+    },
+    {
+     "cost": {
+      "wood": 1160,
+      "stone": 870,
+      "hides": 120
+     },
+     "buildSeconds": 677.0
+    },
+    {
+     "cost": {
+      "wood": 1510,
+      "stone": 1130,
+      "hides": 160,
+      "ore": 210
+     },
+     "buildSeconds": 867.0
+    },
+    {
+     "cost": {
+      "wood": 1960,
+      "stone": 1470,
+      "hides": 210,
+      "ore": 270
+     },
+     "buildSeconds": 1110.0
+    },
+    {
+     "cost": {
+      "wood": 2550,
+      "stone": 1910,
+      "hides": 270,
+      "ore": 360
+     },
+     "buildSeconds": 1420.0
+    },
+    {
+     "cost": {
+      "wood": 3300,
+      "stone": 2500,
+      "hides": 350,
+      "ore": 460
+     },
+     "buildSeconds": 1818.0
     }
    ]
   },
@@ -1263,10 +6436,113 @@
    "levels": [
     {
      "cost": {
-      "wood": 60,
-      "stone": 60
+      "wood": 90,
+      "stone": 75
      },
-     "buildSeconds": 60
+     "buildSeconds": 80.0
+    },
+    {
+     "cost": {
+      "wood": 120,
+      "stone": 100
+     },
+     "buildSeconds": 100.0
+    },
+    {
+     "cost": {
+      "wood": 150,
+      "stone": 125
+     },
+     "buildSeconds": 120.0
+    },
+    {
+     "cost": {
+      "wood": 180,
+      "stone": 150
+     },
+     "buildSeconds": 140.0
+    },
+    {
+     "cost": {
+      "wood": 230,
+      "stone": 195
+     },
+     "buildSeconds": 179.0
+    },
+    {
+     "cost": {
+      "wood": 300,
+      "stone": 250
+     },
+     "buildSeconds": 229.0
+    },
+    {
+     "cost": {
+      "wood": 400,
+      "stone": 330,
+      "hides": 45
+     },
+     "buildSeconds": 294.0
+    },
+    {
+     "cost": {
+      "wood": 510,
+      "stone": 430,
+      "hides": 55
+     },
+     "buildSeconds": 376.0
+    },
+    {
+     "cost": {
+      "wood": 670,
+      "stone": 560,
+      "hides": 75
+     },
+     "buildSeconds": 481.0
+    },
+    {
+     "cost": {
+      "wood": 870,
+      "stone": 720,
+      "hides": 95
+     },
+     "buildSeconds": 616.0
+    },
+    {
+     "cost": {
+      "wood": 1130,
+      "stone": 940,
+      "hides": 125,
+      "ore": 165
+     },
+     "buildSeconds": 788.0
+    },
+    {
+     "cost": {
+      "wood": 1470,
+      "stone": 1220,
+      "hides": 160,
+      "ore": 220
+     },
+     "buildSeconds": 1009.0
+    },
+    {
+     "cost": {
+      "wood": 1910,
+      "stone": 1590,
+      "hides": 210,
+      "ore": 280
+     },
+     "buildSeconds": 1291.0
+    },
+    {
+     "cost": {
+      "wood": 2500,
+      "stone": 2050,
+      "hides": 270,
+      "ore": 360
+     },
+     "buildSeconds": 1653.0
     }
    ]
   },
@@ -1303,11 +6579,123 @@
    "levels": [
     {
      "cost": {
-      "wood": 50,
-      "stone": 50,
+      "wood": 75,
+      "stone": 80,
       "ore": 15
      },
-     "buildSeconds": 60
+     "buildSeconds": 80.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 110,
+      "ore": 20
+     },
+     "buildSeconds": 100.0
+    },
+    {
+     "cost": {
+      "wood": 125,
+      "stone": 140,
+      "ore": 25
+     },
+     "buildSeconds": 120.0
+    },
+    {
+     "cost": {
+      "wood": 150,
+      "stone": 165,
+      "ore": 30
+     },
+     "buildSeconds": 140.0
+    },
+    {
+     "cost": {
+      "wood": 195,
+      "stone": 210,
+      "ore": 40
+     },
+     "buildSeconds": 179.0
+    },
+    {
+     "cost": {
+      "wood": 250,
+      "stone": 280,
+      "ore": 50
+     },
+     "buildSeconds": 229.0
+    },
+    {
+     "cost": {
+      "wood": 330,
+      "stone": 360,
+      "ore": 65,
+      "hides": 45
+     },
+     "buildSeconds": 294.0
+    },
+    {
+     "cost": {
+      "wood": 430,
+      "stone": 470,
+      "ore": 85,
+      "hides": 60
+     },
+     "buildSeconds": 376.0
+    },
+    {
+     "cost": {
+      "wood": 560,
+      "stone": 610,
+      "ore": 110,
+      "hides": 75
+     },
+     "buildSeconds": 481.0
+    },
+    {
+     "cost": {
+      "wood": 720,
+      "stone": 800,
+      "ore": 145,
+      "hides": 100
+     },
+     "buildSeconds": 616.0
+    },
+    {
+     "cost": {
+      "wood": 940,
+      "stone": 1040,
+      "ore": 190,
+      "hides": 130
+     },
+     "buildSeconds": 788.0
+    },
+    {
+     "cost": {
+      "wood": 1220,
+      "stone": 1350,
+      "ore": 240,
+      "hides": 170
+     },
+     "buildSeconds": 1009.0
+    },
+    {
+     "cost": {
+      "wood": 1590,
+      "stone": 1750,
+      "ore": 320,
+      "hides": 220
+     },
+     "buildSeconds": 1291.0
+    },
+    {
+     "cost": {
+      "wood": 2050,
+      "stone": 2250,
+      "ore": 410,
+      "hides": 290
+     },
+     "buildSeconds": 1653.0
     }
    ]
   },
@@ -1340,6 +6728,83 @@
     {
      "job": "research",
      "count": 3
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 165,
+      "stone": 320,
+      "ore": 20
+     },
+     "buildSeconds": 176.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 420,
+      "ore": 30
+     },
+     "buildSeconds": 220.0
+    },
+    {
+     "cost": {
+      "wood": 280,
+      "stone": 520,
+      "ore": 40
+     },
+     "buildSeconds": 264.0
+    },
+    {
+     "cost": {
+      "wood": 330,
+      "stone": 630,
+      "ore": 45
+     },
+     "buildSeconds": 308.0
+    },
+    {
+     "cost": {
+      "wood": 430,
+      "stone": 820,
+      "ore": 60
+     },
+     "buildSeconds": 394.0
+    },
+    {
+     "cost": {
+      "wood": 560,
+      "stone": 1060,
+      "ore": 75
+     },
+     "buildSeconds": 505.0
+    },
+    {
+     "cost": {
+      "wood": 730,
+      "stone": 1380,
+      "ore": 100,
+      "hides": 130
+     },
+     "buildSeconds": 646.0
+    },
+    {
+     "cost": {
+      "wood": 940,
+      "stone": 1800,
+      "ore": 130,
+      "hides": 170
+     },
+     "buildSeconds": 827.0
+    },
+    {
+     "cost": {
+      "wood": 1230,
+      "stone": 2350,
+      "ore": 165,
+      "hides": 220
+     },
+     "buildSeconds": 1058.0
     }
    ]
   },
@@ -1380,16 +6845,157 @@
     {
      "cost": {
       "wood": 40,
+      "stone": 8
+     },
+     "buildSeconds": 36.0
+    },
+    {
+     "cost": {
+      "wood": 50,
       "stone": 10
      },
-     "buildSeconds": 40
+     "buildSeconds": 45.0
     },
     {
      "cost": {
       "wood": 60,
+      "stone": 12
+     },
+     "buildSeconds": 54.0
+    },
+    {
+     "cost": {
+      "wood": 75,
+      "stone": 15
+     },
+     "buildSeconds": 63.0
+    },
+    {
+     "cost": {
+      "wood": 100,
       "stone": 20
      },
-     "buildSeconds": 50
+     "buildSeconds": 81.0
+    },
+    {
+     "cost": {
+      "wood": 125,
+      "stone": 25
+     },
+     "buildSeconds": 103.0
+    },
+    {
+     "cost": {
+      "wood": 165,
+      "stone": 35,
+      "hides": 12
+     },
+     "buildSeconds": 132.0
+    },
+    {
+     "cost": {
+      "wood": 210,
+      "stone": 45,
+      "hides": 15
+     },
+     "buildSeconds": 169.0
+    },
+    {
+     "cost": {
+      "wood": 280,
+      "stone": 55,
+      "hides": 20
+     },
+     "buildSeconds": 216.0
+    },
+    {
+     "cost": {
+      "wood": 360,
+      "stone": 70,
+      "hides": 25
+     },
+     "buildSeconds": 277.0
+    },
+    {
+     "cost": {
+      "wood": 470,
+      "stone": 95,
+      "hides": 35,
+      "ore": 45
+     },
+     "buildSeconds": 355.0
+    },
+    {
+     "cost": {
+      "wood": 610,
+      "stone": 120,
+      "hides": 45,
+      "ore": 60
+     },
+     "buildSeconds": 454.0
+    },
+    {
+     "cost": {
+      "wood": 800,
+      "stone": 160,
+      "hides": 55,
+      "ore": 75
+     },
+     "buildSeconds": 581.0
+    },
+    {
+     "cost": {
+      "wood": 1030,
+      "stone": 210,
+      "hides": 75,
+      "ore": 100
+     },
+     "buildSeconds": 744.0
+    },
+    {
+     "cost": {
+      "wood": 1340,
+      "stone": 270,
+      "hides": 95,
+      "ore": 130
+     },
+     "buildSeconds": 952.0
+    },
+    {
+     "cost": {
+      "wood": 1750,
+      "stone": 350,
+      "hides": 125,
+      "ore": 170
+     },
+     "buildSeconds": 1219.0
+    },
+    {
+     "cost": {
+      "wood": 2250,
+      "stone": 450,
+      "hides": 165,
+      "ore": 220
+     },
+     "buildSeconds": 1560.0
+    },
+    {
+     "cost": {
+      "wood": 2950,
+      "stone": 590,
+      "hides": 210,
+      "ore": 280
+     },
+     "buildSeconds": 1997.0
+    },
+    {
+     "cost": {
+      "wood": 3850,
+      "stone": 770,
+      "hides": 280,
+      "ore": 370
+     },
+     "buildSeconds": 2556.0
     }
    ]
   },
@@ -1432,10 +7038,158 @@
    "levels": [
     {
      "cost": {
-      "wood": 70,
-      "stone": 40
+      "wood": 105,
+      "stone": 60
      },
-     "buildSeconds": 60
+     "buildSeconds": 80.0
+    },
+    {
+     "cost": {
+      "wood": 140,
+      "stone": 80
+     },
+     "buildSeconds": 100.0
+    },
+    {
+     "cost": {
+      "wood": 175,
+      "stone": 100
+     },
+     "buildSeconds": 120.0
+    },
+    {
+     "cost": {
+      "wood": 210,
+      "stone": 120
+     },
+     "buildSeconds": 140.0
+    },
+    {
+     "cost": {
+      "wood": 270,
+      "stone": 155
+     },
+     "buildSeconds": 179.0
+    },
+    {
+     "cost": {
+      "wood": 350,
+      "stone": 200
+     },
+     "buildSeconds": 229.0
+    },
+    {
+     "cost": {
+      "wood": 460,
+      "stone": 260,
+      "hides": 45
+     },
+     "buildSeconds": 294.0
+    },
+    {
+     "cost": {
+      "wood": 600,
+      "stone": 340,
+      "hides": 55
+     },
+     "buildSeconds": 376.0
+    },
+    {
+     "cost": {
+      "wood": 780,
+      "stone": 450,
+      "hides": 75
+     },
+     "buildSeconds": 481.0
+    },
+    {
+     "cost": {
+      "wood": 1010,
+      "stone": 580,
+      "hides": 95
+     },
+     "buildSeconds": 616.0
+    },
+    {
+     "cost": {
+      "wood": 1320,
+      "stone": 750,
+      "hides": 125,
+      "ore": 165
+     },
+     "buildSeconds": 788.0
+    },
+    {
+     "cost": {
+      "wood": 1710,
+      "stone": 980,
+      "hides": 160,
+      "ore": 220
+     },
+     "buildSeconds": 1009.0
+    },
+    {
+     "cost": {
+      "wood": 2250,
+      "stone": 1270,
+      "hides": 210,
+      "ore": 280
+     },
+     "buildSeconds": 1291.0
+    },
+    {
+     "cost": {
+      "wood": 2900,
+      "stone": 1650,
+      "hides": 270,
+      "ore": 360
+     },
+     "buildSeconds": 1653.0
+    },
+    {
+     "cost": {
+      "wood": 3750,
+      "stone": 2150,
+      "hides": 350,
+      "ore": 470
+     },
+     "buildSeconds": 2116.0
+    },
+    {
+     "cost": {
+      "wood": 4900,
+      "stone": 2800,
+      "hides": 460,
+      "ore": 620
+     },
+     "buildSeconds": 2708.0
+    },
+    {
+     "cost": {
+      "wood": 6350,
+      "stone": 3650,
+      "hides": 600,
+      "ore": 800
+     },
+     "buildSeconds": 3466.0
+    },
+    {
+     "cost": {
+      "wood": 8250,
+      "stone": 4700,
+      "hides": 780,
+      "ore": 1040
+     },
+     "buildSeconds": 4437.0
+    },
+    {
+     "cost": {
+      "wood": 10750,
+      "stone": 6150,
+      "hides": 1010,
+      "ore": 1350
+     },
+     "buildSeconds": 5679.0
     }
    ]
   }
@@ -1446,9 +7200,9 @@
    "name": "Improved Stone Tools",
    "description": "Sharper flaked tools. +25% foraging, wood and stone gathering.",
    "cost": {
-    "knowledge": 12
+    "knowledge": 15
    },
-   "researchSeconds": 30,
+   "researchSeconds": 240.0,
    "prerequisites": [],
    "effects": [
     {
@@ -1466,16 +7220,17 @@
      "job": "stonecutting",
      "value": 1.25
     }
-   ]
+   ],
+   "heartLevel": 2
   },
   {
    "id": "food_preservation",
    "name": "Food Preservation",
    "description": "Drying and smoking. Halves food spoilage and +50% food storage.",
    "cost": {
-    "knowledge": 12
+    "knowledge": 15
    },
-   "researchSeconds": 30,
+   "researchSeconds": 240.0,
    "prerequisites": [],
    "effects": [
     {
@@ -1487,16 +7242,17 @@
      "resource": "food",
      "value": 1.5
     }
-   ]
+   ],
+   "heartLevel": 2
   },
   {
    "id": "structural_weaving",
    "name": "Structural Weaving",
    "description": "Woven walls and lashings. Unlocks the Woven Shelter upgrade (houses 4).",
    "cost": {
-    "knowledge": 18
+    "knowledge": 25
    },
-   "researchSeconds": 40,
+   "researchSeconds": 360.0,
    "prerequisites": [
     "improved_stone_tools"
    ],
@@ -1505,16 +7261,17 @@
      "kind": "unlockBuilding",
      "buildingId": "woven_shelter"
     }
-   ]
+   ],
+   "heartLevel": 3
   },
   {
    "id": "shared_labor",
    "name": "Shared Labor",
    "description": "Organised work parties. +50% construction speed while 2 or more people work on Construction.",
    "cost": {
-    "knowledge": 20
+    "knowledge": 30
    },
-   "researchSeconds": 40,
+   "researchSeconds": 360.0,
    "prerequisites": [
     "improved_stone_tools"
    ],
@@ -1524,30 +7281,32 @@
      "value": 1.5,
      "minBuilders": 2
     }
-   ]
+   ],
+   "heartLevel": 4
   },
   {
    "id": "permanent_settlement",
    "name": "Permanent Settlement",
    "description": "The community commits to this place. Required to found a stable village.",
    "cost": {
-    "knowledge": 30
+    "knowledge": 60
    },
-   "researchSeconds": 60,
+   "researchSeconds": 720.0,
    "prerequisites": [
     "food_preservation",
     "structural_weaving"
    ],
-   "effects": []
+   "effects": [],
+   "heartLevel": 7
   },
   {
    "id": "fishing",
    "name": "Fishing",
    "description": "Bone hooks and woven traps. Unlocks the Fishing Weir. +5% foraging.",
    "cost": {
-    "knowledge": 30
+    "knowledge": 35
    },
-   "researchSeconds": 45,
+   "researchSeconds": 480.0,
    "prerequisites": [
     "improved_stone_tools"
    ],
@@ -1557,16 +7316,17 @@
      "job": "foraging",
      "value": 1.05
     }
-   ]
+   ],
+   "heartLevel": 4
   },
   {
    "id": "hide_working",
    "name": "Hide Working",
    "description": "Scraped and smoked hides. Unlocks the Drying Rack. Food spoils 15% slower.",
    "cost": {
-    "knowledge": 30
+    "knowledge": 40
    },
-   "researchSeconds": 45,
+   "researchSeconds": 480.0,
    "prerequisites": [
     "food_preservation"
    ],
@@ -1575,16 +7335,17 @@
      "kind": "spoilageMultiplier",
      "value": 0.85
     }
-   ]
+   ],
+   "heartLevel": 5
   },
   {
    "id": "oral_tradition",
    "name": "Oral Tradition",
    "description": "Stories carry knowledge between generations. Unlocks the Elders' Lodge. +15% research.",
    "cost": {
-    "knowledge": 45
+    "knowledge": 70
    },
-   "researchSeconds": 60,
+   "researchSeconds": 720.0,
    "prerequisites": [
     "shared_labor"
    ],
@@ -1594,16 +7355,17 @@
      "job": "research",
      "value": 1.15
     }
-   ]
+   ],
+   "heartLevel": 8
   },
   {
    "id": "longhouses",
    "name": "Longhouses",
    "description": "Long timber frames under thick thatch. Unlocks the Longhouse. Population grows 15% faster.",
    "cost": {
-    "knowledge": 60
+    "knowledge": 90
    },
-   "researchSeconds": 75,
+   "researchSeconds": 960.0,
    "prerequisites": [
     "permanent_settlement"
    ],
@@ -1612,16 +7374,17 @@
      "kind": "growthMultiplier",
      "value": 1.15
     }
-   ]
+   ],
+   "heartLevel": 10
   },
   {
    "id": "agriculture",
    "name": "Agriculture",
    "description": "Sowing wild grain in tilled plots. Unlocks Farm Fields and Daub Houses.",
    "cost": {
-    "knowledge": 60
+    "knowledge": 110
    },
-   "researchSeconds": 75,
+   "researchSeconds": 1200.0,
    "prerequisites": [
     "permanent_settlement"
    ],
@@ -1630,16 +7393,17 @@
      "kind": "growthMultiplier",
      "value": 1.05
     }
-   ]
+   ],
+   "heartLevel": 12
   },
   {
    "id": "animal_husbandry",
    "name": "Animal Husbandry",
    "description": "Penning goats, sheep and cattle. Unlocks the Animal Pen and the Pasture: herders bring food and hides all year.",
    "cost": {
-    "knowledge": 70
+    "knowledge": 130
    },
-   "researchSeconds": 80,
+   "researchSeconds": 1440.0,
    "prerequisites": [
     "agriculture"
    ],
@@ -1648,16 +7412,17 @@
      "kind": "growthMultiplier",
      "value": 1.05
     }
-   ]
+   ],
+   "heartLevel": 14
   },
   {
    "id": "pottery",
    "name": "Pottery",
    "description": "Fired clay pots keep grain dry. Unlocks the Granary and the Pottery Kiln. Food spoils 20% slower.",
    "cost": {
-    "knowledge": 70
+    "knowledge": 140
    },
-   "researchSeconds": 80,
+   "researchSeconds": 1440.0,
    "prerequisites": [
     "agriculture",
     "food_preservation"
@@ -1667,16 +7432,17 @@
      "kind": "spoilageMultiplier",
      "value": 0.8
     }
-   ]
+   ],
+   "heartLevel": 15
   },
   {
    "id": "copper_smelting",
    "name": "Copper Smelting",
    "description": "Green stones melt into copper in hot kilns. Unlocks the Copper Smelter. +15% stone gathering.",
    "cost": {
-    "knowledge": 90
+    "knowledge": 170
    },
-   "researchSeconds": 100,
+   "researchSeconds": 1800.0,
    "prerequisites": [
     "pottery",
     "improved_stone_tools"
@@ -1687,16 +7453,17 @@
      "job": "stonecutting",
      "value": 1.15
     }
-   ]
+   ],
+   "heartLevel": 16
   },
   {
    "id": "bronze_working",
    "name": "Bronze Working",
    "description": "Copper and tin make bronze: tools that never chip. Unlocks the Bronze Workshop. +20% to all gathering and farming.",
    "cost": {
-    "knowledge": 120
+    "knowledge": 220
    },
-   "researchSeconds": 120,
+   "researchSeconds": 2400.0,
    "prerequisites": [
     "copper_smelting"
    ],
@@ -1721,16 +7488,17 @@
      "job": "farming",
      "value": 1.2
     }
-   ]
+   ],
+   "heartLevel": 18
   },
   {
    "id": "written_law",
    "name": "Written Law",
    "description": "Marks on clay and wood that keep promises. The village is ready to ask a lord for a charter. +10% research.",
    "cost": {
-    "knowledge": 220
+    "knowledge": 320
    },
-   "researchSeconds": 180,
+   "researchSeconds": 3600.0,
    "prerequisites": [
     "bronze_working"
    ],
@@ -1740,7 +7508,8 @@
      "job": "research",
      "value": 1.1
     }
-   ]
+   ],
+   "heartLevel": 24
   },
   {
    "id": "masonry",
@@ -1748,9 +7517,9 @@
    "name": "Stone Masonry",
    "description": "Cut stone and lime mortar. Unlocks the Stone Cottage and the Town House. +15% stone gathering.",
    "cost": {
-    "knowledge": 240
+    "knowledge": 360
    },
-   "researchSeconds": 180,
+   "researchSeconds": 3600.0,
    "prerequisites": [
     "written_law"
    ],
@@ -1760,7 +7529,8 @@
      "job": "stonecutting",
      "value": 1.15
     }
-   ]
+   ],
+   "heartLevel": 30
   },
   {
    "id": "ironworking",
@@ -1768,9 +7538,9 @@
    "name": "Ironworking",
    "description": "Iron from the red stones of the mountains. Unlocks the Smithy. +25% mining, +10% woodcutting.",
    "cost": {
-    "knowledge": 260
+    "knowledge": 400
    },
-   "researchSeconds": 200,
+   "researchSeconds": 4500.0,
    "prerequisites": [
     "masonry"
    ],
@@ -1785,7 +7555,8 @@
      "job": "woodcutting",
      "value": 1.1
     }
-   ]
+   ],
+   "heartLevel": 30
   },
   {
    "id": "watermill",
@@ -1793,9 +7564,9 @@
    "name": "The Watermill",
    "description": "The river turns the millstone. Unlocks the Watermill. +20% farming.",
    "cost": {
-    "knowledge": 260
+    "knowledge": 400
    },
-   "researchSeconds": 200,
+   "researchSeconds": 4500.0,
    "prerequisites": [
     "masonry"
    ],
@@ -1805,7 +7576,8 @@
      "job": "farming",
      "value": 1.2
     }
-   ]
+   ],
+   "heartLevel": 30
   },
   {
    "id": "guilds",
@@ -1813,9 +7585,9 @@
    "name": "Craft Guilds",
    "description": "Masters, journeymen and apprentices. Unlocks the Market Hall. +15% crafting bonus.",
    "cost": {
-    "knowledge": 300
+    "knowledge": 460
    },
-   "researchSeconds": 220,
+   "researchSeconds": 5400.0,
    "prerequisites": [
     "ironworking",
     "watermill"
@@ -1826,7 +7598,8 @@
      "job": "crafting",
      "value": 1.15
     }
-   ]
+   ],
+   "heartLevel": 31
   },
   {
    "id": "burgher_rights",
@@ -1834,9 +7607,9 @@
    "name": "Burgher Rights",
    "description": "Townsfolk with rights of their own. Unlocks the Tall Townhouse. Newcomers arrive 10% faster.",
    "cost": {
-    "knowledge": 320
+    "knowledge": 500
    },
-   "researchSeconds": 240,
+   "researchSeconds": 6000.0,
    "prerequisites": [
     "guilds"
    ],
@@ -1845,7 +7618,8 @@
      "kind": "growthMultiplier",
      "value": 1.1
     }
-   ]
+   ],
+   "heartLevel": 32
   },
   {
    "id": "monastic_orders",
@@ -1853,9 +7627,9 @@
    "name": "Monastic Orders",
    "description": "Monks who copy books and keep the calendar. Unlocks the Church. +20% research.",
    "cost": {
-    "knowledge": 360
+    "knowledge": 540
    },
-   "researchSeconds": 260,
+   "researchSeconds": 6600.0,
    "prerequisites": [
     "guilds"
    ],
@@ -1865,7 +7639,8 @@
      "job": "research",
      "value": 1.2
     }
-   ]
+   ],
+   "heartLevel": 32
   },
   {
    "id": "animal_breeding",
@@ -1873,9 +7648,9 @@
    "name": "Animal Breeding",
    "description": "Strong horses and heavy cattle. Unlocks the Barn and Paddock. +20% herding.",
    "cost": {
-    "knowledge": 260
+    "knowledge": 400
    },
-   "researchSeconds": 200,
+   "researchSeconds": 4500.0,
    "prerequisites": [
     "masonry"
    ],
@@ -1885,7 +7660,8 @@
      "job": "herding",
      "value": 1.2
     }
-   ]
+   ],
+   "heartLevel": 30
   }
  ],
  "events": [
@@ -2311,6 +8087,10 @@
    "description": "The camp has become a permanent settlement.",
    "requirements": [
     {
+     "kind": "heartLevelAtLeast",
+     "amount": 10
+    },
+    {
      "kind": "techResearched",
      "id": "permanent_settlement"
     },
@@ -2331,10 +8111,6 @@
     {
      "kind": "eventResolved",
      "id": "poor_foraging_season"
-    },
-    {
-     "kind": "yearAtLeast",
-     "amount": 2
     }
    ],
    "newStage": "village",
@@ -2351,6 +8127,10 @@
    "name": "The Bronze Dawn",
    "description": "Fields, granaries and bronze: a new era begins.",
    "requirements": [
+    {
+     "kind": "heartLevelAtLeast",
+     "amount": 20
+    },
     {
      "kind": "chapterAtLeast",
      "amount": 3
@@ -2376,10 +8156,6 @@
     {
      "kind": "populationAtLeast",
      "amount": 20
-    },
-    {
-     "kind": "yearAtLeast",
-     "amount": 5
     }
    ],
    "newStage": "farming_village",
@@ -2393,12 +8169,12 @@
    "description": "A lord grants the valley a charter: the village becomes a town.",
    "requirements": [
     {
-     "kind": "chapterAtLeast",
-     "amount": 5
+     "kind": "heartLevelAtLeast",
+     "amount": 30
     },
     {
-     "kind": "yearAtLeast",
-     "amount": 12
+     "kind": "chapterAtLeast",
+     "amount": 5
     },
     {
      "kind": "techResearched",
@@ -2428,12 +8204,12 @@
    "description": "Craftsmen, a mill and a market: the town trades with the whole valley.",
    "requirements": [
     {
-     "kind": "milestoneReached",
-     "id": "the_charter"
+     "kind": "heartLevelAtLeast",
+     "amount": 30
     },
     {
-     "kind": "yearAtLeast",
-     "amount": 16
+     "kind": "milestoneReached",
+     "id": "the_charter"
     },
     {
      "kind": "buildingCount",
@@ -2453,6 +8229,11 @@
     {
      "kind": "populationAtLeast",
      "amount": 60
+    },
+    {
+     "kind": "buildingLevelAtLeast",
+     "id": "medieval_market",
+     "amount": 5
     }
    ],
    "newStage": "market_town",
@@ -2465,12 +8246,12 @@
    "description": "Stone walls, a church tower and streets of tall houses.",
    "requirements": [
     {
-     "kind": "milestoneReached",
-     "id": "market_town"
+     "kind": "heartLevelAtLeast",
+     "amount": 30
     },
     {
-     "kind": "yearAtLeast",
-     "amount": 20
+     "kind": "milestoneReached",
+     "id": "market_town"
     },
     {
      "kind": "buildingCount",
@@ -2488,6 +8269,11 @@
     {
      "kind": "roadCellsAtLeast",
      "amount": 60
+    },
+    {
+     "kind": "buildingLevelAtLeast",
+     "id": "medieval_church",
+     "amount": 5
     }
    ],
    "newStage": "walled_town",
@@ -2697,70 +8483,70 @@
    "iron mountains"
   ],
   "rows": [
-   "TTTTTTTTT,~,RRRRRRTTT....TTTTT........TTTTTTTTT......TMMMMMMMMMM",
-   "TTTTTTTT.,~,RRRRRRRTT.....TTTTT.......TTTTTTTTT.....TTTMMMMMMMMM",
-   "TTTTT....,~,.RRRRR.TT.....TTTTTTT......TTTTTTTTTTTTTTTTOMMMMMMMM",
-   "TTTT.....,~,..RRR..TT.......TTTT............TTTTTTTTT...OMMMMMMM",
-   "TTT..TT..,~,...RR...T........T...........RRRRTTTTTTT....OMMMMMMM",
-   "TT...T...,~,...RR..........TT...........RRRRRRTTTTT.......MMMMMM",
-   "TT.......,~,..RRRR.........TT...........RRRRRRTTTT......OMMMMMMM",
+   "TTTT.....,~,RRRRRR.......TTTTT........TTTTTTTTT......TMMMMMMMMMM",
+   "TTTTTTTT.,~,RRRRRRR.......TTTTT.......TTTTTTTTT.....TTTMMMMMMMMM",
+   "TTTTT....,~,.RRRRR........TTTTTTT......TTTTTTTTTTTTTTTTOMMMMMMMM",
+   ".TTT.....,~,..RRR............................TTTTTTTT...OMMMMMMM",
+   "TTT..TT..,~,...RR...T....................RRRRTTTTTTT....OMMMMMMM",
+   "TT...T...,~,...RR.......................RRRRRRTTTTT.......MMMMMM",
+   "TT.......,~,..RRRR......................RRRRRRTTTT......OMMMMMMM",
    "T....R...,~,...RR..R....................RRRRRR..T........MMMMMMM",
    "T...RR...,~,.......RR......RRRRRRRRR....RRRRRR..........MMMMMMMM",
    "TT.......,~,..RRR..RR.....RRRRRRRRRRR...RRRRR...TT.....MMMMMMMMM",
-   "TT......,~~,...RR...R....RRRRRRRRRRRRR..RRRRR...TT....OMMMMOMMMM",
+   "TT......,~~,...RR...R....RRRRRRRRRRRRR..RRRRR.........OMMMMOMMMM",
    "TTT.....,~,.........R...RRRRRRRRRRRRRRR.RRRRR....T.....MMMM.MMMM",
-   "TTTT...,~~,..TTTT...R..TRRRRRRRRRRRRRRRRRRRRRTTTTT.....MMMMMMMMM",
-   "TTTTT..,~,..TTTTTT..TTTTRRRRRRRRRRRRRRRRRRRRR.TTTTTT..MMMMMMMMMM",
-   "TTTTT.,~~,.TTTTTTTT.TTTTTRRRRRRRRRRRRRRR.RRR...TTTTTTOMMMMMMMMMM",
-   "TTTTTT,~,..TTTTTTTTTT...TRRRRRRRRRRRRRR..RRR....TTTTTOMMMMMMMMMM",
-   "TTTTTT,~~,..TTTTTTTTT....TRRRRRRRRRRRR...RRR.....TTTTOMMMMMMMMMM",
-   "TTTTT..,~,...TTTT.TTT.....TRRRRRRRRRRTT..RRR..T...TT..OMMMMMMMMM",
-   "TTTT...,~~,...TT...TT......TRRRRRRRRTTTT.RR.TTT.......OMMMMMMMMM",
-   "TTTTT...,~,....T....T........RRRRRTTTTTTTTRTTT.........OMMMMMMMM",
-   "TTTTTT..,~,...TTTTTTT...........TTTTTTTTTTTTT..........OMMMMMMMM",
-   "TTTTTTTT~~,,TTTTTTTTT...........TTTTTTTTTTTTT..........OMMMMMMMM",
-   "TTTTTT..T~~TTTTTTTTTTT........RRTTTTTTTTTTTT..........OMMMMMMMMM",
-   "TTTTTT..,.~~,TTTTTTTTT.......RRRTTTTTTTT..............OMMMMMMMMM",
-   "TTTTTT....,~~TTTTTTTTTT......RRRRTTTTT................MMMMMMMMMM",
-   "TTTTTT...T,T~~,TTTTTTT.......RRR.TTTT.................MMMMMMMMMM",
-   "TTTTTTTTTTTT~~T,.TTTTT...........TT...................MMMMMMMMMM",
-   "TTTTTTTTTTT,,~~,....TT................................MMMMMMMMMM",
-   "TTTTTTTTTTTT,~~.,,..TT...............................OMMMMMMMMMM",
-   "TTTTTT.TTT,T,,~~~.,.,T.RRR.........RRR...............OMMMMMMMMMM",
-   "TTTTT...,,,~~~~~~~~~,..RRR.........RRR...............OMMMMMMMMMM",
-   "TTTT...,,~~~~~~~~~~~~,.,RR.........RR................OMMMMMMMMMM",
-   "TT......~~~~~~~~~~~~~~~.,..........TT.................MMMMMMMMMM",
-   "T......~~~~~~~~~~~~~~~~~,........TTTTT................MMMMMMMMMM",
-   "......,~~~~~~~~~~~~~~~~~,,......TTTTTT................MMMMMMMMMM",
-   "......,~~~~~~~~~~~~~~~~~~,.....TTTTTTTT.............OMMMMMMMMMMM",
-   "......,~~~~~~~~~~~~~~~~~~,.....TTTTTTTT..............OMMMMMMMMMM",
-   "......,~~~~~~~~~~~~~~~~~.......TTTTTTTT...............O.MMMMMMMM",
-   "......,.~~~~~~~~~~~~~~~.,...TTTTTTTTTTTT..................MMMMMM",
-   ".......,,,~~~~~~~~~~~~.,...TTTTT...TTTTTT...TT............MMMMMM",
-   "......TTTT,~~~~~~~~..,,...............TTTTTTTTT...........MMMMMM",
+   "TTTT...,~~,....TT...R..TRRRRRRRRRRRRRRRRRRRRRTTTTT.....MMMMMMMMM",
+   "TTTTT..,~,....TTTT..TTTTRRRRRRRRRRRRRRRRRRRRR.TTTTT...MMMMMMMMMM",
+   "TTT...,~~,..TTTTTTT.TTTTTRRRRRRRRRRRRRRR.RRR...TTT...OMMMMMMMMMM",
+   "TTT...,~,..TTTTTTTTTT...TRRRRRRRRRRRRRR..RRR.........OMMMMMMMMMM",
+   "TTT...,~~,..TTTTTTTTT.....RRRRRRRRRRRR...RRR........TOMMMMMMMMMM",
+   "TTT....,~,...TTTT.TTT......RRRRRRRRRRTT..RRR..........OMMMMMMMMM",
+   "TTT....,~~,...TT...TT.......RRRRRRRRTTTT.RR...........OMMMMMMMMM",
+   "TTT.....,~,....T....T........RRRRRTTTTTT..R............OMMMMMMMM",
+   "..TT....,~,...TTTTTTT................TTTTTTTT..........OMMMMMMMM",
+   "........~~,,TTTT.......................TTTTTT..........OMMMMMMMM",
+   "....TT..T~~TTT................RR........TTTT..........OMMMMMMMMM",
+   "....TT..,.~~,................RRR......................OMMMMMMMMM",
+   "...TTT....,~~................RRRR.....................MMMMMMMMMM",
+   "...TTT...T,.~~,..............RRR......................MMMMMMMMMM",
+   "...TTTTTTTT.~~.,......................................MMMMMMMMMM",
+   "......TTTTT,,~~,......................................MMMMMMMMMM",
+   "TT......TTTT,~~.,,...................................OMMMMMMMMMM",
+   "TTT......T,T,,~~~.,.,..RRR.........RRR...............OMMMMMMMMMM",
+   "TTT.....,,,~~~~~~~~~,..RRR.........RRR...............OMMMMMMMMMM",
+   "TTT....,,~~~~~~~~~~~~,.,RR.........RR................OMMMMMMMMMM",
+   "TT......~~~~~~~~~~~~~~~.,.............................MMMMMMMMMM",
+   ".......~~~~~~~~~~~~~~~~~,.............................MMMMMMMMMM",
+   "......,~~~~~~~~~~~~~~~~~,,............................MMMMMMMMMM",
+   "......,~~~~~~~~~~~~~~~~~~,............T.............OMMMMMMMMMMM",
+   "......,~~~~~~~~~~~~~~~~~~,...........................OMMMMMMMMMM",
+   "......,~~~~~~~~~~~~~~~~~..............................O.MMMMMMMM",
+   "......,.~~~~~~~~~~~~~~~.,...T.....TTT..T..................MMMMMM",
+   ".......,,,~~~~~~~~~~~~.,...TT......TTTTTT.................MMMMMM",
+   ".......TTT,~~~~~~~~..,,...............TTTTTTT.............MMMMMM",
    "....TTTTTT,,T,,~,,,,...................TTTTTTT............MMMMMM",
    "...TTTTTTTTTTT,,,~~.....................TTTTT.............MMMMMM",
    "...TTTTTTTTTTTTT,~~.....................TTTTT............MMMMMMM",
    "....TTTTTTTTTTTT,,~~.....................TTTT...........MMMMMMMM",
-   "....TTTTTTTTTTTTT,~~,,.......TT..........TTT............MMMMMMMM",
-   "TTTTTTTTTTTTTTTTT,,~~........TT..........TTTT...........MMMMMMMM",
-   "TTTTTTTTTTTTTTTTT..~~,......TTT.........TTTTTT........OMMMMMMMMM",
-   "TTTTTTTTTTTTTTTTT.,~~,.....TTTT........TTTTTTTTT......OMMMMMMMMM",
-   "TTTTTTTTTTTTTTTTT.,~~,,....TTT..........TTTTTT.......OMMMMMMMMMM",
-   "TTTTTTTTTTTTTTTTTT,.~~....TTT...........TTTTT.........MMMMMOMMMM",
-   "TTTTTTTTTTTTTTTTTTT~~,,....TT............TTTT.........MMMMMMMMMM",
-   "TTTTTTTTTTTTTTTTTT,~~,.....T............TTTTT........OMMMMMMMMMM",
-   "TTTTTTTTTTTTTTTTT.,~~,.............TTTTTTTTTT...........OOMMMMMM",
-   "TTTTTTTTTTTTTTTTT..~~,...........TTTTTTTTTTTT.....MMO.....OMMMMM",
-   "TTTTTTTTTTTTTTTTT..~~,..........TTTTTTTTTTTTT....MMMMO....OMMMMM",
-   "TTTTTTTTTTTTTTTTT,~~,,..........TTTTTTTTTTTTTT..OMMMMO...OMMMMMM",
-   "TTTTTTTTTTTTTTTT,,~~,..........TTTTTTTTTTTTTTT...OMMMMMMMMMMMMMM",
-   "TTTTTTTTTTTTTTTTT~~.,...........TTTTTTTTTTTTTTTO..OOMMMMMMMMMMMM",
-   "TTTTTTTTTTTTTTTTT~~,............TTTTTTTTTTTTTMMMO.TOMMMMMMMMMMMM",
-   "TTTTTTTTTTTTTTTTT~~,T............TTTTTTTTTTOMMMMOTTTMMMMMMMMMMMM",
-   "TTTTTTTTTTTTTTT,,~~,T............TTTTTTTTTTOMMMMOOOTMMMMMMMMMMMM",
+   "....TTTTTTT...TTT,~~,,...................TTT............MMMMMMMM",
+   ".TTTTTTTTT.....TT,,~~....................TTTT...........MMMMMMMM",
+   ".TTTTTTTTT.....TT..~~,......TTT.............TT........OMMMMMMMMM",
+   "TTTTTTTTTT.....TT.,~~,.....TTTT..............TTT......OMMMMMMMMM",
+   "TTTTTTTTTT.....TT.,~~,,....TTT.......................OMMMMMMMMMM",
+   "TTTTTTTTT......TTT,.~~....TTT.........................MMMMMOMMMM",
+   "TTTTTTTTT.......TTT~~,,...............................MMMMMMMMMM",
+   "TT................,~~,....................T..........OMMMMMMMMMM",
+   "TT................,~~,.............TTTTTTTTT............OOMMMMMM",
+   "TTT................~~,...........TTTTTTTTTTT......MMO.....OMMMMM",
+   "TTTT...............~~,..........TTTTTTTTTTTT.....MMMMO....OMMMMM",
+   "TTTTT............,~~,,..........TTTTTTTTTTTTT...OMMMMO...OMMMMMM",
+   "TTTTTTTTTTT.....,,~~,..........TTTTTTTTTTTTTTT...OMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTT.....~~.,...........TTTTTTTTTTTTTT.O..OOMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTT..~~,............TTTTTTTTTTTTTMMMO..OMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTT.~~,.............TTTTTTTTTTOMMMMO...MMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTT,,~~,.............TTTTTTTTTTOMMMMOOO.MMMMMMMMMMMM",
    "TTTTTTTTTTTTTTT,~~,,...TT....TTTTTTTTTTTTTTTMMMMMMMMMMMMMMMMMMMM",
-   "TTTTTTTTTTTTTTT,~~TT...TTT...TTTTTT.TTTTTTTTMMMMMMMMMMMMMMMMMMMM"
+   "...TTTTTTTTTTTT,~~.....TTT...TTTTTT.TTTTTTTTMMMMMMMMMMMMMMMMMMMM"
   ],
   "startBuildings": [
    {
@@ -2783,7 +8569,8 @@
     "x": 5,
     "y": 6
    }
-  ]
+  ],
+  "forestThinned": true
  },
  "decorations": [
   {
@@ -2807,6 +8594,20 @@
    "requiresTech": "permanent_settlement"
   },
   {
+   "id": "wooden_bridge",
+   "name": "Wooden Bridge",
+   "category": "Roads",
+   "description": "Planks on stout piles: people cross the river here.",
+   "cost": {
+    "wood": 12
+   },
+   "road": true,
+   "bridge": true,
+   "allowedTerrain": [
+    "water"
+   ]
+  },
+  {
    "id": "wattle_fence",
    "name": "Wattle Fence",
    "description": "Woven branches between stakes.",
@@ -2814,7 +8615,8 @@
    "cost": {
     "wood": 2
    },
-   "beauty": 1
+   "beauty": 1,
+   "blocks": true
   },
   {
    "id": "palisade",
@@ -2825,7 +8627,8 @@
     "wood": 5
    },
    "beauty": 1,
-   "requiresTech": "permanent_settlement"
+   "requiresTech": "permanent_settlement",
+   "blocks": true
   },
   {
    "id": "stone_wall",
@@ -2835,7 +8638,8 @@
    "cost": {
     "stone": 4
    },
-   "beauty": 2
+   "beauty": 2,
+   "blocks": true
   },
   {
    "id": "torch_post",
@@ -2970,8 +8774,8 @@
    "goal": "Shape the village: roads, beauty and skilled people.",
    "requirements": [
     {
-     "kind": "yearAtLeast",
-     "amount": 3
+     "kind": "heartLevelAtLeast",
+     "amount": 15
     },
     {
      "kind": "roadCellsAtLeast",
@@ -3012,8 +8816,8 @@
    "goal": "A large, beautiful and well-defended settlement with a working mine.",
    "requirements": [
     {
-     "kind": "yearAtLeast",
-     "amount": 8
+     "kind": "heartLevelAtLeast",
+     "amount": 25
     },
     {
      "kind": "populationAtLeast",
@@ -3091,6 +8895,533 @@
    "locked": true,
    "story": "Ships, printing presses and maps of a world much larger than the valley. The next age is still being built.",
    "goal": "Coming in a future update."
+  }
+ ],
+ "skills": [
+  {
+   "job": "foraging",
+   "title": "Forager",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Keen Eye",
+     "description": "Spots ripe berries others miss.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Herb Lore",
+     "description": "Knows which roots keep: food spoils a little slower.",
+     "bonus": 0.05,
+     "effects": [
+      {
+       "kind": "spoilageMultiplier",
+       "value": 0.92
+      }
+     ]
+    },
+    {
+     "level": 6,
+     "name": "Long Baskets",
+     "description": "Carries more each trip.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "Wild Harvest",
+     "description": "Finds food even in lean seasons.",
+     "bonus": 0.15
+    },
+    {
+     "level": 10,
+     "name": "Master Forager",
+     "description": "The land feeds the whole camp.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "foraging",
+       "value": 1.05
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "job": "farming",
+   "title": "Farmer",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Furrows",
+     "description": "Straight furrows, better yields.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Seed Saver",
+     "description": "Keeps the best seed for next year.",
+     "bonus": 0.1
+    },
+    {
+     "level": 6,
+     "name": "Crop Rotation",
+     "description": "Rested fields give more.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "farming",
+       "value": 1.05
+      }
+     ]
+    },
+    {
+     "level": 8,
+     "name": "Weather Wise",
+     "description": "Sows and reaps at the right moment.",
+     "bonus": 0.15
+    },
+    {
+     "level": 10,
+     "name": "Master Farmer",
+     "description": "Fields as far as the eye can see.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "growthMultiplier",
+       "value": 1.05
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "job": "herding",
+   "title": "Herder",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Gentle Hand",
+     "description": "Calm animals give more milk.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Shearing",
+     "description": "More hides from every herd.",
+     "bonus": 0.1
+    },
+    {
+     "level": 6,
+     "name": "Breeder",
+     "description": "Strong young every spring.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "herding",
+       "value": 1.05
+      }
+     ]
+    },
+    {
+     "level": 8,
+     "name": "Drover",
+     "description": "Moves herds to the best grass.",
+     "bonus": 0.15
+    },
+    {
+     "level": 10,
+     "name": "Master Herder",
+     "description": "The finest herds in the valley.",
+     "bonus": 0.25
+    }
+   ]
+  },
+  {
+   "job": "fishing",
+   "title": "Fisher",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Patient",
+     "description": "Waits for the big one.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Weir Builder",
+     "description": "Better traps in the stream.",
+     "bonus": 0.1
+    },
+    {
+     "level": 6,
+     "name": "Net Weaver",
+     "description": "Nets catch whole shoals.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "River Reader",
+     "description": "Knows where the fish rest.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "fishing",
+       "value": 1.05
+      }
+     ]
+    },
+    {
+     "level": 10,
+     "name": "Master Fisher",
+     "description": "Never comes home empty-handed.",
+     "bonus": 0.25
+    }
+   ]
+  },
+  {
+   "job": "hunting",
+   "title": "Hunter",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Tracker",
+     "description": "Reads tracks in mud and grass.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Silent Step",
+     "description": "Gets close before the deer notice.",
+     "bonus": 0.1
+    },
+    {
+     "level": 6,
+     "name": "Spear Thrower",
+     "description": "Rarely misses.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "Tanner",
+     "description": "Brings back more hides.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "spoilageMultiplier",
+       "value": 0.95
+      }
+     ]
+    },
+    {
+     "level": 10,
+     "name": "Master Hunter",
+     "description": "Feared by wolves.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "hunting",
+       "value": 1.05
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "job": "woodcutting",
+   "title": "Woodcutter",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Sharp Edge",
+     "description": "Keeps the axe keen.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Strong Swing",
+     "description": "Fells trees in fewer strokes.",
+     "bonus": 0.1
+    },
+    {
+     "level": 6,
+     "name": "Forester",
+     "description": "Plants a sapling for every tree.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "woodcutting",
+       "value": 1.05
+      }
+     ]
+    },
+    {
+     "level": 8,
+     "name": "Timber Hauler",
+     "description": "Drags whole logs home.",
+     "bonus": 0.15
+    },
+    {
+     "level": 10,
+     "name": "Master Woodcutter",
+     "description": "The forest's own friend.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "constructionSpeedMultiplier",
+       "value": 1.05
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "job": "stonecutting",
+   "title": "Quarrier",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Stone Sense",
+     "description": "Finds the seams in rock.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Wedge and Lever",
+     "description": "Splits blocks cleanly.",
+     "bonus": 0.1
+    },
+    {
+     "level": 6,
+     "name": "Mason's Eye",
+     "description": "Picks the best stones for building.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "constructionSpeedMultiplier",
+       "value": 1.05
+      }
+     ]
+    },
+    {
+     "level": 8,
+     "name": "Quarry Master",
+     "description": "Opens whole faces of rock.",
+     "bonus": 0.15
+    },
+    {
+     "level": 10,
+     "name": "Master Quarrier",
+     "description": "Stone obeys.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "stonecutting",
+       "value": 1.05
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "job": "mining",
+   "title": "Miner",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Lamp Bearer",
+     "description": "Works deeper in the dark.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Vein Follower",
+     "description": "Follows ore through the rock.",
+     "bonus": 0.1
+    },
+    {
+     "level": 6,
+     "name": "Timbering",
+     "description": "Safe shafts, steady work.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "Smelter's Friend",
+     "description": "Brings purer ore.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "mining",
+       "value": 1.05
+      }
+     ]
+    },
+    {
+     "level": 10,
+     "name": "Master Miner",
+     "description": "The mountain gives up its treasure.",
+     "bonus": 0.25
+    }
+   ]
+  },
+  {
+   "job": "crafting",
+   "title": "Craftsman",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Steady Hands",
+     "description": "Fewer spoiled pieces.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Toolsmith",
+     "description": "Better tools for every worker.",
+     "bonus": 0.1
+    },
+    {
+     "level": 6,
+     "name": "Thrifty",
+     "description": "Wastes less wood and stone.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "Artisan",
+     "description": "Beautiful, lasting work.",
+     "bonus": 0.15
+    },
+    {
+     "level": 10,
+     "name": "Master Craftsman",
+     "description": "Tools that last a lifetime.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "woodcutting",
+       "value": 1.03
+      },
+      {
+       "kind": "jobRateMultiplier",
+       "job": "stonecutting",
+       "value": 1.03
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "job": "construction",
+   "title": "Builder",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Plumb Line",
+     "description": "Straight walls go up faster.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Scaffolder",
+     "description": "Works high and safe.",
+     "bonus": 0.1,
+     "effects": [
+      {
+       "kind": "constructionSpeedMultiplier",
+       "value": 1.03
+      }
+     ]
+    },
+    {
+     "level": 6,
+     "name": "Joiner",
+     "description": "Timber joints that fit first time.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "Foreman",
+     "description": "Keeps the whole crew busy.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "constructionSpeedMultiplier",
+       "value": 1.05
+      }
+     ]
+    },
+    {
+     "level": 10,
+     "name": "Master Builder",
+     "description": "Raises halls in days.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "constructionSpeedMultiplier",
+       "value": 1.07
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "job": "research",
+   "title": "Elder",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Storyteller",
+     "description": "Remembers the old ways.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Star Watcher",
+     "description": "Reads the seasons in the sky.",
+     "bonus": 0.1
+    },
+    {
+     "level": 6,
+     "name": "Teacher",
+     "description": "Shares what they know.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "research",
+       "value": 1.05
+      }
+     ]
+    },
+    {
+     "level": 8,
+     "name": "Lore Keeper",
+     "description": "Nothing learnt is lost.",
+     "bonus": 0.15
+    },
+    {
+     "level": 10,
+     "name": "Sage",
+     "description": "The wisest of the valley.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "growthMultiplier",
+       "value": 1.03
+      }
+     ]
+    }
+   ]
   }
  ]
 }

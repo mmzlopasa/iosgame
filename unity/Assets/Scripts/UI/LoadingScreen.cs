@@ -194,9 +194,11 @@ namespace Founders.UI
                 if (!baseShadowDistance.HasValue) baseShadowDistance = urp.shadowDistance;
                 switch (Quality)
                 {
-                    case 0: urp.renderScale = 0.7f; urp.shadowDistance = baseShadowDistance.Value * 0.6f; break;
-                    case 1: urp.renderScale = 0.85f; urp.shadowDistance = baseShadowDistance.Value * 0.8f; break;
-                    default: urp.renderScale = 1f; urp.shadowDistance = baseShadowDistance.Value; break;
+                    // Retina phones draw ~3 pixels per point: rendering below native and upscaling
+                    // (FSR) keeps the picture sharp while holding 60 fps.
+                    case 0: urp.renderScale = 0.62f; urp.shadowDistance = baseShadowDistance.Value * 0.6f; break;
+                    case 1: urp.renderScale = 0.74f; urp.shadowDistance = baseShadowDistance.Value * 0.8f; break;
+                    default: urp.renderScale = 0.85f; urp.shadowDistance = baseShadowDistance.Value; break;
                 }
             }
         }

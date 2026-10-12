@@ -284,6 +284,41 @@ namespace Founders
         public void ClaimMilestone(string id) => Perform(Game.ClaimMilestone(id).Error);
         public void ToggleHarvest(int x, int y) => Perform(Game.ToggleHarvestOrder(x, y).Error);
 
+        /// <summary>Sends someone to gather this tree, rock, bush or water now.</summary>
+        public void SendGatherer(int x, int y)
+        {
+            var node = Game.NodeAt(x, y);
+            if (Perform(Game.SendGatherer(x, y).Error) && node != null) World.Dispatch(x, y, node.Job);
+        }
+
+        /// <summary>
+        /// The tree, rock, ore or bush under a screen point. The view ray is followed through the
+        /// air, so tapping a tree's crown picks that tree (not the ground behind it).
+        /// </summary>
+        public (int x, int y)? PickNode(Vector2 screen)
+        {
+            var ray = Rig.Cam.ScreenPointToRay(screen);
+            var ground = World.Ground;
+            for (float t = 0.5f; t < 420f; t += 0.35f)
+            {
+                var p = ray.GetPoint(t);
+                float h = ground != null ? ground.HeightAt(p) : 0f;
+                if (p.y < Mathf.Max(h, WorldTerrain.WaterLevel) - 0.05f) return null;
+                var (cx, cy) = Grid.CellAt(p);
+                var terrain = Game.TerrainNow(cx, cy);
+                if (terrain == null || terrain == TerrainType.Water) continue;
+                float tall = terrain == TerrainType.Forest ? 7.5f : terrain == TerrainType.Grass ? 1.2f : 1.8f;
+                if (p.y > h + tall) continue;
+                var node = Game.NodeAt(cx, cy);
+                if (node == null || node.Depleted || !Game.IsRevealed(cx, cy)) continue;
+                // Close enough to the middle of the cell, where the tree or rock stands.
+                var c = Grid.CellCenter(cx, cy);
+                if (new Vector2(p.x - c.x, p.z - c.z).magnitude > Grid.CellSize * 0.62f) continue;
+                return (cx, cy);
+            }
+            return null;
+        }
+
         public void DismissStory()
         {
             Game.DismissStory();
@@ -429,14 +464,37 @@ namespace Founders
             }
         }
 
+        /// <summary>True when the press is on (or right next to) the building being placed.</summary>
+        public bool GrabsGhost(Vector2 screen)
+        {
+            if (PlacingBuildingId == null || GhostCell == null || !Rig.GroundPoint(screen, out var p)) return false;
+            var def = Content.Building(PlacingBuildingId);
+            var fp = Game.Rotated(def.Footprint, PlacementRotation);
+            var (x, y) = Grid.CellAt(p);
+            var g = GhostCell.Value;
+            return x >= g.x - 1 && x <= g.x + fp.Width && y >= g.y - 1 && y <= g.y + fp.Height;
+        }
+
+        /// <summary>Drags the building being placed so its middle follows the finger.</summary>
+        public void DragGhost(Vector2 screen)
+        {
+            if (PlacingBuildingId == null || !Rig.GroundPoint(screen, out var p)) return;
+            var fp = Game.Rotated(Content.Building(PlacingBuildingId).Footprint, PlacementRotation);
+            var (x, y) = Grid.CellAt(p - new Vector3((fp.Width - 1) * 0.5f * Grid.CellSize, 0, -(fp.Height - 1) * 0.5f * Grid.CellSize));
+            if (GhostCell == (x, y)) return;
+            GhostCell = (x, y);
+            Refresh();
+        }
+
         /// <summary>Nearest valid cell to the camp centre, so the ghost starts somewhere sensible.</summary>
         (int x, int y)? SuggestedCell(string buildingId)
         {
             var map = Content.Map;
-            var first = Game.State.Buildings.Count > 0 ? Game.State.Buildings[0] : null;
+            var first = Game.Heart ?? (Game.State.Buildings.Count > 0 ? Game.State.Buildings[0] : null);
             int cx = first?.X ?? map.Width / 2, cy = first?.Y ?? map.Height / 2;
             // Search outwards ring by ring (Manhattan distance) and stop at the first good cell.
-            int maxR = map.Width + map.Height;
+            // Only the land matters here: costs and the building queue are shown on the placement card.
+            int maxR = 20;
             for (int r = 0; r <= maxR; r++)
             {
                 for (int dx = -r; dx <= r; dx++)
@@ -448,7 +506,8 @@ namespace Founders
                         if (x < 0 || y < 0 || x >= map.Width || y >= map.Height) continue;
                         bool ok = true;
                         foreach (var issue in Game.PlacementIssues(buildingId, x, y))
-                            if (issue.Kind != PlacementIssueKind.Unaffordable) { ok = false; break; }
+                            if (issue.Kind != PlacementIssueKind.Unaffordable && issue.Kind != PlacementIssueKind.ConstructionQueueFull
+                                && issue.Kind != PlacementIssueKind.LimitReached) { ok = false; break; }
                         if (ok) return (x, y);
                     }
                 }
@@ -473,11 +532,13 @@ namespace Founders
             }
             else
             {
-                var hit = Game.BuildingIdAt(x, y);
+                // Trees, rocks, ore and berry bushes can be tapped: the player sends gatherers to them.
+                var picked = PickNode(screen);
+                var hit = picked == null ? Game.BuildingIdAt(x, y) : null;
                 SelectedBuildingId = hit == SelectedBuildingId ? null : hit;
-                // Trees, rocks and ore can be tapped too: the player sends gatherers to them.
-                var node = hit == null && Game.IsRevealed(x, y) ? Game.NodeAt(x, y) : null;
-                SelectedNode = node != null && SelectedNode != (x, y) ? (x, y) : ((int, int)?)null;
+                if (picked == null && hit == null && Game.IsRevealed(x, y) && Game.NodeAt(x, y) != null) picked = (x, y);
+                SelectedNode = picked != null && SelectedNode != picked ? picked : null;
+                if (SelectedNode != null) AudioDirector.Ui("ui_tap");
             }
             Refresh();
         }

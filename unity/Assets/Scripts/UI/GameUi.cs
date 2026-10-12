@@ -702,7 +702,7 @@ namespace Founders.UI
             if (store.PlacingBuildingId != null)
             {
                 var issues = store.PlacementIssues();
-                return $"place|{store.PlacingBuildingId}|{(issues.Count > 0 ? issues[0].Message : "ok")}|{store.PlacementRotation}|{ev}";
+                return $"place|{store.PlacingBuildingId}|{(issues.Count > 0 ? issues[0].Message : "ok")}|{store.PlacementRotation}|{store.GhostCell}|{ev}";
             }
             if (store.SelectedNode is (int nx, int ny) && store.SelectedBuildingId == null)
             {
@@ -718,7 +718,8 @@ namespace Founders.UI
                 string up = target == null ? "" : $"{G.IsUnlocked(target)}{G.State.Resources.Covers(target.Cost)}";
                 string jobs = string.Join(",", (def?.JobSlots ?? new List<JobSlot>()).Select(s => $"{G.State.Assignments[s.Job]}/{G.JobCapacity(s.Job)}"));
                 var lv = G.NextLevel(b);
-                string level = $"{b.Level}|{(lv == null ? "" : G.State.Resources.Covers(lv.Cost).ToString())}|{G.HasRoadAccess(b)}|{Time.unscaledTime < confirmDemolishUntil}";
+                string level = $"{b.Level}|{(lv == null ? "" : G.State.Resources.Covers(lv.Cost).ToString())}|{G.HasRoadAccess(b)}|{Time.unscaledTime < confirmDemolishUntil}|" +
+                               string.Join("", G.LevelRequirements(b).Select(r => r.Met ? "1" : "0"));
                 return $"sel|{b.Id}|{b.DefinitionId}|{b.Status}|{up}|{jobs}|{G.IdleWorkers > 0}|{level}|{ev}";
             }
             return "none|" + ev;
@@ -757,10 +758,24 @@ namespace Founders.UI
             var status = E.Div().Row().Margin(10).Ignore();
             bool ok = issues.Count == 0;
             status.Add(E.Icon(ok ? "check" : "alert", 15, ok ? Theme.Mint : Theme.Error));
-            var msg = E.Text(ok ? "Good spot. Tap the ground to move it." : issues[0].Message, 12.5f, ok ? Theme.Mint : Theme.Error).Grow();
+            var msg = E.Text(ok ? "Good spot. Drag it or tap the ground to move it." : issues[0].Message, 12.5f, ok ? Theme.Mint : Theme.Error).Grow();
             msg.style.marginLeft = 7;
             status.Add(msg);
             card.Add(status);
+            // Gatherers' camps: how much of their resource lies within reach of this spot.
+            if (store.GhostCell is (int gx, int gy))
+                foreach (var slot in def.JobSlots ?? new List<JobSlot>())
+                {
+                    int n = G.NodesInReach(slot.Job, gx, gy, Game.Rotated(def.Footprint, store.PlacementRotation));
+                    if (n < 0) continue;
+                    var kind = G.NodeKinds.FirstOrDefault(k => k.Job == slot.Job);
+                    var reach = E.Div().Row().Margin(6).Ignore();
+                    reach.Add(E.Icon(IconFor(kind.Resource), 14, n > 4 ? Theme.Mint : Theme.Error));
+                    var rt = E.Text($"{kind.Name} in reach: {n}", 12, n > 4 ? Theme.Body : Theme.Error);
+                    rt.style.marginLeft = 7;
+                    reach.Add(rt);
+                    card.Add(reach);
+                }
             var buttons = E.Div().Row().Margin(12).Ignore();
             var rotate = E.IconButton("rotate", Act(store.RotatePlacement), 44);
             rotate.style.marginRight = 10;
@@ -808,31 +823,35 @@ namespace Founders.UI
             host.Add(card);
         }
 
-        /// <summary>A tapped tree stand, rock or ore vein: what is left and an order to gather it first.</summary>
+        /// <summary>A tapped tree, rock, ore vein, berry bush or fishing water: what is left, and send someone to it.</summary>
         void NodeCard(VisualElement host)
         {
             var (x, y) = store.SelectedNode.Value;
             var n = G.NodeAt(x, y);
             if (n == null) { store.SelectedNode = null; return; }
-            string title = n.Terrain == TerrainType.Forest ? "Forest" : n.Terrain == TerrainType.Rock ? "Stone Outcrop" : "Ore Vein";
-            string icon = n.Terrain == TerrainType.Forest ? "tree" : n.Terrain == TerrainType.Rock ? "stone" : "ore";
-            var card = E.Div().Col().Glass(22).Pad(14);
+            string title = n.Kind?.Name ?? "Resource";
+            string icon = n.Terrain == TerrainType.Forest ? "tree" : n.Terrain == TerrainType.Rock ? "stone" : n.Terrain == TerrainType.Ore ? "ore"
+                : n.Terrain == TerrainType.Water ? "fish" : "food";
+            var card = E.Div().Col().Glass(22).Pad(12, 14);
             var head = E.Div().Row().Ignore();
-            var tile = E.Div().Size(46, 46).Radius(14).Center().Bg(Theme.Alpha(TintFor(n.Resource), 0.2f)).Ignore();
-            tile.Add(E.Icon(icon, 24, TintFor(n.Resource)));
+            var tile = E.Div().Size(44, 44).Radius(14).Center().Bg(Theme.Alpha(TintFor(n.Resource), 0.2f)).Ignore();
+            tile.Add(E.Icon(icon, 23, TintFor(n.Resource)));
             head.Add(tile);
             var names = E.Div().Col().Grow().Ignore();
             names.style.marginLeft = 12;
-            names.Add(E.Eyebrow(n.Ordered ? "Marked to gather first" : "Natural resource", n.Ordered ? Theme.Gold : Theme.Muted, 9.5f));
-            names.Add(E.Text(title, 18, Theme.Ink, Theme.F.Display).Margin(2));
+            string jobName = G.Content.JobConfig(n.Job)?.Name ?? n.Job.Id();
+            int crew = G.State.Assignments[n.Job];
+            names.Add(E.Eyebrow(n.Ordered ? "Gathered first" : $"{jobName} · {crew} at work", n.Ordered ? Theme.Gold : Theme.Muted, 9.5f));
+            names.Add(E.Text(title, 17, Theme.Ink, Theme.F.Display).Margin(2));
             head.Add(names);
             head.Add(E.IconButton("close", Act(() => store.SelectedNode = null), 34));
             card.Add(head);
 
             bool endless = double.IsInfinity(n.Remaining);
-            var row = E.Div().Row().Between().Margin(12).Ignore();
+            var row = E.Div().Row().Between().Margin(10).Ignore();
             row.Add(E.Text($"{n.Resource.DisplayName()} left", 12, Theme.Body));
-            row.Add(E.Mono(endless ? "plenty" : n.Depleted ? (n.Terrain == TerrainType.Forest ? "grows back" : "mined out") : $"{Fmt.Amount(n.Remaining)} / {Fmt.Amount(n.Capacity)}",
+            double regrow = G.RegrowSecondsLeft(n);
+            row.Add(E.Mono(endless ? "plenty" : n.Depleted ? (regrow > 0 ? $"back in {Fmt.Clock(regrow)}" : "used up") : $"{Fmt.Amount(n.Remaining)} / {Fmt.Amount(n.Capacity)}",
                            12, n.Depleted ? Theme.Error : Theme.Ink));
             card.Add(row);
             if (!endless)
@@ -842,16 +861,22 @@ namespace Founders.UI
                 bar.style.marginTop = 6;
                 card.Add(bar);
             }
-            string jobName = G.Content.JobConfig(n.Job)?.Name ?? n.Job.Id();
             if (G.JobCapacity(n.Job) == 0)
-                card.Add(Notice("build", $"No one can gather this yet: build a workplace for {jobName}.", Theme.Gold).Margin(10));
-            else if (G.IsExhausted(n.Job))
-                card.Add(Notice("alert", $"{jobName}: nothing left near the workplaces. Mark this to send them here.", Theme.Error).Margin(10));
+                card.Add(Notice("build", $"Nobody can gather this yet: build a workplace for {jobName} nearby.", Theme.Gold).Margin(10));
             if (!n.Depleted)
             {
-                string verb = n.Terrain == TerrainType.Forest ? "Cut these trees first" : n.Terrain == TerrainType.Rock ? "Quarry this rock first" : "Mine this vein first";
-                card.Add(E.Button(n.Ordered ? "Cancel the order" : verb, Act(() => store.ToggleHarvest(x, y)),
-                                  n.Ordered ? E.Kind.Ghost : E.Kind.Gold, 44, n.Ordered ? "close" : n.Terrain == TerrainType.Forest ? "axe" : "pickaxe").Margin(12));
+                string verb = n.Terrain == TerrainType.Forest ? "Send woodcutters" : n.Terrain == TerrainType.Rock ? "Send quarriers"
+                    : n.Terrain == TerrainType.Ore ? "Send miners" : n.Terrain == TerrainType.Water ? "Send fishers" : "Send foragers";
+                var buttons = E.Div().Row().Margin(10).Ignore();
+                buttons.Add(E.Button(verb, Act(() => store.SendGatherer(x, y)), E.Kind.Gold, 42,
+                                     n.Terrain == TerrainType.Forest ? "axe" : n.Terrain == TerrainType.Water ? "spear" : n.Terrain == TerrainType.Grass ? "food" : "pickaxe").Grow());
+                if (n.Ordered)
+                {
+                    var cancel = E.IconButton("close", Act(() => store.ToggleHarvest(x, y)), 42);
+                    cancel.style.marginLeft = 8;
+                    buttons.Add(cancel);
+                }
+                card.Add(buttons);
             }
             host.Add(card);
         }
@@ -889,10 +914,14 @@ namespace Founders.UI
             names.style.marginLeft = 12;
             names.Add(E.Eyebrow(b.Status == BuildingStatus.Complete ? Category(def) : b.Status == BuildingStatus.Upgrading ? "Upgrading" : "Under construction",
                                 b.Status == BuildingStatus.Complete ? Theme.Muted : Theme.Gold, 9.5f));
-            var title = E.Text(def.Name, 18, Theme.Ink, Theme.F.Display);
+            var title = E.Text(G.DisplayName(b), 18, Theme.Ink, Theme.F.Display);
             title.style.marginTop = 2;
             names.Add(title);
             head.Add(names);
+            var lvBadge = E.Div().Size(38, 38).Radius(19).Center().BgImage(Theme.Gradient("goldround", true, GoldTop, GoldBottom)).Border(GoldEdge, 2f).Ignore();
+            lvBadge.style.marginRight = 6;
+            lvBadge.Add(E.Text(b.Level.ToString(CultureInfo.InvariantCulture), 15, Theme.Hex("#5A3208"), Theme.F.DisplayBold));
+            head.Add(lvBadge);
             head.Add(E.IconButton("close", Act(() => store.SelectedBuildingId = null), 34));
             card.Add(head);
 
@@ -912,8 +941,8 @@ namespace Founders.UI
 
             var stats = E.Div().Row().Margin(10).Ignore();
             stats.style.flexWrap = Wrap.Wrap;
-            if (def.HousingValue > 0) stats.Add(StatChip("home", $"Houses {def.HousingValue}"));
-            if (def.StorageValue > 0) stats.Add(StatChip("storage", $"+{(int)def.StorageValue} storage"));
+            if (def.HousingValue > 0) stats.Add(StatChip("home", $"Houses {G.HousingOf(b, def)}"));
+            if (def.StorageValue > 0) stats.Add(StatChip("storage", $"+{(int)(def.StorageValue * Game.LevelFactor(b.Level))} storage"));
             if (def.ProtectedFoodValue > 0) stats.Add(StatChip("food", $"Keeps {(int)def.ProtectedFoodValue} food"));
             if (stats.childCount > 0) card.Add(stats);
 
@@ -946,6 +975,7 @@ namespace Founders.UI
             var info = E.Div().Row().Margin(10).Ignore();
             info.style.flexWrap = Wrap.Wrap;
             info.Add(StatChip("level_up", $"Level {b.Level}/{def.MaxLevel}"));
+            if (!def.Heart) info.Add(StatChip("flame", $"{G.HeartName} {G.HeartLevel}"));
             if (def.JobSlots != null && def.JobSlots.Count > 0)
                 info.Add(StatChip("road", G.HasRoadAccess(b) ? "On a road +10%" : "No road"));
             card.Add(info);
@@ -954,12 +984,36 @@ namespace Founders.UI
             {
                 var up = E.Div().Col().Radius(18).Pad(12).BgImage(Theme.GoldGlow).Border(Theme.Alpha(Theme.Gold, 0.3f)).Margin(10);
                 var r1 = E.Div().Row().Between().Ignore();
-                r1.Add(E.Text($"Level {b.Level + 1}: +50% capacity", 14, Theme.Ink, Theme.F.Display));
+                string gain = def.Heart ? "the heart of the settlement grows" : "+25% capacity";
+                r1.Add(E.Text($"Level {b.Level + 1}: {gain}", 14, Theme.Ink, Theme.F.Display).Grow());
                 r1.Add(E.Mono(Fmt.Clock(G.EstimatedSeconds(lv.BuildSeconds)), 11.5f, Theme.Body));
                 up.Add(r1);
+                // What the next looks and eras are (a tent becomes a hut at 5; the camp a village at 10…).
+                var look = def.Looks.FirstOrDefault(l => l.Level > b.Level);
+                if (look != null && !string.IsNullOrEmpty(look.Name))
+                    up.Add(E.Text($"Becomes a {look.Name} at level {look.Level}.", 11.5f, Theme.GoldLight).Margin(4));
+                if (def.Heart)
+                {
+                    var era = G.Content.Milestones.Where(m => !G.State.ReachedMilestones.Contains(m.Id))
+                        .Select(m => (m, lvl: m.Requirements.FirstOrDefault(r => r.Kind == ConditionKind.HeartLevelAtLeast)?.Amount ?? 0))
+                        .Where(x => x.lvl > b.Level).OrderBy(x => x.lvl).FirstOrDefault();
+                    if (era.m != null) up.Add(E.Text($"Level {era.lvl:0} opens: {era.m.Name}.", 11.5f, Theme.GoldLight).Margin(4));
+                }
+                var reqs = G.LevelRequirements(b);
+                foreach (var r in reqs)
+                {
+                    var rr = E.Div().Row().Margin(4).Ignore();
+                    rr.Add(E.Icon(r.Met ? "check" : "lock", 12, r.Met ? Theme.Mint : Theme.Error));
+                    var rt = E.Text(r.Text, 11.5f, r.Met ? Theme.Body : Theme.Error).Grow();
+                    rt.style.marginLeft = 6;
+                    rr.Add(rt);
+                    up.Add(rr);
+                }
                 up.Add(CostChips(lv.Cost).Margin(8));
-                bool can = G.State.Resources.Covers(lv.Cost);
-                up.Add(E.Button(can ? "Level up" : "Not enough resources", can ? Act(() => store.UpgradeLevel(id)) : null, can ? E.Kind.Gold : E.Kind.Disabled, 42, can ? "level_up" : null).Margin(8));
+                bool ready = reqs.All(r => r.Met);
+                bool can = ready && G.State.Resources.Covers(lv.Cost);
+                string label = !ready ? "Requirements not met" : can ? "Level up" : "Not enough resources";
+                up.Add(E.Button(label, can ? Act(() => store.UpgradeLevel(id)) : null, can ? E.Kind.Gold : E.Kind.Disabled, 42, can ? "level_up" : null).Margin(8));
                 card.Add(up);
             }
             if (def.Buildable)

@@ -44,6 +44,10 @@ namespace Founders
         public Func<bool> PaintMode = () => false;
         public Action<Vector2> OnPaint;
         public Action OnPaintEnd;
+        /// <summary>True when a press at this point grabs something to drag (the building being placed).</summary>
+        public Func<Vector2, bool> GrabAt = _ => false;
+        public Action<Vector2> OnGrab;
+        bool grabbing;
         public Rect Bounds = new Rect(-4, -36, 40, 40); // x/z extent the focus point may move in
         /// <summary>Ground height at a world position (hills and mountains); null means flat ground at y = 0.</summary>
         public Func<Vector3, float> HeightAt;
@@ -199,11 +203,19 @@ namespace Founders
             pressStart = pos;
             pressBlocked = IsBlocked(pos);
             dragging = false;
+            grabbing = !pressBlocked && GrabAt(pos);
         }
 
         void Move(Vector2 pos, Vector2 delta)
         {
             if (pressBlocked) return;
+            if (grabbing)
+            {
+                // Dragging the building being placed moves it, not the camera.
+                if (!dragging && (pos - pressStart).magnitude > TapSlop * 0.5f) dragging = true;
+                if (dragging) OnGrab?.Invoke(pos);
+                return;
+            }
             bool paint = PaintMode();
             if (!dragging && (pos - pressStart).magnitude > TapSlop)
             {
@@ -218,9 +230,10 @@ namespace Founders
         void Release(Vector2 pos)
         {
             if (!pressBlocked && !dragging && !pinching) OnTap?.Invoke(pos);
-            if (dragging && PaintMode()) OnPaintEnd?.Invoke();
+            if (dragging && PaintMode() && !grabbing) OnPaintEnd?.Invoke();
             pressBlocked = false;
             dragging = false;
+            grabbing = false;
         }
 
         void HandleInput()
@@ -307,8 +320,10 @@ namespace Founders
         /// <summary>Clip used on the way there (Walk, or Carry when bringing goods home).</summary>
         public string WalkClip;
         public float Duration;
-        /// <summary>Optional waypoints along the roads before the spot.</summary>
+        /// <summary>Optional waypoints (around obstacles, along roads) before the spot.</summary>
         public List<Vector3> Route;
+        /// <summary>What to turn towards while working (the tree, the rock, the fire).</summary>
+        public Vector3? Face;
     }
 
     /// <summary>
@@ -419,9 +434,30 @@ namespace Founders
             if (tool != null && tools.TryGetValue(tool, out var go)) go.SetActive(true);
         }
 
+        /// <summary>Drops the current task; the villager asks for a new one right away.</summary>
+        public void Interrupt()
+        {
+            wait = 0f;
+            hasTask = false;
+            route.Clear();
+            target = transform.position;
+        }
+
         void Update()
         {
-            if (wait > 0f) { wait -= Time.deltaTime; return; }
+            if (wait > 0f)
+            {
+                wait -= Time.deltaTime;
+                // Turn to the work (the tree being cut, the fire, the building being raised).
+                if (task.Face is Vector3 face)
+                {
+                    var look = face - transform.position;
+                    look.y = 0;
+                    if (look.sqrMagnitude > 0.01f)
+                        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(look), 5f * Time.deltaTime);
+                }
+                return;
+            }
             var to = target - transform.position;
             to.y = 0;
             if (to.magnitude < 0.15f)

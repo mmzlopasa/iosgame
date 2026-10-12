@@ -16,7 +16,7 @@ namespace Founders.Tests
             Assert.That(game.Year, Is.EqualTo(1));
             game.Run(len + 1, clock);
             Assert.That(game.Season.Id, Is.EqualTo("summer"));
-            game.Run(len * 3, clock);
+            for (int i = 0; i < 3; i++) game.Run(len, clock); // each run stays within the offline cap
             Assert.That(game.Season.Id, Is.EqualTo("spring"));
             Assert.That(game.Year, Is.EqualTo(2));
             Assert.That(game.DrainNotices().Any(n => n.Message.StartsWith("Winter has come")), Is.True);
@@ -94,10 +94,10 @@ namespace Founders.Tests
             game.AddCompleted("granary", 6, 4);
             game.State.Population = 20;
             game.State.Chapter = 3;
-            Assert.That(game.CanClaimMilestone("first_civilization"), Is.False, "the Bronze Dawn cannot come before year 5");
-            game.State.SimTime = 4 * 4 * game.Content.Balance.SeasonSeconds;
-            Assert.That(game.Year, Is.EqualTo(5));
-            Assert.That(game.CanClaimMilestone("first_civilization"), Is.True);
+            Assert.That(game.CanClaimMilestone("first_civilization"), Is.False, "the Bronze Dawn needs the heart at level 20");
+            game.State.Buildings.First(b => b.DefinitionId == "campfire").Level = 20;
+            Assert.That(game.CanClaimMilestone("first_civilization"), Is.True,
+                string.Join(", ", game.MilestoneRequirements("first_civilization").Where(r => !r.Met).Select(r => r.Text)));
             Expect.Success(game.ClaimMilestone("first_civilization"));
             Assert.That(game.State.EpochId, Is.EqualTo("epoch_first_civilizations"));
             Assert.That(game.StageName, Is.EqualTo("Farming Village"));

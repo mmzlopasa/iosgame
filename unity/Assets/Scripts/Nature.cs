@@ -238,18 +238,25 @@ namespace Founders
         /// </summary>
         public void SetStanding(Func<int, int, float> standing)
         {
-            foreach (var kv in byCell)
+            foreach (var kv in byCell) Stand(kv.Value, standing(kv.Key.Item1, kv.Key.Item2));
+        }
+
+        /// <summary>Like <see cref="SetStanding"/> for one cell (cheap: used while gatherers work).</summary>
+        public void SetStandingCell(int x, int y, float f)
+        {
+            if (byCell.TryGetValue((x, y), out var list)) Stand(list, f);
+        }
+
+        void Stand(List<Item> list, float f)
+        {
+            int n = list.Count;
+            for (int i = 0; i < n; i++)
             {
-                float f = standing(kv.Key.Item1, kv.Key.Item2);
-                int n = kv.Value.Count;
-                for (int i = 0; i < n; i++)
-                {
-                    var item = kv.Value[i];
-                    bool b = f <= 0f || (float)i / n >= f;
-                    if (item.Blocked == b) continue;
-                    item.Blocked = b;
-                    Apply(item);
-                }
+                var item = list[i];
+                bool b = f <= 0f || (float)i / n >= f;
+                if (item.Blocked == b) continue;
+                item.Blocked = b;
+                Apply(item);
             }
         }
 

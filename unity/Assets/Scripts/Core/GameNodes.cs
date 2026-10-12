@@ -4,45 +4,75 @@ using System.Linq;
 
 namespace Founders.Core
 {
-    /// <summary>A natural resource cell: a stand of trees, a stony outcrop or an ore vein.</summary>
+    /// <summary>A natural resource cell: a stand of trees, a stony outcrop, an ore vein, a berry bush, fish or game.</summary>
     public sealed class ResourceNode
     {
         public int X, Y;
+        public NodeDefinition Kind;
         public TerrainType Terrain;
         public ResourceType Resource;
         public JobType Job;
         public double Capacity, Remaining;
         public bool Ordered;
+        /// <summary>Used up and waiting to grow back (forests, bushes, fish and game return).</summary>
+        public bool Regrowing;
         public bool Depleted => Remaining <= 1e-6;
         public double Fraction => Capacity <= 0 ? 1 : Remaining / Capacity;
     }
 
     /// <summary>
-    /// Survival gathering: wood, stone and ore come out of the land itself. Every forest, rock and
-    /// ore cell holds a limited amount; gatherers take it from the cells nearest their workplace
-    /// (or from the ones the player marked), forests grow back after a while, and a cleared
-    /// forest is open land that can be built on. When nothing is left within reach, the camp stops.
+    /// Survival gathering: wood, stone, ore and wild food come out of the land itself. Every
+    /// forest, rock and ore cell, berry bush, fishing water and game forest holds a limited
+    /// amount; gatherers take it from the cells nearest their workplace (or from the ones the
+    /// player marked), forests, bushes, fish and game come back after a while, and a cleared
+    /// forest is open land that can be built on. When nothing is left within reach, the work stops.
     /// </summary>
     public sealed partial class Game
     {
-        static readonly (TerrainType terrain, ResourceType resource, JobType job)[] NodeKinds =
+        List<NodeDefinition> nodeKinds;
+
+        /// <summary>Every kind of node: the three classic ones from the balance plus the extra list.</summary>
+        public List<NodeDefinition> NodeKinds
         {
-            (TerrainType.Forest, ResourceType.Wood, JobType.Woodcutting),
-            (TerrainType.Rock, ResourceType.Stone, JobType.Stonecutting),
-            (TerrainType.Ore, ResourceType.Ore, JobType.Mining),
-        };
+            get
+            {
+                if (nodeKinds != null) return nodeKinds;
+                var b = Content.Balance;
+                nodeKinds = new List<NodeDefinition>
+                {
+                    new NodeDefinition { Id = "trees", Name = "Forest", Terrain = TerrainType.Forest, Resource = ResourceType.Wood, Job = JobType.Woodcutting,
+                                         Capacity = b.ForestWood, RegrowSeconds = b.TreeRegrowSeconds, ClearsTerrain = true },
+                    new NodeDefinition { Id = "rock", Name = "Stone Outcrop", Terrain = TerrainType.Rock, Resource = ResourceType.Stone, Job = JobType.Stonecutting,
+                                         Capacity = b.RockStone },
+                    new NodeDefinition { Id = "ore", Name = "Ore Vein", Terrain = TerrainType.Ore, Resource = ResourceType.Ore, Job = JobType.Mining,
+                                         Capacity = b.VeinOre },
+                };
+                nodeKinds.AddRange(b.Nodes);
+                return nodeKinds;
+            }
+        }
 
         /// <summary>Jobs whose last step found nothing left to gather within reach.</summary>
         readonly HashSet<JobType> exhaustedJobs = new HashSet<JobType>();
+        readonly Dictionary<JobType, List<(int x, int y)>> gatherCache = new Dictionary<JobType, List<(int x, int y)>>();
 
-        public bool NodesEnabled => Content.Balance.ForestWood > 0 || Content.Balance.RockStone > 0 || Content.Balance.VeinOre > 0;
+        public bool NodesEnabled => NodeKinds.Any(k => k.Capacity > 0);
 
         int CellKey(int x, int y) => y * Content.Map.Width + x;
 
-        double CapacityOf(TerrainType t)
+        int NodeKey(NodeDefinition kind, int x, int y) => kind.Slot * Content.Map.Width * Content.Map.Height + CellKey(x, y);
+
+        /// <summary>Whether a cell holds this kind at all (berry bushes grow only on some grass cells).</summary>
+        public static bool HasFeature(NodeDefinition kind, int x, int y)
         {
-            var b = Content.Balance;
-            return t == TerrainType.Forest ? b.ForestWood : t == TerrainType.Rock ? b.RockStone : t == TerrainType.Ore ? b.VeinOre : 0;
+            if (kind.Density >= 1) return true;
+            uint id = 2166136261u;
+            foreach (char ch in kind.Id) id = (id ^ ch) * 16777619u; // stable across runtimes (string hashes are not)
+            uint h = (uint)(x * 73856093) ^ (uint)(y * 19349663) ^ id * 2654435761u;
+            h ^= h >> 13;
+            h *= 0x5bd1e995;
+            h ^= h >> 15;
+            return (h % 10000) / 10000.0 < kind.Density;
         }
 
         /// <summary>The terrain as it is now: a cut-down forest is open grass until it grows back.</summary>
@@ -53,31 +83,52 @@ namespace Founders.Core
             return t;
         }
 
-        /// <summary>The resource node at a cell, or null if the cell holds nothing to gather.</summary>
-        public ResourceNode NodeAt(int x, int y)
+        NodeDefinition KindAt(int x, int y, JobType? job)
         {
-            var map = Content.Map;
-            if (x < 0 || y < 0 || x >= map.Width || y >= map.Height) return null;
-            var t = map.Terrain(x, y);
+            var t = Content.Map.Terrain(x, y);
+            if (t == null) return null;
             foreach (var kind in NodeKinds)
             {
-                if (kind.terrain != t) continue;
-                double cap = CapacityOf(t.Value);
-                int key = CellKey(x, y);
-                double taken = State.NodeTaken.TryGetValue(key, out var v) ? v : 0;
-                bool cleared = State.NodeCleared.ContainsKey(key);
-                return new ResourceNode
-                {
-                    X = x, Y = y, Terrain = t.Value, Resource = kind.resource, Job = kind.job,
-                    Capacity = cap, Remaining = cap <= 0 ? double.PositiveInfinity : cleared ? 0 : Math.Max(0, cap - taken),
-                    Ordered = State.HarvestOrders.Contains(key),
-                };
+                if (kind.Terrain != t || (job.HasValue && kind.Job != job.Value)) continue;
+                if (!HasFeature(kind, x, y)) continue;
+                // The extra kinds exist only when they hold something; trees, rock and ore are always there.
+                if (kind.Capacity <= 0 && NodeKinds.IndexOf(kind) >= 3) continue;
+                return kind;
             }
             return null;
         }
 
+        /// <summary>
+        /// The resource node at a cell (the main one, or the one a job gathers there), or null if the
+        /// cell holds nothing to gather.
+        /// </summary>
+        public ResourceNode NodeAt(int x, int y, JobType? job = null)
+        {
+            var map = Content.Map;
+            if (x < 0 || y < 0 || x >= map.Width || y >= map.Height) return null;
+            var kind = KindAt(x, y, job);
+            if (kind == null) return null;
+            double cap = kind.Capacity;
+            int key = NodeKey(kind, x, y);
+            double taken = State.NodeTaken.TryGetValue(key, out var v) ? v : 0;
+            bool cleared = State.NodeCleared.ContainsKey(key);
+            return new ResourceNode
+            {
+                X = x, Y = y, Kind = kind, Terrain = kind.Terrain, Resource = kind.Resource, Job = kind.Job,
+                Capacity = cap, Remaining = cap <= 0 ? double.PositiveInfinity : cleared ? 0 : Math.Max(0, cap - taken),
+                Ordered = State.HarvestOrders.Contains(CellKey(x, y)), Regrowing = cleared,
+            };
+        }
+
         /// <summary>True when a forest, rock or ore cell has been used up.</summary>
         public bool IsDepleted(int x, int y) => NodeAt(x, y)?.Depleted ?? false;
+
+        /// <summary>Seconds until a used-up node is back (0 when it is not regrowing or never comes back).</summary>
+        public double RegrowSecondsLeft(ResourceNode n)
+        {
+            if (n?.Kind == null || n.Kind.RegrowSeconds <= 0) return 0;
+            return State.NodeCleared.TryGetValue(NodeKey(n.Kind, n.X, n.Y), out var at) ? Math.Max(0, n.Kind.RegrowSeconds - (State.SimTime - at)) : 0;
+        }
 
         /// <summary>Marks a node to be harvested before any other (tap it again to cancel).</summary>
         public GameResult ToggleHarvestOrder(int x, int y)
@@ -89,16 +140,98 @@ namespace Founders.Core
             if (State.HarvestOrders.Remove(key)) return GameResult.Success;
             if (node.Depleted) return GameError.NothingLeft;
             State.HarvestOrders.Add(key);
+            gatherCache.Clear();
             if (JobCapacity(node.Job) == 0)
                 Notice(NoticeKind.Info, $"Marked. Build a workplace for {Content.JobConfig(node.Job)?.Name ?? node.Job.Id()} so someone can gather it.");
             return GameResult.Success;
+        }
+
+        /// <summary>
+        /// The player sends someone to a node right away: it is marked to be gathered first and,
+        /// if nobody works that job yet, an idle person (or one from the largest other gathering
+        /// crew) takes it up.
+        /// </summary>
+        public GameResult SendGatherer(int x, int y)
+        {
+            Update();
+            var node = NodeAt(x, y);
+            if (node == null) return GameError.UnknownContent($"no resource at {x},{y}");
+            if (!IsRevealed(x, y)) return GameError.Placement(PlacementIssue.Unexplored);
+            if (node.Depleted) return GameError.NothingLeft;
+            int key = CellKey(x, y);
+            if (!State.HarvestOrders.Contains(key)) State.HarvestOrders.Insert(0, key);
+            else
+            {
+                State.HarvestOrders.Remove(key);
+                State.HarvestOrders.Insert(0, key);
+            }
+            gatherCache.Clear();
+            var job = node.Job;
+            int capacity = JobCapacity(job);
+            if (capacity == 0)
+            {
+                Notice(NoticeKind.Info, $"Marked. Build a workplace for {Content.JobConfig(job)?.Name ?? job.Id()} so someone can gather it.");
+                return GameResult.Success;
+            }
+            if (State.Assignments[job] < capacity)
+            {
+                if (IdleWorkers > 0) State.Assignments[job] += 1;
+                else
+                {
+                    // Borrow a hand from the largest crew of another gathering job.
+                    var donor = Enums.Jobs.Where(j => j != job && IsGathering(j) && State.Assignments[j] > 1)
+                                     .OrderByDescending(j => State.Assignments[j]).Cast<JobType?>().FirstOrDefault();
+                    if (donor.HasValue)
+                    {
+                        State.Assignments[donor.Value] -= 1;
+                        State.Assignments[job] += 1;
+                    }
+                }
+                SyncPeople();
+            }
+            string who = Content.Skill(job)?.Title ?? Content.JobConfig(job)?.Name ?? job.Id();
+            Notice(NoticeKind.Info, State.Assignments[job] > 0 ? $"{who}s are on their way." : $"Marked. Assign someone to {Content.JobConfig(job)?.Name ?? job.Id()}.");
+            EvaluateProgress();
+            return GameResult.Success;
+        }
+
+        /// <summary>How many cells of a job's resource a workplace placed here would reach (shown while placing).</summary>
+        public int NodesInReach(JobType job, int x, int y, Footprint fp)
+        {
+            if (!NodeKinds.Any(k => k.Job == job)) return -1;
+            int reach = Content.Balance.GatherReach, count = 0;
+            for (int yy = y - reach; yy < y + fp.Height + reach; yy++)
+                for (int xx = x - reach; xx < x + fp.Width + reach; xx++)
+                {
+                    if (!RevealedFast(xx, yy)) continue;
+                    var n = NodeAt(xx, yy, job);
+                    if (n != null && !n.Depleted && n.Job == job) count++;
+                }
+            return count;
         }
 
         /// <summary>Whether gatherers of a job found nothing within reach in the last step.</summary>
         public bool IsExhausted(JobType job) => exhaustedJobs.Contains(job);
 
         /// <summary>Total amount still standing within reach of the workplaces of a job.</summary>
-        public double ReachableAmount(JobType job) => GatherCells(job).Sum(c => NodeAt(c.x, c.y)?.Remaining ?? 0);
+        public double ReachableAmount(JobType job) => GatherCells(job).Sum(c => NodeAt(c.x, c.y, job)?.Remaining ?? 0);
+
+        bool[] revealedGrid;
+        int revealedStamp = -1;
+
+        bool RevealedFast(int x, int y)
+        {
+            var map = Content.Map;
+            if (x < 0 || y < 0 || x >= map.Width || y >= map.Height) return false;
+            if (revealedGrid == null || revealedStamp != State.ExploredRegions.Count)
+            {
+                revealedGrid = new bool[map.Width * map.Height];
+                for (int yy = 0; yy < map.Height; yy++)
+                    for (int xx = 0; xx < map.Width; xx++) revealedGrid[yy * map.Width + xx] = IsRevealed(xx, yy);
+                revealedStamp = State.ExploredRegions.Count;
+            }
+            return revealedGrid[y * map.Width + x];
+        }
 
         /// <summary>
         /// The cells a job gathers from, in order: the player's orders first, then the cells nearest
@@ -106,19 +239,19 @@ namespace Founders.Core
         /// </summary>
         public List<(int x, int y)> GatherCells(JobType job)
         {
+            if (gatherCache.TryGetValue(job, out var cached)) return cached;
             var result = new List<(int x, int y)>();
-            int index = Array.FindIndex(NodeKinds, k => k.job == job);
-            if (index < 0) return result;
-            var kind = NodeKinds[index];
+            var kinds = NodeKinds.Where(k => k.Job == job).ToList();
+            if (kinds.Count == 0) return result;
             int w = Content.Map.Width;
             foreach (int key in State.HarvestOrders)
             {
                 int x = key % w, y = key / w;
-                var n = NodeAt(x, y);
-                if (n != null && n.Job == job && !n.Depleted) result.Add((x, y));
+                var n = NodeAt(x, y, job);
+                if (n != null && !n.Depleted) result.Add((x, y));
             }
             int reach = Content.Balance.GatherReach;
-            var sites = OperationalBuildings().Where(p => p.def.Slots(job) > 0).Select(p => p.building).ToList();
+            var sites = OperationalBuildings().Where(p => SlotsOf(p.building, p.def, job) > 0).Select(p => p.building).ToList();
             var near = new List<(int d, int x, int y)>();
             var seen = new HashSet<int>(result.Select(c => CellKey(c.x, c.y)));
             foreach (var site in sites)
@@ -127,15 +260,24 @@ namespace Founders.Core
                 for (int y = site.Y - reach; y < site.Y + fp.Height + reach; y++)
                     for (int x = site.X - reach; x < site.X + fp.Width + reach; x++)
                     {
-                        if (Content.Map.Terrain(x, y) != kind.terrain || !IsRevealed(x, y)) continue;
+                        if (!RevealedFast(x, y)) continue;
+                        var t = Content.Map.Terrain(x, y);
+                        bool match = false;
+                        foreach (var k in kinds) if (k.Terrain == t && HasFeature(k, x, y)) { match = true; break; }
+                        if (!match) continue;
                         int key = CellKey(x, y);
-                        if (!seen.Add(key) || IsDepleted(x, y)) continue;
+                        if (!seen.Add(key)) continue;
+                        var n = NodeAt(x, y, job);
+                        if (n == null || n.Depleted) continue;
+                        // A building or a road on top of a bush: nothing to pick there.
+                        if (t == TerrainType.Grass && (BuildingIdAt(x, y) != null || DecorationAt(x, y) != null)) continue;
                         int dx = Math.Max(0, Math.Max(site.X - x, x - (site.X + fp.Width - 1)));
                         int dy = Math.Max(0, Math.Max(site.Y - y, y - (site.Y + fp.Height - 1)));
                         near.Add((dx * dx + dy * dy, x, y));
                     }
             }
             result.AddRange(near.OrderBy(n => n.d).ThenBy(n => n.y).ThenBy(n => n.x).Select(n => (n.x, n.y)));
+            gatherCache[job] = result;
             return result;
         }
 
@@ -146,64 +288,77 @@ namespace Founders.Core
         double DrainNodes(JobType job, double amount)
         {
             if (amount <= 0) return 0;
-            var kind = NodeKinds.First(k => k.job == job);
-            if (CapacityOf(kind.terrain) <= 0) return 0;
             double left = amount;
             foreach (var (x, y) in GatherCells(job))
             {
-                var node = NodeAt(x, y);
+                var node = NodeAt(x, y, job);
                 if (node == null || node.Depleted) continue;
                 double take = Math.Min(left, node.Remaining);
-                int key = CellKey(x, y);
+                int key = NodeKey(node.Kind, x, y);
                 State.NodeTaken[key] = (State.NodeTaken.TryGetValue(key, out var v) ? v : 0) + take;
                 left -= take;
                 if (node.Remaining - take <= 1e-6)
                 {
-                    State.HarvestOrders.Remove(key);
-                    if (node.Terrain == TerrainType.Forest) State.NodeCleared[key] = State.SimTime;
+                    State.HarvestOrders.Remove(CellKey(x, y));
+                    if (node.Kind.RegrowSeconds > 0) State.NodeCleared[key] = State.SimTime;
+                    gatherCache.Remove(job);
                 }
                 if (left <= 1e-9) break;
             }
             return left;
         }
 
-        /// <summary>Gatherers draw their output from the land; cut forests grow back.</summary>
+        /// <summary>Gatherers draw their output from the land; forests, bushes, fish and game come back.</summary>
         void AdvanceNodes(double dt)
         {
             if (!NodesEnabled) return;
-            foreach (var kind in NodeKinds)
+            foreach (var job in NodeKinds.Where(k => k.Capacity > 0).Select(k => k.Job).Distinct())
             {
-                var cfg = Content.JobConfig(kind.job);
-                if (cfg?.Output == null || CapacityOf(kind.terrain) <= 0) continue;
-                double made = SkilledWorkers(kind.job) * RatePerWorker(kind.job) * dt;
-                if (made <= 0) { exhaustedJobs.Remove(kind.job); continue; }
-                double missing = DrainNodes(kind.job, made);
+                var cfg = Content.JobConfig(job);
+                if (cfg?.Output == null) continue;
+                double made = SkilledWorkers(job) * RatePerWorker(job) * dt;
+                if (made <= 0) { exhaustedJobs.Remove(job); continue; }
+                double missing = DrainNodes(job, made);
                 if (missing > 1e-9)
                 {
                     var res = State.Resources;
                     res[cfg.Output.Value] = Math.Max(0, res[cfg.Output.Value] - missing);
+                    if (cfg.Byproduct.HasValue)
+                        res[cfg.Byproduct.Value] = Math.Max(0, res[cfg.Byproduct.Value] - missing * cfg.ByproductRatio);
                     State.Resources = res;
-                    if (exhaustedJobs.Add(kind.job))
-                        Notice(NoticeKind.Warning, NothingLeftText(kind.job));
+                    if (exhaustedJobs.Add(job))
+                        Notice(NoticeKind.Warning, NothingLeftText(job));
                 }
-                else exhaustedJobs.Remove(kind.job);
+                else exhaustedJobs.Remove(job);
             }
-            double regrow = Content.Balance.TreeRegrowSeconds;
-            if (State.NodeCleared.Count > 0 && regrow > 0)
+            if (State.NodeCleared.Count > 0)
             {
-                var grown = State.NodeCleared.Where(kv => State.SimTime - kv.Value >= regrow).Select(kv => kv.Key).ToList();
-                foreach (var key in grown)
+                int cells = Content.Map.Width * Content.Map.Height;
+                var regrown = new List<int>();
+                foreach (var kv in State.NodeCleared)
+                {
+                    int slot = kv.Key / cells, cell = kv.Key % cells;
+                    var t = Content.Map.Terrain(cell % Content.Map.Width, cell / Content.Map.Width);
+                    var kind = NodeKinds.FirstOrDefault(k => k.Slot == slot && k.Terrain == t);
+                    double regrow = kind?.RegrowSeconds ?? Content.Balance.TreeRegrowSeconds;
+                    if (regrow > 0 && State.SimTime - kv.Value >= regrow) regrown.Add(kv.Key);
+                }
+                foreach (var key in regrown)
                 {
                     State.NodeCleared.Remove(key);
                     State.NodeTaken.Remove(key);
                 }
+                if (regrown.Count > 0) gatherCache.Clear();
             }
         }
 
         static string NothingLeftText(JobType job) => job switch
         {
-            JobType.Woodcutting => "No trees left near the wood camps. Build a camp by another forest or mark trees to cut.",
+            JobType.Woodcutting => "No trees left near the wood camps. Build a camp by another forest or tap trees to cut.",
             JobType.Stonecutting => "No rock left near the stone sites. Build one by another outcrop.",
+            JobType.Foraging => "The berry bushes near camp are picked clean. They ripen again soon; forage further out meanwhile.",
+            JobType.Fishing => "The water by the weir is fished out for now. The fish come back in a while.",
+            JobType.Hunting => "The game near the lodge has fled. Hunt in other woods or wait for the herds to return.",
             _ => "The ore vein near the mine is exhausted. Open a mine at another vein.",
         };
     }

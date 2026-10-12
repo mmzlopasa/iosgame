@@ -213,6 +213,7 @@ namespace Founders
         }
 
         public static Material IronOre => Tinted("sn_rock_1", "IronOre", new Color(0.95f, 0.58f, 0.42f));
+        public static Material Berry => Tinted("sn_rock_1", "Berry", new Color(0.78f, 0.12f, 0.22f));
         public static Material CopperOre => Tinted("sn_rock_1", "CopperOre", new Color(0.62f, 0.85f, 0.7f));
 
         /// <summary>

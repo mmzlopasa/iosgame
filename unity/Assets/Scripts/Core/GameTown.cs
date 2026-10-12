@@ -28,16 +28,68 @@ namespace Founders.Core
             return def == null ? new Footprint(1, 1) : Rotated(def.Footprint, b.Rotation);
         }
 
-        /// <summary>Capacity multiplier from the building level: +50 % per level above 1.</summary>
-        public static double LevelFactor(int level) => 1 + 0.5 * Math.Max(0, level - 1);
+        /// <summary>Capacity multiplier from the building level: +25 % per level above 1.</summary>
+        public static double LevelFactor(int level) => 1 + 0.25 * Math.Max(0, level - 1);
 
-        public int HousingOf(PlacedBuilding b, BuildingDefinition def) => (int)Math.Floor(def.HousingValue * LevelFactor(b.Level) + 1e-9);
-        public int SlotsOf(PlacedBuilding b, BuildingDefinition def, JobType job) => (int)Math.Floor(def.Slots(job) * LevelFactor(b.Level) + 1e-9);
+        /// <summary>Level of the settlement's heart (the campfire, later the hearth); 1 without one.</summary>
+        public int HeartLevel
+        {
+            get
+            {
+                int best = 0;
+                foreach (var b in State.Buildings)
+                    if (Content.Building(b.DefinitionId)?.Heart == true) best = Math.Max(best, b.Level);
+                return Math.Max(1, best);
+            }
+        }
+
+        public PlacedBuilding Heart => State.Buildings.FirstOrDefault(b => Content.Building(b.DefinitionId)?.Heart == true);
+
+        public string HeartName => Heart is PlacedBuilding h ? DisplayName(h) : "Campfire";
+
+        /// <summary>Highest level of the completed buildings of a definition (0 if none).</summary>
+        public int BestLevel(string definitionId)
+        {
+            int best = 0;
+            foreach (var b in State.Buildings)
+                if (b.DefinitionId == definitionId && b.IsOperational) best = Math.Max(best, b.Level);
+            return best;
+        }
+
+        /// <summary>The building's name at its level (a Tent becomes a Hut, a Cottage, a House…).</summary>
+        public string DisplayName(PlacedBuilding b)
+        {
+            var def = Content.Building(b.DefinitionId);
+            if (def == null) return b.DefinitionId;
+            string name = def.Name;
+            foreach (var look in def.Looks) if (b.Level >= look.Level && !string.IsNullOrEmpty(look.Name)) name = look.Name;
+            return name;
+        }
+
+        /// <summary>The model the building shows at its level.</summary>
+        public string SpriteOf(PlacedBuilding b) => Content.Building(b.DefinitionId)?.SpriteAt(b.Level) ?? "";
+
+        // Rounded half up, so even a small hut gains a bed at level 2.
+        public int HousingOf(PlacedBuilding b, BuildingDefinition def) => (int)Math.Floor(def.HousingValue * LevelFactor(b.Level) + 0.5);
+        public int SlotsOf(PlacedBuilding b, BuildingDefinition def, JobType job) => (int)Math.Floor(def.Slots(job) * LevelFactor(b.Level) + 0.5);
 
         // MARK: - Occupancy
 
+        Dictionary<(int, int), PlacedDecoration> decorationIndex;
+        int decorationIndexStamp = -1, decorationIndexCount = -1;
+
         /// <summary>Road or decoration on a cell, if any.</summary>
-        public PlacedDecoration DecorationAt(int x, int y) => State.Decorations.FirstOrDefault(d => d.X == x && d.Y == y);
+        public PlacedDecoration DecorationAt(int x, int y)
+        {
+            if (decorationIndex == null || decorationIndexStamp != State.NextDecorationId || decorationIndexCount != State.Decorations.Count)
+            {
+                decorationIndex = new Dictionary<(int, int), PlacedDecoration>();
+                foreach (var d in State.Decorations) decorationIndex[(d.X, d.Y)] = d;
+                decorationIndexStamp = State.NextDecorationId;
+                decorationIndexCount = State.Decorations.Count;
+            }
+            return decorationIndex.TryGetValue((x, y), out var found) ? found : null;
+        }
 
         public bool IsRoad(int x, int y)
         {
@@ -78,8 +130,29 @@ namespace Founders.Core
             var t = TerrainNow(x, y);
             if (t.HasValue && !def.AllowedTerrain.Contains(t.Value)) issues.Add(PlacementIssue.InvalidTerrain(t.Value));
             if (BuildingIdAt(x, y) != null || DecorationAt(x, y) != null) issues.Add(PlacementIssue.Overlaps);
+            if (def.IsBridge && !BridgeAnchored(x, y)) issues.Add(PlacementIssue.NeedsAdjacent(TerrainType.Grass));
             if (!State.Resources.Covers(def.Cost)) issues.Add(PlacementIssue.Unaffordable(State.Resources.Shortfall(def.Cost)));
             return issues;
+        }
+
+        /// <summary>A bridge must start from the bank or continue another bridge.</summary>
+        bool BridgeAnchored(int x, int y)
+        {
+            foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+            {
+                int nx = x + dx, ny = y + dy;
+                var t = TerrainNow(nx, ny);
+                if (t.HasValue && t.Value != TerrainType.Water) return true;
+                var d = DecorationAt(nx, ny);
+                if (d != null && (Content.Decoration(d.DefinitionId)?.IsBridge ?? false)) return true;
+            }
+            return false;
+        }
+
+        public bool IsBridge(int x, int y)
+        {
+            var d = DecorationAt(x, y);
+            return d != null && (Content.Decoration(d.DefinitionId)?.IsBridge ?? false);
         }
 
         /// <summary>Places a road tile or decoration. Instant (like Manor Lords roads), costs its price.</summary>
@@ -143,6 +216,22 @@ namespace Founders.Core
             return def.Levels[b.Level - 1];
         }
 
+        /// <summary>
+        /// What still stands between a building and its next level: the heart must be at least as
+        /// high (no hut outgrows the campfire), and the level's own requirements must be met.
+        /// </summary>
+        public List<RequirementStatus> LevelRequirements(PlacedBuilding b)
+        {
+            var list = new List<RequirementStatus>();
+            var def = Content.Building(b.DefinitionId);
+            var next = NextLevel(b);
+            if (def == null || next == null) return list;
+            if (!def.Heart)
+                list.Add(new RequirementStatus { Text = $"{HeartName} level {HeartLevel}/{b.Level + 1}", Met = HeartLevel >= b.Level + 1 });
+            list.AddRange(Status(next.Requirements));
+            return list;
+        }
+
         /// <summary>Raises a building one level (more housing, job slots, storage and comfort).</summary>
         public GameResult UpgradeLevel(int id)
         {
@@ -153,6 +242,8 @@ namespace Founders.Core
             if (b.Status != BuildingStatus.Complete) return GameError.BuildingBusy;
             var next = NextLevel(b);
             if (next == null) return GameError.NotUpgradeable;
+            var unmet = LevelRequirements(b).Where(r => !r.Met).Select(r => r.Text).ToList();
+            if (unmet.Count > 0) return GameError.RequirementsNotMet(unmet);
             int maxQueue = Content.Balance.MaxConcurrentConstructions;
             if (ActiveConstructionCount() >= maxQueue) return GameError.ConstructionQueueFull(maxQueue);
             if (!State.Resources.Covers(next.Cost)) return GameError.Unaffordable(State.Resources.Shortfall(next.Cost));
@@ -162,18 +253,64 @@ namespace Founders.Core
             b.PendingLevel = b.Level + 1;
             b.RemainingWork = next.BuildSeconds;
             b.TotalWork = next.BuildSeconds;
-            Notice(NoticeKind.Info, $"Upgrade started: {def.Name} to level {b.PendingLevel}.");
+            Notice(NoticeKind.Info, $"Upgrade started: {DisplayName(b)} to level {b.PendingLevel}.");
             return GameResult.Success;
         }
 
         // MARK: - People and skills
 
-        /// <summary>Skill level (0–5) of a person in a job.</summary>
-        public int SkillLevel(Person p, JobType job)
+        /// <summary>Skill level (0 up to the maximum, 10) of a person in a job: level n needs n² units of work.</summary>
+        public int SkillLevel(Person p, JobType job) => SkillLevelFor(Experience(p, job));
+
+        public static double Experience(Person p, JobType job) => p.Experience.TryGetValue(job.Id(), out var v) ? v : 0;
+
+        int SkillLevelFor(double xp)
         {
-            double xp = p.Experience.TryGetValue(job.Id(), out var v) ? v : 0;
             double unit = Math.Max(1, Content.Balance.SkillSecondsPerLevel);
-            return Math.Min(5, (int)Math.Floor(Math.Sqrt(xp / unit)));
+            return Math.Min(Content.Balance.MaxSkillLevel, (int)Math.Floor(Math.Sqrt(xp / unit) + 1e-9));
+        }
+
+        /// <summary>Work (seconds) needed to reach a skill level.</summary>
+        public double ExperienceFor(int level) => Math.Max(1, Content.Balance.SkillSecondsPerLevel) * level * level;
+
+        /// <summary>0..1 progress towards the next skill level (1 at the maximum).</summary>
+        public double SkillProgress(Person p, JobType job)
+        {
+            int level = SkillLevel(p, job);
+            if (level >= Content.Balance.MaxSkillLevel) return 1;
+            double from = ExperienceFor(level), to = ExperienceFor(level + 1);
+            return Math.Max(0, Math.Min(1, (Experience(p, job) - from) / (to - from)));
+        }
+
+        /// <summary>The perks a person has earned in a job.</summary>
+        public IEnumerable<PerkDefinition> Perks(Person p, JobType job)
+        {
+            var skill = Content.Skill(job);
+            if (skill == null) yield break;
+            int level = SkillLevel(p, job);
+            foreach (var perk in skill.Perks) if (perk.Level <= level) yield return perk;
+        }
+
+        /// <summary>Output multiplier of one person in a job: skill level plus the perks earned.</summary>
+        public double WorkerMultiplier(Person p, JobType job)
+        {
+            double m = 1 + Content.Balance.SkillBonusPerLevel * SkillLevel(p, job);
+            if (Content.Balance.SkillBonusPerLevel > 0) foreach (var perk in Perks(p, job)) m += perk.Bonus;
+            return m;
+        }
+
+        /// <summary>Settlement-wide perk effects: each counts once if anyone has earned it.</summary>
+        IEnumerable<Effect> PerkEffects()
+        {
+            if (Content.Balance.SkillBonusPerLevel <= 0) yield break; // skills switched off
+            foreach (var skill in Content.Skills)
+            {
+                if (skill.Perks.All(perk => perk.Effects.Count == 0)) continue;
+                int best = 0;
+                foreach (var p in State.People) best = Math.Max(best, SkillLevel(p, skill.Job));
+                foreach (var perk in skill.Perks)
+                    if (perk.Level <= best) foreach (var e in perk.Effects) yield return e;
+            }
         }
 
         /// <summary>The skill title shown in the UI, e.g. "Woodcutter" for the best skill.</summary>
@@ -256,7 +393,7 @@ namespace Founders.Core
             foreach (var p in State.People)
             {
                 if (p.Job != id) continue;
-                sum += 1 + bonus * SkillLevel(p, job);
+                sum += WorkerMultiplier(p, job);
                 seen++;
             }
             return sum + Math.Max(0, count - seen);

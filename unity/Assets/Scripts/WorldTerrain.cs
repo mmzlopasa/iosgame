@@ -22,6 +22,20 @@ namespace Founders
         public const float WaterLevel = -0.38f;
 
         static readonly string[] LayerNames = { "Grass", "ForestFloor", "Mud", "Sand", "Riverbed", "RockGround" };
+        /// <summary>
+        /// The layers the terrain really draws. Mobile URP renders a terrain with more than four
+        /// layers in two passes, so forest floor folds into grass and mud, and the riverbed into mud.
+        /// </summary>
+        static readonly string[] OutputLayers = { "Grass", "Mud", "Sand", "RockGround" };
+        static readonly (int to, float amount)[][] Fold =
+        {
+            new[] { (0, 1f) },             // grass
+            new[] { (0, 0.65f), (1, 0.35f) }, // forest floor
+            new[] { (1, 1f) },             // mud
+            new[] { (2, 1f) },             // sand
+            new[] { (1, 0.7f), (2, 0.3f) },  // riverbed
+            new[] { (3, 1f) },             // rock
+        };
         const int LGrass = 0, LForest = 1, LMud = 2, LSand = 3, LRiver = 4, LRock = 5;
 
         public Terrain Terrain { get; private set; }
@@ -45,7 +59,7 @@ namespace Founders
             data.size = new Vector3(Size, HeightRange, Size);
             data.SetHeights(0, 0, BuildHeights());
             var layers = new List<TerrainLayer>();
-            foreach (var n in LayerNames)
+            foreach (var n in OutputLayers)
             {
                 var l = Resources.Load<TerrainLayer>("TerrainLayers/" + n);
                 layers.Add(l != null ? l : new TerrainLayer { diffuseTexture = Texture2D.grayTexture, tileSize = new Vector2(5, 5) });
@@ -435,7 +449,16 @@ namespace Founders
                         return true;
                     });
                 }
-            Terrain.terrainData.SetAlphamaps(0, 0, maps);
+            var output = new float[SplatRes, SplatRes, OutputLayers.Length];
+            for (int i = 0; i < SplatRes; i++)
+                for (int j = 0; j < SplatRes; j++)
+                    for (int l = 0; l < L; l++)
+                    {
+                        float v = maps[i, j, l];
+                        if (v <= 0f) continue;
+                        foreach (var (to, amount) in Fold[l]) output[i, j, to] += v * amount;
+                    }
+            Terrain.terrainData.SetAlphamaps(0, 0, output);
         }
 
         static float DistanceToSegment(Vector2 p, Vector2 a, Vector2 b)

@@ -84,6 +84,13 @@ namespace Founders.Core
                     if (target == null) problems.Add($"building '{bld.Id}' upgrades to unknown '{bld.UpgradesTo}'");
                     else if (!target.Footprint.Equals(bld.Footprint)) problems.Add($"upgrade '{bld.Id}' → '{bld.UpgradesTo}' changes footprint");
                 }
+                foreach (var lv in bld.Levels)
+                {
+                    if (!lv.Cost.IsValid) problems.Add($"building '{bld.Id}' has a level with a negative cost");
+                    if (lv.BuildSeconds <= 0) problems.Add($"building '{bld.Id}' has a level without buildSeconds");
+                }
+                foreach (var look in bld.Looks)
+                    if (look.Level < 1 || string.IsNullOrEmpty(look.Sprite)) problems.Add($"building '{bld.Id}' has a broken look");
                 if (bld.SuccessorId != null)
                 {
                     var succ = c.Building(bld.SuccessorId);
@@ -113,6 +120,7 @@ namespace Founders.Core
                     switch (cond.Kind)
                     {
                         case ConditionKind.BuildingCount:
+                        case ConditionKind.BuildingLevelAtLeast:
                             if (!buildingIds.Contains(cond.Id ?? "")) problems.Add($"{owner}: unknown building '{id}'");
                             break;
                         case ConditionKind.TechResearched:
@@ -137,6 +145,16 @@ namespace Founders.Core
                 }
             }
 
+            foreach (var bld in c.Buildings)
+                foreach (var lv in bld.Levels) CheckConditions(lv.Requirements, $"building '{bld.Id}' level");
+            foreach (var skill in c.Skills)
+                foreach (var perk in skill.Perks)
+                {
+                    if (perk.Level < 1 || perk.Level > b.MaxSkillLevel) problems.Add($"perk '{perk.Name}' of {skill.Job.Id()} has level {perk.Level} outside 1–{b.MaxSkillLevel}");
+                    problems.AddRange(ValidateEffects(perk.Effects, $"perk '{perk.Name}'", buildingIds));
+                }
+            foreach (var n in b.Nodes)
+                if (n.Capacity < 0 || n.Density <= 0 || n.Density > 1) problems.Add($"node '{n.Id}' needs capacity >= 0 and density in (0, 1]");
             foreach (var ev in c.Events)
             {
                 CheckConditions(ev.Trigger, $"event '{ev.Id}'");

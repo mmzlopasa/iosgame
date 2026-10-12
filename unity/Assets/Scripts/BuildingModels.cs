@@ -19,6 +19,9 @@ namespace Founders
             {
                 case "campfire": Campfire(b); break;
                 case "village_hearth": Hearth(b); break;
+                case "campfire_ring": CampfireRing(b); break;
+                case "hearth_pavilion": HearthPavilion(b); break;
+                case "hearth_great": GreatHearth(b); break;
                 case "shelter": Shelter(b); break;
                 case "woven_shelter": WovenShelter(b); break;
                 case "foraging_camp": ForagingCamp(b); break;
@@ -49,7 +52,7 @@ namespace Founders
                 case "medieval_smithy":
                 case "medieval_church":
                 case "medieval_barn":
-                    Medieval(b, sprite);
+                    Medieval(b, sprite, footprintMetres);
                     break;
                 default: b.Model("boulder_01", Vector3.zero, 0.5f); break;
             }
@@ -146,6 +149,79 @@ namespace Founders
             }
             LogsInFire(b, new Vector3(0, 0.05f, 0), 0.45f);
             b.Fire(new Vector3(0, 0.12f, 0), 1.35f);
+        }
+
+        /// <summary>The campfire from level 5: a ring of stones, logs to sit on all round.</summary>
+        static void CampfireRing(Builder b)
+        {
+            b.Model("stone_fire_pit", Vector3.zero, 0.95f);
+            for (int i = 0; i < 7; i++)
+            {
+                float a = i / 7f * Mathf.PI * 2f;
+                b.Model("stone_01", new Vector3(Mathf.Cos(a) * 0.72f, 0f, Mathf.Sin(a) * 0.72f), 2.4f, i * 50f);
+            }
+            LogsInFire(b, new Vector3(0, 0.04f, 0), 0.4f);
+            b.Fire(new Vector3(0, 0.1f, 0), 1.1f);
+            b.Pole(new Vector3(-0.75f, 0.09f, 0.88f), new Vector3(0.55f, 0.09f, 1.05f), 0.22f);
+            b.Pole(new Vector3(0.95f, 0.09f, -0.5f), new Vector3(0.9f, 0.09f, 0.6f), 0.2f);
+            b.Model("wooden_bowl_01", new Vector3(-0.85f, 0f, -0.6f), 1f, 30f);
+        }
+
+        /// <summary>The hearth from level 15: four carved posts under a thatched roof over the fire.</summary>
+        static void HearthPavilion(Builder b)
+        {
+            Hearth(b);
+            const float r = 0.82f, h = 2.0f;
+            foreach (var (x, z) in new[] { (r, r), (-r, r), (r, -r), (-r, -r) })
+                b.Pole(new Vector3(x, 0, z), new Vector3(x * 0.95f, h, z * 0.95f), 0.13f);
+            // The roof has a smoke hole: lifted ring of thatch.
+            b.Shape(Meshes.Roof(), new Vector3(0, h - 0.05f, 0), new Vector3(2.3f, 0.95f, 2.3f), "Thatch");
+            b.Torch(new Vector3(r, 1.6f, r), 0.25f);
+        }
+
+        /// <summary>The great hearth from level 25: the pavilion inside a low stone wall with braziers and banners.</summary>
+        static void GreatHearth(Builder b)
+        {
+            HearthPavilion(b);
+            for (int i = 0; i < 14; i++)
+            {
+                float a = i / 14f * Mathf.PI * 2f;
+                if (i % 7 == 3) continue; // two gaps to walk through
+                b.Model("stone_01", new Vector3(Mathf.Cos(a) * 1.0f, 0f, Mathf.Sin(a) * 1.0f), 3.6f, i * 33f, new Vector3(1f, 1.4f, 1f));
+            }
+            foreach (var (x, z) in new[] { (0.95f, 0f), (-0.95f, 0f) })
+            {
+                b.Pole(new Vector3(x, 0, z), new Vector3(x, 2.9f, z), 0.07f);
+                b.PrimColor(PrimitiveType.Cube, new Vector3(x, 2.35f, z + 0.18f), new Vector3(0.03f, 0.9f, 0.34f), "Banner");
+            }
+        }
+
+        /// <summary>
+        /// The look of a building at higher levels without a model of its own: crates and barrels
+        /// (level 5), a torch (10), a woodpile and chest (15) and a banner (20) around it.
+        /// </summary>
+        public static void Dress(Transform root, int level, float sizeMetres)
+        {
+            if (level < 5) return;
+            var b = new Builder(root, null, true);
+            float e = sizeMetres * 0.5f + 0.05f;
+            b.Model("k_barrel", new Vector3(e, 0f, -e * 0.6f), 0.9f, 20f);
+            b.Model("k_box", new Vector3(e * 0.85f, 0f, -e), 0.8f, 10f);
+            if (level >= 10)
+            {
+                b.Pole(new Vector3(-e, 0f, e), new Vector3(-e, 1.6f, e), 0.07f);
+                b.Torch(new Vector3(-e, 1.7f, e), 0.28f);
+            }
+            if (level >= 15)
+            {
+                b.Model("k_wood", new Vector3(-e, 0f, -e * 0.5f), 1.1f, 90f);
+                b.Model("k_chest", new Vector3(e * 0.6f, 0f, e), 0.8f, 200f);
+            }
+            if (level >= 20)
+            {
+                b.Pole(new Vector3(e, 0f, e), new Vector3(e, 3.0f, e), 0.07f);
+                b.PrimColor(PrimitiveType.Cube, new Vector3(e, 2.45f, e + 0.2f), new Vector3(0.03f, 0.9f, 0.36f), "Banner");
+            }
         }
 
         /// <summary>A hide tent: A-frame of poles covered with stitched hides.</summary>
@@ -612,9 +688,12 @@ namespace Founders
         /// The kit buildings are built at real scale on the 2 m grid, so the walls fill the
         /// footprint and the roof overhangs a little; turned so the door faces the street (−z).
         /// </summary>
-        static void Medieval(Builder b, string id)
+        static void Medieval(Builder b, string id, float footprintMetres)
         {
-            b.Model(id, Vector3.zero, 0.94f, 180f);
+            // Modelled for their own footprint; a hut that grew into a house shows it smaller.
+            float native = id == "medieval_market" || id == "medieval_church" || id == "medieval_barn" ? 6f : 4f;
+            float k = Mathf.Min(1f, footprintMetres / native);
+            b.Model(id, Vector3.zero, 0.94f * k, 180f);
             if (id == "medieval_smithy") b.Fire(new Vector3(-0.55f, 0.95f, 1.75f), 0.35f);
         }
 
@@ -632,6 +711,33 @@ namespace Founders
         /// A decoration: fences and walls join their neighbours of the same kind, everything else
         /// stands in the middle of its cell, turned by <paramref name="rotation"/> quarter turns.
         /// </summary>
+        /// <summary>
+        /// A plank bridge on stout piles across one water cell. It runs along the neighbours it
+        /// connects to (other bridge pieces or the bank), with a rail on each side.
+        /// </summary>
+        static void Bridge(Builder b, int connect)
+        {
+            // connect: neighbours to join (other bridge pieces first, else the banks).
+            bool ew = (connect & (East | West)) != 0, ns = (connect & (North | South)) != 0;
+            bool alongX = ew && (!ns || (connect & (East | West)) == (East | West));
+            var g = Parts.Group("Bridge", b.T, Vector3.zero, alongX ? 90f : 0f).transform;
+            var bb = new Builder(g, null, b.Effects);
+            float half = Grid.CellSize * 0.52f, w = 0.75f, deck = 0.55f;
+            for (int i = 0; i < 9; i++)
+            {
+                float z = -half + (i + 0.5f) * (2 * half / 9f);
+                bb.Pole(new Vector3(-w, deck, z), new Vector3(w, deck, z), 0.2f);
+            }
+            foreach (float x in new[] { -w + 0.08f, w - 0.08f })
+            {
+                bb.Pole(new Vector3(x, deck - 0.1f, -half), new Vector3(x, deck - 0.1f, half), 0.16f);
+                bb.Pole(new Vector3(x, -0.8f, 0f), new Vector3(x, deck, 0f), 0.16f);
+                bb.Pole(new Vector3(x, deck, -half * 0.9f), new Vector3(x, deck + 0.75f, -half * 0.9f), 0.07f);
+                bb.Pole(new Vector3(x, deck, half * 0.9f), new Vector3(x, deck + 0.75f, half * 0.9f), 0.07f);
+                bb.Pole(new Vector3(x, deck + 0.72f, -half), new Vector3(x, deck + 0.72f, half), 0.07f);
+            }
+        }
+
         public static GameObject Decoration(string sprite, Transform parent, Material tint, int rotation, int connect)
         {
             var root = new GameObject("Decoration_" + sprite);
@@ -644,6 +750,9 @@ namespace Founders
                 case "palisade":
                 case "stone_wall":
                     Fence(b, sprite, rotation, connect);
+                    break;
+                case "wooden_bridge":
+                    Bridge(b, connect);
                     break;
                 case "torch_post":
                     b.Pole(Vector3.zero, new Vector3(0f, 1.7f, 0f), 0.08f);

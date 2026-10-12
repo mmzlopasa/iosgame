@@ -197,15 +197,25 @@ namespace FoundersEditor
                 EditorUtility.SetDirty(renderer);
             }
 
+            // Phones: SSAO needs a depth-normals prepass and a full-screen blur every frame; the
+            // stylized look does not need it, so it is switched off to hold 60 fps.
+            foreach (var guid in AssetDatabase.FindAssets("t:UniversalRendererData"))
+            {
+                var data = AssetDatabase.LoadAssetAtPath<UniversalRendererData>(AssetDatabase.GUIDToAssetPath(guid));
+                if (data == null) continue;
+                foreach (var feature in data.rendererFeatures)
+                    if (feature is ScreenSpaceAmbientOcclusion && feature.isActive) { feature.SetActive(false); EditorUtility.SetDirty(data); }
+            }
             asset.supportsHDR = true;
             asset.msaaSampleCount = 1; // MSAA on Metal tile memory triggered RenderPass sample-count errors; SMAA runs in post instead
-            asset.renderScale = 1f;
-            asset.supportsCameraDepthTexture = true;
+            asset.renderScale = 0.85f;
+            asset.upscalingFilter = UpscalingFilterSelection.FSR;
+            asset.supportsCameraDepthTexture = false;
             asset.mainLightShadowmapResolution = 2048;
-            asset.shadowDistance = 70f;
+            asset.shadowDistance = 55f;
             asset.shadowCascadeCount = 2;
             asset.cascade2Split = 0.3f;
-            asset.maxAdditionalLightsCount = 8;
+            asset.maxAdditionalLightsCount = 4;
             asset.colorGradingMode = ColorGradingMode.HighDynamicRange;
             asset.useSRPBatcher = true;
             // These have internal setters; the editor sets them through serialization too.

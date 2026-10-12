@@ -18,7 +18,7 @@ namespace Founders.UI
 
         void BuildSheet()
         {
-            var scrim = E.Div("scrim").Fill().Bg(new Color(0.03f, 0.035f, 0.05f, 0.5f));
+            scrim = E.Div("scrim").Fill().Bg(new Color(0.03f, 0.035f, 0.05f, 0.5f));
             Tap(scrim, () => store.ActivePanel = Panel.None);
             sheetLayer.Add(scrim);
 
@@ -34,7 +34,7 @@ namespace Founders.UI
             sheet.Add(grabber);
 
             var header = E.Div("sheet-header").Ignore();
-            AddRegion(header, () => SheetOpen ? store.ActivePanel + "|" + HeaderKey() : "", BuildSheetHeader);
+            AddRegion(header, () => SheetOpen && !DrawerPanel ? store.ActivePanel + "|" + HeaderKey() : "", BuildSheetHeader);
             sheet.Add(header);
 
             sheetScroll = new ScrollView(ScrollViewMode.Vertical);
@@ -46,9 +46,10 @@ namespace Founders.UI
             sheetScroll.contentContainer.style.paddingRight = 16;
             sheetScroll.contentContainer.style.paddingBottom = 40;
             sheet.Add(sheetScroll);
-            AddRegion(sheetScroll.contentContainer, () => SheetOpen ? store.ActivePanel + "|" + PanelKey() : "", BuildPanelContent);
+            AddRegion(sheetScroll.contentContainer, () => SheetOpen && !DrawerPanel ? store.ActivePanel + "|" + PanelKey() : "", BuildPanelContent);
 
             sheetLayer.Add(sheet);
+            BuildDrawer();
         }
 
         /// <summary>Visibility of layers and the open animation, run once per tick before regions.</summary>
@@ -59,7 +60,8 @@ namespace Founders.UI
             {
                 shownPanel = store.ActivePanel;
                 sheetScroll.scrollOffset = Vector2.zero;
-                buildTab = "All";
+                buildTab = pendingTab ?? "All";
+                pendingTab = null;
             }
             if (open != sheetShown)
             {
@@ -77,6 +79,7 @@ namespace Founders.UI
                 }
             }
             sheetScroll.contentContainer.style.paddingBottom = 40 + SafeBottom;
+            UpdateDrawer();
             modalLayer.Hidden(ModalKey() == "");
         }
 
@@ -92,7 +95,7 @@ namespace Founders.UI
 
         void BuildSheetHeader(VisualElement host)
         {
-            if (!SheetOpen) return;
+            if (!SheetOpen || DrawerPanel) return;
             string eyebrow, title;
             Color accent = Theme.Gold;
             switch (store.ActivePanel)
@@ -146,7 +149,7 @@ namespace Founders.UI
                         $"{G.State.Resources.Covers(d.Cost)}{G.IsUnlocked(d)}{G.Count(d.Id, true)}")) + "|" +
                         string.Join("", G.Content.Decorations.Select(d => $"{(G.State.Resources.Covers(d.Cost) ? 1 : 0)}{(DecorationUnlocked(d) ? 1 : 0)}"));
                 case Panel.People:
-                    return string.Join(",", G.State.People.Select(p => $"{p.Job}{SkillSum(p)}")) + $"|{G.SeasonIndex}|{G.Freezing}|{string.Join(",", G.ApprovalFactors().Select(f => f.Label + f.Points))}|{G.IdleWorkers}|{G.State.Population}|{G.HousingCapacity()}|{G.State.FoodShortage}|" +
+                    return expandedPerson + "|" + string.Join(",", G.State.People.Select(p => $"{p.Job}{SkillSum(p)}")) + $"|{G.SeasonIndex}|{G.Freezing}|{string.Join(",", G.ApprovalFactors().Select(f => f.Label + f.Points))}|{G.IdleWorkers}|{G.State.Population}|{G.HousingCapacity()}|{G.State.FoodShortage}|" +
                            string.Join(",", Enums.Jobs.Select(j => $"{G.State.Assignments[j]}/{G.JobCapacity(j)}"));
                 case Panel.Research:
                     return $"{G.State.ActiveResearch?.TechId}|" + string.Join(",", G.Content.Technologies.Select(t =>
@@ -169,7 +172,7 @@ namespace Founders.UI
 
         void BuildPanelContent(VisualElement host)
         {
-            if (!SheetOpen) return;
+            if (!SheetOpen || DrawerPanel) return;
             switch (store.ActivePanel)
             {
                 case Panel.Build: BuildBuildPanel(host); break;
@@ -390,26 +393,66 @@ namespace Founders.UI
                 {
                     int lv = G.SkillLevel(p, best.Value);
                     var skill = E.Div().Col(Align.FlexEnd).Ignore();
-                    skill.Add(E.Text(SkillTitle(best.Value), 11.5f, Theme.GoldLight, Theme.F.TextBold).NoWrap());
-                    var pips = E.Div().Row().Margin(3).Ignore();
-                    for (int i = 0; i < 5; i++)
-                    {
-                        var pip = E.Div().Size(7, 7).Radius(3.5f).Ignore().Bg(i < lv ? Theme.Gold : new Color(1, 1, 1, 0.12f));
-                        pip.style.marginLeft = 3;
-                        pips.Add(pip);
-                    }
-                    skill.Add(pips);
+                    skill.Add(E.Text($"{SkillTitle(best.Value)} · Lv {lv}", 11.5f, Theme.GoldLight, Theme.F.TextBold).NoWrap());
+                    var bar = E.Bar(out var fill, 4, Theme.GoldFill);
+                    E.SetFill(fill, G.SkillProgress(p, best.Value));
+                    bar.style.width = 84;
+                    bar.style.marginTop = 4;
+                    skill.Add(bar);
                     row.Add(skill);
                 }
+                int pid = p.Id;
+                Tap(row, () => expandedPerson = expandedPerson == pid ? -1 : pid);
+                row.pickingMode = PickingMode.Position;
                 list.Add(row);
+                if (expandedPerson == p.Id) list.Add(PersonSkills(p));
             }
             if (G.State.People.Count == 0) list.Add(E.Text("No one lives here yet.", 12, Theme.Muted));
             host.Add(list);
-            host.Add(E.Text("Skilled people work faster (+10% per level). Skills grow with every season of work, and the most skilled idle people take new jobs first.",
+            host.Add(E.Text($"Tap someone to see their skills. Every job has its own skill up to level {G.Content.Balance.MaxSkillLevel}: each level adds " +
+                            $"{G.Content.Balance.SkillBonusPerLevel * 100:0}% output and perks come at levels 2, 4, 6, 8 and 10. The most skilled idle people take new jobs first.",
                             11.5f, Theme.Muted).Margin(0, 4, 0, 4));
         }
 
-        static string SkillTitle(JobType job)
+        int expandedPerson = -1;
+
+        /// <summary>One person's skills: level, progress to the next and the perks earned in each job.</summary>
+        VisualElement PersonSkills(Person p)
+        {
+            var box = E.Div().Col().Radius(14).Pad(10).Margin(8).Bg(new Color(1, 1, 1, 0.04f)).Border(Theme.EdgeSoft);
+            var jobs = Enums.Jobs.Where(j => Game.Experience(p, j) > 0).OrderByDescending(j => Game.Experience(p, j)).ToList();
+            if (jobs.Count == 0) box.Add(E.Text("No experience yet.", 11.5f, Theme.Muted));
+            foreach (var job in jobs)
+            {
+                int lv = G.SkillLevel(p, job);
+                var line = E.Div().Row().Margin(4).Ignore();
+                line.Add(E.Text(SkillTitle(job), 12, Theme.Ink, Theme.F.TextBold).Grow());
+                line.Add(E.Mono($"Lv {lv}/{G.Content.Balance.MaxSkillLevel}", 11, Theme.GoldLight));
+                box.Add(line);
+                var bar = E.Bar(out var fill, 4, Theme.GoldFill);
+                E.SetFill(fill, G.SkillProgress(p, job));
+                bar.style.marginTop = 3;
+                box.Add(bar);
+                var skill = G.Content.Skill(job);
+                if (skill == null) continue;
+                var perks = E.Div().Row().Margin(4).Ignore();
+                perks.style.flexWrap = Wrap.Wrap;
+                foreach (var perk in skill.Perks)
+                {
+                    bool has = perk.Level <= lv;
+                    var chip = E.Div().Row().Radius(999).Pad(3, 7).Margin(0, 4, 4, 0).Ignore()
+                        .Bg(has ? Theme.Alpha(Theme.Gold, 0.16f) : new Color(1, 1, 1, 0.04f));
+                    chip.Add(E.Text($"{perk.Level} · {perk.Name}", 10, has ? Theme.GoldLight : Theme.Faint, Theme.F.TextMedium));
+                    perks.Add(chip);
+                }
+                box.Add(perks);
+            }
+            return box;
+        }
+
+        string SkillTitle(JobType job) => G.Content.Skill(job)?.Title ?? SkillTitleFallback(job);
+
+        static string SkillTitleFallback(JobType job)
         {
             switch (job)
             {

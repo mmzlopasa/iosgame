@@ -108,6 +108,8 @@ namespace Founders.Core
         {
             if (!(seconds > 0)) return;
             double step = Content.Balance.SimulationStepSeconds;
+            // Long absences (hours away) are simulated in coarser steps so resuming stays quick.
+            if (seconds > 3600) step = Math.Max(step, 5);
             double remaining = seconds;
             while (remaining > 1e-9)
             {
@@ -120,7 +122,24 @@ namespace Founders.Core
 
         void SimulateStep(double dt)
         {
+            stepEffects = null;
+            stepApproval = null;
+            stepEffects = ActiveEffects();
+            stepApproval = Approval;
+            try { Step(dt); }
+            finally
+            {
+                stepEffects = null;
+                stepApproval = null;
+                gatherCache.Clear();
+            }
+        }
+
+        void Step(double dt)
+        {
+            simulating = true;
             var snapshot = Economy();
+            simulating = false;
 
             // Resources
             var caps = StorageCapacity();
@@ -144,7 +163,7 @@ namespace Founders.Core
             AdvanceConstruction(dt);
             AdvanceResearch(dt);
             AdvanceExpedition(dt);
-            AdvanceGrowth(dt);
+            AdvanceGrowth(dt, snapshot.Net.Food);
 
             State.SimTime += dt;
             TrackSeason();
@@ -152,11 +171,12 @@ namespace Founders.Core
             State.Modifiers.RemoveAll(m => m.ExpiresAtSimTime.HasValue && m.ExpiresAtSimTime.Value <= simTime);
         }
 
-        void AdvanceGrowth(double dt)
+        void AdvanceGrowth(double dt, double netFood)
         {
             var b = Content.Balance;
+            // Families grow only while there is room, a reserve and more food coming in than eaten.
             if (State.FoodShortage || State.Population >= HousingCapacity() || State.Resources.Food < b.GrowthMinFood
-                || b.GrowthSecondsPerPerson <= 0) return;
+                || netFood <= 0 || b.GrowthSecondsPerPerson <= 0) return;
             double rate = Multiplier(EffectKind.GrowthMultiplier) * (Season?.Growth ?? 1) * ApprovalGrowth(Approval);
             if (rate <= 0) return;
             State.GrowthProgress += dt / b.GrowthSecondsPerPerson * rate;

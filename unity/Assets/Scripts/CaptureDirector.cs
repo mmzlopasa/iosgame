@@ -128,6 +128,47 @@ namespace Founders
             for (int i = 0; i < 6 && game.State.Building(r.Value)?.Status != BuildingStatus.Complete; i++) game.DebugFastForward(120);
         }
 
+        /// <summary>Raises the heart (campfire/hearth) to a level at once (capture only: the real climb takes days).</summary>
+        void Heart(int level)
+        {
+            var heart = store.Game.Heart;
+            if (heart != null && heart.Level < level) heart.Level = level;
+        }
+
+        /// <summary>Researches a technology through the real rules, lifting the heart if the tech waits for it.</summary>
+        void Research(string id)
+        {
+            var game = store.Game;
+            var tech = game.Content.Technology(id);
+            if (tech == null || game.State.Researched.Contains(id)) return;
+            if (tech.HeartLevel.HasValue) Heart(tech.HeartLevel.Value);
+            game.DebugGrant(tech.Cost);
+            var r = game.StartResearch(id);
+            if (!r.Ok)
+            {
+                Debug.LogWarning($"[FOUNDERS] capture: research {id}: {r.Error}");
+                game.State.Researched.Add(id);
+                return;
+            }
+            game.DebugFastForward(tech.ResearchSeconds + 1);
+        }
+
+        /// <summary>Average frames per second over a few seconds (logged; the simulator is far slower than a phone).</summary>
+        IEnumerator MeasureFps(string label)
+        {
+            int frames = 0;
+            float start = Time.realtimeSinceStartup;
+            float worst = 0f;
+            while (Time.realtimeSinceStartup - start < 3f)
+            {
+                yield return null;
+                frames++;
+                worst = Mathf.Max(worst, Time.unscaledDeltaTime);
+            }
+            float t = Time.realtimeSinceStartup - start;
+            Debug.Log($"[FOUNDERS] fps {label}: {frames / t:0.0} avg, worst frame {worst * 1000f:0} ms");
+        }
+
         /// <summary>Answers any waiting decision so dialogs do not cover the scenery shots.</summary>
         void ResolvePending()
         {
@@ -205,9 +246,7 @@ namespace Founders
             foreach (var tech in new[] { "improved_stone_tools", "food_preservation", "structural_weaving", "shared_labor", "permanent_settlement",
                                           "fishing", "hide_working", "oral_tradition", "longhouses" })
             {
-                game.DebugGrant(new ResourceBundle(0, 0, 0, 60));
-                game.StartResearch(tech);
-                game.DebugFastForward(80);
+                Research(tech);
                 var ev = game.PendingEvent;
                 if (ev != null)
                 {
@@ -226,9 +265,41 @@ namespace Founders
             store.Refresh();
             Focus(Camp(), 24f);
             yield return Shot("04_camp_grown", false);
+            yield return MeasureFps("camp");
 
-            // 3. Village milestone (population grows over time; the village needs its second year).
-            JumpToYear(game, 2);
+            // Levels change how buildings look: a tent at 1, hut at 5, cottage at 10, timber house at 15, two storeys at 20.
+            Heart(20);
+            int lvIndex = 0;
+            foreach (var home in game.State.Buildings.Where(b => b.DefinitionId == "shelter").ToList())
+                home.Level = new[] { 20, 15, 10, 5, 1 }[Mathf.Min(4, lvIndex++)];
+            foreach (var b in game.State.Buildings.Where(b => b.DefinitionId == "wood_camp" || b.DefinitionId == "storage_pit")) b.Level = 12;
+            Heart(5);
+            game.Heart.Level = 9;
+            store.World.RebuildAll();
+            store.Refresh();
+            Focus(Camp(), 15f);
+            yield return Shot("04b_levels", false);
+            store.FocusBuilding(game.Heart.Id);
+            yield return Shot("04c_heart_card", true);
+            store.SelectedBuildingId = null;
+
+            // Tap a berry bush or a tree: the card sends gatherers there.
+            var bush = game.GatherCells(JobType.Foraging).Concat(game.GatherCells(JobType.Woodcutting)).FirstOrDefault();
+            store.SelectedNode = bush;
+            store.SendGatherer(bush.x, bush.y);
+            Focus(Grid.CellCenter(bush.x, bush.y), 12f);
+            yield return new WaitForSeconds(6f);
+            yield return Shot("04d_send_gatherers", true);
+            store.SelectedNode = null;
+
+            // Placing a wood camp shows how many trees it would reach.
+            game.DebugGrant(new ResourceBundle(100, 100, 100, 0));
+            store.BeginPlacement("wood_camp");
+            yield return Shot("04e_placing", true);
+            store.CancelPlacement();
+
+            // 3. Village milestone: the campfire at level 10.
+            Heart(10);
             for (int i = 0; i < 12 && !game.CanClaimMilestone("stable_village"); i++)
             {
                 game.DebugGrant(new ResourceBundle(120, 0, 0, 0));
@@ -256,9 +327,7 @@ namespace Founders
             // 3b. Era II: farming, pottery and bronze.
             foreach (var tech in new[] { "agriculture", "animal_husbandry", "pottery", "copper_smelting", "bronze_working" })
             {
-                game.DebugGrant(new ResourceBundle(0, 0, 0, 130));
-                game.StartResearch(tech);
-                game.DebugFastForward(125);
+                Research(tech);
                 var ev = game.PendingEvent;
                 if (ev != null)
                 {
@@ -277,7 +346,7 @@ namespace Founders
             game.State.Population = Mathf.Max(game.State.Population, 20);
             var pending = game.PendingEvent;
             if (pending != null) game.ResolveEvent(pending.Options.First(o => game.OptionBlocker(o) == null).Id);
-            JumpToYear(game, 5);
+            Heart(20);
             if (game.State.Chapter < 3) game.State.Chapter = 3;
             if (game.CanClaimMilestone("first_civilization")) game.ClaimMilestone("first_civilization");
             else Debug.LogWarning("[FOUNDERS] capture: first_civilization not claimable: " +
@@ -348,7 +417,7 @@ namespace Founders
 
             // 3d. The Middle Ages: the charter, stone houses, the market hall, the mill and the church.
             game.State.Chapter = Mathf.Max(game.State.Chapter, 5);
-            JumpToYear(game, 12);
+            Heart(30);
             foreach (var tech in new[] { "written_law", "masonry", "ironworking", "watermill", "guilds", "burgher_rights", "monastic_orders", "animal_breeding" })
                 if (!game.State.Researched.Contains(tech)) game.State.Researched.Add(tech);
             game.State.Population = Mathf.Max(game.State.Population, 40);
@@ -412,7 +481,7 @@ namespace Founders
             var stand = Enumerable.Range(0, 400).Select(i => (x: i % 20, y: i / 20))
                 .FirstOrDefault(c => game.NodeAt(c.x, c.y)?.Terrain == TerrainType.Forest && game.IsRevealed(c.x, c.y));
             store.SelectedNode = (stand.x, stand.y);
-            game.ToggleHarvestOrder(stand.x, stand.y);
+            store.SendGatherer(stand.x, stand.y);
             store.Refresh();
             Focus(Grid.CellCenter(stand.x, stand.y), 18f);
             yield return Shot("06q_tree_order", true);
@@ -442,8 +511,18 @@ namespace Founders
             SetTime(game, 1, 0.3f);
             yield return new WaitForSeconds(1f);
 
-            // 4. Landscape views: the river and the forest edge.
+            // 4. Landscape views: the river and the forest edge, and a bridge over the river.
             var map = game.Content.Map;
+            for (int by = 4; by < 12; by++)
+            {
+                int wx = Enumerable.Range(0, 20).FirstOrDefault(x => map.Terrain(x, by) == TerrainType.Water);
+                if (wx == 0 || map.Terrain(wx + 1, by) == TerrainType.Water) continue;
+                Decorate("wooden_bridge", wx, by);
+                store.Refresh();
+                Focus(Grid.CellCenter(wx, by), 11f);
+                yield return Shot("07f_bridge", false);
+                break;
+            }
             Focus(Grid.CellCenter(9.5f, 9f), 16f);
             yield return Shot("07_river", false);
             Focus(Grid.CellCenter(3f, 6f), 14f);
@@ -462,6 +541,7 @@ namespace Founders
             }
             Focus(Grid.CellCenter((map.Width - 1) * 0.5f, (map.Height - 1) * 0.5f), 80f);
             yield return Shot("09_overview", true);
+            yield return MeasureFps("overview");
             yield return Shot("09b_valley", false);
 
             // 5. UI screens.
@@ -470,6 +550,8 @@ namespace Founders
             yield return ShowPanel("10_build_panel", Founders.Panel.Build);
             yield return ShowPanel("11_people", Founders.Panel.People);
             yield return ShowPanel("12_research", Founders.Panel.Research);
+            ui.SelectTab("Roads");
+            yield return ShowPanel("10b_build_roads", Founders.Panel.Build);
             yield return ShowPanel("13_goals", Founders.Panel.Objectives);
             yield return ShowPanel("14_world", Founders.Panel.Map);
             yield return ShowPanel("15_profile", Founders.Panel.Profile);

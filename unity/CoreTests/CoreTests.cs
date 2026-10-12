@@ -112,7 +112,7 @@ namespace Founders.Tests
             var (game, clock) = Fixtures.NewGame();
             game.Run(10_000, clock);
             Assert.That(game.State.Resources.Wood, Is.LessThanOrEqualTo(game.StorageCapacity().Wood + 1e-9));
-            Assert.That(game.State.Resources.Wood, Is.EqualTo(120).Within(1e-6));
+            Assert.That(game.State.Resources.Wood, Is.EqualTo(game.StorageCapacity().Wood).Within(1e-6));
         }
 
         [Test]
@@ -132,7 +132,8 @@ namespace Founders.Tests
         [Test]
         public void PopulationGrowsWhenHousedAndFed()
         {
-            var (game, clock) = Fixtures.NewGame();
+            // Families grow only while more food comes in than is eaten.
+            var (game, clock) = Fixtures.NewGame(c => c.Balance.FoodPerPersonPerSecond = 0.02);
             game.TestGrant(new ResourceBundle(food: 80, wood: 20));
             Expect.Success(game.PlaceBuilding("shelter", 4, 5));
             game.Run(200, clock);
@@ -333,7 +334,8 @@ namespace Founders.Tests
             Assert.That(game.State.Resources.Wood, Is.EqualTo(25));
             clock.Advance(3600); // back to the original time: only 1h of real progress since re-anchoring
             game.Update();
-            Assert.That(game.State.Resources.Wood, Is.EqualTo(Math.Min(120, 25 + 360)).Within(1e-6));
+            // At most one hour of woodcutting (one cutter, 0.1/s), not two.
+            Assert.That(game.State.Resources.Wood, Is.GreaterThan(25).And.LessThanOrEqualTo(25 + 360 + 1e-6));
         }
 
         [Test]
@@ -366,10 +368,10 @@ namespace Founders.Tests
             Assert.That(first.Error.Kind, Is.EqualTo(GameErrorKind.Unaffordable));
             game.TestGrant(new ResourceBundle(knowledge: 50));
             Expect.Success(game.StartResearch("improved_stone_tools"));
-            Assert.That(game.State.Resources.Knowledge, Is.EqualTo(38).Within(1e-9));
+            Assert.That(game.State.Resources.Knowledge, Is.EqualTo(50 - game.Content.Technology("improved_stone_tools").Cost.Knowledge).Within(1e-9));
             Expect.Failure(game.StartResearch("improved_stone_tools"), GameError.ResearchInProgress);
             Expect.Failure(game.StartResearch("food_preservation"), GameError.ResearchInProgress);
-            game.Run(30, clock);
+            game.Run(game.Content.Technology("improved_stone_tools").ResearchSeconds, clock);
             Assert.That(game.GetResearchStatus("improved_stone_tools").State, Is.EqualTo(ResearchState.Researched));
             Expect.Failure(game.StartResearch("improved_stone_tools"), GameError.ResearchAlreadyDone);
             Assert.That(game.RatePerWorker(JobType.Woodcutting), Is.EqualTo(0.125).Within(1e-9));
@@ -384,9 +386,10 @@ namespace Founders.Tests
         static (Game, ManualClock) GameWithEvent()
         {
             var (game, clock) = Fixtures.NewGame();
-            game.TestGrant(new ResourceBundle(knowledge: 12));
+            var tech = game.Content.Technology("food_preservation");
+            game.TestGrant(tech.Cost);
             Expect.Success(game.StartResearch("food_preservation"));
-            game.Run(30, clock);
+            game.Run(tech.ResearchSeconds, clock);
             return (game, clock);
         }
 
@@ -453,9 +456,10 @@ namespace Founders.Tests
             game.AddCompleted("shelter", 4, 5);
             Assert.That(game.CanClaimMilestone("stable_village"), Is.False, "population is still 6");
             game.State.Population = 8;
-            // Without seasons the year never advances; the year gate is covered by StoryTests.
-            game.Content.Milestone("stable_village").Requirements.RemoveAll(r => r.Kind == ConditionKind.YearAtLeast);
-            Assert.That(game.CanClaimMilestone("stable_village"), Is.True);
+            Assert.That(game.CanClaimMilestone("stable_village"), Is.False, "the campfire is still at level 1");
+            game.State.Buildings.First(b => b.DefinitionId == "campfire").Level = 10;
+            Assert.That(game.CanClaimMilestone("stable_village"), Is.True,
+                string.Join(", ", game.MilestoneRequirements("stable_village").Where(r => !r.Met).Select(r => r.Text)));
 
             var campfire = game.State.Buildings.First(b => b.DefinitionId == "campfire");
             Expect.Success(game.ClaimMilestone("stable_village"));

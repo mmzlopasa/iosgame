@@ -144,7 +144,7 @@ namespace Founders
         // MARK: - Nature
 
         /// <summary>Cells of land around the map that still get trees and rocks.</summary>
-        const int NatureMargin = 30;
+        const int NatureMargin = 16;
 
         void BuildNature()
         {
@@ -156,8 +156,8 @@ namespace Founders
                 {
                     bool inside = cx >= 0 && cy >= 0 && cx < map.Width && cy < map.Height;
                     var type = Ground.CellType(cx, cy);
-                    // Far outside the map only every other open cell gets props.
-                    if (!inside && (cx + cy) % 2 != 0 && type != TerrainType.Forest) continue;
+                    // Outside the map only some cells get props (far away nobody counts them).
+                    if (!inside && (cx + cy) % 2 != 0) continue;
                     var rng = new System.Random(cx * 73856093 ^ cy * 19349663 ^ 0x5bd1e995);
                     PopulateCell(type, cx, cy, rng, inside);
                 }
@@ -183,7 +183,8 @@ namespace Founders
             {
                 case TerrainType.Forest:
                 {
-                    int trees = inside ? 1 + rng.Next(2) : 1 + (rng.Next(3) == 0 ? 1 : 0);
+                    // One tree per cell (two now and then): the forest reads as woods, not a wall.
+                    int trees = inside && rng.Next(4) == 0 ? 2 : 1;
                     for (int i = 0; i < trees; i++)
                     {
                         bool pine = rng.Next(3) != 0;
@@ -229,11 +230,22 @@ namespace Founders
                 }
                 case TerrainType.Grass:
                 {
-                    int r = rng.Next(12);
-                    if (r == 0) Model("sn_bush", Jitter(c, rng, 1.4f), 0.55f + r01() * 0.25f);
-                    else if (r == 1) Model("sn_bush_flowers", Jitter(c, rng, 1.4f), 0.55f + r01() * 0.2f);
+                    // Berry bushes the foragers pick (the same cells the game counts as food).
+                    var berries = store.Game.NodeKinds.FirstOrDefault(k => k.Id == "berries" && k.Capacity > 0);
+                    if (inside && berries != null && Game.HasFeature(berries, cx, cy))
+                    {
+                        var p = Jitter(c, rng, 0.9f);
+                        Model("sn_bush", p, 0.6f + r01() * 0.15f);
+                        for (int i = 0; i < 5; i++)
+                            Model("sn_rock_1", p + new Vector3(((float)rng.NextDouble() - 0.5f) * 0.9f, 0.45f + r01() * 0.35f, ((float)rng.NextDouble() - 0.5f) * 0.9f),
+                                  0.05f, false, ModelLibrary.Berry);
+                        break;
+                    }
+                    // Open meadow: a few shrubs and flowers, no trees, so the player decides what goes where.
+                    int r = rng.Next(14);
+                    if (r == 0) Model("sn_bush", Jitter(c, rng, 1.4f), 0.5f + r01() * 0.2f);
+                    else if (r == 1) Model("sn_bush_flowers", Jitter(c, rng, 1.4f), 0.5f + r01() * 0.2f);
                     else if (r == 2 && !inside) Tree("LeafTree", Jitter(c, rng, 1.4f), 5f);
-                    else if (r == 3 && inside) Tree("FirSapling", Jitter(c, rng, 1.4f), 1.8f);
                     else if (r == 4) Model("sn_flowers", Jitter(c, rng, 1.4f), 0.28f, false);
                     else if (r == 5) Model("sn_clover", Jitter(c, rng, 1.4f), 0.5f, false);
                     break;
@@ -294,7 +306,8 @@ namespace Founders
                 var def = game.Content.Building(b.DefinitionId);
                 if (def == null) continue;
                 seen.Add(b.Id);
-                string key = $"{b.DefinitionId}|{b.Status}|{b.Rotation}";
+                int tier = def.Looks.Count > 0 ? 0 : b.Level / 5;
+                string key = $"{b.DefinitionId}|{b.Status}|{b.Rotation}|{game.SpriteOf(b)}|{tier}";
                 if (buildings.TryGetValue(b.Id, out var view) && view.Key == key)
                 {
                     SetProgress(view, b);
@@ -325,7 +338,10 @@ namespace Founders
         {
             var center = Ground.OnGround(Grid.FootprintCenter(b.X, b.Y, store.Game.FootprintOf(b)));
             var root = Parts.Group($"Building_{b.Id}", objectRoot, center, b.Rotation * 90f);
-            var model = BuildingModels.Create(def.Sprite, root.transform, null, Grid.CellSize * Mathf.Min(def.Footprint.Width, def.Footprint.Height));
+            float size = Grid.CellSize * Mathf.Min(def.Footprint.Width, def.Footprint.Height);
+            var model = BuildingModels.Create(store.Game.SpriteOf(b), root.transform, null, size);
+            // Buildings without level models of their own show their level with crates, torches and banners.
+            if (def.Looks.Count == 0 && b.Status == BuildingStatus.Complete) BuildingModels.Dress(model.transform, b.Level, size);
             var bar = Parts.Group("Progress", root.transform, new Vector3(0, 2.6f, 0));
             bar.transform.rotation = Quaternion.Euler(0, CameraRig.Yaw, 0);
             Parts.Prim(PrimitiveType.Cube, bar.transform, Vector3.zero, new Vector3(1.4f, 0.16f, 0.06f), "BarBack");
@@ -353,8 +369,8 @@ namespace Founders
         /// <summary>Trodden ground around buildings and, in the village stage, paths to the hearth.</summary>
         void RepaintGround(Game game, bool initial)
         {
-            string key = game.State.StageId + "#" + string.Join(",", game.State.Buildings.Select(b => $"{b.X}:{b.Y}:{b.DefinitionId}")) +
-                         "#" + string.Join(",", game.State.Decorations.Select(d => $"{d.X}:{d.Y}:{d.DefinitionId}"));
+            var st = game.State;
+            string key = $"{st.StageId}|{st.NextBuildingId}|{st.Buildings.Count}|{st.NextDecorationId}|{st.Decorations.Count}";
             if (key == splatKey) return;
             // Repainting the ground is heavy: while a road is being drawn, do it a few times a second at most.
             if (!initial && Time.unscaledTime < nextGroundPaint) return;
@@ -395,7 +411,7 @@ namespace Founders
             foreach (var d in game.State.Decorations)
             {
                 var def = game.Content.Decoration(d.DefinitionId);
-                if (def != null && def.IsRoad) roads[(d.X, d.Y)] = d.DefinitionId != "dirt_path";
+                if (def != null && def.IsRoad && !def.IsBridge) roads[(d.X, d.Y)] = d.DefinitionId != "dirt_path";
             }
             var list = new List<WorldTerrain.RoadSegment>();
             foreach (var kv in roads)
@@ -467,16 +483,21 @@ namespace Founders
             foreach (var d in game.State.Decorations)
             {
                 var def = game.Content.Decoration(d.DefinitionId);
-                if (def == null || def.IsRoad) continue;
+                if (def == null || (def.IsRoad && !def.IsBridge)) continue;
                 seen.Add(d.Id);
                 int connect = 0;
                 foreach (var (dx, dy, bit) in Neighbours)
                     if (at.TryGetValue((d.X + dx, d.Y + dy), out var other) && other == d.DefinitionId) connect |= bit;
+                if (def.IsBridge && connect == 0)
+                    foreach (var (dx, dy, bit) in Neighbours)
+                        if (game.TerrainNow(d.X + dx, d.Y + dy) is TerrainType t && t != TerrainType.Water) connect |= bit;
                 string key = $"{d.DefinitionId}|{d.Rotation}|{connect}";
                 if (decorations.TryGetValue(d.Id, out var view) && view.key == key) continue;
                 if (view.go != null) Destroy(view.go);
                 var go = BuildingModels.Decoration(def.Sprite, objectRoot, null, d.Rotation, connect);
-                go.transform.position = Ground.OnGround(Grid.CellCenter(d.X, d.Y));
+                var pos = Ground.OnGround(Grid.CellCenter(d.X, d.Y));
+                if (def.IsBridge) pos.y = Mathf.Max(pos.y, WorldTerrain.WaterLevel);
+                go.transform.position = pos;
                 decorations[d.Id] = (key, go);
                 if (TallDecorations.TryGetValue(def.Sprite, out float h))
                     tallDecor[d.Id] = (go.transform, h, go.GetComponentsInChildren<Renderer>(), false);
@@ -518,26 +539,43 @@ namespace Founders
                 if (!harvestMarkers.ContainsKey(key)) harvestMarkers[key] = Marker(key % w, key / w, "Select");
         }
 
+        HashSet<(int, int)> usedCells = new HashSet<(int, int)>();
+        float nextNodeRefresh;
+
+        float Standing(int x, int y)
+        {
+            if (usedCells.Contains((x, y))) return 0f;
+            var node = store.Game.NodeAt(x, y);
+            return node == null || double.IsInfinity(node.Remaining) ? 1f : (float)node.Fraction;
+        }
+
         /// <summary>Trees, rocks and grass disappear from cells the player builds on.</summary>
         void UpdateOccupancy(Game game)
         {
             // Standing nature changes slowly: refresh when something is built, cut down or grows back,
             // and every few seconds while gatherers are at work.
-            string key = string.Join(",", game.State.Buildings.Select(b => $"{b.X}:{b.Y}:{b.Rotation}")) + "#" +
-                         string.Join(",", game.State.Decorations.Select(d => $"{d.X}:{d.Y}")) + "#" +
-                         game.State.NodeCleared.Count + ":" + (int)(Time.unscaledTime / 4f);
-            if (key == occupancyKey) return;
-            bool first = occupancyKey == null;
-            occupancyKey = key;
-            var used = OccupiedCells(game);
-            nature.SetStanding((x, y) =>
+            var s = game.State;
+            string key = $"{s.NextBuildingId}|{s.Buildings.Count}|{s.Buildings.Sum(b => b.Rotation)}|{s.NextDecorationId}|{s.Decorations.Count}|{s.NodeCleared.Count}";
+            if (key != occupancyKey)
             {
-                if (used.Contains((x, y))) return 0f;
-                var node = game.NodeAt(x, y);
-                return node == null || double.IsInfinity(node.Remaining) ? 1f : (float)node.Fraction;
-            });
+                bool first = occupancyKey == null;
+                occupancyKey = key;
+                usedCells = OccupiedCells(game);
+                nature.SetStanding(Standing);
+                UpdateHarvestMarkers(game);
+                if (!first) grassDirty = true;
+                return;
+            }
+            // While people gather, only the cells they work on change: refresh just those, now and then.
+            if (Time.unscaledTime < nextNodeRefresh) return;
+            nextNodeRefresh = Time.unscaledTime + 2f;
+            foreach (var job in Enums.Jobs)
+            {
+                if (game.State.Assignments[job] <= 0 || !GathersFromLand(job)) continue;
+                var cells = game.GatherCells(job);
+                for (int i = 0; i < cells.Count && i < 12; i++) nature.SetStandingCell(cells[i].x, cells[i].y, Standing(cells[i].x, cells[i].y));
+            }
             UpdateHarvestMarkers(game);
-            if (!first) grassDirty = true;
         }
 
         // MARK: - Selection & placement ghost
@@ -606,10 +644,24 @@ namespace Founders
         // MARK: - Villagers
 
         const int MaxVillagers = 30;
+        Pathing paths;
+        /// <summary>Per villager: false = on the way to work, true = carrying the goods home.</summary>
+        readonly Dictionary<int, bool> carrying = new Dictionary<int, bool>();
 
         /// <summary>A villager currently playing the given clip (for close-up views), or null.</summary>
         public Villager FindVillager(string clip, string tool = null) =>
             villagers.FirstOrDefault(v => v != null && v.Clip == clip && (tool == null || v.Tool == tool));
+
+        Pathing Paths
+        {
+            get
+            {
+                var map = store.Game.Content.Map;
+                if (paths == null) paths = new Pathing(map.Width, map.Height);
+                paths.Refresh(store.Game);
+                return paths;
+            }
+        }
 
         void UpdateVillagers(Game game)
         {
@@ -634,7 +686,7 @@ namespace Founders
             {
                 int n = children.Count;
                 var c = Villager.Spawn(peopleRoot, RandomSpot(game), 9000 + n, n % 2 == 0, child: true);
-                c.NextTask = from => ChildTask(n);
+                c.NextTask = from => WithRoute(ChildTask(n), from);
                 c.Ground = Ground;
                 children.Add(c);
             }
@@ -649,31 +701,51 @@ namespace Founders
                 villagers[i].SetNeed(needIcon != null && i % 2 == 0 ? needIcon : null);
         }
 
+        /// <summary>
+        /// The player sent someone to a tree, rock, bush or water: the nearest villager of that job
+        /// drops what they are doing and walks there now.
+        /// </summary>
+        public void Dispatch(int x, int y, JobType job)
+        {
+            var game = store.Game;
+            var at = Grid.CellCenter(x, y);
+            int best = -1;
+            float bestD = float.MaxValue;
+            for (int i = 0; i < villagers.Count; i++)
+            {
+                if (villagers[i] == null || JobOf(game, i) != job) continue;
+                float d = (villagers[i].transform.position - at).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = i; }
+            }
+            if (best < 0) return;
+            carrying[best] = false;
+            villagers[best].Interrupt();
+        }
+
         readonly List<Villager> children = new List<Villager>();
 
         /// <summary>Children run between the houses, play and sit by the fire at night.</summary>
         VillagerTask ChildTask(int n)
         {
             var game = store.Game;
-            var hearth = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "campfire" || b.DefinitionId == "village_hearth");
+            var hearth = game.Heart;
             var center = hearth != null ? Grid.CellCenter(hearth.X, hearth.Y) : Vector3.zero;
             var task = new VillagerTask { Duration = Random.Range(3f, 7f), WalkClip = "Jog" };
             if (Atmosphere.Nightness > 0.55f)
             {
-                task.Spot = Around(center, Random.Range(1.4f, 2f));
+                task.Spot = Free(Around(center, Random.Range(1.4f, 2f)));
+                task.Face = center;
                 task.Action = "Sit";
                 task.WalkClip = "Walk";
                 task.Duration = Random.Range(8f, 14f);
                 return task;
             }
-            task.Spot = Random.value < 0.5f ? RandomSpot(game) : Around(center, Random.Range(2.5f, 6f));
+            task.Spot = Free(Random.value < 0.5f ? RandomSpot(game) : Around(center, Random.Range(2.5f, 6f)));
             task.Action = Random.value < 0.4f ? "Talk" : Random.value < 0.5f ? "Gather" : "Idle";
             return task;
         }
 
         // MARK: - Villager jobs (people go where their work is, and do it)
-
-        readonly Dictionary<int, int> trips = new Dictionary<int, int>();
 
         /// <summary>The job of villager #index (the person with that index), or null if idle.</summary>
         static JobType? JobOf(Game game, int index)
@@ -686,39 +758,106 @@ namespace Founders
             return null;
         }
 
+        /// <summary>How many people before this one share their job (spreads a crew over the nodes).</summary>
+        static int RankInJob(Game game, int index)
+        {
+            var id = index < game.State.People.Count ? game.State.People[index].Job : null;
+            int rank = 0;
+            for (int i = 0; i < index && i < game.State.People.Count; i++)
+                if (game.State.People[i].Job == id) rank++;
+            return rank;
+        }
+
         Vector3 Around(Vector3 center, float radius) =>
             Ground.OnGround(center + Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward * radius);
 
-        /// <summary>A random cell of a terrain type around a point (so workers spread out), nearest first.</summary>
-        Vector3? NearTerrain(Vector3 from, TerrainType type, int range = 6)
+        /// <summary>The point itself if people can stand there, otherwise a spot in the nearest open cell.</summary>
+        Vector3 Free(Vector3 p)
         {
-            var (cx, cy) = Grid.CellAt(from);
-            var found = new List<(float d, Vector3 c)>();
-            for (int y = cy - range; y <= cy + range; y++)
-                for (int x = cx - range; x <= cx + range; x++)
-                {
-                    if (Ground.CellType(x, y) != type) continue;
-                    var c = Grid.CellCenter(x, y);
-                    found.Add(((c - from).sqrMagnitude, c));
-                }
-            if (found.Count == 0) return null;
-            found.Sort((a, b) => a.d.CompareTo(b.d));
-            return found[Random.Range(0, Mathf.Min(4, found.Count))].c;
+            var (x, y) = Grid.CellAt(p);
+            if (Paths.Walkable(x, y)) return p;
+            var c = Paths.NearestWalkable(x, y);
+            if (c == null) return p;
+            return Ground.OnGround(Grid.CellCenter(c.Value.x, c.Value.y) + new Vector3(Random.Range(-0.5f, 0.5f), 0, Random.Range(-0.5f, 0.5f)));
         }
 
-        VillagerTask TaskFor(int index, Vector3 from)
+        /// <summary>
+        /// Where to stand to work at a blocked cell (a tree, a rock, the water's edge): in the open
+        /// cell beside it nearest to <paramref name="from"/>, close to the shared edge.
+        /// </summary>
+        Vector3 BesideCell(int x, int y, Vector3 from)
         {
-            var task = BuildTask(index);
+            var target = Grid.CellCenter(x, y);
+            (int x, int y)? best = null;
+            float bestD = float.MaxValue;
+            for (int dy = -1; dy <= 1; dy++)
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    if ((dx == 0 && dy == 0) || !Paths.Walkable(x + dx, y + dy)) continue;
+                    float d = (Grid.CellCenter(x + dx, y + dy) - from).sqrMagnitude * (dx != 0 && dy != 0 ? 1.4f : 1f) + Random.Range(0f, 6f);
+                    if (d < bestD) { bestD = d; best = (x + dx, y + dy); }
+                }
+            if (best == null) return Free(target);
+            var stand = Grid.CellCenter(best.Value.x, best.Value.y);
+            var side = new Vector3(Random.Range(-0.35f, 0.35f), 0, Random.Range(-0.35f, 0.35f));
+            return Ground.OnGround(Vector3.Lerp(stand, target, 0.38f) + side);
+        }
+
+        /// <summary>A spot just outside a building, on the side nearest to <paramref name="from"/>.</summary>
+        Vector3 BesideBuilding(PlacedBuilding b, Vector3 from)
+        {
+            var fp = store.Game.FootprintOf(b);
+            var options = new List<(float d, int x, int y, int ix, int iy)>();
+            for (int y = b.Y - 1; y <= b.Y + fp.Height; y++)
+                for (int x = b.X - 1; x <= b.X + fp.Width; x++)
+                {
+                    bool inside = x >= b.X && x < b.X + fp.Width && y >= b.Y && y < b.Y + fp.Height;
+                    bool corner = (x == b.X - 1 || x == b.X + fp.Width) && (y == b.Y - 1 || y == b.Y + fp.Height);
+                    if (inside || corner || !Paths.Walkable(x, y)) continue;
+                    int ix = Mathf.Clamp(x, b.X, b.X + fp.Width - 1), iy = Mathf.Clamp(y, b.Y, b.Y + fp.Height - 1);
+                    options.Add(((Grid.CellCenter(x, y) - from).sqrMagnitude, x, y, ix, iy));
+                }
+            if (options.Count == 0) return Free(Grid.FootprintCenter(b.X, b.Y, fp));
+            options.Sort((a, c) => a.d.CompareTo(c.d));
+            var o = options[Random.Range(0, Mathf.Min(3, options.Count))];
+            var stand = Grid.CellCenter(o.x, o.y);
+            var edge = Grid.CellCenter(o.ix, o.iy);
+            var side = new Vector3(Random.Range(-0.4f, 0.4f), 0, Random.Range(-0.4f, 0.4f));
+            return Ground.OnGround(Vector3.Lerp(stand, edge, 0.3f) + side);
+        }
+
+        VillagerTask TaskFor(int index, Vector3 from) => WithRoute(BuildTask(index, from), from);
+
+        VillagerTask WithRoute(VillagerTask task, Vector3 from)
+        {
             if (task.WalkClip == null) task.WalkClip = "Walk";
-            task.Route = RouteVia(from, task.Spot);
+            task.Route = Route(from, task.Spot);
             return task;
         }
 
-        VillagerTask BuildTask(int index)
+        /// <summary>Where finished goods go: the nearest store (pit, granary, barn, market, the hearth) or the workplace.</summary>
+        PlacedBuilding DropPoint(Game game, Vector3 from, PlacedBuilding workplace)
+        {
+            PlacedBuilding best = workplace;
+            float bestD = workplace != null ? (Grid.CellCenter(workplace.X, workplace.Y) - from).sqrMagnitude : float.MaxValue;
+            foreach (var (b, def) in game.OperationalBuildings())
+            {
+                if (def.StorageValue <= 0 && !def.Heart) continue;
+                float d = (Grid.CellCenter(b.X, b.Y) - from).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = b; }
+            }
+            return best;
+        }
+
+        static bool GathersFromLand(JobType job) =>
+            job == JobType.Woodcutting || job == JobType.Stonecutting || job == JobType.Mining || job == JobType.Foraging
+            || job == JobType.Hunting || job == JobType.Fishing;
+
+        VillagerTask BuildTask(int index, Vector3 from)
         {
             var game = store.Game;
             var task = new VillagerTask { Action = "Idle", Duration = Random.Range(3f, 7f) };
-            var hearth = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "campfire" || b.DefinitionId == "village_hearth");
+            var hearth = game.Heart;
             Vector3 hearthPos = hearth != null ? Grid.CellCenter(hearth.X, hearth.Y) : Vector3.zero;
 
             // Night: everyone gathers around the hearth or rests by the houses.
@@ -726,12 +865,13 @@ namespace Founders
             {
                 if (index % 3 != 0 || hearth == null)
                 {
-                    task.Spot = Around(hearthPos, Random.Range(1.6f, 2.4f));
+                    task.Spot = Free(Around(hearthPos, Random.Range(1.6f, 2.4f)));
+                    task.Face = hearthPos;
                     task.Action = Random.value < 0.6f ? "Sit" : "Talk";
                 }
                 else
                 {
-                    task.Spot = RandomSpot(game);
+                    task.Spot = Free(RandomSpot(game));
                     task.Action = "Torch";
                 }
                 task.Duration = Random.Range(6f, 12f);
@@ -742,199 +882,153 @@ namespace Founders
             var job = JobOf(game, index);
             // Builders, and idle people while something is being built (Manor Lords: free families build).
             if (sites.Count > 0 && (job == JobType.Construction || (job == null && index % 3 != 2)))
-                return BuildAt(sites[index % sites.Count], task);
+                return BuildAt(sites[index % sites.Count], task, from);
             if (job == null)
             {
-                task.Spot = Around(hearthPos, Random.Range(1.6f, 2.6f));
+                task.Spot = Free(Around(hearthPos, Random.Range(1.6f, 2.6f)));
+                task.Face = hearthPos;
                 task.Action = Random.value < 0.5f ? "Talk" : "Watch";
                 return task;
             }
 
             PlacedBuilding site = null;
-            var places = game.OperationalBuildings().Where(x => x.def.Slots(job.Value) > 0).Select(x => x.building).ToList();
+            var places = game.OperationalBuildings().Where(x => game.SlotsOf(x.building, x.def, job.Value) > 0).Select(x => x.building).ToList();
             if (places.Count > 0) site = places[index % places.Count];
             if (site == null)
             {
-                task.Spot = Around(hearthPos, 2f);
+                task.Spot = Free(Around(hearthPos, 2f));
                 task.Action = "Watch";
                 return task;
             }
             var fp = game.FootprintOf(site);
             var center = Grid.FootprintCenter(site.X, site.Y, fp);
-            float reach = Grid.CellSize * 0.5f * Mathf.Max(fp.Width, fp.Height);
-            int trip = trips.TryGetValue(index, out var t) ? t : 0;
-            trips[index] = trip + 1;
-            // Every third trip a gatherer brings the goods back to the workplace.
-            bool haul = trip % 3 == 2;
-            task.Duration = Random.Range(6f, 11f);
+            task.Duration = Random.Range(7f, 11f);
+
+            if (GathersFromLand(job.Value))
+            {
+                // Gatherers walk to the land they take from, work there, then carry the goods home.
+                carrying.TryGetValue(index, out bool home);
+                if (home)
+                {
+                    carrying[index] = false;
+                    var drop = DropPoint(game, from, site);
+                    task.Spot = BesideBuilding(drop, from);
+                    task.Face = Grid.CellCenter(drop.X, drop.Y);
+                    task.WalkClip = job == JobType.Hunting || job == JobType.Fishing || job == JobType.Foraging ? "Walk" : "Carry";
+                    task.Action = "Gather";
+                    task.Duration = 1.6f;
+                    return task;
+                }
+                var cells = game.GatherCells(job.Value);
+                if (cells.Count == 0)
+                {
+                    task.Spot = BesideBuilding(site, from);
+                    task.Face = center;
+                    task.Action = "Watch";
+                    return task;
+                }
+                int rank = RankInJob(game, index);
+                var pick = cells[rank % Mathf.Min(cells.Count, Mathf.Max(2, game.State.Assignments[job.Value]))];
+                var cellCenter = Grid.CellCenter(pick.x, pick.y);
+                task.Spot = BesideCell(pick.x, pick.y, from);
+                task.Face = cellCenter;
+                carrying[index] = true;
+                switch (job.Value)
+                {
+                    case JobType.Woodcutting:
+                        task.Action = "Chop";
+                        task.Tool = "Prop_Axe";
+                        break;
+                    case JobType.Stonecutting:
+                    case JobType.Mining:
+                        task.Action = "Chop";
+                        task.Tool = "Prop_Pickaxe";
+                        break;
+                    case JobType.Foraging:
+                        task.Action = Random.value < 0.5f ? "Harvest" : "Gather";
+                        break;
+                    case JobType.Hunting:
+                        task.Action = Random.value < 0.6f ? "Throw" : "Watch";
+                        task.Tool = "Prop_Spear";
+                        task.WalkClip = Random.value < 0.4f ? "Jog" : "Walk";
+                        break;
+                    default: // fishing at the water's edge
+                        task.Action = Random.value < 0.7f ? "Throw" : "Idle";
+                        task.Tool = "Prop_Spear";
+                        break;
+                }
+                return task;
+            }
 
             switch (job.Value)
             {
-                case JobType.Woodcutting:
-                case JobType.Stonecutting:
-                case JobType.Mining:
-                {
-                    if (haul)
-                    {
-                        task.Spot = Around(center, reach + 0.6f);
-                        task.WalkClip = "Carry";
-                        task.Action = "Idle";
-                        task.Duration = 2.5f;
-                        return task;
-                    }
-                    // Go to the cells this job is actually gathering from (the player's marks first).
-                    var cells = game.GatherCells(job.Value);
-                    if (cells.Count > 0)
-                    {
-                        var pick = cells[Mathf.Min(cells.Count - 1, (index + trip) % Mathf.Min(4, cells.Count))];
-                        task.Spot = Around(Grid.CellCenter(pick.x, pick.y), Random.Range(0.6f, 1.1f));
-                    }
-                    else
-                    {
-                        task.Spot = Around(center, reach + 0.8f);
-                        task.Action = "Watch";
-                        task.Tool = null;
-                        return task;
-                    }
-                    task.Action = "Chop";
-                    task.Tool = job == JobType.Woodcutting ? "Prop_Axe" : "Prop_Pickaxe";
-                    return task;
-                }
                 case JobType.Farming:
                 {
-                    task.Spot = Ground.OnGround(center + new Vector3(Random.Range(-1.5f, 1.5f), 0, Random.Range(-1.5f, 1.5f)));
+                    task.Spot = Ground.OnGround(center + new Vector3(Random.Range(-0.9f, 0.9f) * fp.Width, 0, Random.Range(-0.9f, 0.9f) * fp.Height));
                     string season = game.Season?.Id ?? "summer";
                     task.Action = season == "spring" ? "Plant" : season == "summer" ? (Random.value < 0.5f ? "Water" : "Plant")
                         : season == "autumn" ? "Harvest" : "Gather";
                     return task;
                 }
-                case JobType.Foraging:
-                {
-                    task.Spot = NearTerrain(center, TerrainType.Forest, 4) is Vector3 woods && Random.value < 0.6f
-                        ? Around(woods, Random.Range(1.2f, 2f)) : Around(center, reach + Random.Range(0.6f, 1.6f));
-                    task.Action = Random.value < 0.5f ? "Harvest" : "Gather";
-                    return task;
-                }
-                case JobType.Fishing:
-                {
-                    task.Spot = NearTerrain(center, TerrainType.Water, 3) is Vector3 water
-                        ? Around(Vector3.Lerp(water, center, 0.55f), Random.Range(0.1f, 0.4f)) : Around(center, reach + 0.6f);
-                    task.Action = Random.value < 0.6f ? "Throw" : "Idle";
-                    task.Tool = "Prop_Spear";
-                    return task;
-                }
-                case JobType.Hunting:
-                {
-                    if (haul)
-                    {
-                        task.Spot = Around(center, reach + 0.6f);
-                        task.WalkClip = "Carry";
-                        task.Action = "Idle";
-                        task.Duration = 2.5f;
-                        return task;
-                    }
-                    task.Spot = NearTerrain(center, TerrainType.Forest, 9) is Vector3 woods ? Around(woods, Random.Range(1f, 3f)) : Around(center, reach + 2f);
-                    task.Action = Random.value < 0.5f ? "Throw" : "Watch";
-                    task.Tool = "Prop_Spear";
-                    task.WalkClip = Random.value < 0.4f ? "Jog" : "Walk";
-                    return task;
-                }
                 case JobType.Herding:
                     // Herders walk among the animals with their staff, watch them and lend a hand.
-                    task.Spot = Around(center, Random.Range(0.3f, reach + 0.4f));
+                    task.Spot = Ground.OnGround(center + new Vector3(Random.Range(-0.8f, 0.8f) * fp.Width, 0, Random.Range(-0.8f, 0.8f) * fp.Height));
                     task.Action = Random.value < 0.5f ? "Watch" : Random.value < 0.5f ? "Gather" : "Idle";
                     task.Tool = "Prop_Spear";
                     return task;
                 case JobType.Crafting:
-                    task.Spot = Around(center, reach + Random.Range(0.4f, 0.9f));
+                    task.Spot = BesideBuilding(site, from);
+                    task.Face = center;
                     task.Action = "Work";
                     task.Tool = "Prop_Hammer";
                     return task;
                 default:
-                    task.Spot = Around(center, reach + Random.Range(0.5f, 1.1f));
+                    task.Spot = BesideBuilding(site, from);
+                    task.Face = center;
                     task.Action = "Talk";
                     return task;
             }
         }
 
         /// <summary>One or two people stand at each building site and hammer, kneel and fit parts.</summary>
-        VillagerTask BuildAt(PlacedBuilding site, VillagerTask task)
+        VillagerTask BuildAt(PlacedBuilding site, VillagerTask task, Vector3 from)
         {
             var fp = store.Game.FootprintOf(site);
-            var center = Grid.FootprintCenter(site.X, site.Y, fp);
-            float reach = Grid.CellSize * 0.5f * Mathf.Max(fp.Width, fp.Height) + Random.Range(0.35f, 0.7f);
-            task.Spot = Around(center, reach);
+            task.Spot = BesideBuilding(site, from);
+            task.Face = Grid.FootprintCenter(site.X, site.Y, fp);
             task.Action = Random.value < 0.55f ? "Chop" : "Work";
             task.Tool = "Prop_Hammer";
             task.Duration = Random.Range(6f, 10f);
             return task;
         }
 
-        // MARK: - Walking on roads
-
-        HashSet<(int, int)> roadCells = new HashSet<(int, int)>();
-        string roadKey;
-
-        HashSet<(int, int)> Roads()
-        {
-            var game = store.Game;
-            string key = game.State.NextDecorationId + "|" + game.State.Decorations.Count;
-            if (key == roadKey) return roadCells;
-            roadKey = key;
-            roadCells = new HashSet<(int, int)>(game.State.Decorations
-                .Where(d => game.Content.Decoration(d.DefinitionId)?.IsRoad ?? false).Select(d => (d.X, d.Y)));
-            return roadCells;
-        }
+        // MARK: - Walking around things
 
         /// <summary>
-        /// Waypoints along the roads from near <paramref name="from"/> to near <paramref name="to"/>,
-        /// or null when no road helps (people simply walk straight there).
+        /// Waypoints from <paramref name="from"/> to <paramref name="to"/> around buildings, trees,
+        /// rocks and water (over bridges), preferring roads; null when the way is straight and clear.
         /// </summary>
-        List<Vector3> RouteVia(Vector3 from, Vector3 to)
+        List<Vector3> Route(Vector3 from, Vector3 to)
         {
-            var roads = Roads();
-            if (roads.Count < 2) return null;
-            (int, int)? Nearest(Vector3 p)
+            var p = Paths;
+            var a = Grid.CellAt(from);
+            var b = Grid.CellAt(to);
+            if (a == b) return null;
+            var cells = p.FindPath(a, b);
+            if (cells == null) return null;
+            cells = p.Straighten(cells);
+            if (cells.Count <= 2 && p.ClearLine(cells[0], cells[cells.Count - 1])) return null;
+            var points = new List<Vector3>(cells.Count);
+            for (int i = 1; i < cells.Count - 1; i++)
             {
-                var (cx, cy) = Grid.CellAt(p);
-                (int, int)? best = null;
-                int bestD = 5; // only roads within a few cells are worth a detour
-                foreach (var c in roads)
-                {
-                    int d = Mathf.Abs(c.Item1 - cx) + Mathf.Abs(c.Item2 - cy);
-                    if (d < bestD) { bestD = d; best = c; }
-                }
-                return best;
+                var (x, y) = cells[i];
+                float j = p.IsRoad(x, y) ? 0.15f : 0.35f;
+                points.Add(Ground.OnGround(Grid.CellCenter(x, y) + new Vector3(Random.Range(-j, j), 0, Random.Range(-j, j))));
             }
-            var a = Nearest(from);
-            var b = Nearest(to);
-            if (a == null || b == null || a == b) return null;
-            // Breadth-first search over connected road cells.
-            var prev = new Dictionary<(int, int), (int, int)> { [a.Value] = a.Value };
-            var queue = new Queue<(int, int)>();
-            queue.Enqueue(a.Value);
-            while (queue.Count > 0)
-            {
-                var c = queue.Dequeue();
-                if (c == b.Value) break;
-                foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
-                {
-                    var n = (c.Item1 + dx, c.Item2 + dy);
-                    if (!roads.Contains(n) || prev.ContainsKey(n)) continue;
-                    prev[n] = c;
-                    queue.Enqueue(n);
-                }
-            }
-            if (!prev.ContainsKey(b.Value)) return null;
-            var cells = new List<(int, int)>();
-            for (var c = b.Value; c != a.Value; c = prev[c]) cells.Add(c);
-            cells.Add(a.Value);
-            cells.Reverse();
-            // Only worth it when the road is not a long detour.
-            float direct = Vector3.Distance(from, to);
-            if (cells.Count * Grid.CellSize > direct * 1.8f + 6f) return null;
-            return cells.Select(c => Ground.OnGround(Grid.CellCenter(c.Item1, c.Item2) +
-                                                     new Vector3(Random.Range(-0.3f, 0.3f), 0, Random.Range(-0.3f, 0.3f)))).ToList();
+            // The last open cell before the spot (the spot itself may stand at a tree or inside a field).
+            var last = cells[cells.Count - 1];
+            if (last != b) points.Add(Ground.OnGround(Grid.CellCenter(last.x, last.y)));
+            return points.Count > 0 ? points : null;
         }
 
         Vector3 RandomSpot(Game game)
@@ -947,7 +1041,7 @@ namespace Founders
             // Stand around the building, never on it (the hearth sits in the middle of its cell).
             float reach = Grid.CellSize * (0.55f + 0.5f * Mathf.Max(fp.Width, fp.Height)) + Random.Range(0f, 0.6f);
             var offset = Quaternion.Euler(0, Random.Range(0f, 360f), 0) * Vector3.forward * reach;
-            return Ground.OnGround(center + offset);
+            return Free(Ground.OnGround(center + offset));
         }
     }
 }
