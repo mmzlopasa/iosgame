@@ -25,6 +25,7 @@ namespace Founders.UI
         public static readonly Color Outline = Hex("#3A2314");
         /// <summary>Plain text on parchment (paragraphs).</summary>
         public static readonly Color InkText = Hex("#5A3A1E");
+        public static readonly Color InkDark = Hex("#3F2612");
         public static readonly Color InkSoft = Hex("#8A6038");
         /// <summary>Secondary outlined text (sub-lines, inactive tabs).</summary>
         public static readonly Color Pale = Hex("#F3E6D2");
@@ -58,6 +59,19 @@ namespace Founders.UI
 
         public static Color Hex(string hex) => ColorUtility.TryParseHtmlString(hex, out var c) ? c : Color.magenta;
         public static Color Alpha(Color c, float a) => new Color(c.r, c.g, c.b, a);
+
+        /// <summary>
+        /// A text colour for light parchment: white becomes dark brown ink, bright colours keep their hue but
+        /// become deep enough to read (the kit's light green "next" value becomes a strong green, and so on).
+        /// </summary>
+        public static Color OnParchment(Color c)
+        {
+            Color.RGBToHSV(c, out float h, out float s, out float v);
+            if (s < 0.25f) return v > 0.85f ? InkDark : InkText; // white and pale greys: ink
+            float hue = h * 360f;
+            float targetV = hue > 35f && hue < 75f ? 0.52f : 0.6f; // yellows need to be darker to read
+            return Color.HSVToRGB(h, Mathf.Clamp(s * 1.15f, 0.7f, 1f), Mathf.Min(v, targetV));
+        }
 
         // MARK: - Font
 
@@ -122,6 +136,8 @@ namespace Founders.UI
         public static Texture2D Icon(string name)
         {
             if (name == null) return null;
+            // "thumb:medieval_house" / "thumb:deco:well": a picture of the real model (see Thumbnails).
+            if (name.StartsWith("thumb:")) return Thumbnails.Get(name.Substring(6)) ?? Icon("build");
             if (icons.TryGetValue(name, out var t)) return t;
             t = UnityEngine.Resources.Load<Texture2D>("UI/Icons/" + name);
             if (t == null) Debug.LogWarning($"[FOUNDERS] UI icon missing: {name}");
@@ -258,6 +274,9 @@ namespace Founders.UI
         /// </summary>
         public static T Skin<T>(this T e, string name) where T : VisualElement
         {
+            // Text on light parchment is dark and plain; on wood, buttons and the world it is white and outlined.
+            e.EnableInClassList("surf-light", name == "panel" || name == "section" || name == "slot");
+            e.EnableInClassList("surf-dark", !(name == "panel" || name == "section" || name == "slot"));
             var tex = Theme.SkinTexture(name);
             if (tex == null) return e;
             e.style.backgroundImage = new StyleBackground(tex);
@@ -355,12 +374,56 @@ namespace Founders.UI
             return l;
         }
 
-        /// <summary>The kit's text: white (or a colour) with a dark outline and a hard drop; one line.</summary>
+        /// <summary>
+        /// The kit's text: white (or a colour) with a dark outline and a hard drop; one line. Placed on light
+        /// parchment it turns into plain dark ink of the same hue instead, which reads far better at small sizes.
+        /// </summary>
         public static Label T(string text, float size = 12, Color? color = null)
         {
             var l = Bare(text, size, color ?? Color.white);
             Outline(l, size);
+            l.AddToClassList("kit-text");
+            l.RegisterCallback<AttachToPanelEvent>(_ => ApplySurface(l));
             return l;
+        }
+
+        /// <summary>True when the nearest skinned ancestor is light parchment.</summary>
+        static bool OnParchment(VisualElement e)
+        {
+            for (var p = e.parent; p != null; p = p.parent)
+            {
+                if (p.ClassListContains("surf-light")) return true;
+                if (p.ClassListContains("surf-dark")) return false;
+            }
+            return false;
+        }
+
+        static void ApplySurface(Label l)
+        {
+            bool ink = OnParchment(l);
+            if (ink == l.ClassListContains("ink-mode")) return;
+            l.EnableInClassList("ink-mode", ink);
+            if (ink)
+            {
+                l.style.unityTextOutlineWidth = 0;
+                l.style.textShadow = new TextShadow { offset = new Vector2(0, 1), blurRadius = 0, color = new Color(1f, 0.97f, 0.9f, 0.55f) };
+                l.style.color = Theme.OnParchment(l.style.color.value);
+                // Coloured runs ("Lv.4" in yellow-green) darken the same way.
+                if (l.text != null && l.text.Contains("<color=#"))
+                    l.text = System.Text.RegularExpressions.Regex.Replace(l.text, "<color=#([0-9A-Fa-f]{6})>",
+                        m => "<color=#" + ColorUtility.ToHtmlStringRGB(Theme.OnParchment(Theme.Hex("#" + m.Groups[1].Value))) + ">");
+            }
+            else
+            {
+                Outline(l, l.style.fontSize.value.value);
+            }
+        }
+
+        /// <summary>Colours a label, keeping it readable on whatever surface it stands (use instead of style.color).</summary>
+        public static void Tint(Label l, Color c)
+        {
+            var want = l.ClassListContains("ink-mode") ? Theme.OnParchment(c) : c;
+            if (l.style.color != want) l.style.color = want;
         }
 
         /// <summary>Sets the outline and drop for a size (call again when the size changes).</summary>
@@ -614,6 +677,7 @@ namespace Founders.UI
         public static VisualElement Slot(string icon, float size, Cell kind = Cell.Slot, float iconShare = 0.66f, bool dim = false)
         {
             var s = Div("slot").Center().Skin(SkinOf(kind)).Pad(0, 0, 3, 0).Size(size, size);
+            if (icon != null && icon.StartsWith("thumb:")) iconShare = Mathf.Max(iconShare, 0.92f); // pictures fill the cell
             if (icon != null) s.Add(dim ? IconDim(icon, Mathf.Round(size * iconShare)) : Icon(icon, Mathf.Round(size * iconShare)));
             return s;
         }

@@ -54,6 +54,8 @@ namespace Founders
             store.Init(rig, world, capture);
             gameObject.AddComponent<Atmosphere>().Init(store);
             gameObject.AddComponent<AudioDirector>().Init(store);
+            // Pictures of the real buildings for the build menu and the cards (rendered once, then read from disk).
+            yield return Thumbnails.Prepare(store.Game.Content, p => ui.Loading.Set(Mathf.Lerp(0.6f, 0.78f, p), "Carving the signs…"));
             ui.Loading.Set(0.78f, "Gathering the people…");
             yield return null;
 

@@ -191,7 +191,7 @@ namespace Founders.UI
                     double x = G.State.Resources[type];
                     string s = Fmt.Compact(x);
                     if (have.text != s) have.text = s;
-                    have.style.color = x + 1e-6 >= need ? Theme.Up : Theme.Bad;
+                    E.Tint(have, x + 1e-6 >= need ? Theme.Up : Theme.Bad);
                 });
                 body.Add(r);
             }
@@ -302,9 +302,8 @@ namespace Founders.UI
         static string DecorIconFor(DecorationDefinition d)
         {
             if (d == null) return "sparkle";
-            if (d.IsBridge || d.IsRoad) return "road";
-            if (d.Heat != null) return "flame";
-            return d.Category switch { "Roads" => "road", "Fences" => "fence", "Lights" => "lantern", "Nature" => "tree", "Monuments" => "landmark", _ => "sparkle" };
+            if (d.IsRoad && !d.IsBridge) return "road"; // roads are drawn into the ground: a symbol reads better
+            return "thumb:deco:" + d.Sprite;
         }
 
         // MARK: - Resource nodes (trees, rocks, ore, berries, fishing water)
@@ -388,7 +387,7 @@ namespace Founders.UI
 
             // Head: the building's cell, what it is and what it does.
             var head = E.Div().Row(0, Align.FlexStart).Ignore();
-            head.Add(E.Slot(BuildingIcon(def), 48, CellFor(def)));
+            head.Add(E.Slot(BuildingIcon(def, b.Level), 48, CellFor(def)));
             var col = E.Div().Col().Grow().Ignore();
             col.style.marginLeft = 8;
             string state = complete ? Category(def) : b.Status == BuildingStatus.Upgrading ? "Upgrading" : "Under construction";
@@ -573,7 +572,7 @@ namespace Founders.UI
                         foreach (var h in Warm.Homes) if (h.Building.Id == id) { home = h; break; }
                         string s = home is HomeWarmth hw ? $"{Deg(hw.Warmth)} {hw.Exposure}" : "Empty";
                         if (value.text != s) value.text = s;
-                        value.style.color = home is HomeWarmth hw2 ? ExposureColor(hw2.Exposure) : Theme.Pale;
+                        E.Tint(value, home is HomeWarmth hw2 ? ExposureColor(hw2.Exposure) : Theme.Pale);
                     });
                     Add(inside);
                 }

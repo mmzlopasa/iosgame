@@ -145,24 +145,8 @@ namespace Founders.UI
             _ => d.Heart ? E.Cell.Legendary : E.Cell.Common,
         };
 
-        static string BuildingIcon(BuildingDefinition def)
-        {
-            string id = def.Id;
-            if (def.Heart) return "campfire";
-            if (id.Contains("heal")) return "sick";
-            if (id.Contains("church") || id.Contains("chapel") || id.Contains("hall")) return "landmark";
-            if (id.Contains("mill")) return "wheat";
-            if (id.Contains("market")) return "storage";
-            if (id.Contains("smithy") || id.Contains("mine")) return "pickaxe";
-            if (id.Contains("farm") || id.Contains("field")) return "wheat";
-            if (id.Contains("fish")) return "fish";
-            if (id.Contains("hunt")) return "spear";
-            if (id.Contains("fire") || id.Contains("kiln") || id.Contains("smelter") || id.Contains("brazier")) return "flame";
-            if (id.Contains("stone") || id.Contains("quarr")) return "stone";
-            if (id.Contains("wood") || id.Contains("lumber")) return "axe";
-            if (id.Contains("research") || id.Contains("school") || id.Contains("library")) return "knowledge";
-            return Category(def) switch { "Shelter" => "home", "Food" => "food", "Storage" => "storage", _ => "build" };
-        }
+        /// <summary>The picture of the real building (rendered from its model) at a level.</summary>
+        static string BuildingIcon(BuildingDefinition def, int level = 1) => "thumb:" + def.SpriteAt(level);
 
         /// <summary>A red notification badge in the top-right corner of a parent.</summary>
         static VisualElement CornerBadge(string text, float size = 16) => E.Badge(text, true, size).Abs(null, -5, -5);
@@ -266,7 +250,7 @@ namespace Founders.UI
                     double x = G.State.Resources[type];
                     string s = Fmt.Compact(x);
                     if (v.text != s) v.text = s;
-                    v.style.color = x >= caps[type] - 0.5 ? Theme.Gold : econ.Net[type] < -0.0005 && x < 20 ? Theme.Bad : Color.white;
+                    E.Tint(v, x >= caps[type] - 0.5 ? Theme.Gold : econ.Net[type] < -0.0005 && x < 20 ? Theme.Bad : Color.white);
                 });
                 Tap(item, () => { if (type == ResourceType.Knowledge) store.ActivePanel = Panel.Research; else { peopleTab = 0; store.ActivePanel = Panel.People; } });
             }
@@ -321,7 +305,7 @@ namespace Founders.UI
                     string t = G.Freezing ? "Freezing!" : $"{season.Name} · Day {Day}";
                     var l = (Label)s.ElementAt(1);
                     if (l.text != t) l.text = t;
-                    l.style.color = G.Freezing ? Theme.Bad : Color.white;
+                    E.Tint(l, G.Freezing ? Theme.Bad : Color.white);
                 });
                 Tap(s, () => store.ActivePanel = G.HasClimate ? Panel.Weather : Panel.People);
             }
@@ -337,7 +321,7 @@ namespace Founders.UI
                     var l = (Label)th.ElementAt(1);
                     string s = Deg(temp);
                     if (l.text != s) l.text = s;
-                    l.style.color = snap ? Theme.Icy : ExposureColor(G.ExposureOf(temp));
+                    E.Tint(l, snap ? Theme.Icy : ExposureColor(G.ExposureOf(temp)));
                     if ((snap ? 1 : 0) != lastSnap) { lastSnap = snap ? 1 : 0; E.SetIcon(icon, snap ? "winter" : "thermometer"); }
                 });
                 Tap(th, () => store.ActivePanel = Panel.Weather);
@@ -349,7 +333,7 @@ namespace Founders.UI
                 var l = (Label)hope.ElementAt(1);
                 string s = a.ToString(Inv);
                 if (l.text != s) l.text = s;
-                l.style.color = ApprovalColor(a);
+                E.Tint(l, ApprovalColor(a));
             });
             Tap(hope, () => { peopleTab = 2; store.ActivePanel = Panel.People; });
             if (G.HasDiscontent)
@@ -360,7 +344,7 @@ namespace Founders.UI
                     var l = (Label)dis.ElementAt(1);
                     string s = ((int)Math.Round(G.State.Discontent)).ToString(Inv);
                     if (l.text != s) l.text = s;
-                    l.style.color = MoodColor(G.DiscontentMood);
+                    E.Tint(l, MoodColor(G.DiscontentMood));
                 });
                 Tap(dis, () => { peopleTab = 2; store.ActivePanel = Panel.People; });
             }
@@ -374,7 +358,7 @@ namespace Founders.UI
                     var l = (Label)sick.ElementAt(1);
                     string s = n.ToString(Inv);
                     if (l.text != s) l.text = s;
-                    l.style.color = Theme.Hex("#FFB3A8");
+                    E.Tint(l, Theme.Hex("#FFB3A8"));
                 });
                 Tap(sick, () => { peopleTab = 2; store.ActivePanel = Panel.People; });
             }

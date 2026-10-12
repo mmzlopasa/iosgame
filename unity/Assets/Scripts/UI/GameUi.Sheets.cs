@@ -309,7 +309,7 @@ namespace Founders.UI
             var col = E.Div().Col().Grow().Ignore();
             col.style.marginLeft = 6;
             var v = Live(value, 15);
-            if (color != null) Bind(() => v.style.color = color());
+            if (color != null) Bind(() => E.Tint(v, color()));
             col.Add(v);
             col.Add(E.T(label, 10, Theme.Pale));
             c.Add(col);
@@ -526,7 +526,7 @@ namespace Founders.UI
         void BuildWellbeing(VisualElement host)
         {
             var pct = E.T("", 12);
-            Bind(() => { int a = ApprovalNow; string s = a + "%"; if (pct.text != s) pct.text = s; pct.style.color = ApprovalColor(a); });
+            Bind(() => { int a = ApprovalNow; string s = a + "%"; if (pct.text != s) pct.text = s; E.Tint(pct, ApprovalColor(a)); });
             var card = Block("Hope", out var rows, pct);
             var bar = E.Bar(out var fill, 11, E.FillKind.Green);
             Bind(() => { int a = ApprovalNow; E.SetFill(fill, a / 100.0); });

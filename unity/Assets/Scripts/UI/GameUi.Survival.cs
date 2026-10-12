@@ -246,7 +246,7 @@ namespace Founders.UI
                 double s = (G.State.ActivePetition?.DeadlineSimTime ?? 0) - G.State.SimTime;
                 string txt = Fmt.Clock(s);
                 if (left.text != txt) left.text = txt;
-                left.style.color = s < 600 ? Theme.Bad : Color.white;
+                E.Tint(left, s < 600 ? Theme.Bad : Color.white);
             });
             head.Add(left);
             card.Add(head);
@@ -411,7 +411,7 @@ namespace Founders.UI
                 string mood = G.DiscontentMood;
                 string s = $"{(int)Math.Round(G.State.Discontent)} · {mood}";
                 if (value.text != s) value.text = s;
-                value.style.color = MoodColor(mood);
+                E.Tint(value, MoodColor(mood));
                 E.SetFill(fill, G.State.Discontent / 100);
                 if (mood != lastMood)
                 {
@@ -541,7 +541,7 @@ namespace Founders.UI
                 var e = G.ExposureOf(t);
                 string s = Deg(t);
                 if (temp.text != s) temp.text = s;
-                temp.style.color = ExposureColor(e);
+                E.Tint(temp, ExposureColor(e));
                 string f = $"Feels {e.ToString().ToLowerInvariant()}";
                 if (feel.text != f) feel.text = f;
             });
@@ -635,7 +635,7 @@ namespace Founders.UI
                         {
                             string s = $"{Deg(x.Warmth)} {x.Exposure}";
                             if (v.text != s) v.text = s;
-                            v.style.color = ExposureColor(x.Exposure);
+                            E.Tint(v, ExposureColor(x.Exposure));
                             return;
                         }
                 });
