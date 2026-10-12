@@ -562,7 +562,9 @@ namespace Founders.UI
                 if (def.HousingValue > 0)
                 {
                     double ins = G.InsulationOf(b, def);
-                    Add(E.StatRow("home", "Walls", SignedDeg(ins), Next(level < def.MaxLevel && w.InsulationPerLevel > 0 ? SignedDeg(ins + w.InsulationPerLevel) : null), sep));
+                    // Walls gain a fraction of a degree per level: one decimal, so "now ➜ next" never reads "+9° ➜ +9°".
+                    string Deg1(double d) => "+" + d.ToString("0.0", Inv) + "°";
+                    Add(E.StatRow("home", "Walls", Deg1(ins), Next(level < def.MaxLevel && w.InsulationPerLevel > 0 ? Deg1(ins + w.InsulationPerLevel) : null), sep));
                     int id = b.Id;
                     var inside = E.StatRow("thermometer", "Warmth inside", "", null, true);
                     var value = (Label)inside.ElementAt(inside.childCount - 1);

@@ -203,6 +203,34 @@ namespace Founders
                     cam.transform.LookAt(target);
                 }
 
+                // Frame by what is really drawn: find the drawn pixels, then move the camera so they span ~86%.
+                // (Bounds can include flat ground patches or empty parts that leave the subject tiny.)
+                for (int pass = 0; pass < 2; pass++)
+                {
+                    var probeDark = Grab(Color.black);
+                    var probeLight = Grab(Color.white);
+                    int x0 = Size, y0 = Size, x1 = -1, y1 = -1;
+                    for (int y = 0; y < Size; y++)
+                        for (int x = 0; x < Size; x++)
+                        {
+                            var a = probeDark[y * Size + x];
+                            var b = probeLight[y * Size + x];
+                            int diff = (b.r - a.r) + (b.g - a.g) + (b.b - a.b);
+                            if (diff > 3 * 255 - 40) continue; // background
+                            if (x < x0) x0 = x; if (x > x1) x1 = x; if (y < y0) y0 = y; if (y > y1) y1 = y;
+                        }
+                    if (x1 < 0) break;
+                    float spanPx = Mathf.Max(x1 - x0 + 1, y1 - y0 + 1);
+                    float k = spanPx / (Size * 0.86f);
+                    if (pass > 0 && Mathf.Abs(k - 1f) < 0.04f) break;
+                    // Re-aim at the centre of what was drawn, then move in (or out) by the span ratio.
+                    var mid = new Vector3((x0 + x1 + 1) * 0.5f / Size, (y0 + y1 + 1) * 0.5f / Size, dist);
+                    var aim = cam.ViewportToWorldPoint(mid);
+                    dist *= Mathf.Clamp(k, 0.2f, 2f);
+                    var forward = cam.transform.forward;
+                    cam.transform.position = aim - forward * dist;
+                }
+
                 // Black and white backgrounds give the true transparency (works whatever the pipeline does with alpha).
                 var dark = Grab(Color.black);
                 var light = Grab(Color.white);
