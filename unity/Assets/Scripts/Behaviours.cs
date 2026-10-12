@@ -325,6 +325,8 @@ namespace Founders
         /// <summary>The clip playing now (Walk, Chop, Plant…).</summary>
         public string Clip => current;
         public string Tool => shownTool;
+        bool child, elder;
+        public bool IsChild => child;
         NeedBubble need;
 
         /// <summary>Survival need shown over the head ("food", "winter") or null.</summary>
@@ -375,7 +377,7 @@ namespace Founders
 
         void Start()
         {
-            speed = Random.Range(1.0f, 1.25f);
+            speed = Random.Range(1.0f, 1.25f) * (elder ? 0.75f : 1f);
             body = transform.GetChild(0);
             wait = Random.Range(0f, 3f);
             target = transform.position;
@@ -459,37 +461,69 @@ namespace Founders
                 body.localPosition = new Vector3(0, Mathf.Abs(Mathf.Sin(Time.time * speed * 7f)) * 0.05f, 0);
         }
 
-        public static Villager Spawn(Transform parent, Vector3 at, int seed, bool female)
+        sealed class PersonModel { public string Model, Gender, Age; }
+        static List<PersonModel> personModels;
+
+        static List<PersonModel> PersonModels()
         {
-            var root = Parts.Group("Villager", parent, at).transform;
+            if (personModels != null) return personModels;
+            personModels = new List<PersonModel>();
+            var asset = Resources.Load<TextAsset>("people");
+            if (asset == null) return personModels;
+            var root = new Core.JObj(Core.Json.Parse(asset.text));
+            foreach (var p in root.Objs("people"))
+                personModels.Add(new PersonModel { Model = p.Str("model"), Gender = p.Str("gender"), Age = p.Str("age") });
+            return personModels;
+        }
+
+        /// <summary>The painted colour of a model material (the pack stores linear colours).</summary>
+        static Color Original(Material m)
+        {
+            if (m == null) return Color.grey;
+            var c = m.HasProperty("_BaseColor") ? m.GetColor("_BaseColor") : m.HasProperty("_Color") ? m.color : Color.grey;
+            return new Color(Mathf.LinearToGammaSpace(c.r), Mathf.LinearToGammaSpace(c.g), Mathf.LinearToGammaSpace(c.b), 1f);
+        }
+
+        /// <summary>
+        /// A villager: one of the stylized people (man, woman or elder), or a child (a smaller person
+        /// with a bigger head). Skin, hair and clothes are tinted per person so no two look alike.
+        /// </summary>
+        public static Villager Spawn(Transform parent, Vector3 at, int seed, bool female, bool child = false)
+        {
+            var root = Parts.Group(child ? "Child" : "Villager", parent, at).transform;
             root.rotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
-            var model = Model(female ? "VillagerF" : "Villager") ?? Model("Villager");
+            var rng = new System.Random(seed * 7919 + 17);
+            bool elder = !child && rng.Next(7) == 0;
+            var pool = PersonModels().FindAll(p => p.Gender == (female ? "female" : "male") && p.Age == (elder ? "elder" : "adult"));
+            if (pool.Count == 0) pool = PersonModels();
+            var model = pool.Count > 0 ? Model(pool[rng.Next(pool.Count)].Model.Replace("Models/", "")) : Model(female ? "VillagerF" : "Villager");
 
             if (model != null)
             {
-                var rng = new System.Random(seed * 7919 + 17);
                 var body = Instantiate(model, root);
                 body.name = "Body";
                 body.transform.localPosition = Vector3.zero;
                 body.transform.localRotation = Quaternion.identity;
-                float s = (female ? 0.9f : 0.95f) + (float)rng.NextDouble() * 0.07f;
-                body.transform.localScale = Vector3.one * s;
 
                 var skin = SkinTones[rng.Next(SkinTones.Length)];
-                var hide = HideTints[rng.Next(HideTints.Length)];
-                var hair = HairColors[rng.Next(HairColors.Length)];
+                var cloth = HideTints[rng.Next(HideTints.Length)];
+                var hair = elder ? new Color(0.78f, 0.77f, 0.74f) : HairColors[rng.Next(HairColors.Length)];
+                bool recolourClothes = rng.Next(3) != 0;
                 foreach (var r in body.GetComponentsInChildren<SkinnedMeshRenderer>())
                 {
-                    // Submesh order is up to the FBX importer, so materials are matched by name.
+                    // Materials are matched by name: Skin and Hair vary per person, clothes keep their
+                    // design but often take a new main colour.
                     var source = r.sharedMaterials;
                     var mats = new Material[source.Length];
                     var tints = new Color[source.Length];
                     for (int i = 0; i < source.Length; i++)
                     {
                         string n = source[i] != null ? source[i].name : "";
-                        if (n.StartsWith("Hide")) { mats[i] = Palette.Get("Tunic"); tints[i] = hide; }
+                        mats[i] = Palette.Get("Tunic");
+                        if (n.StartsWith("Skin")) tints[i] = skin;
                         else if (n.StartsWith("Hair")) { mats[i] = Palette.Get("Hair"); tints[i] = hair; }
-                        else { mats[i] = Palette.Get("Skin"); tints[i] = skin; }
+                        else if (n.StartsWith("Main") && recolourClothes) tints[i] = cloth;
+                        else tints[i] = Original(source[i]);
                     }
                     r.sharedMaterials = mats;
                     r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
@@ -511,7 +545,16 @@ namespace Founders
                     r.sharedMaterials = mats;
                     r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 }
-                return root.gameObject.AddComponent<Villager>();
+                // Real height: the pack is drawn larger than life.
+                var bounds = new Bounds(root.position, Vector3.zero);
+                foreach (var r in body.GetComponentsInChildren<SkinnedMeshRenderer>()) bounds.Encapsulate(r.bounds);
+                float height = child ? 1.0f + (float)rng.NextDouble() * 0.15f : (female ? 1.6f : 1.7f) + (float)rng.NextDouble() * 0.12f;
+                if (elder) height -= 0.06f;
+                if (bounds.size.y > 0.01f) body.transform.localScale *= height / bounds.size.y;
+                var v = root.gameObject.AddComponent<Villager>();
+                v.child = child;
+                v.elder = elder;
+                return v;
             }
 
             var figure = Parts.Group("Body", root, Vector3.zero).transform;

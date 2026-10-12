@@ -1,0 +1,55 @@
+{
+ "source": "Quaternius Ultimate Animated Character Pack (CC0)",
+ "people": [
+  {
+   "model": "Models/Person_Viking_Male",
+   "gender": "male",
+   "age": "adult"
+  },
+  {
+   "model": "Models/Person_Viking_Female",
+   "gender": "female",
+   "age": "adult"
+  },
+  {
+   "model": "Models/Person_Casual_Male",
+   "gender": "male",
+   "age": "adult"
+  },
+  {
+   "model": "Models/Person_Casual_Female",
+   "gender": "female",
+   "age": "adult"
+  },
+  {
+   "model": "Models/Person_Casual2_Male",
+   "gender": "male",
+   "age": "adult"
+  },
+  {
+   "model": "Models/Person_Casual2_Female",
+   "gender": "female",
+   "age": "adult"
+  },
+  {
+   "model": "Models/Person_Casual3_Male",
+   "gender": "male",
+   "age": "adult"
+  },
+  {
+   "model": "Models/Person_Casual3_Female",
+   "gender": "female",
+   "age": "adult"
+  },
+  {
+   "model": "Models/Person_OldClassy_Male",
+   "gender": "male",
+   "age": "elder"
+  },
+  {
+   "model": "Models/Person_OldClassy_Female",
+   "gender": "female",
+   "age": "elder"
+  }
+ ]
+}

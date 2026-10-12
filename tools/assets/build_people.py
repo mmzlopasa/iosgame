@@ -24,7 +24,7 @@ ROOT = os.path.abspath(os.path.join(HERE, "..", ".."))
 CACHE = os.path.join(HERE, ".cache", "ual")
 URL1 = "https://opengameart.org/sites/default/files/universal_animation_librarystandard.zip"
 URL2 = "https://opengameart.org/sites/default/files/universal_animation_library_2standard.zip"
-OUT = os.path.join(ROOT, "unity", "Assets", "Art", "Resources", "Models")
+OUT = os.path.join(ROOT, "unity", "Assets", "Art", "Source")  # animation source for the characters (not shipped)
 
 
 def fetch(url, name):

@@ -114,6 +114,7 @@ namespace Founders
             selection.Clear();
             ghost.Clear();
             villagers.Clear();
+            children.Clear();
             ghostKey = "";
             selectionKey = -1;
             splatKey = null;
@@ -627,10 +628,47 @@ namespace Founders
                 Destroy(villagers[villagers.Count - 1].gameObject);
                 villagers.RemoveAt(villagers.Count - 1);
             }
+            // Families: children play around the hearth (one for every six people, up to six).
+            int kids = Mathf.Min(6, game.State.Population / 6);
+            while (children.Count < kids)
+            {
+                int n = children.Count;
+                var c = Villager.Spawn(peopleRoot, RandomSpot(game), 9000 + n, n % 2 == 0, child: true);
+                c.NextTask = from => ChildTask(n);
+                c.Ground = Ground;
+                children.Add(c);
+            }
+            while (children.Count > kids)
+            {
+                Destroy(children[children.Count - 1].gameObject);
+                children.RemoveAt(children.Count - 1);
+            }
             // Survival needs over the heads: hunger when food runs out, cold without firewood.
             string needIcon = game.State.FoodShortage ? "food" : game.Freezing ? "winter" : null;
             for (int i = 0; i < villagers.Count; i++)
                 villagers[i].SetNeed(needIcon != null && i % 2 == 0 ? needIcon : null);
+        }
+
+        readonly List<Villager> children = new List<Villager>();
+
+        /// <summary>Children run between the houses, play and sit by the fire at night.</summary>
+        VillagerTask ChildTask(int n)
+        {
+            var game = store.Game;
+            var hearth = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "campfire" || b.DefinitionId == "village_hearth");
+            var center = hearth != null ? Grid.CellCenter(hearth.X, hearth.Y) : Vector3.zero;
+            var task = new VillagerTask { Duration = Random.Range(3f, 7f), WalkClip = "Jog" };
+            if (Atmosphere.Nightness > 0.55f)
+            {
+                task.Spot = Around(center, Random.Range(1.4f, 2f));
+                task.Action = "Sit";
+                task.WalkClip = "Walk";
+                task.Duration = Random.Range(8f, 14f);
+                return task;
+            }
+            task.Spot = Random.value < 0.5f ? RandomSpot(game) : Around(center, Random.Range(2.5f, 6f));
+            task.Action = Random.value < 0.4f ? "Talk" : Random.value < 0.5f ? "Gather" : "Idle";
+            return task;
         }
 
         // MARK: - Villager jobs (people go where their work is, and do it)
