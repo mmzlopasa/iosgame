@@ -198,7 +198,8 @@ namespace Founders.UI
             row.style.width = SafeWidth - 16;
 
             // Settlement tile with the chapter's progress under it (tap: Goals).
-            var avatar = E.Slot(G.State.EpochId == "epoch_medieval_kingdoms" ? "landmark" : "home", AvatarSize, E.Cell.Tile, 0.7f);
+            // The founder's portrait, as the kit's player avatar.
+            var avatar = E.Slot("face_m1", AvatarSize, E.Cell.Tile, 0.92f);
             var chapter = LiveBar(() =>
             {
                 var req = G.ChapterRequirements();
