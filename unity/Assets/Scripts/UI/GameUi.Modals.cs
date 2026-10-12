@@ -22,8 +22,12 @@ namespace Founders.UI
             if (store.Celebration != null) return "ms|" + store.Celebration;
             if (store.Offline != null) return "wb";
             if (G.PendingStory != null) return "story|" + G.PendingStory.Id;
+            // An event and a petition can both wait: whichever is on screen stays until answered, then the other follows.
             var ev = G.PendingEvent;
-            if (ev != null && !store.EventMinimized)
+            bool evOpen = ev != null && !store.EventMinimized;
+            var pet = G.PendingPetition;
+            if (pet != null && (petitionShowing || !evOpen)) return "pet|" + pet.Id;
+            if (evOpen)
                 return $"ev|{ev.Id}|{chosenOption}|" + string.Join("", ev.Options.Select(o => G.OptionBlocker(o) == null ? "1" : "0"));
             return "";
         }
@@ -31,6 +35,7 @@ namespace Founders.UI
         void BuildModal(VisualElement host)
         {
             string key = ModalKey();
+            petitionShowing = key.StartsWith("pet|", System.StringComparison.Ordinal);
             if (key == "") return;
             var scrim = E.Div().Fill().Bg(new Color(0.03f, 0.035f, 0.05f, 0.62f));
             host.Add(scrim);
@@ -42,6 +47,7 @@ namespace Founders.UI
             if (key.StartsWith("ms|")) card = MilestoneCard();
             else if (key == "wb") card = WelcomeCard();
             else if (key.StartsWith("story|")) card = StoryCard();
+            else if (petitionShowing) card = PetitionCard();
             else card = EventCard();
             frame.Add(card);
 

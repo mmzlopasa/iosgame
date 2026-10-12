@@ -180,6 +180,7 @@ namespace Founders
                 game.ResolveEvent(option.Id);
             }
             game.DismissStory();
+            if (game.PendingPetition != null) game.AnswerPetition(true);
             store.Celebration = null;
             store.Refresh();
         }
@@ -196,10 +197,10 @@ namespace Founders
         {
             double seasonLen = game.Content.Balance.SeasonSeconds;
             double year = seasonLen * 4;
-            double start = System.Math.Floor(game.State.SimTime / year) * year + season * seasonLen + seasonLen * 0.35;
-            double t = System.Math.Floor(start / Atmosphere.DayLength) * Atmosphere.DayLength + dayPhase * Atmosphere.DayLength;
-            if (t < start) t += Atmosphere.DayLength;
-            game.State.SimTime = t;
+            double start = System.Math.Floor(game.State.SimTime / year) * year + season * seasonLen;
+            // A day about a third into the season (with one-day seasons: the season's own day).
+            double day = System.Math.Floor(seasonLen * 0.35 / Atmosphere.DayLength) * Atmosphere.DayLength;
+            game.State.SimTime = start + day + dayPhase * Atmosphere.DayLength;
             store.Refresh();
         }
 
@@ -208,6 +209,95 @@ namespace Founders
             store.ActivePanel = panel;
             yield return Shot(name, true);
             store.ActivePanel = Founders.Panel.None;
+        }
+
+        /// <summary>A free cell near the heart where a decoration may stand.</summary>
+        (int x, int y)? DecorationCell(string id, int minRing = 2)
+        {
+            var game = store.Game;
+            var heart = game.Heart;
+            if (heart == null) return null;
+            for (int r = minRing; r < 9; r++)
+                for (int dy = -r; dy <= r; dy++)
+                    for (int dx = -r; dx <= r; dx++)
+                    {
+                        if (Mathf.Max(Mathf.Abs(dx), Mathf.Abs(dy)) != r) continue;
+                        int x = heart.X + dx, y = heart.Y + dy;
+                        if (game.DecorationIssues(id, x, y).Count == 0) return (x, y);
+                    }
+            return null;
+        }
+
+        IEnumerator SurvivalShots(Game game)
+        {
+            Research("herbal_healing");
+            BuildRich("healers_hut");
+            var hut = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "healers_hut" && b.Status == BuildingStatus.Complete);
+            game.DebugGrant(new ResourceBundle(0, 60, 40, 0));
+            for (int i = 0; i < 3; i++)
+            {
+                var cell = DecorationCell("fire_brazier", 3 + i);
+                if (cell != null) game.PlaceDecoration("fire_brazier", cell.Value.x, cell.Value.y);
+            }
+            if (hut != null)
+            {
+                if (game.IdleWorkers == 0)
+                {
+                    var donor = Enums.Jobs.Where(j => j != JobType.Construction && game.State.Assignments[j] > 1).OrderByDescending(j => game.State.Assignments[j]).FirstOrDefault();
+                    game.SetWorkers(donor, game.State.Assignments[donor] - 1);
+                }
+                game.SetWorkers(JobType.Healing, 1);
+            }
+            // Two people fall ill: one under the healer's care, one left at home.
+            foreach (var p in game.State.People.Where(p => p.Job == null || p.Job == "foraging").Take(2)) p.Sick = true;
+            SetTime(game, 3, 0.8f); // winter, dusk
+            store.Refresh();
+            store.World.ShowHeat = true;
+            Focus(Camp(), 15f);
+            yield return new WaitForSeconds(1.5f);
+            Debug.Log($"[FOUNDERS] capture: {game.Temperature:0.0}°C, cold {game.Warmth().Cold}, sick {game.SickCount}, heart {game.HeartFire()}");
+            yield return Shot("06u_heat_map", true);
+            ui.ShowWeather();
+            yield return Shot("06x_weather", true);
+            store.ActivePanel = Founders.Panel.None;
+            ui.ShowPeople();
+            yield return Shot("06x2_people_health", true);
+            store.ActivePanel = Founders.Panel.None;
+            Heart(12);
+            game.State.LastLawSimTime = null;
+            game.SignLaw("day_of_rest");
+            game.State.LastLawSimTime = null;
+            ui.ShowCustoms("long_days");
+            yield return Shot("06y_customs", true);
+            ui.ShowCustoms("long_days", true);
+            yield return Shot("06y2_customs_sign", true);
+            store.ActivePanel = Founders.Panel.None;
+            game.State.Discontent = 58;
+            ui.ShowPetition("warm_homes");
+            yield return Shot("06z_petition", true);
+            game.AnswerPetition(true);
+            store.Refresh();
+            store.World.ShowHeat = false;
+            game.DebugGrant(new ResourceBundle(0, 400, 0, 0));
+            var stoke = game.StokeHeart();
+            if (!stoke.Ok) Debug.LogWarning($"[FOUNDERS] capture: stoke {stoke.Error}");
+            store.Refresh();
+            Focus(Camp(), 9f);
+            yield return Shot("06v_stoked_heart", false);
+            ui.ShowHeart();
+            yield return Shot("06v2_heart_card", true);
+            store.SelectedBuildingId = null;
+            store.Refresh();
+            if (hut != null)
+            {
+                Focus(Grid.CellCenter(hut.X, hut.Y), 8f);
+                yield return Shot("06w_healers_hut", false);
+            }
+            foreach (var p in game.State.People) p.Sick = false;
+            game.State.StokedUntilSimTime = 0;
+            game.State.StokeReadySimTime = 0;
+            game.State.Modifiers.RemoveAll(m => m.SourceId == "stoke");
+            store.Refresh();
         }
 
         IEnumerator Run()
@@ -506,6 +596,9 @@ namespace Founders
             yield return Shot("06f_night", false);
             SetTime(game, 1, 0.3f);
             yield return new WaitForSeconds(1f);
+
+            // 3d. Survival (Frostpunk): a winter evening, the heat map, braziers, a healer's hut and the stoked heart.
+            yield return SurvivalShots(game);
 
             ResolvePending();
             SetTime(game, 1, 0.3f);

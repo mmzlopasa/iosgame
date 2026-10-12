@@ -200,7 +200,11 @@ namespace Founders.UI
         VisualElement LiveBar(Func<double> value, float height = 5, Texture2D tex = null, Color? color = null)
         {
             var bar = E.Bar(out var fill, height, tex ?? Theme.GoldFill, color);
-            if (color.HasValue) fill.style.backgroundImage = StyleKeyword.None;
+            if (color.HasValue)
+            {
+                fill.style.backgroundImage = StyleKeyword.None;
+                fill.style.backgroundColor = color.Value;
+            }
             Bind(() => E.SetFill(fill, value()));
             return bar;
         }
@@ -225,6 +229,7 @@ namespace Founders.UI
             dirty = false;
             nextTick = Time.unscaledTime + 0.1f;
 
+            tickNo++;
             econ = G.Economy();
             caps = G.StorageCapacity();
             OnTick();
@@ -412,38 +417,42 @@ namespace Founders.UI
 
         static Color ApprovalColor(int a) => a >= 65 ? Theme.Mint : a >= 40 ? Theme.Gold : Theme.Error;
 
-        /// <summary>Season, year and approval at a glance (tap: People & wellbeing). About <see cref="SeasonCardH"/> tall.</summary>
+        /// <summary>
+        /// Season, outside temperature, hope (approval) and discontent at a glance: <see cref="SeasonCardH"/> tall.
+        /// The season and temperature open the Weather sheet; the meters open People & wellbeing.
+        /// </summary>
         VisualElement SeasonCard()
         {
             var season = G.Season;
-            var c = E.Div("season").Col().Glass(14, G.Freezing ? Theme.Alpha(Theme.Error, 0.5f) : (Color?)null).Pad(8, 10).Margin(0, 0, 6);
+            var c = E.Div("season").Col().Glass(14, G.Freezing ? Theme.Alpha(Theme.Error, 0.5f) : (Color?)null).Pad(7, 9).Margin(0, 0, 6);
+            c.style.height = SeasonCardH - 6;
+            var top = E.Div("season-top").Col();
+            var head = E.Div().Row().Ignore();
+            head.style.height = 17;
             if (season != null)
             {
-                var head = E.Div().Row().Ignore();
-                head.Add(E.Icon(SeasonIcon(season.Id), 14, SeasonTint(season.Id)));
-                var name = E.Text(season.Name, 12.5f, Theme.Ink, Theme.F.TextBold).NoWrap();
+                // Freezing replaces the season's name (one line keeps the card's height fixed).
+                head.Add(E.Icon(G.Freezing ? "alert" : SeasonIcon(season.Id), 14, G.Freezing ? Theme.Error : SeasonTint(season.Id)));
+                var name = E.Text(G.Freezing ? "Freezing!" : season.Name, 12.5f, G.Freezing ? Theme.Error : Theme.Ink, Theme.F.TextBold).NoWrap();
                 name.style.marginLeft = 5;
                 name.style.flexShrink = 1;
                 head.Add(name);
-                head.Add(E.Div().Grow().Ignore());
-                head.Add(Live(() => $"Y{G.Year}", 10, Theme.Muted, Theme.F.Mono));
-                c.Add(head);
-                var bar = LiveBar(() => G.SeasonProgress, 3, Theme.Gradient("season" + season.Id, false, SeasonTint(season.Id), Theme.Alpha(SeasonTint(season.Id), 0.7f)));
-                bar.style.marginTop = 6;
-                c.Add(bar);
             }
-            var row = E.Div().Row().Margin(6).Ignore();
-            // Freezing replaces the approval label (one line keeps the card's height fixed).
-            row.Add(E.Icon(G.Freezing ? "alert" : "approval", 13, G.Freezing ? Theme.Error : Theme.Body));
-            var label = E.Text(G.Freezing ? "Freezing!" : "Approval", 10.5f, G.Freezing ? Theme.Error : Theme.Body, G.Freezing ? Theme.F.TextBold : Theme.F.Text);
-            label.style.marginLeft = 5;
-            row.Add(label);
-            row.Add(E.Div().Grow().Ignore());
-            var value = E.Mono("", 12);
-            Bind(() => { int a = G.Approval; value.text = a + "%"; value.style.color = ApprovalColor(a); });
-            row.Add(value);
-            c.Add(row);
-            Tap(c, () => store.ActivePanel = Panel.People);
+            head.Add(E.Div().Grow().Ignore());
+            if (G.HasClimate) head.Add(ThermoChip());
+            else if (season != null) head.Add(Live(() => $"Y{G.Year}", 10, Theme.Muted, Theme.F.Mono));
+            top.Add(head);
+            if (season != null)
+            {
+                var bar = LiveBar(() => G.SeasonProgress, 3, Theme.Gradient("season" + season.Id, false, SeasonTint(season.Id), Theme.Alpha(SeasonTint(season.Id), 0.7f)));
+                bar.style.marginTop = 5;
+                top.Add(bar);
+            }
+            Tap(top, () => store.ActivePanel = G.HasClimate ? Panel.Weather : Panel.People);
+            c.Add(top);
+            var meters = HudMeters();
+            meters.style.marginTop = 6;
+            c.Add(meters);
             return c;
         }
 
@@ -547,7 +556,7 @@ namespace Founders.UI
                 var lv = G.NextLevel(b);
                 string level = $"{b.Level}|{(lv == null ? "" : G.State.Resources.Covers(lv.Cost).ToString())}|{G.HasRoadAccess(b)}|{Time.unscaledTime < confirmDemolishUntil}|" +
                                string.Join("", G.LevelRequirements(b).Select(r => r.Met ? "1" : "0"));
-                return $"sel|{b.Id}|{b.DefinitionId}|{b.Status}|{up}|{jobs}|{G.IdleWorkers > 0}|{level}";
+                return $"sel|{b.Id}|{b.DefinitionId}|{b.Status}|{up}|{jobs}|{G.IdleWorkers > 0}|{level}|{(def?.Heart == true ? StokeKey() : "")}";
             }
             return "none";
         }
@@ -624,6 +633,8 @@ namespace Founders.UI
             head.Add(E.Text(removing ? "Remove decorations" : def?.Name ?? "", 18, Theme.Ink, Theme.F.Display));
             if (def != null && def.Beauty > 0) head.Add(StatChip("sparkle", $"Beauty +{def.Beauty}"));
             card.Add(head);
+            var heat = HeatChips(def);
+            if (heat != null) card.Add(heat);
             if (def != null && def.Cost.Entries.Any()) card.Add(CostChips(def.Cost).Margin(8));
             string hint = removing ? "Tap a road, fence or ornament to remove it. Half of its cost comes back."
                 : store.PaintMode ? "Drag across the ground to draw. Tap the hand to move the camera instead."
@@ -770,6 +781,7 @@ namespace Founders.UI
             if (def.StorageValue > 0) stats.Add(StatChip("storage", $"+{(int)(def.StorageValue * Game.LevelFactor(b.Level))} storage"));
             if (def.ProtectedFoodValue > 0) stats.Add(StatChip("food", $"Keeps {(int)def.ProtectedFoodValue} food"));
             if (stats.childCount > 0) card.Add(stats);
+            WarmthSection(card, b, def);
 
             foreach (var slot in def.JobSlots ?? new List<JobSlot>())
                 card.Add(JobRow(slot.Job, true).Margin(10));
@@ -890,7 +902,7 @@ namespace Founders.UI
             var look = TileLook[cat];
             var t = E.Div().Size(size, size).Radius(size * 0.3f).Center().Border(new Color(1, 1, 1, 0.12f)).Ignore();
             t.BgImage(Theme.Gradient("tile" + cat, true, look.a, look.b));
-            string icon = def.Id.Contains("church") ? "landmark" : def.Id.Contains("mill") ? "wheat" : def.Id.Contains("market") ? "storage"
+            string icon = def.Id.Contains("heal") ? "sick" : def.Id.Contains("church") ? "landmark" : def.Id.Contains("mill") ? "wheat" : def.Id.Contains("market") ? "storage"
                 : def.Id.Contains("smithy") ? "pickaxe" : def.Id.Contains("farm") ? "spring" : def.Id.Contains("fire") || def.Id.Contains("kiln") || def.Id.Contains("smelter") ? "flame"
                 : def.Id.Contains("stone") ? "stone" : def.Id.Contains("wood") ? "wood" : look.icon;
             t.Add(E.Icon(icon, size * 0.46f, Theme.Alpha(Theme.GoldPale, 0.95f)));
@@ -934,6 +946,12 @@ namespace Founders.UI
         {
             var config = G.Content.JobConfig(job);
             if (config == null) return "";
+            if (job == JobType.Healing)
+            {
+                int sick = G.SickCount, care = G.CareCapacity;
+                if (workers == 0) return sick > 0 ? $"{sick} ill and nobody tends them" : "Tends the sick: they get well quickly";
+                return sick == 0 ? $"Nobody is ill · room for {care}" : $"Tending {Math.Min(sick, care)} of {sick} ill · room for {care}";
+            }
             if (config.Output.HasValue)
             {
                 double each = G.RatePerWorker(job) * 60;

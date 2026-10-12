@@ -98,6 +98,7 @@ namespace Founders.UI
                 }
             }
             UpdateDrawer();
+            UpdateHeatOverlay();
             LayoutOverlays();
             modalLayer.Hidden(ModalKey() == "");
         }
@@ -123,6 +124,7 @@ namespace Founders.UI
                 case Panel.People: eyebrow = "Community"; title = "People & Work"; break;
                 case Panel.Research: eyebrow = "Knowledge"; title = "Research"; accent = Theme.Lavender; break;
                 case Panel.Objectives: eyebrow = "The long rise"; title = "Goals"; break;
+                case Panel.Weather: eyebrow = "Climate"; title = "Weather & Warmth"; accent = Icy; break;
                 case Panel.Map: eyebrow = G.Content.Map.Name ?? "Riverside"; title = "World & Legacy"; break;
                 case Panel.Profile: eyebrow = "Founder"; title = "Profile"; break;
                 default: eyebrow = "Founders"; title = "Settings"; break;
@@ -155,6 +157,16 @@ namespace Founders.UI
                 chip.Add(r);
                 row.Add(chip);
             }
+            else if (store.ActivePanel == Panel.Weather && G.HasClimate)
+            {
+                var chip = E.Div().Row().Radius(999).Pad(6, 11).Bg(Theme.Alpha(Icy, 0.1f)).Border(Theme.Alpha(Icy, 0.28f)).Ignore();
+                chip.style.marginRight = 8;
+                chip.Add(E.Icon("thermometer", 13, Icy));
+                var v = Live(() => Deg(G.Temperature), 13, Theme.Ink, Theme.F.Mono);
+                v.style.marginLeft = 5;
+                chip.Add(v);
+                row.Add(chip);
+            }
             row.Add(E.IconButton("close", Act(() => store.ActivePanel = Panel.None), 36));
             host.Add(row);
         }
@@ -169,7 +181,9 @@ namespace Founders.UI
                         string.Join("", G.Content.Decorations.Select(d => $"{(G.State.Resources.Covers(d.Cost) ? 1 : 0)}{(DecorationUnlocked(d) ? 1 : 0)}"));
                 case Panel.People:
                     return expandedPerson + "|" + string.Join(",", G.State.People.Select(p => $"{p.Job}{SkillSum(p)}")) + $"|{G.SeasonIndex}|{G.Freezing}|{string.Join(",", G.ApprovalFactors().Select(f => f.Label + f.Points))}|{G.IdleWorkers}|{G.State.Population}|{G.HousingCapacity()}|{G.State.FoodShortage}|" +
-                           string.Join(",", Enums.Jobs.Select(j => $"{G.State.Assignments[j]}/{G.JobCapacity(j)}"));
+                           string.Join(",", Enums.Jobs.Select(j => $"{G.State.Assignments[j]}/{G.JobCapacity(j)}")) + "|" + SurvivalPeopleKey();
+                case Panel.Weather:
+                    return WeatherKey();
                 case Panel.Research:
                     return $"{G.State.ActiveResearch?.TechId}|" + string.Join(",", G.Content.Technologies.Select(t =>
                         $"{G.GetResearchStatus(t.Id).State}{G.State.Resources.Covers(t.Cost)}"));
@@ -198,6 +212,7 @@ namespace Founders.UI
                 case Panel.People: BuildPeoplePanel(host); break;
                 case Panel.Research: BuildResearchPanel(host); break;
                 case Panel.Objectives: BuildGoalsPanel(host); break;
+                case Panel.Weather: BuildWeatherPanel(host); break;
                 case Panel.Map: BuildWorldPanel(host); break;
                 case Panel.Profile: BuildProfilePanel(host); break;
                 default: BuildSettingsPanel(host); break;
@@ -367,6 +382,7 @@ namespace Founders.UI
                 summary.Add(LiveBar(() => G.State.GrowthProgress, 5, Theme.MintFill).Margin(6));
             }
             host.Add(summary);
+            BuildHealth(host);
 
             host.Add(SectionLabel("Work"));
             foreach (var job in Enums.Jobs) host.Add(JobRow(job, false).Margin(0, 0, 8));
@@ -393,12 +409,21 @@ namespace Founders.UI
             host.Add(SectionLabel($"Villagers · {G.State.People.Count}"));
             var list = Card();
             int shown = 0;
-            foreach (var p in G.State.People.OrderByDescending(SkillSum))
+            // The sick first (the gravest on top), then the most skilled.
+            foreach (var p in G.State.People.OrderByDescending(x => x.Sick).ThenByDescending(x => x.Sick ? x.Severity : 0).ThenByDescending(SkillSum))
             {
                 if (shown++ >= 40) break;
                 var row = E.Div().Row().Margin(shown == 1 ? 0 : 8).Ignore();
-                var av = E.Div().Size(32, 32).Radius(16).Center().Bg(Theme.Alpha(p.Female ? Theme.Lavender : Theme.Gold, 0.18f)).Ignore();
-                av.Add(E.Text(p.Name.Substring(0, 1), 14, p.Female ? Theme.LavenderLight : Theme.GoldLight, Theme.F.TextBold));
+                if (p.Sick && p.Severity > 0.5)
+                    row.Radius(12).Pad(5, 6).Bg(Theme.Alpha(Theme.Error, 0.1f)).Border(Theme.Alpha(Theme.Error, 0.3f));
+                var av = E.Div().Size(32, 32).Radius(16).Center().Bg(Theme.Alpha(p.Sick ? Theme.Error : p.Female ? Theme.Lavender : Theme.Gold, 0.18f)).Ignore();
+                av.Add(E.Text(p.Name.Substring(0, 1), 14, p.Sick ? Theme.Error : p.Female ? Theme.LavenderLight : Theme.GoldLight, Theme.F.TextBold));
+                if (p.Sick)
+                {
+                    var badge = E.Div().Size(15, 15).Radius(7.5f).Center().Bg(Notify).Border(Color.white, 1f).Abs(null, null, -3, -3).Ignore();
+                    badge.Add(E.Icon("sick", 9, Color.white));
+                    av.Add(badge);
+                }
                 row.Add(av);
                 var col = E.Div().Col().Grow().Ignore();
                 col.style.marginLeft = 10;
@@ -406,6 +431,7 @@ namespace Founders.UI
                 var job = p.Job == null ? null : Enums.Jobs.Cast<JobType?>().FirstOrDefault(j => j.Value.Id() == p.Job);
                 string doing = job == null ? "Idle" : G.Content.JobConfig(job.Value)?.Name ?? p.Job;
                 col.Add(E.Text(doing, 11, job == null ? Theme.Gold : Theme.Body));
+                if (p.Sick) SickLine(col, p);
                 row.Add(col);
                 var best = G.BestSkill(p);
                 if (best != null)
@@ -485,7 +511,9 @@ namespace Founders.UI
                 case JobType.Mining: return "Miner";
                 case JobType.Crafting: return "Toolmaker";
                 case JobType.Construction: return "Builder";
-                default: return "Thinker";
+                case JobType.Healing: return "Healer";
+                case JobType.Research: return "Thinker";
+                default: return job.Id();
             }
         }
 
@@ -499,17 +527,17 @@ namespace Founders.UI
             t.style.marginLeft = 8;
             head.Add(t);
             var pct = E.Mono("", 18);
-            Bind(() => { int a = G.Approval; pct.text = a + "%"; pct.style.color = ApprovalColor(a); });
+            Bind(() => { int a = ApprovalNow; pct.text = a + "%"; pct.style.color = ApprovalColor(a); });
             head.Add(pct);
             card.Add(head);
             var bar = E.Bar(out var fill, 6, null, Theme.Gold);
             fill.style.backgroundImage = StyleKeyword.None;
-            Bind(() => { int a = G.Approval; E.SetFill(fill, a / 100.0); fill.style.backgroundColor = ApprovalColor(a); });
+            Bind(() => { int a = ApprovalNow; E.SetFill(fill, a / 100.0); fill.style.backgroundColor = ApprovalColor(a); });
             bar.style.marginTop = 10;
             card.Add(bar);
             var effect = Live(() =>
             {
-                int a = G.Approval;
+                int a = ApprovalNow;
                 int work = (int)Math.Round((G.ApprovalProductivity(a) - 1) * 100);
                 string growth = a < 30 ? "no newcomers" : $"growth ×{G.ApprovalGrowth(a):0.0}";
                 return $"Work {(work >= 0 ? "+" : "")}{work}% · {growth}";
@@ -529,6 +557,7 @@ namespace Founders.UI
                 card.Add(r);
             }
             host.Add(card);
+            BuildDiscontent(host);
 
             var season = G.Season;
             if (season != null)
@@ -784,6 +813,8 @@ namespace Founders.UI
                 if (explored) top.Add(E.Eyebrow("Explored", Theme.Mint, 9.5f));
                 card.Add(top);
                 card.Add(E.Text(region.Description, 12, Theme.Body).Margin(4));
+                var finds = RegionFinds(region, explored);
+                if (finds != null) card.Add(finds);
                 if (active != null && active.RegionId == region.Id)
                 {
                     var r = E.Div().Row().Between().Margin(10).Ignore();

@@ -44,6 +44,7 @@ namespace Founders
                 case "hunters_lodge": HuntersLodge(b); break;
                 case "mine": Mine(b); break;
                 case "pasture": Pasture(b); break;
+                case "healers_hut": HealersHut(b); break;
                 case "medieval_cottage":
                 case "medieval_house":
                 case "medieval_townhouse":
@@ -448,6 +449,31 @@ namespace Founders
             b.Fire(new Vector3(0f, 0.05f, 0.6f), 0.4f);
         }
 
+        /// <summary>A small round hut with herbs drying under the eaves and broth over a little fire.</summary>
+        static void HealersHut(Builder b)
+        {
+            Roundhouse(b, 1.55f, 0.9f, 1.25f);
+            // Herb rack beside the door: bundles of green hanging from a pole.
+            b.Pole(new Vector3(-0.95f, 0f, -0.55f), new Vector3(-0.95f, 1.15f, -0.55f), 0.06f);
+            b.Pole(new Vector3(-0.15f, 0f, -0.95f), new Vector3(-0.15f, 1.15f, -0.95f), 0.06f);
+            b.Pole(new Vector3(-1.0f, 1.1f, -0.5f), new Vector3(-0.1f, 1.1f, -1.0f), 0.05f);
+            for (int i = 0; i < 4; i++)
+            {
+                float t = (i + 0.5f) / 4f;
+                var at = Vector3.Lerp(new Vector3(-0.95f, 0.72f, -0.55f), new Vector3(-0.15f, 0.72f, -0.95f), t);
+                b.Model("shrub_04", at, 0.35f, i * 70f, null, new Vector3(180f, i * 70f, 0f));
+            }
+            // Broth over a small fire, pots of salve.
+            b.Model("stone_fire_pit", new Vector3(0.75f, 0f, -0.8f), 0.32f);
+            b.Model("ceramic_pot", new Vector3(0.75f, 0.12f, -0.8f), 0.45f);
+            b.Fire(new Vector3(0.75f, 0.05f, -0.8f), 0.3f);
+            b.Model("ceramic_pot", new Vector3(1.0f, 0f, 0.3f), 0.38f, 40f);
+            b.Model("wooden_bowl_01", new Vector3(0.85f, 0f, 0.65f), 0.9f, 10f);
+            b.Model("wicker_basket_01", new Vector3(-0.95f, 0f, 0.55f), 1f, 30f);
+            // A pale cloth over the door marks the healer's house.
+            b.PrimColor(PrimitiveType.Cube, new Vector3(0f, 0.95f, -1.42f), new Vector3(0.42f, 0.3f, 0.02f), "Cloth");
+        }
+
         static void EldersLodge(Builder b)
         {
             Roundhouse(b, 1.9f, 1.05f, 1.6f);
@@ -758,6 +784,17 @@ namespace Founders
                     b.Pole(Vector3.zero, new Vector3(0f, 1.7f, 0f), 0.08f);
                     b.Prim(PrimitiveType.Cylinder, new Vector3(0f, 1.72f, 0f), new Vector3(0.11f, 0.08f, 0.11f), "Hide");
                     b.Torch(new Vector3(0f, 1.8f, 0f), 0.3f);
+                    break;
+                case "fire_brazier":
+                    for (int i = 0; i < 6; i++)
+                    {
+                        float a = i / 6f * Mathf.PI * 2f;
+                        b.Model("stone_01", new Vector3(Mathf.Cos(a) * 0.26f, 0f, Mathf.Sin(a) * 0.26f), 2.2f, i * 61f);
+                        b.Model("stone_01", new Vector3(Mathf.Cos(a + 0.5f) * 0.24f, 0.16f, Mathf.Sin(a + 0.5f) * 0.24f), 2f, i * 37f);
+                    }
+                    b.Model("stone_fire_pit", new Vector3(0f, 0.3f, 0f), 0.5f);
+                    LogsInFire(b, new Vector3(0f, 0.34f, 0f), 0.2f);
+                    b.Fire(new Vector3(0f, 0.38f, 0f), 0.55f);
                     break;
                 case "oil_lantern":
                 {

@@ -274,9 +274,121 @@ namespace Founders
             }
         }
 
+        // MARK: - Heat overlay (Frostpunk's heat map)
+
+        /// <summary>Shows the reach of every fire and how warm each home is (the Weather panel turns it on).</summary>
+        public bool ShowHeat { get; set; }
+        Transform heatRoot;
+        float nextHeatRefresh;
+        Material heatMaterial;
+        readonly Dictionary<Exposure, Material> homeMaterials = new Dictionary<Exposure, Material>();
+        static Texture2D heatTexture;
+
+        static Texture2D HeatTexture()
+        {
+            if (heatTexture != null) return heatTexture;
+            const int n = 128;
+            heatTexture = new Texture2D(n, n, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, name = "HeatDisc" };
+            for (int y = 0; y < n; y++)
+                for (int x = 0; x < n; x++)
+                {
+                    float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(n / 2f, n / 2f)) / (n / 2f);
+                    // Warm in the middle, fading to half at the edge (as the warmth does), with a bright rim.
+                    float a = d > 1f ? 0f : Mathf.Lerp(0.42f, 0.2f, d) + (d > 0.94f ? 0.35f : 0f);
+                    heatTexture.SetPixel(x, y, new Color(1f, 1f, 1f, a));
+                }
+            heatTexture.Apply();
+            return heatTexture;
+        }
+
+        Material OverlayMaterial(string name, Color color, Texture tex)
+        {
+            var m = new Material(Palette.Get("Mist")) { name = name };
+            m.SetTexture("_BaseMap", tex);
+            m.SetColor("_BaseColor", color);
+            m.renderQueue = 3050;
+            return m;
+        }
+
+        static Color ExposureColor(Exposure e) =>
+            e == Exposure.Comfortable ? new Color(1f, 0.62f, 0.22f) : e == Exposure.Chilly ? new Color(0.95f, 0.9f, 0.55f)
+            : e == Exposure.Cold ? new Color(0.45f, 0.75f, 1f) : new Color(0.25f, 0.45f, 1f);
+
+        void UpdateHeatOverlay()
+        {
+            if (!ShowHeat)
+            {
+                if (heatRoot != null && heatRoot.gameObject.activeSelf) heatRoot.gameObject.SetActive(false);
+                return;
+            }
+            if (heatRoot == null) heatRoot = Parts.Group("HeatOverlay", transform, Vector3.zero).transform;
+            if (!heatRoot.gameObject.activeSelf) { heatRoot.gameObject.SetActive(true); nextHeatRefresh = 0f; }
+            if (Time.unscaledTime < nextHeatRefresh || store?.Game == null) return;
+            nextHeatRefresh = Time.unscaledTime + 1f;
+            var game = store.Game;
+            for (int i = heatRoot.childCount - 1; i >= 0; i--) Destroy(heatRoot.GetChild(i).gameObject);
+            if (heatMaterial == null) heatMaterial = OverlayMaterial("HeatReach", new Color(1f, 0.55f, 0.15f, 1f), HeatTexture());
+            foreach (var spot in game.HeatSpots())
+            {
+                var at = Grid.CellCenter((float)spot.X - 0.5f, (float)spot.Y - 0.5f);
+                float size = (float)spot.Radius * 2f * Grid.CellSize;
+                FlatCard(heatRoot, Ground.OnGround(at) + Vector3.up * 0.12f, size, heatMaterial);
+            }
+            // A coloured mark under every home: orange warm, pale chilly, blue cold or freezing.
+            foreach (var h in game.Warmth().Homes)
+            {
+                if (!homeMaterials.TryGetValue(h.Exposure, out var m) || m == null)
+                    homeMaterials[h.Exposure] = m = OverlayMaterial("Home_" + h.Exposure, ExposureColor(h.Exposure) * new Color(1, 1, 1, 2.2f), HeatTexture());
+                var fp = game.FootprintOf(h.Building);
+                var at = Grid.FootprintCenter(h.Building.X, h.Building.Y, fp);
+                FlatCard(heatRoot, Ground.OnGround(at) + Vector3.up * 0.16f, Mathf.Max(fp.Width, fp.Height) * Grid.CellSize * 1.35f, m);
+            }
+        }
+
+        static void FlatCard(Transform parent, Vector3 at, float size, Material m)
+        {
+            var go = GameObject.CreatePrimitive(PrimitiveType.Quad);
+            Destroy(go.GetComponent<Collider>());
+            go.name = "HeatCard";
+            go.transform.SetParent(parent, false);
+            go.transform.position = at;
+            go.transform.rotation = Quaternion.Euler(90f, 0f, 0f);
+            go.transform.localScale = new Vector3(size, size, 1f);
+            var r = go.GetComponent<MeshRenderer>();
+            r.sharedMaterial = m;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+            r.receiveShadows = false;
+        }
+
+        // The stoked heart burns visibly higher.
+        bool stokedShown;
+        int stokedHeartId = -1;
+
+        void UpdateStokedFire()
+        {
+            var game = store?.Game;
+            var heart = game?.Heart;
+            bool stoked = heart != null && game.IsStoked;
+            if (heart != null && heart.Id != stokedHeartId) { stokedHeartId = heart.Id; stokedShown = false; }
+            if (stoked == stokedShown || heart == null || !buildings.TryGetValue(heart.Id, out var view) || view.Root == null) return;
+            stokedShown = stoked;
+            float k = stoked ? 1.7f : 1f / 1.7f;
+            foreach (var ps in view.Root.GetComponentsInChildren<ParticleSystem>())
+            {
+                if (ps.name != "Flames") continue;
+                var main = ps.main;
+                main.startSizeMultiplier *= k;
+                main.startSpeedMultiplier *= k;
+                var em = ps.emission;
+                em.rateOverTimeMultiplier *= k;
+            }
+        }
+
         void Update()
         {
             UpdateTallDecor();
+            UpdateHeatOverlay();
+            UpdateStokedFire();
             if (grassDirty && grassField != null && Time.unscaledTime >= nextGrassRebuild)
             {
                 grassDirty = false;
@@ -317,6 +429,7 @@ namespace Founders
                 if (view != null) Destroy(view.Root);
                 view = CreateBuilding(b, def, key);
                 buildings[b.Id] = view;
+                if (b.Id == stokedHeartId) stokedShown = false; // a new model starts with the normal flames
                 if (!initial && (wasThere || b.Status == BuildingStatus.Constructing)) view.PopUntil = Time.time + 0.35f;
             }
             foreach (var id in buildings.Keys.Where(id => !seen.Contains(id)).ToList())
@@ -698,7 +811,10 @@ namespace Founders
             // Survival needs over the heads: hunger when food runs out, cold without firewood.
             string needIcon = game.State.FoodShortage ? "food" : game.Freezing ? "winter" : null;
             for (int i = 0; i < villagers.Count; i++)
-                villagers[i].SetNeed(needIcon != null && i % 2 == 0 ? needIcon : null);
+            {
+                bool sick = i < game.State.People.Count && game.State.People[i].Sick;
+                villagers[i].SetNeed(sick ? "sick" : needIcon != null && i % 2 == 0 ? needIcon : null);
+            }
         }
 
         /// <summary>
@@ -860,6 +976,29 @@ namespace Founders
             var hearth = game.Heart;
             Vector3 hearthPos = hearth != null ? Grid.CellCenter(hearth.X, hearth.Y) : Vector3.zero;
 
+            // The sick rest: under a healer's care beside the hut, otherwise by a home.
+            var person = index < game.State.People.Count ? game.State.People[index] : null;
+            if (person != null && person.Sick)
+            {
+                PlacedBuilding bed = null;
+                if (game.TreatedPatients().Contains(person.Id))
+                    bed = game.OperationalBuildings().Where(x => x.def.Slots(JobType.Healing) > 0).Select(x => x.building).FirstOrDefault();
+                if (bed == null)
+                {
+                    var homes = game.OperationalBuildings().Where(x => game.HousingOf(x.building, x.def) > 0).Select(x => x.building).ToList();
+                    if (homes.Count > 0) bed = homes[person.Id % homes.Count];
+                }
+                if (bed != null)
+                {
+                    task.Spot = BesideBuilding(bed, from);
+                    task.Face = Grid.FootprintCenter(bed.X, bed.Y, game.FootprintOf(bed));
+                }
+                else task.Spot = Free(Around(hearthPos, 2f));
+                task.Action = "Sit";
+                task.Duration = Random.Range(12f, 20f);
+                return task;
+            }
+
             // Night: everyone gathers around the hearth or rests by the houses.
             if (Atmosphere.Nightness > 0.55f)
             {
@@ -978,6 +1117,14 @@ namespace Founders
                     task.Action = Random.value < 0.5f ? "Watch" : Random.value < 0.5f ? "Gather" : "Idle";
                     task.Tool = "Prop_Spear";
                     return task;
+                case JobType.Healing:
+                {
+                    // Healers tend the patients beside the hut, or brew at the door.
+                    task.Spot = BesideBuilding(site, from);
+                    task.Face = center;
+                    task.Action = game.SickCount > 0 ? (Random.value < 0.6f ? "Gather" : "Talk") : (Random.value < 0.5f ? "Work" : "Idle");
+                    return task;
+                }
                 case JobType.Crafting:
                     task.Spot = BesideBuilding(site, from);
                     task.Face = center;

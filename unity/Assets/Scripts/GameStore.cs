@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Founders
 {
-    public enum Panel { None, Build, People, Research, Objectives, Map, Profile, Settings }
+    public enum Panel { None, Build, People, Research, Objectives, Map, Profile, Settings, Weather, Customs }
 
     /// <summary>What happened while the player was away (shown once on launch).</summary>
     public sealed class OfflineReport
@@ -191,7 +191,8 @@ namespace Founders
             foreach (var n in Game.DrainNotices())
             {
                 AddToast(n);
-                if (n.Kind == NoticeKind.Milestone)
+                // A new custom is sealed in the Book of Customs itself (the milestone dialog would name the wrong thing).
+                if (n.Kind == NoticeKind.Milestone && !n.Message.StartsWith("New custom:", StringComparison.Ordinal))
                 {
                     Celebration = n.Message;
                     Vibrate();
@@ -283,6 +284,15 @@ namespace Founders
         public void Explore(string regionId) => Perform(Game.StartExpedition(regionId).Error);
         public void ClaimMilestone(string id) => Perform(Game.ClaimMilestone(id).Error);
         public void ToggleHarvest(int x, int y) => Perform(Game.ToggleHarvestOrder(x, y).Error);
+
+        /// <summary>Burns the heart hot for a while (more warmth, wider reach, much more firewood).</summary>
+        public void StokeHeart() => Perform(Game.StokeHeart().Error);
+
+        /// <summary>Signs a custom from the Book of Customs (for good). Returns true when it was signed.</summary>
+        public bool SignLaw(string id) => Perform(Game.SignLaw(id).Error);
+
+        /// <summary>Answers the people's petition: promise what they ask, or refuse.</summary>
+        public void AnswerPetition(bool promise) => Perform(Game.AnswerPetition(promise).Error);
 
         /// <summary>Sends someone to gather this tree, rock, bush or water now.</summary>
         public void SendGatherer(int x, int y)

@@ -44,7 +44,7 @@ namespace Founders.UI
         /// <summary>Corner buttons (64) plus their labels hanging below (14).</summary>
         const float BottomRowH = 78;
         const float CornerButton = 64;
-        const float SeasonCardH = 68;
+        const float SeasonCardH = 76;
         const float TimerCardH = 66;
 
         /// <summary>Bold white text with a dark outline (reads over bright and dark scenes alike).</summary>
@@ -146,7 +146,7 @@ namespace Founders.UI
             // Side padding 24, badge 50, gaps 8 + 6 + 8, gear 40.
             float w = 136;
             // Status bar: padding 24, people icon 17 + 5, the idle badge 24.
-            w += 24 + 22 + TextWidth($"{G.State.Population}/{G.HousingCapacity()}", big) + 24;
+            w += 24 + 22 + TextWidth($"{G.State.Population}/{G.HousingCapacity()}", big) + 24 + SickChipWidth(big);
             // Day icon 18 + 6, the clock, the divider 20.
             if (level < 3) w += 24 + TextWidth(level == 0 ? GameClock() : ShortClock(), big) + 20;
             // Each chip: padding 13, tile 20, gap 5, margin 5.
@@ -204,6 +204,7 @@ namespace Founders.UI
             idle.style.marginLeft = 4;
             Bind(() => idle.style.display = G.IdleWorkers > 0 || G.State.FoodShortage ? DisplayStyle.Flex : DisplayStyle.None);
             bar.Add(idle);
+            if (G.HasHealth) bar.Add(SickChip(big));
             Tap(bar, () => store.ActivePanel = Panel.People);
             row.Add(bar);
 
@@ -282,7 +283,8 @@ namespace Founders.UI
             var builds = string.Join(",", G.State.Buildings.Where(b => b.Status != BuildingStatus.Complete).Select(b => b.Id));
             bool ev = G.PendingEvent != null && store.EventMinimized;
             return $"{G.CurrentObjective?.Id}|{ev}|{G.IdleWorkers > 0}|{MilestoneReady()}|{r?.TechId}|{e?.RegionId}|{builds}|{G.SeasonIndex}|{G.Freezing}|" +
-                   $"{ContextOpen}|{MaxTimers()}|{G.State.ActiveResearch == null && G.Content.Technologies.Any(t => G.GetResearchStatus(t.Id).State == ResearchState.Available)}";
+                   $"{ContextOpen}|{MaxTimers()}|{G.State.ActiveResearch == null && G.Content.Technologies.Any(t => G.GetResearchStatus(t.Id).State == ResearchState.Available)}|" +
+                   $"{G.State.ActivePetition?.PetitionId}|{LawReady()}|{TileSize()}|{G.HasClimate}|{G.HasDiscontent}";
         }
 
         void BuildLeftSide(VisualElement host)
@@ -316,6 +318,10 @@ namespace Founders.UI
                 host.Add(card);
             }
 
+            // A promise made to the people, with the time left to keep it.
+            var promise = PromiseCard();
+            if (promise != null) host.Add(promise);
+
             // Round buttons in a row under the goal (a column would run into the compass).
             var row = E.Div().Row().Ignore();
             void Round(VisualElement b) { b.style.marginRight = 6; row.Add(b); }
@@ -332,12 +338,6 @@ namespace Founders.UI
                 store.HudHidden = true;
             }));
             host.Add(row);
-        }
-
-        static VisualElement Spaced(VisualElement e)
-        {
-            e.style.marginBottom = 10;
-            return e;
         }
 
         void BuildRightSide(VisualElement host)
@@ -377,13 +377,19 @@ namespace Founders.UI
                 host.Add(timers);
             }
 
+            // Wooden tiles, sized so all of them fit above the Build button (four with the Book of Customs).
             var col = E.Div().Col(Align.FlexEnd).Ignore();
+            col.style.width = TileW;
+            float size = TileSize(), gap = TileGap();
+            VisualElement Gap(VisualElement e) { e.style.marginBottom = gap; return e; }
             string goals = MilestoneReady() ? "!" : null;
-            col.Add(Spaced(WoodTile("goals", TileW, () => store.ActivePanel = Panel.Objectives, goals, "Goals")));
+            col.Add(Gap(WoodTile("goals", size, () => store.ActivePanel = Panel.Objectives, goals, "Goals")));
             string idle = G.IdleWorkers > 0 ? G.IdleWorkers.ToString(CultureInfo.InvariantCulture) : null;
-            col.Add(Spaced(WoodTile("people", TileW, () => store.ActivePanel = Panel.People, idle, "People")));
-            col.Add(Spaced(WoodTile("knowledge", TileW, () => store.ActivePanel = Panel.Research,
+            col.Add(Gap(WoodTile("people", size, () => store.ActivePanel = Panel.People, idle, "People")));
+            col.Add(Gap(WoodTile("knowledge", size, () => store.ActivePanel = Panel.Research,
                 G.State.ActiveResearch == null && G.Content.Technologies.Any(t => G.GetResearchStatus(t.Id).State == ResearchState.Available) ? "!" : null, "Research")));
+            if (HasCustoms)
+                col.Add(Gap(WoodTile("customs", size, () => store.ActivePanel = Panel.Customs, LawReady() ? "!" : null, "Customs")));
             host.Add(col);
         }
 

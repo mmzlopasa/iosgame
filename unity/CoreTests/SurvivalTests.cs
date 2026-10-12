@@ -16,6 +16,12 @@ namespace Founders.Tests
             more?.Invoke(c);
         }, full: true);
 
+        /// <summary>Plays in one-minute steps, as someone with the game open (long jumps count as being away).</summary>
+        static void Play(Game g, double seconds, ManualClock clock)
+        {
+            for (double t = 0; t < seconds; t += 60) g.Run(Math.Min(60, seconds - t), clock);
+        }
+
         static void Winter(Game g) => g.State.SimTime = 3.5 * g.Content.Balance.SeasonSeconds;
 
         static double Average(Game g, Func<double, bool> pick)
@@ -195,7 +201,7 @@ namespace Founders.Tests
             var (game, clock) = Frozen();
             game.TestGrant(new ResourceBundle(food: 200, wood: 200));
             int before = game.State.Population;
-            game.Run(8 * 3600, clock);
+            Play(game, 8 * 3600, clock);
             Assert.That(game.State.Deaths, Is.GreaterThan(0));
             Assert.That(game.State.Population, Is.EqualTo(before - game.State.Deaths));
             Assert.That(game.State.Population, Is.GreaterThanOrEqualTo(2));
@@ -203,6 +209,25 @@ namespace Founders.Tests
             Assert.That(game.State.Assignments.Total, Is.LessThanOrEqualTo(game.State.Population));
             Assert.That(game.State.Legacy.Any(l => l.Kind == "death"), Is.True);
             Assert.That(game.State.Discontent, Is.GreaterThan(0));
+        }
+
+        [Test]
+        public void NobodyDiesOrLeavesWhileThePlayerIsAway()
+        {
+            var (game, clock) = Frozen();
+            game.TestGrant(new ResourceBundle(food: 200, wood: 200));
+            game.State.Discontent = 100;
+            int before = game.State.Population;
+            game.Run(10 * 3600, clock); // one long absence
+            Assert.That(game.State.Deaths, Is.EqualTo(0));
+            Assert.That(game.State.Population, Is.EqualTo(before));
+            Assert.That(game.SickCount, Is.GreaterThan(0));
+            var notices = game.DrainNotices();
+            Assert.That(notices.Any(n => n.Message.StartsWith("While you were away")), Is.True);
+            Assert.That(notices.Count(n => n.Message.Contains("has fallen ill")), Is.EqualTo(0), "no flood of notices on return");
+            // Back in the game, the gravely ill need help soon.
+            Play(game, 3600, clock);
+            Assert.That(game.State.Deaths, Is.GreaterThan(0));
         }
 
         [Test]
@@ -323,7 +348,7 @@ namespace Founders.Tests
             foreach (var j in Enums.Jobs) game.SetWorkers(j, 0);
             game.State.Discontent = 100;
             int before = game.State.Population;
-            game.Run(game.Content.Balance.Discontent.LeaveSeconds + 10, clock);
+            Play(game, game.Content.Balance.Discontent.LeaveSeconds + 10, clock);
             Assert.That(game.State.Population, Is.LessThan(before));
             Assert.That(game.State.People.Count, Is.EqualTo(game.State.Population));
         }

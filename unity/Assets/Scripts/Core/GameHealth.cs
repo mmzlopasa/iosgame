@@ -14,6 +14,9 @@ namespace Founders.Core
     {
         public bool HasHealth => Content.Balance.Health != null;
 
+        /// <summary>People who fell ill during a long absence (told once on return).</summary>
+        int offlineIll;
+
         public int SickCount
         {
             get
@@ -99,6 +102,8 @@ namespace Founders.Core
                 victim.Severity = 0;
                 newlySick.Add(victim.Name);
             }
+            offlineIll += newlySick.Count;
+            if (simulatingOffline) newlySick.Clear(); // told once on return
             if (newlySick.Count == 1) Notice(NoticeKind.Warning, $"{newlySick[0]} has fallen ill{(State.Assignments[JobType.Healing] > 0 ? "." : ". Build a healer's hut.")}");
             else if (newlySick.Count > 1) Notice(NoticeKind.Warning, $"{newlySick.Count} people have fallen ill.");
 
@@ -132,7 +137,12 @@ namespace Founders.Core
                     p.Severity = Math.Max(0, p.Severity - dt / h.DeathSeconds);
                 }
                 if (p.Recovery >= 1) recovered.Add(p);
-                else if (p.Severity >= 1) dying.Add(p);
+                else if (p.Severity >= 1)
+                {
+                    // Nobody dies while the player is away and cannot help: the worst waits for their return.
+                    if (simulatingOffline) p.Severity = Math.Min(p.Severity, 0.95);
+                    else dying.Add(p);
+                }
             }
             foreach (var p in recovered)
             {
@@ -140,6 +150,7 @@ namespace Founders.Core
                 p.Recovery = 0;
                 p.Severity = 0;
             }
+            if (simulatingOffline) recovered.Clear();
             if (recovered.Count == 1) Notice(NoticeKind.Success, $"{recovered[0].Name} is well again.");
             else if (recovered.Count > 1) Notice(NoticeKind.Success, $"{recovered.Count} people are well again.");
             foreach (var p in dying) Die(p);

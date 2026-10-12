@@ -110,6 +110,7 @@ namespace Founders.Core
         {
             if (!(seconds > 0)) return;
             simulatingOffline = seconds > 120;
+            offlineIll = 0;
             double step = Content.Balance.SimulationStepSeconds;
             // Long absences (hours away) are simulated in coarser steps so resuming stays quick.
             if (seconds > 3600) step = Math.Max(step, 5);
@@ -120,6 +121,10 @@ namespace Founders.Core
                 SimulateStep(dt);
                 remaining -= dt;
             }
+            if (simulatingOffline && offlineIll > 0)
+                Notice(NoticeKind.Warning, offlineIll == 1 ? "While you were away, someone fell ill." : $"While you were away, {offlineIll} people fell ill.");
+            if (simulatingOffline && SickCount > 0 && State.People.Any(p => p.Sick && p.Severity >= 0.9))
+                Notice(NoticeKind.Warning, "Someone is gravely ill and needs a healer now.");
             simulatingOffline = false;
             EvaluateProgress();
         }

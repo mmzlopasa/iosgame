@@ -32,7 +32,7 @@ namespace Founders.UI
         public void SelectTab(string tab) => pendingTab = tab;
         string selectedTech;
 
-        bool DrawerPanel => store != null && (store.ActivePanel == Panel.Build || store.ActivePanel == Panel.Research);
+        bool DrawerPanel => store != null && (store.ActivePanel == Panel.Build || store.ActivePanel == Panel.Research || store.ActivePanel == Panel.Customs);
 
         void BuildDrawer()
         {
@@ -77,6 +77,7 @@ namespace Founders.UI
                 return buildTab + "|" + G.ActiveConstructionCount() + "|" + string.Join("", G.Content.Buildings.Where(b => b.Buildable).Select(d =>
                            $"{(G.State.Resources.Covers(d.Cost) ? 1 : 0)}{(G.IsUnlocked(d) ? 1 : 0)}{G.Count(d.Id, true)}")) + "|" +
                        string.Join("", G.Content.Decorations.Select(d => $"{(G.State.Resources.Covers(d.Cost) ? 1 : 0)}{(DecorationUnlocked(d) ? 1 : 0)}"));
+            if (store.ActivePanel == Panel.Customs) return CustomsKey();
             return $"{selectedTech}|{G.State.ActiveResearch?.TechId}|{G.HeartLevel}|" + string.Join("", G.Content.Technologies.Select(t =>
                        $"{(int)G.GetResearchStatus(t.Id).State}{(G.State.Resources.Covers(t.Cost) ? 1 : 0)}"));
         }
@@ -85,6 +86,7 @@ namespace Founders.UI
         {
             if (!DrawerPanel) return;
             if (store.ActivePanel == Panel.Build) BuildDrawerBuild(host);
+            else if (store.ActivePanel == Panel.Customs) BuildDrawerCustoms(host);
             else BuildDrawerResearch(host);
         }
 
@@ -313,7 +315,7 @@ namespace Founders.UI
             else
             {
                 card.Add(CostLine(d.Cost, 10.5f));
-                string what = d.IsBridge ? "Spans the river" : d.Beauty > 0 ? $"Beauty +{d.Beauty}" : d.IsRoad ? "Faster walking" : d.Category;
+                string what = d.Heat != null ? $"Warmth {SignedDeg(d.Heat.Heat)}" : d.IsBridge ? "Spans the river" : d.Beauty > 0 ? $"Beauty +{d.Beauty}" : d.IsRoad ? "Faster walking" : d.Category;
                 card.Add(Ink(what, 9.5f, InkSoft, Theme.F.TextMedium).Margin(4));
                 string id = d.Id;
                 Tap(card, () => store.BeginDecorating(id));

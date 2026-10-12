@@ -169,6 +169,8 @@ namespace Founders.Core
             if (State.Discontent >= 100 - 1e-9 && State.Population > 2)
             {
                 State.LeaveProgress += dt / Math.Max(1, d.LeaveSeconds);
+                // Families leave only while the player is there to see it coming.
+                if (simulatingOffline) State.LeaveProgress = Math.Min(State.LeaveProgress, 0.95);
                 if (State.LeaveProgress >= 1)
                 {
                     State.LeaveProgress = 0;

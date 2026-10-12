@@ -162,7 +162,9 @@ namespace Founders
 
             // Snow follows the camera in winter.
             var em = snow.emission;
-            em.rateOverTime = id == "winter" ? 140f : 0f;
+            // Snow follows the cold: flurries below freezing, a blizzard in a great frost.
+            float outside = game.HasClimate ? (float)game.Temperature : (id == "winter" ? -5f : 10f);
+            em.rateOverTime = outside < 0f ? Mathf.Lerp(90f, 360f, Mathf.Clamp01(-outside / 22f)) : 0f;
             var cam = Camera.main;
             if (cam != null)
             {
