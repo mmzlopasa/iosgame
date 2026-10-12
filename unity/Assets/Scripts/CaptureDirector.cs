@@ -282,15 +282,17 @@ namespace Founders
             var stoke = game.StokeHeart();
             if (!stoke.Ok) Debug.LogWarning($"[FOUNDERS] capture: stoke {stoke.Error}");
             store.Refresh();
-            Focus(Camp(), 9f);
+            Focus(Grid.CellCenter(game.Heart.X, game.Heart.Y), 13f);
             yield return Shot("06v_stoked_heart", false);
             ui.ShowHeart();
             yield return Shot("06v2_heart_card", true);
             store.SelectedBuildingId = null;
             store.Refresh();
+            yield return new WaitForSeconds(0.5f); // the UI turns the heat map off with the selection
+            store.World.ShowHeat = false;
             if (hut != null)
             {
-                Focus(Grid.CellCenter(hut.X, hut.Y), 8f);
+                Focus(Grid.CellCenter(hut.X, hut.Y), 11f);
                 yield return Shot("06w_healers_hut", false);
             }
             foreach (var p in game.State.People) p.Sick = false;

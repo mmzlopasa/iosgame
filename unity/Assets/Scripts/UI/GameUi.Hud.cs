@@ -65,7 +65,9 @@ namespace Founders.UI
             t.Add(E.Icon(icon, size * 0.5f, Theme.Hex("#4A2C14")));
             if (label != null)
             {
-                var l = Bold(label, 9.5f).Abs(0, null, 0, 3).Align(TextAnchor.MiddleCenter);
+                // Sized to fit the tile: "Research" on a small tile must not end in an ellipsis.
+                float fit = (size - 6f) / Mathf.Max(1, label.Length * 0.62f);
+                var l = Bold(label, Mathf.Min(9.5f, fit)).Abs(0, null, 0, 3).Align(TextAnchor.MiddleCenter);
                 t.Add(l);
             }
             if (badge != null) t.Add(RedBadge(badge).Abs(null, -6, -6));

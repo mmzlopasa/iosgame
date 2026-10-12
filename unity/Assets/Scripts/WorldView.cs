@@ -294,7 +294,8 @@ namespace Founders
                 {
                     float d = Vector2.Distance(new Vector2(x + 0.5f, y + 0.5f), new Vector2(n / 2f, n / 2f)) / (n / 2f);
                     // Warm in the middle, fading to half at the edge (as the warmth does), with a bright rim.
-                    float a = d > 1f ? 0f : Mathf.Lerp(0.42f, 0.2f, d) + (d > 0.94f ? 0.35f : 0f);
+                    // Light enough to see the village through it; the rim marks the reach.
+                    float a = d > 1f ? 0f : Mathf.Lerp(0.16f, 0.05f, d) + (d > 0.95f ? 0.3f : 0f);
                     heatTexture.SetPixel(x, y, new Color(1f, 1f, 1f, a));
                 }
             heatTexture.Apply();
@@ -338,7 +339,7 @@ namespace Founders
             foreach (var h in game.Warmth().Homes)
             {
                 if (!homeMaterials.TryGetValue(h.Exposure, out var m) || m == null)
-                    homeMaterials[h.Exposure] = m = OverlayMaterial("Home_" + h.Exposure, ExposureColor(h.Exposure) * new Color(1, 1, 1, 2.2f), HeatTexture());
+                    homeMaterials[h.Exposure] = m = OverlayMaterial("Home_" + h.Exposure, ExposureColor(h.Exposure) * new Color(1, 1, 1, 3.5f), HeatTexture());
                 var fp = game.FootprintOf(h.Building);
                 var at = Grid.FootprintCenter(h.Building.X, h.Building.Y, fp);
                 FlatCard(heatRoot, Ground.OnGround(at) + Vector3.up * 0.16f, Mathf.Max(fp.Width, fp.Height) * Grid.CellSize * 1.35f, m);

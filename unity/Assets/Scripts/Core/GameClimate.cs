@@ -289,7 +289,9 @@ namespace Founders.Core
                 if (capacity <= 0) continue;
                 var fp = FootprintOf(b);
                 double warmth = report.Temperature + InsulationOf(b, def) + HeatAt(spots, b.X + fp.Width / 2.0, b.Y + fp.Height / 2.0, w.MaxHeat);
-                homes.Add(new HomeWarmth { Building = b, Warmth = Math.Round(warmth, 1), Occupants = capacity, Exposure = ExposureOf(warmth) });
+                // Walls and fires keep the cold out; they do not make a summer home hotter than a warm room.
+                double shown = Math.Min(warmth, Math.Max(report.Temperature, 22));
+                homes.Add(new HomeWarmth { Building = b, Warmth = Math.Round(shown, 1), Occupants = capacity, Exposure = ExposureOf(warmth) });
             }
             homes = homes.OrderByDescending(h => h.Warmth).ThenBy(h => h.Building.Id).ToList();
             var heart = Heart;

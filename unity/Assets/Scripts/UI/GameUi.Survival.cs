@@ -221,12 +221,13 @@ namespace Founders.UI
         /// <summary>Outside temperature, coloured by how it feels; a snowflake while a cold snap lasts.</summary>
         VisualElement ThermoChip()
         {
-            var chip = E.Div().Row().Radius(999).Pad(0, 7, 0, 4).Bg(new Color(0.04f, 0.05f, 0.07f, 0.6f)).Ignore().NoShrink();
-            chip.style.height = 17;
-            var icon = E.Icon("thermometer", 12, Color.white);
+            // Compact: it shares the season card's narrow top line with the season's name.
+            var chip = E.Div().Row().Radius(999).Pad(0, 5, 0, 3).Bg(new Color(0.04f, 0.05f, 0.07f, 0.6f)).Ignore().NoShrink();
+            chip.style.height = 16;
+            var icon = E.Icon("thermometer", 10, Color.white);
             chip.Add(icon);
-            var t = Bold("", 11);
-            t.style.marginLeft = 2;
+            var t = Bold("", 10.5f);
+            t.style.marginLeft = 1;
             chip.Add(t);
             int lastSnap = -1;
             Bind(() =>
@@ -509,7 +510,7 @@ namespace Founders.UI
                 chips.Add(StatChip("home", $"Walls {SignedDeg(G.InsulationOf(b, def))}"));
                 var w = G.Content.Balance.Warmth;
                 if (w.InsulationPerLevel > 0 && b.Level < def.MaxLevel)
-                    chips.Add(StatChip("level_up", $"{SignedDeg(w.InsulationPerLevel)} per level"));
+                    chips.Add(StatChip("level_up", $"+{w.InsulationPerLevel.ToString("0.#", Inv)}° per level"));
                 box.Add(chips);
                 card.Add(box);
             }

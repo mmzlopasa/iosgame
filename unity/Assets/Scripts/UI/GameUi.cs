@@ -449,7 +449,7 @@ namespace Founders.UI
             {
                 // Freezing replaces the season's name (one line keeps the card's height fixed).
                 head.Add(E.Icon(G.Freezing ? "alert" : SeasonIcon(season.Id), 14, G.Freezing ? Theme.Error : SeasonTint(season.Id)));
-                var name = E.Text(G.Freezing ? "Freezing!" : season.Name, 12.5f, G.Freezing ? Theme.Error : Theme.Ink, Theme.F.TextBold).NoWrap();
+                var name = E.Text(G.Freezing ? "Freezing!" : season.Name, G.HasClimate ? 12f : 12.5f, G.Freezing ? Theme.Error : Theme.Ink, Theme.F.TextBold).NoWrap();
                 name.style.marginLeft = 5;
                 name.style.flexShrink = 1;
                 head.Add(name);
