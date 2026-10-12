@@ -40,6 +40,15 @@ namespace Founders
                 case "bronze_workshop": BronzeWorkshop(b); break;
                 case "hunters_lodge": HuntersLodge(b); break;
                 case "mine": Mine(b); break;
+                case "medieval_cottage":
+                case "medieval_house":
+                case "medieval_townhouse":
+                case "medieval_market":
+                case "medieval_mill":
+                case "medieval_smithy":
+                case "medieval_church":
+                    Medieval(b, sprite);
+                    break;
                 default: b.Model("boulder_01", Vector3.zero, 0.5f); break;
             }
             return root;
@@ -580,6 +589,18 @@ namespace Founders
             b.Torch(new Vector3(0.5f, 1.25f, -0.4f), 0.35f);
         }
 
+        // MARK: - Era IV: the Middle Ages (assembled from the CC0 Medieval Village MegaKit)
+
+        /// <summary>
+        /// The kit buildings are built at real scale on the 2 m grid, so the walls fill the
+        /// footprint and the roof overhangs a little; turned so the door faces the street (−z).
+        /// </summary>
+        static void Medieval(Builder b, string id)
+        {
+            b.Model(id, Vector3.zero, 0.94f, 180f);
+            if (id == "medieval_smithy") b.Fire(new Vector3(-0.55f, 0.95f, 1.75f), 0.35f);
+        }
+
         // MARK: - Decorations (roads are painted on the ground, not modelled)
 
         /// <summary>Bits of <c>connect</c>: neighbours of the same kind (1 = north, 2 = east, 4 = south, 8 = west).</summary>
@@ -669,6 +690,16 @@ namespace Founders
                         b.Model("stone_01", new Vector3(Mathf.Cos(a) * 0.45f, 0f, Mathf.Sin(a) * 0.45f), 2.6f, i * 53f);
                     }
                     break;
+                case "banner":
+                {
+                    var g = Parts.Group("Banner", b.T, Vector3.zero, yaw).transform;
+                    var bb = new Builder(g, tint, tint == null);
+                    bb.Pole(Vector3.zero, new Vector3(0f, 3.4f, 0f), 0.08f);
+                    bb.Pole(new Vector3(-0.05f, 3.2f, 0f), new Vector3(0.7f, 3.2f, 0f), 0.04f);
+                    bb.PrimColor(PrimitiveType.Cube, new Vector3(0.36f, 2.55f, 0f), new Vector3(0.62f, 1.25f, 0.02f), "Banner");
+                    bb.PrimColor(PrimitiveType.Cube, new Vector3(0.36f, 2.7f, -0.012f), new Vector3(0.3f, 0.3f, 0.01f), "Select");
+                    break;
+                }
                 case "standing_stone":
                     b.Model("boulder_01", Vector3.zero, 1f, yaw + 10f, new Vector3(0.38f, 2.1f, 0.26f));
                     b.Model("stone_01", new Vector3(0.45f, 0f, 0.3f), 2.4f, 40f);

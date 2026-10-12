@@ -307,6 +307,8 @@ namespace Founders.Core
     public sealed class TechnologyDefinition
     {
         public string Id, Name, Description;
+        /// <summary>Optional: the era (epoch) the settlement must have reached before this can be studied.</summary>
+        public string Epoch;
         public ResourceBundle Cost;
         public double ResearchSeconds;
         public List<string> Prerequisites = new List<string>();
@@ -317,6 +319,7 @@ namespace Founders.Core
             Id = o.Str("id"),
             Name = o.Str("name"),
             Description = o.Str("description"),
+            Epoch = o.OptStr("epoch"),
             Cost = ResourceBundle.FromJson(o.OptObj("cost")),
             ResearchSeconds = o.Num("researchSeconds"),
             Prerequisites = o.Strs("prerequisites"),

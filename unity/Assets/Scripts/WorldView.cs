@@ -65,6 +65,14 @@ namespace Founders
         NatureField nature;
         readonly Dictionary<int, BuildingView> buildings = new Dictionary<int, BuildingView>();
         readonly Dictionary<int, (string key, GameObject go)> decorations = new Dictionary<int, (string, GameObject)>();
+        /// <summary>Tall decorations (trees, totems, banners) that step aside when they block the view.</summary>
+        readonly Dictionary<int, (Transform t, float height, Renderer[] renderers, bool hidden)> tallDecor =
+            new Dictionary<int, (Transform, float, Renderer[], bool)>();
+        float nextDecorCheck;
+        static readonly Dictionary<string, float> TallDecorations = new Dictionary<string, float>
+        {
+            ["young_tree"] = 4.2f, ["totem"] = 3.2f, ["banner"] = 3.4f, ["oil_lantern"] = 2.1f, ["torch_post"] = 1.8f,
+        };
         string occupancyKey;
         float nextGroundPaint, nextGrassRebuild;
         bool grassDirty;
@@ -99,6 +107,7 @@ namespace Founders
             foreach (Transform child in transform) Destroy(child.gameObject);
             buildings.Clear();
             decorations.Clear();
+            tallDecor.Clear();
             occupancyKey = null;
             selection.Clear();
             ghost.Clear();
@@ -229,8 +238,27 @@ namespace Founders
 
         // MARK: - Sync
 
+        void UpdateTallDecor()
+        {
+            if (Time.unscaledTime < nextDecorCheck || tallDecor.Count == 0) return;
+            nextDecorCheck = Time.unscaledTime + 0.15f;
+            var cam = Camera.main;
+            if (cam == null) return;
+            foreach (var id in tallDecor.Keys.ToList())
+            {
+                var v = tallDecor[id];
+                if (v.t == null) continue;
+                bool hide = NatureField.Occludes(cam.transform.position, cam.transform.forward, v.t.position, v.height);
+                if (hide == v.hidden) continue;
+                foreach (var r in v.renderers)
+                    if (r != null && !(r is ParticleSystemRenderer)) r.enabled = !hide;
+                tallDecor[id] = (v.t, v.height, v.renderers, hide);
+            }
+        }
+
         void Update()
         {
+            UpdateTallDecor();
             if (grassDirty && grassField != null && Time.unscaledTime >= nextGrassRebuild)
             {
                 grassDirty = false;
@@ -406,11 +434,14 @@ namespace Founders
                 var go = BuildingModels.Decoration(def.Sprite, objectRoot, null, d.Rotation, connect);
                 go.transform.position = Ground.OnGround(Grid.CellCenter(d.X, d.Y));
                 decorations[d.Id] = (key, go);
+                if (TallDecorations.TryGetValue(def.Sprite, out float h))
+                    tallDecor[d.Id] = (go.transform, h, go.GetComponentsInChildren<Renderer>(), false);
             }
             foreach (var id in decorations.Keys.Where(id => !seen.Contains(id)).ToList())
             {
                 Destroy(decorations[id].go);
                 decorations.Remove(id);
+                tallDecor.Remove(id);
             }
         }
 
@@ -506,6 +537,10 @@ namespace Founders
         // MARK: - Villagers
 
         const int MaxVillagers = 30;
+
+        /// <summary>A villager currently playing the given clip (for close-up views), or null.</summary>
+        public Villager FindVillager(string clip, string tool = null) =>
+            villagers.FirstOrDefault(v => v != null && v.Clip == clip && (tool == null || v.Tool == tool));
 
         void UpdateVillagers(Game game)
         {

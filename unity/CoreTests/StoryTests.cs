@@ -68,7 +68,7 @@ namespace Founders.Tests
             clock.Advance(1);
             game.Update();
             Assert.That(game.CurrentChapter.Number, Is.EqualTo(locked.Number));
-            Assert.That(locked.Era, Is.EqualTo("Middle Ages"));
+            Assert.That(locked.Era, Is.EqualTo("Exploration"));
         }
 
         [Test]

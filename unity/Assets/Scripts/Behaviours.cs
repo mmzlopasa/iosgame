@@ -282,6 +282,9 @@ namespace Founders
     {
         /// <summary>Set by the world: the next task, given where the villager stands now.</summary>
         public Func<Vector3, VillagerTask> NextTask;
+        /// <summary>The clip playing now (Walk, Chop, Plant…).</summary>
+        public string Clip => current;
+        public string Tool => shownTool;
         public WorldTerrain Ground;
         VillagerTask task;
         bool hasTask;

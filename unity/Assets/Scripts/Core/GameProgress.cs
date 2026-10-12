@@ -184,8 +184,12 @@ namespace Founders.Core
         {
             var tech = Content.Technology(techId);
             if (tech == null) return new List<string>();
-            return tech.Prerequisites.Where(p => !State.Researched.Contains(p))
+            var missing = tech.Prerequisites.Where(p => !State.Researched.Contains(p))
                 .Select(p => Content.Technology(p)?.Name ?? p).ToList();
+            var era = tech.Epoch == null ? null : Content.Epoch(tech.Epoch);
+            var now = Content.Epoch(State.EpochId);
+            if (era != null && now != null && era.Index > now.Index) missing.Insert(0, $"the {era.Name} era");
+            return missing;
         }
 
         /// <summary>Starts research. Validates prerequisites, duplicates and cost before spending.</summary>

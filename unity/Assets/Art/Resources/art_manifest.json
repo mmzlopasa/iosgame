@@ -191,6 +191,500 @@
    "source": "https://polyhaven.com/a/fern_02",
    "triangles": 3000
   },
+  "medieval_church": {
+   "materialOrder": [
+    "MI_WoodTrim",
+    "MI_Plaster",
+    "MI_UnevenBrick",
+    "MI_WoodTrim_Wear",
+    "MI_WindowGlass",
+    "MI_RoundTiles",
+    "MI_RockTrim",
+    "MI_MetalOrnaments"
+   ],
+   "materials": {
+    "MI_MetalOrnaments": {
+     "albedo": "Art/Textures/medieval__MI_MetalOrnaments_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_MetalOrnaments_mask.png"
+    },
+    "MI_Plaster": {
+     "albedo": "Art/Textures/medieval__MI_Plaster_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_Plaster_mask.png",
+     "normal": "Art/Textures/medieval__MI_Plaster_normal.jpg"
+    },
+    "MI_RockTrim": {
+     "albedo": "Art/Textures/medieval__MI_RockTrim_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_RockTrim_mask.png",
+     "normal": "Art/Textures/medieval__MI_RockTrim_normal.jpg"
+    },
+    "MI_RoundTiles": {
+     "albedo": "Art/Textures/medieval__MI_RoundTiles_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_RoundTiles_mask.png",
+     "normal": "Art/Textures/medieval__MI_RoundTiles_normal.jpg"
+    },
+    "MI_UnevenBrick": {
+     "albedo": "Art/Textures/medieval__MI_UnevenBrick_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_UnevenBrick_mask.png",
+     "normal": "Art/Textures/medieval__MI_UnevenBrick_normal.jpg"
+    },
+    "MI_WindowGlass": {
+     "alphaClip": true,
+     "doubleSided": true
+    },
+    "MI_WoodTrim": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_normal.jpg"
+    },
+    "MI_WoodTrim_Wear": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_Wear_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_Wear_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_Wear_normal.jpg"
+    }
+   },
+   "resource": "Models/medieval_church",
+   "size": [
+    8.25,
+    17.295,
+    13.106
+   ],
+   "source": "https://opengameart.org/content/medieval-village-megakit (Quaternius, CC0)",
+   "triangles": 25999
+  },
+  "medieval_cottage": {
+   "materialOrder": [
+    "MI_WoodTrim",
+    "MI_Plaster",
+    "MI_UnevenBrick",
+    "MI_WoodTrim_Wear",
+    "MI_WindowGlass",
+    "MI_RoundTiles",
+    "MI_RockTrim",
+    "MI_Brick"
+   ],
+   "materials": {
+    "MI_Brick": {
+     "albedo": "Art/Textures/medieval__MI_Brick_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_Brick_mask.png",
+     "normal": "Art/Textures/medieval__MI_Brick_normal.jpg"
+    },
+    "MI_Plaster": {
+     "albedo": "Art/Textures/medieval__MI_Plaster_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_Plaster_mask.png",
+     "normal": "Art/Textures/medieval__MI_Plaster_normal.jpg"
+    },
+    "MI_RockTrim": {
+     "albedo": "Art/Textures/medieval__MI_RockTrim_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_RockTrim_mask.png",
+     "normal": "Art/Textures/medieval__MI_RockTrim_normal.jpg"
+    },
+    "MI_RoundTiles": {
+     "albedo": "Art/Textures/medieval__MI_RoundTiles_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_RoundTiles_mask.png",
+     "normal": "Art/Textures/medieval__MI_RoundTiles_normal.jpg"
+    },
+    "MI_UnevenBrick": {
+     "albedo": "Art/Textures/medieval__MI_UnevenBrick_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_UnevenBrick_mask.png",
+     "normal": "Art/Textures/medieval__MI_UnevenBrick_normal.jpg"
+    },
+    "MI_WindowGlass": {
+     "alphaClip": true,
+     "doubleSided": true
+    },
+    "MI_WoodTrim": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_normal.jpg"
+    },
+    "MI_WoodTrim_Wear": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_Wear_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_Wear_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_Wear_normal.jpg"
+    }
+   },
+   "resource": "Models/medieval_cottage",
+   "size": [
+    5.513,
+    6.734,
+    5.616
+   ],
+   "source": "https://opengameart.org/content/medieval-village-megakit (Quaternius, CC0)",
+   "triangles": 5892
+  },
+  "medieval_house": {
+   "materialOrder": [
+    "MI_WoodTrim",
+    "MI_Plaster",
+    "MI_UnevenBrick",
+    "MI_WoodTrim_Wear",
+    "MI_WindowGlass",
+    "MI_Brick",
+    "MI_RoundTiles",
+    "MI_RockTrim"
+   ],
+   "materials": {
+    "MI_Brick": {
+     "albedo": "Art/Textures/medieval__MI_Brick_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_Brick_mask.png",
+     "normal": "Art/Textures/medieval__MI_Brick_normal.jpg"
+    },
+    "MI_Plaster": {
+     "albedo": "Art/Textures/medieval__MI_Plaster_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_Plaster_mask.png",
+     "normal": "Art/Textures/medieval__MI_Plaster_normal.jpg"
+    },
+    "MI_RockTrim": {
+     "albedo": "Art/Textures/medieval__MI_RockTrim_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_RockTrim_mask.png",
+     "normal": "Art/Textures/medieval__MI_RockTrim_normal.jpg"
+    },
+    "MI_RoundTiles": {
+     "albedo": "Art/Textures/medieval__MI_RoundTiles_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_RoundTiles_mask.png",
+     "normal": "Art/Textures/medieval__MI_RoundTiles_normal.jpg"
+    },
+    "MI_UnevenBrick": {
+     "albedo": "Art/Textures/medieval__MI_UnevenBrick_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_UnevenBrick_mask.png",
+     "normal": "Art/Textures/medieval__MI_UnevenBrick_normal.jpg"
+    },
+    "MI_WindowGlass": {
+     "alphaClip": true,
+     "doubleSided": true
+    },
+    "MI_WoodTrim": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_normal.jpg"
+    },
+    "MI_WoodTrim_Wear": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_Wear_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_Wear_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_Wear_normal.jpg"
+    }
+   },
+   "resource": "Models/medieval_house",
+   "size": [
+    5.513,
+    9.734,
+    5.616
+   ],
+   "source": "https://opengameart.org/content/medieval-village-megakit (Quaternius, CC0)",
+   "triangles": 9892
+  },
+  "medieval_market": {
+   "materialOrder": [
+    "MI_WoodTrim",
+    "MI_RoundTiles",
+    "MI_UnevenBrick",
+    "MI_WoodTrim_Wear"
+   ],
+   "materials": {
+    "MI_RoundTiles": {
+     "albedo": "Art/Textures/medieval__MI_RoundTiles_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_RoundTiles_mask.png",
+     "normal": "Art/Textures/medieval__MI_RoundTiles_normal.jpg"
+    },
+    "MI_UnevenBrick": {
+     "albedo": "Art/Textures/medieval__MI_UnevenBrick_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_UnevenBrick_mask.png",
+     "normal": "Art/Textures/medieval__MI_UnevenBrick_normal.jpg"
+    },
+    "MI_WoodTrim": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_normal.jpg"
+    },
+    "MI_WoodTrim_Wear": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_Wear_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_Wear_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_Wear_normal.jpg"
+    }
+   },
+   "resource": "Models/medieval_market",
+   "size": [
+    8.25,
+    7.89,
+    8.032
+   ],
+   "source": "https://opengameart.org/content/medieval-village-megakit (Quaternius, CC0)",
+   "triangles": 6222
+  },
+  "medieval_mill": {
+   "materialOrder": [
+    "MI_WoodTrim",
+    "MI_Plaster",
+    "MI_UnevenBrick",
+    "MI_WoodTrim_Wear",
+    "MI_WindowGlass",
+    "MI_Brick",
+    "MI_RoundTiles"
+   ],
+   "materials": {
+    "MI_Brick": {
+     "albedo": "Art/Textures/medieval__MI_Brick_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_Brick_mask.png",
+     "normal": "Art/Textures/medieval__MI_Brick_normal.jpg"
+    },
+    "MI_Plaster": {
+     "albedo": "Art/Textures/medieval__MI_Plaster_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_Plaster_mask.png",
+     "normal": "Art/Textures/medieval__MI_Plaster_normal.jpg"
+    },
+    "MI_RoundTiles": {
+     "albedo": "Art/Textures/medieval__MI_RoundTiles_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_RoundTiles_mask.png",
+     "normal": "Art/Textures/medieval__MI_RoundTiles_normal.jpg"
+    },
+    "MI_UnevenBrick": {
+     "albedo": "Art/Textures/medieval__MI_UnevenBrick_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_UnevenBrick_mask.png",
+     "normal": "Art/Textures/medieval__MI_UnevenBrick_normal.jpg"
+    },
+    "MI_WindowGlass": {
+     "alphaClip": true,
+     "doubleSided": true
+    },
+    "MI_WoodTrim": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_normal.jpg"
+    },
+    "MI_WoodTrim_Wear": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_Wear_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_Wear_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_Wear_normal.jpg"
+    }
+   },
+   "resource": "Models/medieval_mill",
+   "size": [
+    6.007,
+    9.804,
+    5.616
+   ],
+   "source": "https://opengameart.org/content/medieval-village-megakit (Quaternius, CC0)",
+   "triangles": 10486
+  },
+  "medieval_smithy": {
+   "materialOrder": [
+    "MI_WoodTrim",
+    "MI_Plaster",
+    "MI_UnevenBrick",
+    "MI_WoodTrim_Wear",
+    "MI_WindowGlass",
+    "MI_RoundTiles",
+    "MI_RockTrim",
+    "MI_Brick",
+    "MI_MetalOrnaments"
+   ],
+   "materials": {
+    "MI_Brick": {
+     "albedo": "Art/Textures/medieval__MI_Brick_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_Brick_mask.png",
+     "normal": "Art/Textures/medieval__MI_Brick_normal.jpg"
+    },
+    "MI_MetalOrnaments": {
+     "albedo": "Art/Textures/medieval__MI_MetalOrnaments_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_MetalOrnaments_mask.png"
+    },
+    "MI_Plaster": {
+     "albedo": "Art/Textures/medieval__MI_Plaster_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_Plaster_mask.png",
+     "normal": "Art/Textures/medieval__MI_Plaster_normal.jpg"
+    },
+    "MI_RockTrim": {
+     "albedo": "Art/Textures/medieval__MI_RockTrim_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_RockTrim_mask.png",
+     "normal": "Art/Textures/medieval__MI_RockTrim_normal.jpg"
+    },
+    "MI_RoundTiles": {
+     "albedo": "Art/Textures/medieval__MI_RoundTiles_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_RoundTiles_mask.png",
+     "normal": "Art/Textures/medieval__MI_RoundTiles_normal.jpg"
+    },
+    "MI_UnevenBrick": {
+     "albedo": "Art/Textures/medieval__MI_UnevenBrick_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_UnevenBrick_mask.png",
+     "normal": "Art/Textures/medieval__MI_UnevenBrick_normal.jpg"
+    },
+    "MI_WindowGlass": {
+     "alphaClip": true,
+     "doubleSided": true
+    },
+    "MI_WoodTrim": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_normal.jpg"
+    },
+    "MI_WoodTrim_Wear": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_Wear_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_Wear_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_Wear_normal.jpg"
+    }
+   },
+   "resource": "Models/medieval_smithy",
+   "size": [
+    5.513,
+    7.534,
+    6.569
+   ],
+   "source": "https://opengameart.org/content/medieval-village-megakit (Quaternius, CC0)",
+   "triangles": 7248
+  },
+  "medieval_townhouse": {
+   "materialOrder": [
+    "MI_WoodTrim",
+    "MI_Plaster",
+    "MI_UnevenBrick",
+    "MI_WoodTrim_Wear",
+    "MI_WindowGlass",
+    "MI_Brick",
+    "MI_RoundTiles",
+    "MI_RockTrim"
+   ],
+   "materials": {
+    "MI_Brick": {
+     "albedo": "Art/Textures/medieval__MI_Brick_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_Brick_mask.png",
+     "normal": "Art/Textures/medieval__MI_Brick_normal.jpg"
+    },
+    "MI_Plaster": {
+     "albedo": "Art/Textures/medieval__MI_Plaster_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_Plaster_mask.png",
+     "normal": "Art/Textures/medieval__MI_Plaster_normal.jpg"
+    },
+    "MI_RockTrim": {
+     "albedo": "Art/Textures/medieval__MI_RockTrim_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_RockTrim_mask.png",
+     "normal": "Art/Textures/medieval__MI_RockTrim_normal.jpg"
+    },
+    "MI_RoundTiles": {
+     "albedo": "Art/Textures/medieval__MI_RoundTiles_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_RoundTiles_mask.png",
+     "normal": "Art/Textures/medieval__MI_RoundTiles_normal.jpg"
+    },
+    "MI_UnevenBrick": {
+     "albedo": "Art/Textures/medieval__MI_UnevenBrick_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_UnevenBrick_mask.png",
+     "normal": "Art/Textures/medieval__MI_UnevenBrick_normal.jpg"
+    },
+    "MI_WindowGlass": {
+     "alphaClip": true,
+     "doubleSided": true
+    },
+    "MI_WoodTrim": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_normal.jpg"
+    },
+    "MI_WoodTrim_Wear": {
+     "albedo": "Art/Textures/medieval__MI_WoodTrim_Wear_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "mask": "Art/Textures/medieval__MI_WoodTrim_Wear_mask.png",
+     "normal": "Art/Textures/medieval__MI_WoodTrim_Wear_normal.jpg"
+    }
+   },
+   "resource": "Models/medieval_townhouse",
+   "size": [
+    5.513,
+    12.718,
+    7.588
+   ],
+   "source": "https://opengameart.org/content/medieval-village-megakit (Quaternius, CC0)",
+   "triangles": 15160
+  },
   "namaqualand_boulder_02": {
    "materialOrder": [
     "boulder_02"

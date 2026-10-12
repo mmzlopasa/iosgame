@@ -49,6 +49,7 @@ namespace Founders
             new Spec("Tunic2", new Color(0.36f, 0.30f, 0.24f), 0.2f),
             new Spec("Hair", new Color(0.12f, 0.09f, 0.07f), 0.4f),
             new Spec("Fish", new Color(0.52f, 0.53f, 0.50f), 0.65f),
+            new Spec("Banner", new Color(0.55f, 0.08f, 0.07f), 0.2f),
             // Fire
             new Spec("Ember", new Color(1.00f, 0.42f, 0.10f)) { Emission = new Color(1.0f, 0.38f, 0.08f) * 4f },
             // Feedback

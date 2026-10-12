@@ -51,8 +51,21 @@
    "id": "epoch_medieval_kingdoms",
    "index": 4,
    "name": "Medieval Kingdoms",
-   "playable": false,
-   "stages": []
+   "playable": true,
+   "stages": [
+    {
+     "id": "charter_town",
+     "name": "Chartered Town"
+    },
+    {
+     "id": "market_town",
+     "name": "Market Town"
+    },
+    {
+     "id": "walled_town",
+     "name": "Walled Town"
+    }
+   ]
   },
   {
    "id": "epoch_exploration",
@@ -1047,6 +1060,260 @@
      "buildSeconds": 35
     }
    ]
+  },
+  {
+   "id": "medieval_cottage",
+   "name": "Stone Cottage",
+   "description": "A stone cottage with a tiled roof. Houses 6 people in comfort.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 2,
+    "height": 2
+   },
+   "cost": {
+    "wood": 60,
+    "stone": 70
+   },
+   "buildSeconds": 70,
+   "sprite": "medieval_cottage",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "masonry",
+   "housing": 6,
+   "comfort": 14,
+   "levels": [
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 40
+     },
+     "buildSeconds": 45
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 60,
+      "ore": 5
+     },
+     "buildSeconds": 60
+    }
+   ]
+  },
+  {
+   "id": "medieval_house",
+   "name": "Town House",
+   "description": "Two storeys: stone below, plaster above. Houses 10 people.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 2,
+    "height": 2
+   },
+   "cost": {
+    "wood": 90,
+    "stone": 120
+   },
+   "buildSeconds": 90,
+   "sprite": "medieval_house",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "masonry",
+   "housing": 10,
+   "comfort": 18,
+   "levels": [
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 60
+     },
+     "buildSeconds": 60
+    }
+   ]
+  },
+  {
+   "id": "medieval_townhouse",
+   "name": "Tall Townhouse",
+   "description": "Three storeys under a steep roof: the home of a burgher family. Houses 16 people.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 2,
+    "height": 3
+   },
+   "cost": {
+    "wood": 140,
+    "stone": 190,
+    "ore": 10
+   },
+   "buildSeconds": 120,
+   "sprite": "medieval_townhouse",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "burgher_rights",
+   "housing": 16,
+   "comfort": 22,
+   "levels": [
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 90,
+      "ore": 10
+     },
+     "buildSeconds": 80
+    }
+   ]
+  },
+  {
+   "id": "medieval_market",
+   "name": "Market Hall",
+   "description": "A tiled hall where the valley trades. Big community boost and extra storage.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 3,
+    "height": 3
+   },
+   "cost": {
+    "wood": 160,
+    "stone": 120
+   },
+   "buildSeconds": 110,
+   "sprite": "medieval_market",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "guilds",
+   "community": 20,
+   "storage": 200,
+   "maxCount": 2,
+   "levels": [
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 80
+     },
+     "buildSeconds": 70
+    }
+   ]
+  },
+  {
+   "id": "medieval_mill",
+   "name": "Watermill",
+   "description": "A mill on the river. Must touch water. +3 Farming jobs.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 2,
+    "height": 2
+   },
+   "cost": {
+    "wood": 120,
+    "stone": 100
+   },
+   "buildSeconds": 100,
+   "sprite": "medieval_mill",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "watermill",
+   "requiresAdjacentTerrain": "water",
+   "jobSlots": [
+    {
+     "job": "farming",
+     "count": 3
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 60
+     },
+     "buildSeconds": 60
+    }
+   ]
+  },
+  {
+   "id": "medieval_smithy",
+   "name": "Smithy",
+   "description": "Forge, anvil and bellows. +4 Crafting jobs.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 2,
+    "height": 3
+   },
+   "cost": {
+    "wood": 100,
+    "stone": 110,
+    "ore": 20
+   },
+   "buildSeconds": 100,
+   "sprite": "medieval_smithy",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "ironworking",
+   "community": 3,
+   "jobSlots": [
+    {
+     "job": "crafting",
+     "count": 4
+    }
+   ],
+   "maxCount": 2,
+   "levels": [
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 50,
+      "ore": 15
+     },
+     "buildSeconds": 60
+    }
+   ]
+  },
+  {
+   "id": "medieval_church",
+   "name": "Church",
+   "description": "A stone church with a bell tower. Huge community boost. +3 Research jobs (monks).",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 3,
+    "height": 6
+   },
+   "cost": {
+    "wood": 220,
+    "stone": 420,
+    "ore": 30
+   },
+   "buildSeconds": 220,
+   "sprite": "medieval_church",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "monastic_orders",
+   "community": 35,
+   "comfort": 5,
+   "maxCount": 1,
+   "jobSlots": [
+    {
+     "job": "research",
+     "count": 3
+    }
+   ]
   }
  ],
  "technologies": [
@@ -1328,6 +1595,150 @@
     {
      "kind": "jobRateMultiplier",
      "job": "farming",
+     "value": 1.2
+    }
+   ]
+  },
+  {
+   "id": "written_law",
+   "name": "Written Law",
+   "description": "Marks on clay and wood that keep promises. The village is ready to ask a lord for a charter. +10% research.",
+   "cost": {
+    "knowledge": 220
+   },
+   "researchSeconds": 180,
+   "prerequisites": [
+    "bronze_working"
+   ],
+   "effects": [
+    {
+     "kind": "jobRateMultiplier",
+     "job": "research",
+     "value": 1.1
+    }
+   ]
+  },
+  {
+   "id": "masonry",
+   "epoch": "epoch_medieval_kingdoms",
+   "name": "Stone Masonry",
+   "description": "Cut stone and lime mortar. Unlocks the Stone Cottage and the Town House. +15% stone gathering.",
+   "cost": {
+    "knowledge": 240
+   },
+   "researchSeconds": 180,
+   "prerequisites": [
+    "written_law"
+   ],
+   "effects": [
+    {
+     "kind": "jobRateMultiplier",
+     "job": "stonecutting",
+     "value": 1.15
+    }
+   ]
+  },
+  {
+   "id": "ironworking",
+   "epoch": "epoch_medieval_kingdoms",
+   "name": "Ironworking",
+   "description": "Iron from the red stones of the mountains. Unlocks the Smithy. +25% mining, +10% woodcutting.",
+   "cost": {
+    "knowledge": 260
+   },
+   "researchSeconds": 200,
+   "prerequisites": [
+    "masonry"
+   ],
+   "effects": [
+    {
+     "kind": "jobRateMultiplier",
+     "job": "mining",
+     "value": 1.25
+    },
+    {
+     "kind": "jobRateMultiplier",
+     "job": "woodcutting",
+     "value": 1.1
+    }
+   ]
+  },
+  {
+   "id": "watermill",
+   "epoch": "epoch_medieval_kingdoms",
+   "name": "The Watermill",
+   "description": "The river turns the millstone. Unlocks the Watermill. +20% farming.",
+   "cost": {
+    "knowledge": 260
+   },
+   "researchSeconds": 200,
+   "prerequisites": [
+    "masonry"
+   ],
+   "effects": [
+    {
+     "kind": "jobRateMultiplier",
+     "job": "farming",
+     "value": 1.2
+    }
+   ]
+  },
+  {
+   "id": "guilds",
+   "epoch": "epoch_medieval_kingdoms",
+   "name": "Craft Guilds",
+   "description": "Masters, journeymen and apprentices. Unlocks the Market Hall. +15% crafting bonus.",
+   "cost": {
+    "knowledge": 300
+   },
+   "researchSeconds": 220,
+   "prerequisites": [
+    "ironworking",
+    "watermill"
+   ],
+   "effects": [
+    {
+     "kind": "jobRateMultiplier",
+     "job": "crafting",
+     "value": 1.15
+    }
+   ]
+  },
+  {
+   "id": "burgher_rights",
+   "epoch": "epoch_medieval_kingdoms",
+   "name": "Burgher Rights",
+   "description": "Townsfolk with rights of their own. Unlocks the Tall Townhouse. Newcomers arrive 10% faster.",
+   "cost": {
+    "knowledge": 320
+   },
+   "researchSeconds": 240,
+   "prerequisites": [
+    "guilds"
+   ],
+   "effects": [
+    {
+     "kind": "growthMultiplier",
+     "value": 1.1
+    }
+   ]
+  },
+  {
+   "id": "monastic_orders",
+   "epoch": "epoch_medieval_kingdoms",
+   "name": "Monastic Orders",
+   "description": "Monks who copy books and keep the calendar. Unlocks the Church. +20% research.",
+   "cost": {
+    "knowledge": 360
+   },
+   "researchSeconds": 260,
+   "prerequisites": [
+    "guilds"
+   ],
+   "effects": [
+    {
+     "kind": "jobRateMultiplier",
+     "job": "research",
      "value": 1.2
     }
    ]
@@ -1831,6 +2242,113 @@
    "newEpoch": "epoch_first_civilizations",
    "buildingTransforms": [],
    "legacyText": "The village sowed its first fields and cast its first bronze. The Era of First Civilizations began."
+  },
+  {
+   "id": "the_charter",
+   "name": "The Charter",
+   "description": "A lord grants the valley a charter: the village becomes a town.",
+   "requirements": [
+    {
+     "kind": "chapterAtLeast",
+     "amount": 5
+    },
+    {
+     "kind": "yearAtLeast",
+     "amount": 12
+    },
+    {
+     "kind": "techResearched",
+     "id": "written_law"
+    },
+    {
+     "kind": "populationAtLeast",
+     "amount": 40
+    },
+    {
+     "kind": "beautyAtLeast",
+     "amount": 60
+    },
+    {
+     "kind": "roadCellsAtLeast",
+     "amount": 30
+    }
+   ],
+   "newStage": "charter_town",
+   "newEpoch": "epoch_medieval_kingdoms",
+   "buildingTransforms": [],
+   "legacyText": "A lord's seal made the village a chartered town. The Middle Ages had come to the valley."
+  },
+  {
+   "id": "market_town",
+   "name": "The Market Town",
+   "description": "Craftsmen, a mill and a market: the town trades with the whole valley.",
+   "requirements": [
+    {
+     "kind": "milestoneReached",
+     "id": "the_charter"
+    },
+    {
+     "kind": "yearAtLeast",
+     "amount": 16
+    },
+    {
+     "kind": "buildingCount",
+     "id": "medieval_market",
+     "amount": 1
+    },
+    {
+     "kind": "buildingCount",
+     "id": "medieval_smithy",
+     "amount": 1
+    },
+    {
+     "kind": "buildingCount",
+     "id": "medieval_mill",
+     "amount": 1
+    },
+    {
+     "kind": "populationAtLeast",
+     "amount": 60
+    }
+   ],
+   "newStage": "market_town",
+   "buildingTransforms": [],
+   "legacyText": "The market bell rang for the first time. The town became the heart of the valley."
+  },
+  {
+   "id": "walled_town",
+   "name": "The Walled Town",
+   "description": "Stone walls, a church tower and streets of tall houses.",
+   "requirements": [
+    {
+     "kind": "milestoneReached",
+     "id": "market_town"
+    },
+    {
+     "kind": "yearAtLeast",
+     "amount": 20
+    },
+    {
+     "kind": "buildingCount",
+     "id": "medieval_church",
+     "amount": 1
+    },
+    {
+     "kind": "populationAtLeast",
+     "amount": 80
+    },
+    {
+     "kind": "beautyAtLeast",
+     "amount": 120
+    },
+    {
+     "kind": "roadCellsAtLeast",
+     "amount": 60
+    }
+   ],
+   "newStage": "walled_town",
+   "buildingTransforms": [],
+   "legacyText": "The church bell rang over walls of stone. The founders' town would stand for centuries."
   }
  ],
  "regions": [
@@ -2257,6 +2775,30 @@
     "stone": 10
    },
    "beauty": 4
+  },
+  {
+   "id": "cobble_road",
+   "name": "Cobbled Street",
+   "description": "Cut stones set in sand: a proper town street.",
+   "category": "Roads",
+   "cost": {
+    "stone": 3
+   },
+   "road": true,
+   "beauty": 1,
+   "requiresTech": "masonry"
+  },
+  {
+   "id": "banner",
+   "name": "Town Banner",
+   "description": "A tall banner in the town's colours.",
+   "category": "Monuments",
+   "cost": {
+    "wood": 6,
+    "hides": 2
+   },
+   "beauty": 4,
+   "requiresTech": "guilds"
   }
  ],
  "chapters": [
@@ -2354,26 +2896,56 @@
    "number": 5,
    "title": "The Charter",
    "era": "Middle Ages",
-   "locked": true,
-   "story": "Centuries pass. A lord rides into the valley with a parchment and a seal: the village may become a town, with a market, a church and the right to its own laws.\n\nThe Middle Ages are coming to the valley in a future update.",
-   "goal": "The Middle Ages are in development."
+   "locked": false,
+   "story": "Centuries pass. The hillfort has become the largest settlement between the mountains and the sea, and its law-speakers can write.\n\nA lord rides into the valley with a parchment and a seal. He will grant a charter: the village may become a town, with its own market and its own laws, if it is large, beautiful and well ordered.\n\nResearch Written Law, grow the town and win the charter. The Middle Ages begin.",
+   "goal": "Win the lord's charter and open the Middle Ages.",
+   "requirements": [
+    {
+     "kind": "milestoneReached",
+     "id": "the_charter"
+    }
+   ],
+   "legacyText": "The charter was sealed and the valley entered the Middle Ages."
   },
   {
    "id": "ch6_market_town",
    "number": 6,
    "title": "The Market Town",
    "era": "Middle Ages",
-   "locked": true,
-   "story": "Craftsmen, stone houses, a mill on the river and a smithy that never sleeps.",
-   "goal": "Coming in a future update."
+   "locked": false,
+   "story": "With the charter came the right to hold a market. Merchants from beyond the mountains ask for iron, flour and cloth.\n\nThe town needs craftsmen: a smithy for the ore of the mountains, a watermill on the river, and a market hall where the valley meets.\n\nBuild stone houses, cobbled streets and the market town.",
+   "goal": "A market hall, a smithy and a watermill in a town of 60.",
+   "requirements": [
+    {
+     "kind": "milestoneReached",
+     "id": "market_town"
+    }
+   ],
+   "legacyText": "The market town traded with the whole valley."
   },
   {
    "id": "ch7_walled_town",
    "number": 7,
    "title": "The Walled Town",
    "era": "Middle Ages",
+   "locked": false,
+   "story": "Wealth draws danger as well as merchants. The council decides to raise walls of stone and a church whose tower can be seen from the mountain passes.\n\nThis is the last task of the founders' line in this age: a walled town that will stand for centuries.\n\nBuild the church, wall the town and fill its streets.",
+   "goal": "A church, walls and a town of 80.",
+   "requirements": [
+    {
+     "kind": "milestoneReached",
+     "id": "walled_town"
+    }
+   ],
+   "legacyText": "The walled town was finished. The founders' line had built something that would outlive them all."
+  },
+  {
+   "id": "ch8_age_of_sail",
+   "number": 8,
+   "title": "Beyond the Mountains",
+   "era": "Exploration",
    "locked": true,
-   "story": "Town walls, gates, a stone church and a castle on the hill.",
+   "story": "Ships, printing presses and maps of a world much larger than the valley. The next age is still being built.",
    "goal": "Coming in a future update."
   }
  ]

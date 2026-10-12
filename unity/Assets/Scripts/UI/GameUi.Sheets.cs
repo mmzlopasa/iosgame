@@ -600,7 +600,7 @@ namespace Founders.UI
                     foreach (var req in G.MilestoneRequirements(ms.Id)) card.Add(Check(req.Text, req.Met).Margin(8));
                     bool can = G.CanClaimMilestone(ms.Id);
                     string id = ms.Id;
-                    card.Add(E.Button(can ? "Found the village" : "Not ready yet", can ? Act(() => { store.ClaimMilestone(id); store.ActivePanel = Panel.None; }) : null,
+                    card.Add(E.Button(can ? $"Claim: {ms.Name}" : "Not ready yet", can ? Act(() => { store.ClaimMilestone(id); store.ActivePanel = Panel.None; }) : null,
                                       can ? E.Kind.Gold : E.Kind.Disabled, 46, can ? "sparkle" : null).Margin(14));
                 }
                 host.Add(card);

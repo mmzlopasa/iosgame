@@ -98,6 +98,7 @@ namespace Founders.Core
                 foreach (var p in tech.Prerequisites)
                     if (!techIds.Contains(p)) problems.Add($"tech '{tech.Id}' has unknown prerequisite '{p}'");
                 if (tech.ResearchSeconds <= 0) problems.Add($"tech '{tech.Id}' needs researchSeconds > 0");
+                if (tech.Epoch != null && c.Epoch(tech.Epoch) == null) problems.Add($"tech '{tech.Id}' uses unknown epoch '{tech.Epoch}'");
                 problems.AddRange(ValidateEffects(tech.Effects, $"tech '{tech.Id}'", buildingIds));
             }
             var cycle = FindPrerequisiteCycle(c.Technologies);
@@ -160,7 +161,9 @@ namespace Founders.Core
                 CheckConditions(ms.Requirements, $"milestone '{ms.Id}'");
                 if (string.IsNullOrEmpty(ms.NewEpoch))
                 {
-                    if (!stageIds.Contains(ms.NewStage)) problems.Add($"milestone '{ms.Id}' targets unknown stage '{ms.NewStage}'");
+                    // A stage within the current era: any era may hold it (later eras have stages of their own).
+                    if (!stageIds.Contains(ms.NewStage) && !c.Epochs.Any(e => e.Stages.Any(st => st.Id == ms.NewStage)))
+                        problems.Add($"milestone '{ms.Id}' targets unknown stage '{ms.NewStage}'");
                 }
                 else
                 {

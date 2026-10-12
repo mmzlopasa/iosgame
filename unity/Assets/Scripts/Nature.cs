@@ -253,6 +253,29 @@ namespace Founders
             foreach (var set in item.Sets) set.SetHidden(item.Index, hidden);
         }
 
+        /// <summary>
+        /// True when something of this height standing at <paramref name="p"/> would block the view:
+        /// its crown is right in front of the lens, or it stands between a close camera and the
+        /// middle of the view.
+        /// </summary>
+        public static bool Occludes(Vector3 c, Vector3 fwd, Vector3 p, float height)
+        {
+            float dx = c.x - p.x, dz = c.z - p.z;
+            var crown = p + Vector3.up * height * 0.6f;
+            if (dx * dx + dz * dz < 400f)
+            {
+                float horizontal = Mathf.Sqrt(dx * dx + dz * dz);
+                if ((c - crown).magnitude < height * 0.55f + 3f || (c.y < p.y + height + 1.5f && horizontal < 4f)) return true;
+            }
+            if (fwd.y < -0.1f && c.y - p.y < 22f)
+            {
+                float t = Vector3.Dot(crown - c, fwd);
+                float groundT = (c.y - p.y) / -fwd.y; // where the view ray reaches this object's ground level
+                if (t > 0f && t < groundT && (crown - (c + fwd * t)).magnitude < height * 0.4f + 1.5f) return true;
+            }
+            return false;
+        }
+
         /// <summary>Hides trees whose crown would fill the screen when the camera flies low over them.</summary>
         void UpdateNearCamera()
         {
@@ -264,26 +287,7 @@ namespace Founders
             var fwd = cam.transform.forward;
             foreach (var tv in trees)
             {
-                var p = tv.Position;
-                float dx = c.x - p.x, dz = c.z - p.z;
-                bool hide = false;
-                var crown = p + Vector3.up * tv.Height * 0.6f;
-                if (dx * dx + dz * dz < 400f)
-                {
-                    float horizontal = Mathf.Sqrt(dx * dx + dz * dz);
-                    hide = (c - crown).magnitude < tv.Height * 0.55f + 3f || (c.y < p.y + tv.Height + 1.5f && horizontal < 4f);
-                }
-                // Crowns standing between the camera and the middle of the view hide too.
-                if (!hide && fwd.y < -0.1f && c.y - p.y < 22f)
-                {
-                    float t = Vector3.Dot(crown - c, fwd);
-                    float groundT = (c.y - p.y) / -fwd.y; // where the view ray reaches this tree's ground level
-                    if (t > 0f && t < groundT)
-                    {
-                        float off = (crown - (c + fwd * t)).magnitude;
-                        hide = off < tv.Height * 0.4f + 1.5f;
-                    }
-                }
+                bool hide = Occludes(c, fwd, tv.Position, tv.Height);
                 if (hide == tv.NearCamera) continue;
                 tv.NearCamera = hide;
                 Apply(tv);

@@ -957,7 +957,8 @@ namespace Founders.UI
             var look = TileLook[cat];
             var t = E.Div().Size(size, size).Radius(size * 0.3f).Center().Border(new Color(1, 1, 1, 0.12f)).Ignore();
             t.BgImage(Theme.Gradient("tile" + cat, true, look.a, look.b));
-            string icon = def.Id.Contains("farm") ? "spring" : def.Id.Contains("fire") || def.Id.Contains("kiln") || def.Id.Contains("smelter") ? "flame"
+            string icon = def.Id.Contains("church") ? "landmark" : def.Id.Contains("mill") ? "wheat" : def.Id.Contains("market") ? "storage"
+                : def.Id.Contains("smithy") ? "pickaxe" : def.Id.Contains("farm") ? "spring" : def.Id.Contains("fire") || def.Id.Contains("kiln") || def.Id.Contains("smelter") ? "flame"
                 : def.Id.Contains("stone") ? "stone" : def.Id.Contains("wood") ? "wood" : look.icon;
             t.Add(E.Icon(icon, size * 0.46f, Theme.Alpha(Theme.GoldPale, 0.95f)));
             return t;

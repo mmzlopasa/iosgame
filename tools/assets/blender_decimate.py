@@ -23,6 +23,8 @@ for o in bpy.context.scene.objects:
 for o in meshes:
     o.select_set(True)
 bpy.context.view_layer.objects.active = meshes[0]
+# Modular buildings reuse one mesh in many places: give every object its own copy first.
+bpy.ops.object.make_single_user(object=True, obdata=True)
 bpy.ops.object.parent_clear(type="CLEAR_KEEP_TRANSFORM")
 bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
 if len(meshes) > 1:

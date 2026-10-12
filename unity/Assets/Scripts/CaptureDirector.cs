@@ -116,6 +116,18 @@ namespace Founders
             store.Refresh();
         }
 
+        /// <summary>Places a costly building with the stores filled past their caps and finishes it (capture only).</summary>
+        void BuildRich(string id)
+        {
+            var game = store.Game;
+            game.State.Resources = new ResourceBundle(600, 800, 900, 200, 120, 40);
+            var cell = FindCell(id);
+            if (cell == null) { Debug.LogWarning($"[FOUNDERS] capture: no cell for {id}"); return; }
+            var r = game.PlaceBuilding(id, cell.Value.Item1, cell.Value.Item2);
+            if (!r.Ok) { Debug.LogWarning($"[FOUNDERS] capture: {id} {r.Error}"); return; }
+            for (int i = 0; i < 6 && game.State.Building(r.Value)?.Status != BuildingStatus.Complete; i++) game.DebugFastForward(120);
+        }
+
         /// <summary>Answers any waiting decision so dialogs do not cover the scenery shots.</summary>
         void ResolvePending()
         {
@@ -318,11 +330,66 @@ namespace Founders
                 Focus(Grid.CellCenter(siteCell.Value.Item1 + 0.5f, siteCell.Value.Item2 + 0.5f), 10f);
                 yield return Shot("06k_builders", false);
             }
-            var camp = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "wood_camp");
-            if (camp != null)
+            // A woodcutter mid-swing: put people to work in the forest and wait for an axe to rise.
+            store.SetWorkers(JobType.Woodcutting, game.JobCapacity(JobType.Woodcutting));
+            Villager chopper = null;
+            for (int i = 0; i < 300 && chopper == null; i++)
             {
-                Focus(Grid.CellCenter(camp.X, camp.Y), 14f);
+                chopper = store.World.FindVillager("Chop", "Prop_Axe");
+                yield return new WaitForSeconds(0.1f);
+            }
+            var camp = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "wood_camp");
+            if (chopper != null || camp != null)
+            {
+                Focus(chopper != null ? chopper.transform.position : Grid.CellCenter(camp.X, camp.Y), 8f);
+                yield return new WaitForSeconds(0.4f);
                 yield return Shot("06l_woodcutters", false);
+            }
+
+            // 3d. The Middle Ages: the charter, stone houses, the market hall, the mill and the church.
+            game.State.Chapter = Mathf.Max(game.State.Chapter, 5);
+            JumpToYear(game, 12);
+            foreach (var tech in new[] { "written_law", "masonry", "ironworking", "watermill", "guilds", "burgher_rights", "monastic_orders" })
+                if (!game.State.Researched.Contains(tech)) game.State.Researched.Add(tech);
+            game.State.Population = Mathf.Max(game.State.Population, 40);
+            if (game.CanClaimMilestone("the_charter")) game.ClaimMilestone("the_charter");
+            else
+            {
+                // Capture only: the layout above is smaller than a real charter town.
+                game.State.ReachedMilestones.Add("the_charter");
+                game.State.EpochId = "epoch_medieval_kingdoms";
+                game.State.StageId = "charter_town";
+                game.State.Chapter = 6;
+                game.State.PendingStory = "ch6_market_town";
+            }
+            foreach (var id in new[] { "medieval_cottage", "medieval_house", "medieval_cottage", "medieval_townhouse", "medieval_market",
+                                       "medieval_smithy", "medieval_mill", "medieval_church" })
+            {
+                BuildRich(id);
+                store.Refresh();
+                yield return null;
+            }
+            store.World.RebuildAll();
+            store.Celebration = null;
+            store.Refresh();
+            yield return Shot("06n_chapter_six", true);
+            ResolvePending();
+            SetTime(game, 1, 0.32f);
+            yield return new WaitForSeconds(1.5f);
+            var church = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "medieval_church");
+            var townCenter = church != null ? Grid.CellCenter(church.X, church.Y) : Camp();
+            Focus(Vector3.Lerp(townCenter, Camp(), 0.5f), 34f);
+            yield return Shot("06m_medieval_town", false);
+            if (church != null)
+            {
+                Focus(Grid.CellCenter(church.X + 1f, church.Y + 2.5f), 20f);
+                yield return Shot("06o_church", false);
+            }
+            var mill = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "medieval_mill");
+            if (mill != null)
+            {
+                Focus(Grid.CellCenter(mill.X + 0.5f, mill.Y + 0.5f), 15f);
+                yield return Shot("06p_watermill", false);
             }
 
             // 3c. Day, night and the seasons.

@@ -29,7 +29,7 @@ namespace Founders
 
         static readonly Color Dawn = new Color(1f, 0.62f, 0.38f);
         static readonly Color Moon = new Color(0.55f, 0.66f, 1f);
-        static readonly Color NightFog = new Color(0.12f, 0.15f, 0.22f);
+        static readonly Color NightFog = new Color(0.17f, 0.21f, 0.30f);
 
         public void Init(GameStore owner)
         {
@@ -118,20 +118,21 @@ namespace Founders
             Color dayColor = Color.Lerp(Dawn, noon, Mathf.SmoothStep(0f, 1f, elevation / 0.4f));
             float dayIntensity = Mathf.Lerp(0.9f, 2.1f, elevation) * seasonLight;
             sun.color = Color.Lerp(dayColor, Moon, nightness);
-            sun.intensity = Mathf.Lerp(dayIntensity, 0.6f, nightness);
+            // A bright moon: the town stays readable at night, the lights still glow.
+            sun.intensity = Mathf.Lerp(dayIntensity, 0.95f, nightness);
             float pitch = p < 0.75f ? Mathf.Lerp(9f, 56f, elevation) : Mathf.Lerp(12f, 48f, nightness);
             sun.transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
 
-            RenderSettings.ambientIntensity = Mathf.Lerp(Mathf.Lerp(0.75f, 1f, elevation), 0.55f, nightness);
+            RenderSettings.ambientIntensity = Mathf.Lerp(Mathf.Lerp(0.75f, 1f, elevation), 0.82f, nightness);
             RenderSettings.reflectionIntensity = Mathf.Lerp(1f, 0.3f, nightness);
-            if (sky != null && sky.HasProperty("_Exposure")) sky.SetFloat("_Exposure", Mathf.Lerp(skyExposure, skyExposure * 0.35f, nightness));
+            if (sky != null && sky.HasProperty("_Exposure")) sky.SetFloat("_Exposure", Mathf.Lerp(skyExposure, skyExposure * 0.55f, nightness));
             var fog = id == "winter" ? new Color(0.78f, 0.82f, 0.88f) : SceneEnvironment.FogColor;
             RenderSettings.fogColor = Color.Lerp(fog, NightFog, nightness);
 
             if (white != null)
             {
                 float temp = id switch { "summer" => 8f, "autumn" => 16f, "winter" => -16f, _ => 2f };
-                white.temperature.value = Mathf.Lerp(baseTemperature + temp, -18f, nightness);
+                white.temperature.value = Mathf.Lerp(baseTemperature + temp, -12f, nightness);
             }
 
             // Vegetation tints follow the season (eased over the first part of each season).
