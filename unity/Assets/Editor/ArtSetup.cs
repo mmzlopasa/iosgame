@@ -450,19 +450,20 @@ namespace FoundersEditor
             }
 
             var tone = Add<Tonemapping>();
-            tone.mode.Override(TonemappingMode.ACES);
+            // Neutral keeps the painted colours bright and clean (ACES would darken and desaturate them).
+            tone.mode.Override(TonemappingMode.Neutral);
             var bloom = Add<Bloom>();
             bloom.threshold.Override(1.05f);
             bloom.intensity.Override(0.35f);
             bloom.scatter.Override(0.65f);
             var color = Add<ColorAdjustments>();
-            color.postExposure.Override(0.25f);
-            color.contrast.Override(14f);
-            color.saturation.Override(6f);
+            color.postExposure.Override(0.35f);
+            color.contrast.Override(8f);
+            color.saturation.Override(18f);
             var white = Add<WhiteBalance>();
             white.temperature.Override(6f);
             var vignette = Add<Vignette>();
-            vignette.intensity.Override(0.22f);
+            vignette.intensity.Override(0.16f);
             vignette.smoothness.Override(0.45f);
             EditorUtility.SetDirty(profile);
             PostProfile = profile;

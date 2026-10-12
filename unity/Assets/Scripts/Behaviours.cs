@@ -56,8 +56,12 @@ namespace Founders
 
         const float MinDistance = 9f;
         const float MaxDistance = 80f;
-        float Pitch => Mathf.Lerp(52f, 40f, Mathf.InverseLerp(MinDistance, MaxDistance, distance));
-        public const float Yaw = -45f;
+        /// <summary>Extra tilt the player added (two fingers up/down): negative looks flatter, positive more from above.</summary>
+        float tilt;
+        float Pitch => Mathf.Clamp(Mathf.Lerp(52f, 40f, Mathf.InverseLerp(MinDistance, MaxDistance, distance)) + tilt, 22f, 82f);
+        /// <summary>Compass heading of the camera; the player turns it freely with two fingers.</summary>
+        public static float Yaw { get; private set; } = -45f;
+        float lastTwist;
         const float TapSlop = 12f; // pixels
 
         Vector2 pressStart;
@@ -134,6 +138,21 @@ namespace Founders
             focus -= (right * screenDelta.x + forward * screenDelta.y / Mathf.Sin(Pitch * Mathf.Deg2Rad)) * worldPerPixel;
             focus.x = Mathf.Clamp(focus.x, Bounds.xMin, Bounds.xMax);
             focus.z = Mathf.Clamp(focus.z, Bounds.yMin, Bounds.yMax);
+        }
+
+        public void Rotate(float degrees)
+        {
+            moveUntil = Mathf.Min(moveUntil, Time.time);
+            Yaw = Mathf.Repeat(Yaw + degrees + 180f, 360f) - 180f;
+        }
+
+        void Tilt(float degrees) => tilt = Mathf.Clamp(tilt + degrees, -24f, 30f);
+
+        /// <summary>Turns the camera back to the default north-west view.</summary>
+        public void ResetView()
+        {
+            Yaw = -45f;
+            tilt = 0f;
         }
 
         void Zoom(float factor)
@@ -219,8 +238,19 @@ namespace Founders
                 }
                 if (pressBlocked) return;
                 float d = Vector2.Distance(a.position, b.position);
-                if (lastPinch > 0f && d > 1f) Zoom(lastPinch / d);
+                var dir = b.position - a.position;
+                float twist = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+                if (lastPinch > 0f && d > 1f)
+                {
+                    Zoom(lastPinch / d);
+                    // Twist two fingers to turn the camera all the way around.
+                    Rotate(-Mathf.DeltaAngle(lastTwist, twist));
+                    // Slide both fingers up or down together to tilt.
+                    if (Vector2.Dot(a.deltaPosition, b.deltaPosition) > 0f)
+                        Tilt((a.deltaPosition.y + b.deltaPosition.y) * 0.5f * 0.12f);
+                }
                 lastPinch = d;
+                lastTwist = twist;
                 return;
             }
             if (Input.touchCount == 1)
@@ -250,6 +280,16 @@ namespace Founders
             if (Input.GetMouseButtonDown(0)) { Press(m); lastMouse = m; }
             else if (Input.GetMouseButton(0)) { Move(m, (Vector2)(Input.mousePosition - lastMouse)); lastMouse = m; }
             if (Input.GetMouseButtonUp(0)) Release(m);
+            // Right mouse button turns and tilts; Q and E turn too.
+            if (Input.GetMouseButton(1))
+            {
+                var delta = (Vector2)(Input.mousePosition - lastMouse);
+                Rotate(delta.x * 0.3f);
+                Tilt(delta.y * 0.15f);
+            }
+            if (Input.GetMouseButtonDown(1) || Input.GetMouseButton(1)) lastMouse = m;
+            if (Input.GetKey(KeyCode.Q)) Rotate(-90f * Time.unscaledDeltaTime);
+            if (Input.GetKey(KeyCode.E)) Rotate(90f * Time.unscaledDeltaTime);
             float scroll = Input.mouseScrollDelta.y;
             if (Mathf.Abs(scroll) > 0.01f && !IsBlocked(m)) Zoom(scroll > 0 ? 0.9f : 1.1f);
 #endif
@@ -303,11 +343,12 @@ namespace Founders
             new Color(0.92f, 0.72f, 0.58f), new Color(0.84f, 0.62f, 0.48f), new Color(0.74f, 0.52f, 0.38f),
             new Color(0.62f, 0.43f, 0.31f), new Color(0.52f, 0.36f, 0.26f),
         };
-        // Multiplies the leather texture: warm browns that read as hide, apart from the skin.
+        // Clothing: clean, saturated colours that read well from the strategy camera.
         static readonly Color[] HideTints =
         {
-            new Color(0.95f, 0.80f, 0.64f), new Color(0.80f, 0.66f, 0.52f), new Color(1.00f, 0.86f, 0.70f),
-            new Color(0.72f, 0.60f, 0.50f), new Color(0.88f, 0.75f, 0.60f),
+            new Color(0.27f, 0.47f, 0.78f), new Color(0.88f, 0.48f, 0.22f), new Color(0.38f, 0.64f, 0.32f),
+            new Color(0.78f, 0.30f, 0.26f), new Color(0.92f, 0.76f, 0.34f), new Color(0.56f, 0.42f, 0.72f),
+            new Color(0.62f, 0.44f, 0.30f), new Color(0.30f, 0.62f, 0.64f),
         };
         static readonly Color[] HairColors =
         {
@@ -316,20 +357,6 @@ namespace Founders
         };
 
         static readonly Dictionary<string, GameObject> models = new Dictionary<string, GameObject>();
-        static Material cloth;
-
-        /// <summary>Matte leather for clothing (the shared hide surface is too glossy on a body).</summary>
-        static Material ClothMaterial()
-        {
-            if (cloth != null) return cloth;
-            var src = ModelLibrary.Surface("Hide");
-            if (src == null) return null;
-            cloth = new Material(src) { name = "VillagerHide" };
-            if (cloth.HasProperty("_Smoothness")) cloth.SetFloat("_Smoothness", 0.12f);
-            if (cloth.HasProperty("_EnvironmentReflections")) cloth.SetFloat("_EnvironmentReflections", 0f);
-            return cloth;
-        }
-
         static GameObject Model(string name)
         {
             if (models.TryGetValue(name, out var m)) return m;
@@ -452,7 +479,7 @@ namespace Founders
                     for (int i = 0; i < source.Length; i++)
                     {
                         string n = source[i] != null ? source[i].name : "";
-                        if (n.StartsWith("Hide")) { mats[i] = ClothMaterial(); tints[i] = hide; }
+                        if (n.StartsWith("Hide")) { mats[i] = Palette.Get("Tunic"); tints[i] = hide; }
                         else if (n.StartsWith("Hair")) { mats[i] = Palette.Get("Hair"); tints[i] = hair; }
                         else { mats[i] = Palette.Get("Skin"); tints[i] = skin; }
                     }

@@ -174,6 +174,8 @@ namespace Founders
                 nature.AddModel(id, p, scale, yaw(), cx, cy, shadows, m);
             void Tree(string kind, Vector3 p, float h) => nature.AddTree(kind, p, h, yaw(), cx, cy);
 
+            float r01() => (float)rng.NextDouble();
+            string Rock() => "sn_rock_" + (1 + rng.Next(3));
             switch (type)
             {
                 case TerrainType.Forest:
@@ -183,58 +185,59 @@ namespace Founders
                     {
                         bool pine = rng.Next(3) != 0;
                         string kind = pine ? Pines[rng.Next(Pines.Length)] : "LeafTree";
-                        float h = pine ? 8f + (float)rng.NextDouble() * 5f : 5.5f + (float)rng.NextDouble() * 2.5f;
+                        float h = pine ? 7f + r01() * 4f : 5.5f + r01() * 2.5f;
                         Tree(kind, Jitter(c, rng, 1.6f), h);
                     }
-                    if (inside && rng.Next(2) == 0) Model("fern_02", Jitter(c, rng, 1.6f), 0.8f, false);
-                    if (inside && rng.Next(4) == 0) Model("dry_branches_medium_01", Jitter(c, rng, 1.6f), 1f, false);
-                    if (rng.Next(6) == 0) Model("tree_stump_01", Jitter(c, rng, 1.4f), 0.6f, false);
+                    if (inside && rng.Next(2) == 0) Model("sn_fern", Jitter(c, rng, 1.6f), 0.35f + r01() * 0.15f, false);
+                    if (inside && rng.Next(5) == 0) Model("sn_mushroom", Jitter(c, rng, 1.6f), 0.6f, false);
+                    if (rng.Next(7) == 0) Model("k_trunk", Jitter(c, rng, 1.4f), 2.6f, false);
                     break;
                 }
                 case TerrainType.Rock:
                 {
                     // Outcrops here and there; the hills show their stony ground between them.
                     int r = rng.Next(10);
-                    if (r < 3) Model("rock_moss_set_01", Jitter(c, rng, 0.8f), 0.24f + (float)rng.NextDouble() * 0.08f);
-                    else if (r < 5) Model("namaqualand_boulder_02", Jitter(c, rng, 0.8f), 0.7f + (float)rng.NextDouble() * 0.5f);
-                    if (rng.Next(4) == 0) Model("boulder_01", Jitter(c, rng, 1.6f), 0.45f);
-                    if (rng.Next(5) == 0) Model("shrub_03", Jitter(c, rng, 1.4f), 0.9f, false);
+                    if (r < 4) Model(Rock(), Jitter(c, rng, 0.8f), 0.32f + r01() * 0.25f);
+                    if (rng.Next(3) == 0) Model("sn_pebble", Jitter(c, rng, 1.6f), 1.2f + r01(), false);
+                    if (rng.Next(6) == 0) Model("sn_plant", Jitter(c, rng, 1.4f), 0.6f, false);
                     break;
                 }
                 case TerrainType.Ore:
                 {
                     // Veins of rusty iron and green copper stone at the mountain foot.
                     var ore = rng.Next(4) == 0 ? ModelLibrary.CopperOre : ModelLibrary.IronOre;
-                    Model("boulder_01", Jitter(c, rng, 0.9f), 0.5f + (float)rng.NextDouble() * 0.3f, true, ore);
-                    for (int i = 0; i < 3; i++) Model("stone_01", Jitter(c, rng, 1.6f), 3f + (float)rng.NextDouble() * 2f, false, ore);
-                    if (rng.Next(2) == 0) Model("rock_07", Jitter(c, rng, 1.4f), 0.3f);
+                    Model(Rock(), Jitter(c, rng, 0.9f), 0.28f + r01() * 0.15f, true, ore);
+                    for (int i = 0; i < 2; i++) Model("sn_pebble", Jitter(c, rng, 1.6f), 1.4f + r01(), false, ore);
                     break;
                 }
                 case TerrainType.Mountain:
                 {
                     var p = Jitter(c, rng, 1.6f);
                     // Pines climb the lower slopes; boulders lie in the scree above.
-                    if (p.y < 7f && rng.Next(3) == 0) Tree(Pines[rng.Next(Pines.Length)], p, 6f + (float)rng.NextDouble() * 4f);
-                    else if (rng.Next(3) == 0) Model("namaqualand_boulder_02", p, 0.9f + (float)rng.NextDouble() * 1.2f);
+                    if (p.y < 7f && rng.Next(3) == 0) Tree(Pines[rng.Next(Pines.Length)], p, 6f + r01() * 3f);
+                    else if (rng.Next(3) == 0) Model(Rock(), p, 0.5f + r01() * 0.6f);
                     break;
                 }
                 case TerrainType.Sand:
                 {
-                    if (rng.Next(3) == 0) Model("stone_01", Jitter(c, rng, 1.6f), 3.5f, false);
-                    if (rng.Next(4) == 0) Model("nettle_plant", Jitter(c, rng, 1.4f), 0.9f, false);
+                    if (rng.Next(3) == 0) Model("sn_pebble", Jitter(c, rng, 1.6f), 1.5f, false);
+                    if (rng.Next(4) == 0) Model("sn_plant_big", Jitter(c, rng, 1.4f), 0.8f, false);
                     break;
                 }
                 case TerrainType.Grass:
                 {
-                    int r = rng.Next(10);
-                    if (r == 0) Model("shrub_03", Jitter(c, rng, 1.4f), 1f);
-                    else if (r == 1) Model("shrub_04", Jitter(c, rng, 1.4f), 1.4f);
+                    int r = rng.Next(12);
+                    if (r == 0) Model("sn_bush", Jitter(c, rng, 1.4f), 0.55f + r01() * 0.25f);
+                    else if (r == 1) Model("sn_bush_flowers", Jitter(c, rng, 1.4f), 0.55f + r01() * 0.2f);
                     else if (r == 2 && !inside) Tree("LeafTree", Jitter(c, rng, 1.4f), 5f);
-                    else if (r == 3 && inside) Tree("FirSapling", Jitter(c, rng, 1.4f), 1.6f);
+                    else if (r == 3 && inside) Tree("FirSapling", Jitter(c, rng, 1.4f), 1.8f);
+                    else if (r == 4) Model("sn_flowers", Jitter(c, rng, 1.4f), 0.28f, false);
+                    else if (r == 5) Model("sn_clover", Jitter(c, rng, 1.4f), 0.5f, false);
                     break;
                 }
             }
         }
+
 
         // MARK: - Sync
 
@@ -267,6 +270,8 @@ namespace Founders
             }
             foreach (var view in buildings.Values)
             {
+                // Progress bars face the camera whichever way it is turned.
+                if (view.Bar != null && view.Bar.activeSelf) view.Bar.transform.rotation = Quaternion.Euler(0, CameraRig.Yaw, 0);
                 if (view.PopUntil <= 0f) continue;
                 float k = 1f - Mathf.Clamp01((view.PopUntil - Time.time) / 0.35f);
                 view.Root.transform.localScale = Vector3.one * Mathf.Lerp(0.7f, 1f, Mathf.SmoothStep(0, 1, k));

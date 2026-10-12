@@ -40,7 +40,7 @@ namespace Founders
         public static readonly Spec[] All =
         {
             // Water: dark, very smooth surface that reflects the HDRI sky.
-            new Spec("Water", new Color(0.10f, 0.17f, 0.17f), 0.95f),
+            new Spec("Water", new Color(0.16f, 0.46f, 0.52f), 0.86f),
             new Spec("Earth", new Color(0.30f, 0.23f, 0.16f), 0.15f),
             new Spec("Ash", new Color(0.16f, 0.15f, 0.14f), 0.1f),
             // People (placeholder until real character models)
@@ -212,8 +212,8 @@ namespace Founders
             return tinted[key] = m;
         }
 
-        public static Material IronOre => Tinted("boulder_01", "IronOre", new Color(0.95f, 0.58f, 0.42f));
-        public static Material CopperOre => Tinted("boulder_01", "CopperOre", new Color(0.62f, 0.85f, 0.7f));
+        public static Material IronOre => Tinted("sn_rock_1", "IronOre", new Color(0.95f, 0.58f, 0.42f));
+        public static Material CopperOre => Tinted("sn_rock_1", "CopperOre", new Color(0.62f, 0.85f, 0.7f));
 
         /// <summary>
         /// A tree drawn as three crossed photo billboards plus a top-down canopy card: rendered from

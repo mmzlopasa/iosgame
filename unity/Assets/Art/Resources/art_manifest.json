@@ -1,60 +1,60 @@
 {
  "impostors": {
   "FirSapling": {
-   "height": 1.301,
+   "height": 8.724,
    "side": "Art/Textures/FirSapling_impostor_side.png",
    "side2": "Art/Textures/FirSapling_impostor_side2.png",
-   "source": "https://polyhaven.com/a/fir_sapling",
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
    "top": "Art/Textures/FirSapling_impostor_top.png",
-   "width": 0.861
+   "width": 6.42
   },
   "GrassTuft": {
-   "height": 0.147,
+   "height": 1.334,
    "side": "Art/Textures/GrassTuft_impostor_side.png",
    "side2": "Art/Textures/GrassTuft_impostor_side2.png",
-   "source": "https://polyhaven.com/a/grass_medium_01",
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
    "top": "Art/Textures/GrassTuft_impostor_top.png",
-   "width": 0.327
+   "width": 0.737
   },
   "LeafTree": {
-   "height": 4.557,
+   "height": 7.265,
    "side": "Art/Textures/LeafTree_impostor_side.png",
    "side2": "Art/Textures/LeafTree_impostor_side2.png",
-   "source": "https://polyhaven.com/a/tree_small_02",
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
    "top": "Art/Textures/LeafTree_impostor_top.png",
-   "width": 4.292
+   "width": 4.578
   },
   "PineA": {
-   "height": 20.375,
+   "height": 7.317,
    "side": "Art/Textures/PineA_impostor_side.png",
    "side2": "Art/Textures/PineA_impostor_side2.png",
-   "source": "https://polyhaven.com/a/pine_tree_01",
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
    "top": "Art/Textures/PineA_impostor_top.png",
-   "width": 8.314
+   "width": 4.945
   },
   "PineB": {
-   "height": 14.881,
+   "height": 7.376,
    "side": "Art/Textures/PineB_impostor_side.png",
    "side2": "Art/Textures/PineB_impostor_side2.png",
-   "source": "https://polyhaven.com/a/pine_tree_01",
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
    "top": "Art/Textures/PineB_impostor_top.png",
-   "width": 7.597
+   "width": 5.728
   },
   "PineC": {
-   "height": 17.544,
+   "height": 7.392,
    "side": "Art/Textures/PineC_impostor_side.png",
    "side2": "Art/Textures/PineC_impostor_side2.png",
-   "source": "https://polyhaven.com/a/pine_tree_01",
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
    "top": "Art/Textures/PineC_impostor_top.png",
-   "width": 7.855
+   "width": 3.996
   },
   "Wildflowers": {
-   "height": 0.399,
+   "height": 2.055,
    "side": "Art/Textures/Wildflowers_impostor_side.png",
    "side2": "Art/Textures/Wildflowers_impostor_side2.png",
-   "source": "https://polyhaven.com/a/flower_heliophila",
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
    "top": "Art/Textures/Wildflowers_impostor_top.png",
-   "width": 1.663
+   "width": 1.591
   }
  },
  "license": "CC0 1.0 (Poly Haven)",
@@ -79,6 +79,7 @@
     1.831
    ],
    "source": "https://polyhaven.com/a/boulder_01",
+   "toon": true,
    "triangles": 2500
   },
   "ceramic_pot": {
@@ -101,6 +102,7 @@
     0.502
    ],
    "source": "https://polyhaven.com/a/ceramic_pot",
+   "toon": true,
    "triangles": 1998
   },
   "dead_tree_trunk": {
@@ -123,6 +125,7 @@
     0.274
    ],
    "source": "https://polyhaven.com/a/dead_tree_trunk",
+   "toon": true,
    "triangles": 2500
   },
   "dead_tree_trunk_02": {
@@ -145,6 +148,7 @@
     1.047
    ],
    "source": "https://polyhaven.com/a/dead_tree_trunk_02",
+   "toon": true,
    "triangles": 3500
   },
   "dry_branches_medium_01": {
@@ -167,6 +171,7 @@
     1.297
    ],
    "source": "https://polyhaven.com/a/dry_branches_medium_01",
+   "toon": true,
    "triangles": 2500
   },
   "fern_02": {
@@ -189,7 +194,548 @@
     1.724
    ],
    "source": "https://polyhaven.com/a/fern_02",
+   "toon": true,
    "triangles": 3000
+  },
+  "k_anvil": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_anvil__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_anvil",
+   "size": [
+    0.323,
+    0.336,
+    0.296
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 298
+  },
+  "k_axe": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_axe__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_axe",
+   "size": [
+    0.114,
+    0.256,
+    0.031
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 84
+  },
+  "k_barrel": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_barrel__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_barrel",
+   "size": [
+    0.243,
+    0.344,
+    0.243
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 300
+  },
+  "k_bedroll": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_bedroll__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_bedroll",
+   "size": [
+    0.31,
+    0.125,
+    0.608
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 144
+  },
+  "k_box": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_box__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_box",
+   "size": [
+    0.25,
+    0.25,
+    0.25
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 124
+  },
+  "k_bucket": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_bucket__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_bucket",
+   "size": [
+    0.144,
+    0.192,
+    0.144
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 34
+  },
+  "k_campfire": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_campfire__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_campfire",
+   "size": [
+    0.278,
+    0.109,
+    0.269
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 304
+  },
+  "k_campfire_stand": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_campfire_stand__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_campfire_stand",
+   "size": [
+    0.41,
+    0.281,
+    0.124
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 76
+  },
+  "k_chest": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_chest__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_chest",
+   "size": [
+    0.26,
+    0.344,
+    0.29
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 322
+  },
+  "k_fence": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_fence__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_fence",
+   "size": [
+    0.5,
+    0.517,
+    0.043
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 48
+  },
+  "k_fence_fortified": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_fence_fortified__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_fence_fortified",
+   "size": [
+    0.5,
+    0.517,
+    0.053
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 120
+  },
+  "k_fish_stand": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_fish_stand__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_fish_stand",
+   "size": [
+    0.395,
+    0.276,
+    0.253
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 100
+  },
+  "k_hoe": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_hoe__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_hoe",
+   "size": [
+    0.085,
+    0.24,
+    0.071
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 58
+  },
+  "k_log": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_log__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_log",
+   "size": [
+    0.249,
+    0.277,
+    1.0
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 88
+  },
+  "k_pickaxe": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_pickaxe__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_pickaxe",
+   "size": [
+    0.179,
+    0.24,
+    0.039
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 74
+  },
+  "k_planks": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_planks__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_planks",
+   "size": [
+    0.373,
+    0.094,
+    0.626
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 72
+  },
+  "k_rock_a": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_rock_a__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_rock_a",
+   "size": [
+    0.555,
+    0.393,
+    0.622
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 104
+  },
+  "k_rock_b": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_rock_b__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_rock_b",
+   "size": [
+    0.835,
+    0.419,
+    0.725
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 156
+  },
+  "k_rock_c": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_rock_c__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_rock_c",
+   "size": [
+    0.784,
+    0.51,
+    0.566
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 120
+  },
+  "k_signpost": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_signpost__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_signpost",
+   "size": [
+    0.214,
+    0.46,
+    0.043
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 44
+  },
+  "k_stone": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_stone__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_stone",
+   "size": [
+    0.165,
+    0.107,
+    0.142
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 44
+  },
+  "k_stone_large": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_stone_large__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_stone_large",
+   "size": [
+    0.376,
+    0.16,
+    0.337
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 132
+  },
+  "k_tent": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_tent__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_tent",
+   "size": [
+    0.561,
+    0.491,
+    0.561
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 124
+  },
+  "k_tent_canvas": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_tent_canvas__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_tent_canvas",
+   "size": [
+    0.561,
+    0.491,
+    0.561
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 136
+  },
+  "k_trunk": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_trunk__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_trunk",
+   "size": [
+    0.2,
+    0.261,
+    0.2
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 48
+  },
+  "k_wood": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_wood__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_wood",
+   "size": [
+    0.205,
+    0.062,
+    0.087
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 64
+  },
+  "k_workbench": {
+   "materialOrder": [
+    "colormap"
+   ],
+   "materials": {
+    "colormap": {
+     "albedo": "Art/Textures/k_workbench__colormap_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/k_workbench",
+   "size": [
+    0.326,
+    0.287,
+    0.296
+   ],
+   "source": "https://kenney.nl/assets/survival-kit (Kenney, CC0)",
+   "triangles": 226
   },
   "medieval_church": {
    "materialOrder": [
@@ -705,6 +1251,7 @@
     1.235
    ],
    "source": "https://polyhaven.com/a/namaqualand_boulder_02",
+   "toon": true,
    "triangles": 2500
   },
   "nettle_plant": {
@@ -727,6 +1274,7 @@
     0.096
    ],
    "source": "https://polyhaven.com/a/nettle_plant",
+   "toon": true,
    "triangles": 3000
   },
   "rock_07": {
@@ -749,6 +1297,7 @@
     0.321
    ],
    "source": "https://polyhaven.com/a/rock_07",
+   "toon": true,
    "triangles": 1499
   },
   "rock_moss_set_01": {
@@ -771,6 +1320,7 @@
     6.951
    ],
    "source": "https://polyhaven.com/a/rock_moss_set_01",
+   "toon": true,
    "triangles": 4999
   },
   "shrub_03": {
@@ -793,6 +1343,7 @@
     0.151
    ],
    "source": "https://polyhaven.com/a/shrub_03",
+   "toon": true,
    "triangles": 2999
   },
   "shrub_04": {
@@ -815,7 +1366,281 @@
     0.146
    ],
    "source": "https://polyhaven.com/a/shrub_04",
+   "toon": true,
    "triangles": 3000
+  },
+  "sn_bush": {
+   "materialOrder": [
+    "Leaves_TwistedTree"
+   ],
+   "materials": {
+    "Leaves_TwistedTree": {
+     "albedo": "Art/Textures/sn_bush__Leaves_TwistedTree_albedo.png",
+     "alphaClip": true,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/sn_bush",
+   "size": [
+    1.915,
+    1.582,
+    1.965
+   ],
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
+   "triangles": 900
+  },
+  "sn_bush_flowers": {
+   "materialOrder": [
+    "Leaves_NormalTree",
+    "Flowers"
+   ],
+   "materials": {
+    "Flowers": {
+     "albedo": "Art/Textures/sn_bush_flowers__Flowers_albedo.png",
+     "alphaClip": true,
+     "doubleSided": true
+    },
+    "Leaves_NormalTree": {
+     "albedo": "Art/Textures/sn_bush_flowers__Leaves_NormalTree_albedo.png",
+     "alphaClip": true,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/sn_bush_flowers",
+   "size": [
+    1.915,
+    1.582,
+    1.976
+   ],
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
+   "triangles": 1100
+  },
+  "sn_clover": {
+   "materialOrder": [
+    "Leaves"
+   ],
+   "materials": {
+    "Leaves": {
+     "albedo": "Art/Textures/sn_clover__Leaves_albedo.png",
+     "alphaClip": true,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/sn_clover",
+   "size": [
+    0.796,
+    1.145,
+    0.764
+   ],
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
+   "triangles": 299
+  },
+  "sn_deadtree": {
+   "materialOrder": [
+    "Bark_DeadTree"
+   ],
+   "materials": {
+    "Bark_DeadTree": {
+     "albedo": "Art/Textures/sn_deadtree__Bark_DeadTree_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/sn_deadtree__Bark_DeadTree_normal.jpg"
+    }
+   },
+   "resource": "Models/sn_deadtree",
+   "size": [
+    6.133,
+    9.488,
+    5.738
+   ],
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
+   "triangles": 900
+  },
+  "sn_fern": {
+   "materialOrder": [
+    "Leaves"
+   ],
+   "materials": {
+    "Leaves": {
+     "albedo": "Art/Textures/sn_fern__Leaves_albedo.png",
+     "alphaClip": true,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/sn_fern",
+   "size": [
+    2.827,
+    0.84,
+    2.652
+   ],
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
+   "triangles": 288
+  },
+  "sn_flowers": {
+   "materialOrder": [
+    "Leaves",
+    "Flowers"
+   ],
+   "materials": {
+    "Flowers": {
+     "albedo": "Art/Textures/sn_flowers__Flowers_albedo.png",
+     "alphaClip": true,
+     "doubleSided": true
+    },
+    "Leaves": {
+     "albedo": "Art/Textures/sn_flowers__Leaves_albedo.png",
+     "alphaClip": true,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/sn_flowers",
+   "size": [
+    1.781,
+    2.497,
+    1.368
+   ],
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
+   "triangles": 600
+  },
+  "sn_mushroom": {
+   "materialOrder": [
+    "Mushrooms"
+   ],
+   "materials": {
+    "Mushrooms": {
+     "albedo": "Art/Textures/sn_mushroom__Mushrooms_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/sn_mushroom",
+   "size": [
+    0.562,
+    0.463,
+    0.777
+   ],
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
+   "triangles": 300
+  },
+  "sn_pebble": {
+   "materialOrder": [
+    "PathRocks"
+   ],
+   "materials": {
+    "PathRocks": {
+     "albedo": "Art/Textures/sn_pebble__PathRocks_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/sn_pebble",
+   "size": [
+    0.45,
+    0.099,
+    0.485
+   ],
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
+   "triangles": 128
+  },
+  "sn_plant": {
+   "materialOrder": [
+    "Leaves"
+   ],
+   "materials": {
+    "Leaves": {
+     "albedo": "Art/Textures/sn_plant__Leaves_albedo.png",
+     "alphaClip": true,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/sn_plant",
+   "size": [
+    1.273,
+    1.014,
+    1.386
+   ],
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
+   "triangles": 120
+  },
+  "sn_plant_big": {
+   "materialOrder": [
+    "Leaves"
+   ],
+   "materials": {
+    "Leaves": {
+     "albedo": "Art/Textures/sn_plant_big__Leaves_albedo.png",
+     "alphaClip": true,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/sn_plant_big",
+   "size": [
+    1.311,
+    0.253,
+    1.362
+   ],
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
+   "triangles": 112
+  },
+  "sn_rock_1": {
+   "materialOrder": [
+    "Rocks"
+   ],
+   "materials": {
+    "Rocks": {
+     "albedo": "Art/Textures/sn_rock_1__Rocks_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/sn_rock_1",
+   "size": [
+    3.225,
+    2.26,
+    2.989
+   ],
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
+   "triangles": 342
+  },
+  "sn_rock_2": {
+   "materialOrder": [
+    "Rocks"
+   ],
+   "materials": {
+    "Rocks": {
+     "albedo": "Art/Textures/sn_rock_2__Rocks_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/sn_rock_2",
+   "size": [
+    3.049,
+    1.899,
+    2.479
+   ],
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
+   "triangles": 244
+  },
+  "sn_rock_3": {
+   "materialOrder": [
+    "Rocks"
+   ],
+   "materials": {
+    "Rocks": {
+     "albedo": "Art/Textures/sn_rock_3__Rocks_albedo.jpg",
+     "alphaClip": false,
+     "doubleSided": true
+    }
+   },
+   "resource": "Models/sn_rock_3",
+   "size": [
+    3.42,
+    2.316,
+    3.476
+   ],
+   "source": "https://opengameart.org/content/stylized-nature-megakit (Quaternius, CC0)",
+   "triangles": 400
   },
   "stone_01": {
    "materialOrder": [
@@ -837,6 +1662,7 @@
     0.089
    ],
    "source": "https://polyhaven.com/a/stone_01",
+   "toon": true,
    "triangles": 799
   },
   "stone_fire_pit": {
@@ -859,6 +1685,7 @@
     1.433
    ],
    "source": "https://polyhaven.com/a/stone_fire_pit",
+   "toon": true,
    "triangles": 3887
   },
   "tree_stump_01": {
@@ -881,6 +1708,7 @@
     1.59
    ],
    "source": "https://polyhaven.com/a/tree_stump_01",
+   "toon": true,
    "triangles": 2000
   },
   "wicker_basket_01": {
@@ -903,6 +1731,7 @@
     0.293
    ],
    "source": "https://polyhaven.com/a/wicker_basket_01",
+   "toon": true,
    "triangles": 1999
   },
   "wooden_axe": {
@@ -925,6 +1754,7 @@
     0.214
    ],
    "source": "https://polyhaven.com/a/wooden_axe",
+   "toon": true,
    "triangles": 1500
   },
   "wooden_bowl_01": {
@@ -947,6 +1777,7 @@
     0.31
    ],
    "source": "https://polyhaven.com/a/wooden_bowl_01",
+   "toon": true,
    "triangles": 1500
   }
  },
