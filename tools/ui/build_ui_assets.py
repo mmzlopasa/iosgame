@@ -54,18 +54,36 @@ def cell(top, bottom, rim):
                   extra=f'<div style="position:absolute;inset:0;border-radius:7px;box-shadow:inset 0 0 0 2px {rim}"></div>')
 
 
-GRAIN = ('<div style="position:absolute;left:6px;right:10px;top:10px;height:1.2px;background:rgba(120,62,24,.28);border-radius:1px"></div>'
-         '<div style="position:absolute;left:18px;right:4px;top:18px;height:1.2px;background:rgba(120,62,24,.22);border-radius:1px"></div>')
+def noise(alpha=0.10, freq=0.85, tint="0.42 0 0 0 0  0 0.26 0 0 0  0 0 0.12 0 0"):
+    """Paper / wood fibre: fractal noise as a translucent overlay (subtle, so it reads as material, not dirt)."""
+    svg = ("<svg xmlns='http://www.w3.org/2000/svg' width='120' height='120'><filter id='n'>"
+           f"<feTurbulence type='fractalNoise' baseFrequency='{freq}' numOctaves='3' stitchTiles='stitch'/>"
+           f"<feColorMatrix values='{tint} 0 0 0 {alpha} 0'/></filter><rect width='120' height='120' filter='url(%23n)'/></svg>")
+    return f'<div style="position:absolute;inset:0;background-image:url(&quot;data:image/svg+xml;utf8,{svg}&quot;);background-size:60px 60px"></div>'
+
+
+PANEL_EXTRA = (noise(0.13) +
+               # the kit's cream inner rim just inside the dark outline
+               '<div style="position:absolute;inset:2px 2px 5px 2px;border-radius:9px;box-shadow:inset 0 0 0 1.5px rgba(255,246,226,.75)"></div>'
+               # little chipped notches on the edges
+               '<div style="position:absolute;left:-1px;top:7px;width:5px;height:6px;background:#3A2314;clip-path:polygon(0 0,100% 50%,0 100%)"></div>'
+               '<div style="position:absolute;right:-1px;bottom:10px;width:5px;height:6px;background:#3A2314;clip-path:polygon(100% 0,0 50%,100% 100%)"></div>')
+
+GRAIN = (noise(0.16, 0.55, "0.5 0 0 0 0  0 0.28 0 0 0  0 0 0.1 0 0") +
+         '<div style="position:absolute;left:6px;right:10px;top:8px;height:1.3px;background:rgba(120,62,24,.35);border-radius:1px"></div>'
+         '<div style="position:absolute;left:20px;right:4px;top:15px;height:1.1px;background:rgba(120,62,24,.25);border-radius:1px"></div>'
+         '<div style="position:absolute;left:4px;right:24px;top:22px;height:1.2px;background:rgba(120,62,24,.3);border-radius:1px"></div>'
+         '<div style="position:absolute;left:46px;top:12px;width:6px;height:3.5px;border-radius:50%;border:1px solid rgba(120,62,24,.35)"></div>')
 
 # name: (html, css width, css height, slices left, top, right, bottom in points)
 SKINS = {
     # The popup body: warm parchment, dark outline, lighter rim and a bottom lip.
-    "panel": (chunky(72, 72, 12, "linear-gradient(180deg,#EDD6B5,#E6C9A2)", "#C9A27A", 3.5, "#F8EBD4"), 72, 74.5, 16, 16, 16, 19),
+    "panel": (chunky(72, 72, 12, "linear-gradient(180deg,#EDD6B5,#E6C9A2)", "#C9A27A", 3.5, "#F8EBD4", extra=PANEL_EXTRA), 72, 74.5, 16, 16, 16, 19),
     # The wooden title strip of a popup (and of sections that need weight).
     "plank": (chunky(80, 34, 7, "linear-gradient(180deg,#EDB677,#D69553 60%,#CB8A55)", "#A8693A", 3.5, "#F7CF98", extra=GRAIN), 80, 36.5, 14, 11, 14, 14),
     # Inset section inside a panel (no dark outline).
-    "section": ('<div style="box-sizing:border-box;width:48px;height:48px;border-radius:9px;background:#E4C298;'
-                'border:1.5px solid #C69E6E;box-shadow:inset 0 1.5px 0 rgba(0,0,0,.08), 0 1px 0 #F6E6CC"></div>', 48, 48, 12, 12, 12, 12),
+    "section": ('<div style="position:relative;overflow:hidden;box-sizing:border-box;width:48px;height:48px;border-radius:9px;background:#E4C298;'
+                'border:1.5px solid #C69E6E;box-shadow:inset 0 2px 2px rgba(90,50,20,.18), 0 1px 0 #F6E6CC">' + noise(0.09) + '</div>', 48, 48, 12, 12, 12, 12),
     # Buttons: green primary, blue secondary, orange premium, grey disabled, red cancel, brown neutral.
     "btn_green": (chunky(48, 40, 8, gloss("#B8E06A", "#9ACC41", "#86B932"), "#5E8E22"), 48, 42.5, 11, 10, 11, 13),
     "btn_blue": (chunky(48, 40, 8, gloss("#B9D3F7", "#94B9EF", "#7FA6E2"), "#5A7FBF"), 48, 42.5, 11, 10, 11, 13),
