@@ -602,7 +602,7 @@ namespace Founders
                     r.sharedMaterials = mats;
                     r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
                 }
-                // Real height: the pack is drawn larger than life.
+                // Real height: every model is scaled to the height of its person.
                 var bounds = new Bounds(root.position, Vector3.zero);
                 foreach (var r in body.GetComponentsInChildren<SkinnedMeshRenderer>()) bounds.Encapsulate(r.bounds);
                 float height = child ? 1.0f + (float)rng.NextDouble() * 0.15f : (female ? 1.6f : 1.7f) + (float)rng.NextDouble() * 0.12f;

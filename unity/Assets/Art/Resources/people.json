@@ -1,53 +1,53 @@
 {
- "source": "Quaternius Ultimate Animated Character Pack (CC0)",
+ "source": "Quaternius Universal Base Characters + Modular Character Outfits - Fantasy (CC0)",
  "people": [
   {
-   "model": "Models/Person_Viking_Male",
+   "model": "Models/Person_Farmer_Male",
    "gender": "male",
    "age": "adult"
   },
   {
-   "model": "Models/Person_Viking_Female",
-   "gender": "female",
-   "age": "adult"
-  },
-  {
-   "model": "Models/Person_Casual_Male",
+   "model": "Models/Person_Woodcutter_Male",
    "gender": "male",
    "age": "adult"
   },
   {
-   "model": "Models/Person_Casual_Female",
-   "gender": "female",
-   "age": "adult"
-  },
-  {
-   "model": "Models/Person_Casual2_Male",
+   "model": "Models/Person_Hunter_Male",
    "gender": "male",
    "age": "adult"
   },
   {
-   "model": "Models/Person_Casual2_Female",
-   "gender": "female",
-   "age": "adult"
-  },
-  {
-   "model": "Models/Person_Casual3_Male",
+   "model": "Models/Person_Hooded_Male",
    "gender": "male",
    "age": "adult"
   },
   {
-   "model": "Models/Person_Casual3_Female",
-   "gender": "female",
-   "age": "adult"
-  },
-  {
-   "model": "Models/Person_OldClassy_Male",
+   "model": "Models/Person_Elder_Male",
    "gender": "male",
    "age": "elder"
   },
   {
-   "model": "Models/Person_OldClassy_Female",
+   "model": "Models/Person_Farmer_Female",
+   "gender": "female",
+   "age": "adult"
+  },
+  {
+   "model": "Models/Person_Weaver_Female",
+   "gender": "female",
+   "age": "adult"
+  },
+  {
+   "model": "Models/Person_Hunter_Female",
+   "gender": "female",
+   "age": "adult"
+  },
+  {
+   "model": "Models/Person_Gatherer_Female",
+   "gender": "female",
+   "age": "adult"
+  },
+  {
+   "model": "Models/Person_Elder_Female",
    "gender": "female",
    "age": "elder"
   }
