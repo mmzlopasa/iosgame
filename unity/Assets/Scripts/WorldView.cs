@@ -915,6 +915,8 @@ namespace Founders
                     task.Spot = BesideBuilding(drop, from);
                     task.Face = Grid.CellCenter(drop.X, drop.Y);
                     task.WalkClip = job == JobType.Hunting || job == JobType.Fishing || job == JobType.Foraging ? "Walk" : "Carry";
+                    task.Carry = job == JobType.Woodcutting ? "k_wood" : job == JobType.Stonecutting || job == JobType.Mining ? "k_stone"
+                        : job == JobType.Foraging ? "wicker_basket_01" : null;
                     task.Action = "Gather";
                     task.Duration = 1.6f;
                     return task;

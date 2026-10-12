@@ -324,6 +324,8 @@ namespace Founders
         public List<Vector3> Route;
         /// <summary>What to turn towards while working (the tree, the rock, the fire).</summary>
         public Vector3? Face;
+        /// <summary>Model carried home on the way there (k_wood, k_stone, wicker_basket_01…) or null.</summary>
+        public string Carry;
     }
 
     /// <summary>
@@ -426,6 +428,23 @@ namespace Founders
             if (clip != "Idle") Play("Idle", fade);
         }
 
+        GameObject carried;
+        string carriedId;
+
+        /// <summary>Logs on the shoulder, a stone or a basket of berries on the way home.</summary>
+        void ShowCarry(string id)
+        {
+            if (id == carriedId) return;
+            if (carried != null) Destroy(carried);
+            carried = null;
+            carriedId = id;
+            if (id == null || !ModelLibrary.HasModel(id)) return;
+            float s = id == "k_wood" ? 4.2f : id == "k_stone" ? 2.2f : 1.2f;
+            var at = id == "wicker_basket_01" ? new Vector3(0.22f, 0.78f, 0.12f) : new Vector3(0f, 1.25f, 0.06f);
+            carried = ModelLibrary.Place(id, transform, at, s, 90f);
+            foreach (var r in carried.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+
         void ShowTool(string tool)
         {
             if (tool == shownTool) return;
@@ -470,6 +489,7 @@ namespace Founders
                 if (hasTask)
                 {
                     hasTask = false;
+                    ShowCarry(null);
                     ShowTool(task.Tool);
                     Play(task.Action);
                     wait = task.Duration;
@@ -483,7 +503,8 @@ namespace Founders
                 target = route.Count > 0 ? route.Dequeue() : task.Spot;
                 route.Enqueue(task.Spot);
                 // Tools stay in hand on the way to work; carried goods replace them.
-                ShowTool(task.WalkClip == "Carry" ? null : task.Tool);
+                ShowTool(task.Carry != null || task.WalkClip == "Carry" ? null : task.Tool);
+                ShowCarry(task.Carry);
                 return;
             }
             bool onRoad = task.Route != null && route.Count > 0;
