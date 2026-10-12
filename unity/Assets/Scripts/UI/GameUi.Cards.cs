@@ -554,6 +554,7 @@ namespace Founders.UI
             foreach (var slot in def.JobSlots ?? new List<JobSlot>())
             {
                 int now = G.SlotsOf(b, def, slot.Job), then = (int)Math.Floor(def.Slots(slot.Job) * f2 + 0.5);
+                if (then == now && level < def.MaxLevel) continue; // only what the next level changes
                 Add(E.StatRow("people", $"{G.Content.JobConfig(slot.Job)?.Name ?? slot.Job.Id()} places", now.ToString(Inv), Next(then.ToString(Inv)), sep));
             }
             if (G.HasWarmth)
