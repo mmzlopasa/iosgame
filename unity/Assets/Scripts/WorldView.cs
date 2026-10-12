@@ -236,9 +236,9 @@ namespace Founders
                     {
                         var p = Jitter(c, rng, 0.9f);
                         Model("sn_bush", p, 0.6f + r01() * 0.15f);
-                        for (int i = 0; i < 5; i++)
-                            Model("sn_rock_1", p + new Vector3(((float)rng.NextDouble() - 0.5f) * 0.9f, 0.45f + r01() * 0.35f, ((float)rng.NextDouble() - 0.5f) * 0.9f),
-                                  0.05f, false, ModelLibrary.Berry);
+                        for (int i = 0; i < 9; i++)
+                            Model("sn_rock_1", p + new Vector3(((float)rng.NextDouble() - 0.5f) * 0.9f, 0.4f + r01() * 0.4f, ((float)rng.NextDouble() - 0.5f) * 0.9f),
+                                  0.065f, false, ModelLibrary.Berry);
                         break;
                     }
                     // Open meadow: a few shrubs and flowers, no trees, so the player decides what goes where.

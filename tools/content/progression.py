@@ -76,7 +76,7 @@ def heart_levels():
             cost["ore"] = rnd(3 * g)
         if k >= 16:
             cost["food"] = rnd(10 * g)
-        seconds = 60 * (0.8 + 0.4 * n if n <= 4 else 38 * 1.36 ** (n - 4))
+        seconds = 60 * (0.8 + 0.4 * n if n <= 4 else 42 * 1.36 ** (n - 4))
         seconds = float(min(36 * 3600, int(round(seconds))))
         req = [{"kind": "populationAtLeast", "amount": int(round(6 + 1.2 * (k - 1))) if k <= 10 else 17 + 2 * (k - 10)}]
         if 4 <= k <= 20:
@@ -307,7 +307,7 @@ def main():
     b["baseStorage"] = 200
     b["nodes"] = [
         {"id": "berries", "name": "Berry Bush", "terrain": "grass", "resource": "food", "job": "foraging",
-         "capacity": 50, "regrowSeconds": 600, "density": 0.14},
+         "capacity": 70, "regrowSeconds": 600, "density": 0.1},
         {"id": "fish", "name": "Fishing Water", "terrain": "water", "resource": "food", "job": "fishing",
          "capacity": 30, "regrowSeconds": 600},
         {"id": "game", "name": "Game Trail", "terrain": "forest", "resource": "food", "job": "hunting",

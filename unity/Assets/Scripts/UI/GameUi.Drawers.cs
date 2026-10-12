@@ -265,10 +265,13 @@ namespace Founders.UI
             }
             if (!unlocked) tile.Add(E.Div().Ignore().Size(22, 22).Radius(11).Center().Bg(InkBrown).Abs(null, null, -5, -5).Kids(E.Icon("lock", 12, Parch)));
             card.Add(tile);
-            var name = Ink(def.Name, 11.5f).Align(TextAnchor.MiddleCenter);
+            // Two lines at most: long names get a smaller type, and anything more is clipped, never spilled.
+            float nameSize = def.Name.Length > 22 ? 9.5f : def.Name.Length > 15 ? 10.5f : 11.5f;
+            var name = Ink(def.Name, nameSize).Align(TextAnchor.MiddleCenter);
             name.style.marginTop = 6;
             name.style.height = 30;
             name.style.whiteSpace = WhiteSpace.Normal;
+            name.style.overflow = Overflow.Hidden;
             card.Add(name);
             if (!unlocked)
             {
@@ -474,7 +477,9 @@ namespace Founders.UI
                     case EffectKind.UnlockBuilding: parts.Add($"unlocks {G.Content.Building(e.BuildingId)?.Name}"); break;
                 }
             }
-            var unlocks = G.Content.Buildings.Where(b => b.RequiresTech == t.Id).Select(b => b.Name)
+            // Buildings and decorations that need this tech (those named by an unlock effect are listed already).
+            var named = new HashSet<string>(t.Effects.Where(e => e.Kind == EffectKind.UnlockBuilding).Select(e => e.BuildingId));
+            var unlocks = G.Content.Buildings.Where(b => b.RequiresTech == t.Id && !named.Contains(b.Id)).Select(b => b.Name)
                 .Concat(G.Content.Decorations.Where(d => d.RequiresTech == t.Id).Select(d => d.Name)).ToList();
             if (unlocks.Count > 0) parts.Add("unlocks " + string.Join(", ", unlocks));
             return parts.Count == 0 ? "" : char.ToUpperInvariant(parts[0][0]) + string.Join(" · ", parts).Substring(1);

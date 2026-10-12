@@ -348,7 +348,23 @@ namespace Founders.UI
             contextPanel = E.Div("context").Ignore().Col().Abs(10, HudTop, null, 16);
             contextPanel.style.width = ContextW;
             contextPanel.style.justifyContent = Justify.FlexEnd;
-            contextScroll = E.FitScroll();
+            // The scroll view fills the column; its content is at least as tall as the view and keeps
+            // the card at the bottom. Empty space lets taps through to the world (picking: ignore).
+            contextScroll = new ScrollView(ScrollViewMode.Vertical);
+            contextScroll.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+            contextScroll.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            contextScroll.touchScrollBehavior = ScrollView.TouchScrollBehavior.Clamped;
+            contextScroll.style.flexGrow = 1;
+            contextScroll.style.flexShrink = 1;
+            contextScroll.style.minHeight = 0;
+            contextScroll.pickingMode = PickingMode.Ignore;
+            contextScroll.contentViewport.pickingMode = PickingMode.Ignore;
+            contextScroll.contentContainer.pickingMode = PickingMode.Ignore;
+            contextScroll.contentContainer.style.justifyContent = Justify.FlexEnd;
+            contextScroll.contentViewport.RegisterCallback<GeometryChangedEvent>(e =>
+            {
+                if (!float.IsNaN(e.newRect.height)) contextScroll.contentContainer.style.minHeight = e.newRect.height;
+            });
             contextPanel.Add(contextScroll);
             AddRegion(contextScroll.contentContainer, ContextKey, BuildContext);
             hudLayer.Add(contextPanel);
