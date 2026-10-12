@@ -12,10 +12,24 @@ THIN = f'fill="none" stroke="{INK}" stroke-width="1.6" stroke-linecap="round" st
 
 # Uniform outline (dilated silhouette) and a short drop under it.
 OUTLINE = f"""<filter id="ol" x="-25%" y="-25%" width="150%" height="150%" color-interpolation-filters="sRGB">
-  <feMorphology in="SourceAlpha" operator="dilate" radius="2.7" result="d"/>
+  <!-- Volume: a soft bevel lit from the top-left (glossy, painted look) and a shade towards the bottom-right. -->
+  <feGaussianBlur in="SourceAlpha" stdDeviation="2.2" result="bump"/>
+  <feSpecularLighting in="bump" surfaceScale="5" specularConstant=".9" specularExponent="22" lighting-color="#fff" result="spec">
+    <fePointLight x="-40" y="-60" z="90"/>
+  </feSpecularLighting>
+  <feComposite in="spec" in2="SourceAlpha" operator="in" result="specIn"/>
+  <feOffset in="SourceAlpha" dx="-2.2" dy="-2.6" result="off"/>
+  <feComposite in="SourceAlpha" in2="off" operator="out" result="rim"/>
+  <feGaussianBlur in="rim" stdDeviation="1.4" result="rimBlur"/>
+  <feFlood flood-color="#000" flood-opacity=".32"/><feComposite in2="rimBlur" operator="in" result="shade"/>
+  <feComposite in="shade" in2="SourceAlpha" operator="in" result="shadeIn"/>
+  <feMerge result="lit"><feMergeNode in="SourceGraphic"/><feMergeNode in="shadeIn"/></feMerge>
+  <feComposite in="specIn" in2="lit" operator="arithmetic" k1="0" k2=".55" k3="1" k4="0" result="glossy"/>
+  <!-- The kit's thick dark outline and a short drop. -->
+  <feMorphology in="SourceAlpha" operator="dilate" radius="3.1" result="d"/>
   <feFlood flood-color="{INK}"/><feComposite in2="d" operator="in" result="o"/>
-  <feOffset in="o" dy="1.8" result="s0"/><feFlood flood-color="#000" flood-opacity=".3"/><feComposite in2="s0" operator="in" result="s"/>
-  <feMerge><feMergeNode in="s"/><feMergeNode in="o"/><feMergeNode in="SourceGraphic"/></feMerge>
+  <feOffset in="o" dy="2" result="s0"/><feFlood flood-color="#000" flood-opacity=".35"/><feComposite in2="s0" operator="in" result="s"/>
+  <feMerge><feMergeNode in="s"/><feMergeNode in="o"/><feMergeNode in="glossy"/></feMerge>
 </filter>"""
 
 
