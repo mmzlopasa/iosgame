@@ -42,6 +42,16 @@ namespace Founders.UI
             ["fill_red"] = new SkinSlice(7, 7, 7, 7),
             ["badge_green"] = new SkinSlice(7, 7, 7, 8),
             ["badge_red"] = new SkinSlice(9, 9, 9, 10),
+            ["hud_capsule"] = new SkinSlice(13, 12, 13, 12),
+            ["hud_plus"] = new SkinSlice(10, 10, 10, 11),
+            ["hud_hex"] = new SkinSlice(22, 21, 22, 24),
+            ["hud_hex_frame"] = new SkinSlice(30, 33, 30, 35),
+            ["hud_round_blue"] = new SkinSlice(11, 11, 11, 12),
+            ["hud_round_yellow"] = new SkinSlice(11, 11, 11, 12),
+            ["hud_square_blue"] = new SkinSlice(12, 11, 12, 14),
+            ["hud_bar_track"] = new SkinSlice(26, 8, 8, 8),
+            ["hud_bar_fill_blue"] = new SkinSlice(7, 7, 7, 7),
+            ["hud_rank"] = new SkinSlice(8, 8, 8, 8),
         };
 
         /// <summary>Advance widths (em) of Changa One for ' '..'~'.</summary>

@@ -124,6 +124,17 @@ SKINS = {
     # Badges: the green level square and the red notification dot.
     "badge_green": (chunky(20, 20, 5, "linear-gradient(180deg,#A9DC55,#7DBE34)", "#5E8E22", 2, "rgba(255,255,255,.5)", ow=2, drop=1.5), 20, 21.5, 7, 7, 7, 8),
     "badge_red": (chunky(20, 20, 10, "linear-gradient(180deg,#F07060,#D84434)", "#97281C", 2, "rgba(255,255,255,.5)", ow=2, drop=1.5), 20, 21.5, 9, 9, 9, 10),
+    # HUD pieces in the blue casual kit's style: painted by tools/art/skins.py only (no CSS version).
+    "hud_capsule": ("", 60, 26, 13, 12, 13, 12),          # dark navy resource counter bar
+    "hud_plus": ("", 22, 23.5, 10, 10, 10, 11),            # green + next to a counter (fixed size)
+    "hud_hex": ("", 48, 48.5, 22, 21, 22, 24),             # hexagon button (shop, energy, gift)
+    "hud_hex_frame": ("", 64, 72, 30, 33, 30, 35),         # hexagon avatar frame (name / rank block)
+    "hud_round_blue": ("", 24, 25.5, 11, 11, 11, 12),      # small round button (close)
+    "hud_round_yellow": ("", 24, 25.5, 11, 11, 11, 12),    # small round button (info)
+    "hud_square_blue": ("", 40, 42.5, 12, 11, 12, 14),     # square nav button (down, back, next, close, settings)
+    "hud_bar_track": ("", 90, 24, 26, 8, 8, 8),            # heart / energy bar track with a hexagon cap
+    "hud_bar_fill_blue": ("", 30, 14, 7, 7, 7, 7),         # its cyan-blue fill
+    "hud_rank": ("", 40, 16, 8, 8, 8, 8),                  # small navy pill with a yellow rim (rank)
 }
 
 
@@ -131,7 +142,8 @@ def build_skins():
     out = os.path.join(OUT, "Skin")
     os.makedirs(out, exist_ok=True)
     for name, (html, w, h, *_s) in SKINS.items():
-        render(html, w, h, os.path.join(out, f"{name}.png"), scale=SKIN_SCALE)
+        if html:  # the HUD skins exist only as tools/art paintings
+            render(html, w, h, os.path.join(out, f"{name}.png"), scale=SKIN_SCALE)
     print(f"skins: {len(SKINS)}")
 
 

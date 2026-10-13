@@ -103,6 +103,25 @@ class Canvas:
             amp *= 0.5
         return total / norm
 
+    def polygon(self, pts):
+        """Exact signed distance (pt) to a polygon; negative inside."""
+        X, Y = self.X, self.Y
+        d = np.full(X.shape, np.inf, np.float32)
+        sgn = np.ones(X.shape, np.float32)
+        n = len(pts)
+        for i in range(n):
+            ax, ay = pts[i]
+            bx, by = pts[i - 1]
+            ex, ey = bx - ax, by - ay
+            wx, wy = X - ax, Y - ay
+            t = np.clip((wx * ex + wy * ey) / (ex * ex + ey * ey), 0, 1)
+            qx, qy = wx - ex * t, wy - ey * t
+            d = np.minimum(d, qx * qx + qy * qy)
+            c1, c2, c3 = Y >= ay, Y < by, ex * wy > ey * wx
+            flip = (c1 & c2 & c3) | (~c1 & ~c2 & ~c3)
+            sgn = np.where(flip, -sgn, sgn)
+        return sgn * np.sqrt(d)
+
     def cover(self, d):
         return np.clip(0.5 - d * PPT, 0, 1)
 
@@ -138,24 +157,33 @@ def luminance_detail(tex):
 # ---------------------------------------------------------------- the chunky element
 def chunky(cv, rect, r, top, bottom, lip, hi=0.55, outline=2.5, lip_h=3.5, drop=2.5, drop_alpha=0.35, bevel=2.2,
            bevel_k=0.22, wobble=0.18, detail=None, detail_k=0.0, notches=(), glint=None, ring=None, gloss=0.0,
-           grain=None):
+           grain=None, ink=INK, poly=None, gloss_edge=(0.38, 0.52), gloss_add=0.10, stripes=0.0, hi_w=1.3):
     """Draws one outlined, bevelled, lipped body. rect = (x0, y0, x1, y1) of the outline's outer edge.
     top/bottom: fill colours (vertical gradient); lip: the darker bottom band; ring: (colour, width) of a
     lighter inner border just inside the outline (the kit's rarity cells and parchment rim)."""
     x0, y0, x1, y1 = rect
     wob = cv.noise(6.0, 2, seed=7) * wobble if wobble else 0
-    d = cv.rrect(x0, y0, x1, y1, r) + wob
+
+    def base(oy):
+        """Outer shape moved down by oy points (rounded rectangle, or a polygon rounded by r)."""
+        if poly is None:
+            return cv.rrect(x0, y0 + oy, x1, y1 + oy, r) + wob
+        return cv.polygon([(x, y + oy) for x, y in poly]) - r + wob
+
+    d = base(0)
     if drop:
-        ds = cv.rrect(x0, y0 + drop, x1, y1 + drop, r) + wob
-        cv.over(np.zeros(3, np.float32), cv.cover(ds) * drop_alpha)
-    cv.over(rgb(INK), cv.cover(d))
+        cv.over(np.zeros(3, np.float32), cv.cover(base(drop)) * drop_alpha)
+    cv.over(rgb(ink), cv.cover(d))
     di = d + outline                       # inner body
-    ri = max(r - outline, 0.5)
     t = np.clip((cv.Y - (y0 + outline)) / max(1e-3, (y1 - y0 - 2 * outline)), 0, 1)
     col = lerp(rgb(top), rgb(bottom), t[..., None])
     if gloss:  # the kit's glossy upper half: a soft lighter band over the top ~45%
-        band = 1 - smoothstep(0.38, 0.52, t)
-        col = lerp(col, np.minimum(1, col * 1.0 + 0.10), (band * gloss)[..., None])
+        band = 1 - smoothstep(gloss_edge[0], gloss_edge[1], t)
+        col = lerp(col, np.minimum(1, col * 1.0 + gloss_add), (band * gloss)[..., None])
+    if stripes:  # the kit's subtle diagonal stripe texture
+        ph = ((cv.X + cv.Y) / 3.2) % 1.0
+        col = lerp(col, np.minimum(1, col + 0.12), (smoothstep(0.0, 0.08, ph) * (1 - smoothstep(0.42, 0.5, ph))
+                                                  * stripes)[..., None])
     if grain is not None:
         col = col * (1 + grain[..., None])
     if detail is not None and detail_k:
@@ -165,7 +193,7 @@ def chunky(cv, rect, r, top, bottom, lip, hi=0.55, outline=2.5, lip_h=3.5, drop=
         ring_m = cv.cover(di) * (1 - cv.cover(di + rw))
         col = lerp(col, rgb(rc), ring_m[..., None] * 0.9)
     # lip: inner shape minus itself raised by lip_h
-    raised = cv.rrect(x0 + outline, y0 + outline - lip_h, x1 - outline, y1 - outline - lip_h, ri) + wob
+    raised = base(-lip_h) + outline
     lip_m = np.clip(cv.cover(di) - cv.cover(raised), 0, 1)
     col = lerp(col, rgb(lip), lip_m[..., None])
     # bevel lighting from the SDF gradient (edges facing up/left brighter, down/right darker)
@@ -177,7 +205,7 @@ def chunky(cv, rect, r, top, bottom, lip, hi=0.55, outline=2.5, lip_h=3.5, drop=
     col = np.clip(col * (1 + shade[..., None]), 0, 1)
     # thin top highlight just inside the outline
     if hi:
-        lowered = cv.rrect(x0 + outline, y0 + outline + 1.3, x1 - outline, y1 - outline + 1.3, ri) + wob
+        lowered = base(hi_w) + outline
         hm = np.clip(cv.cover(di) - cv.cover(lowered), 0, 1) * (1 - lip_m)
         col = lerp(col, np.ones(3, np.float32), (hm * hi)[..., None])
     if glint:  # a soft white streak in the top-left corner (inside the corner slice)
@@ -186,7 +214,7 @@ def chunky(cv, rect, r, top, bottom, lip, hi=0.55, outline=2.5, lip_h=3.5, drop=
         col = lerp(col, np.ones(3, np.float32), (np.clip(1 - e, 0, 1) ** 1.5 * 0.65 * cv.cover(di))[..., None])
     cv.over(col, cv.cover(di))
     for pts in notches:
-        cv.over(rgb(INK), cv.poly(pts) * cv.cover(d))
+        cv.over(rgb(ink), cv.poly(pts) * cv.cover(d))
     return d
 
 
@@ -364,16 +392,154 @@ def badge(top, bottom, lip, r, name):
     return draw
 
 
+# ---------------------------------------------------------------- blue casual kit (HUD and buttons)
+NAVY = "#1B1F4A"
+
+
+def kbtn(light, base, lip, stripes=0.0):
+    """Blue-kit button: thick navy outline, bright glossy top half, strong darker bottom lip."""
+    def draw():
+        cv = Canvas(48, 42.5, seed=31)
+        chunky(cv, (0, 0, 48, 40), 6.5, light, base, lip, hi=0.55, outline=2.6, lip_h=6.0, drop=2.5,
+               drop_alpha=0.4, bevel=1.6, bevel_k=0.14, wobble=0.0, gloss=1.0, gloss_edge=(0.44, 0.5),
+               gloss_add=0.09, stripes=stripes, ink=NAVY, glint=(7.0, 6.5, 3.2, 1.3))
+        return cv
+    return draw
+
+
+def hexagon(cx, cy, w, h, pointy_top, inset=0.0):
+    """Hexagon points (pointy top, or pointy left/right), shrunk by inset points for rounding."""
+    hw, hh = w / 2 - inset, h / 2 - inset
+    if pointy_top:
+        return [(cx, cy - hh), (cx + hw, cy - hh / 2), (cx + hw, cy + hh / 2), (cx, cy + hh), (cx - hw, cy + hh / 2),
+                (cx - hw, cy - hh / 2)]
+    return [(cx - hw, cy), (cx - hw / 2, cy - hh), (cx + hw / 2, cy - hh), (cx + hw, cy), (cx + hw / 2, cy + hh),
+            (cx - hw / 2, cy + hh)]
+
+
+def hud_capsule():
+    cv = Canvas(60, 26, seed=32)
+    d = cv.rrect(0, 0, 60, 26, 12)
+    cv.over(rgb("#11153A"), cv.cover(d))
+    di = d + 2.0
+    t = np.clip(cv.Y / 26, 0, 1)
+    col = lerp(rgb("#1C2254"), rgb("#2A3270"), t[..., None])
+    sh = np.clip(cv.cover(di) - cv.cover(cv.rrect(2, 4.6, 58, 26.6, 10)), 0, 1)   # inner shade along the top
+    col = lerp(col, rgb("#0E1236"), sh[..., None] * 0.8)
+    lo = np.clip(cv.cover(di) - cv.cover(cv.rrect(2, 0.8, 58, 22.8, 10)), 0, 1)   # light bottom edge
+    col = lerp(col, rgb("#4A56A8"), lo[..., None] * 0.7)
+    cv.over(col, cv.cover(di))
+    return cv
+
+
+def hud_plus():
+    cv = Canvas(22, 23.5, seed=33)
+    chunky(cv, (0, 0, 22, 22), 5.0, "#7BE83A", "#53CE17", "#2E8A0A", hi=0.5, outline=2.0, lip_h=3.0, drop=1.5,
+           bevel=1.2, bevel_k=0.12, wobble=0.0, gloss=0.8, gloss_edge=(0.45, 0.52), ink=NAVY)
+    for (x0, y0, x1, y1) in ((9.2, 4.6, 12.8, 15.4), (5.6, 8.2, 16.4, 11.8)):
+        cv.over(rgb("#1E6A08"), cv.cover(cv.rrect(x0, y0 + 0.8, x1, y1 + 0.8, 1.4)) * 0.6)
+    for (x0, y0, x1, y1) in ((9.2, 4.6, 12.8, 15.4), (5.6, 8.2, 16.4, 11.8)):
+        cv.over(np.ones(3, np.float32), cv.cover(cv.rrect(x0, y0, x1, y1, 1.4)))
+    return cv
+
+
+def hud_hex():
+    cv = Canvas(48, 48.5, seed=34)
+    chunky(cv, (0, 0, 48, 46), 2.5, "#7CC8FF", "#2E8EEA", "#1550A8", hi=0.6, outline=2.6, lip_h=4.0, drop=2.5,
+           bevel=2.4, bevel_k=0.22, wobble=0.0, gloss=0.9, gloss_edge=(0.42, 0.5), ink=NAVY,
+           poly=hexagon(24, 23, 48, 46, False, 2.5))
+    return cv
+
+
+def hud_hex_frame():
+    cv = Canvas(64, 72, seed=35)
+    chunky(cv, (0, 0, 64, 70), 3.0, "#8FD0FF", "#2F86E8", "#1648A0", hi=0.6, outline=2.8, lip_h=4.5, drop=2.0,
+           bevel=2.6, bevel_k=0.25, wobble=0.0, gloss=0.6, ink=NAVY, poly=hexagon(32, 35, 64, 70, True, 3.0))
+    # the avatar well: a deep navy hexagon with its own dark rim and an inner shadow at the top
+    well = cv.polygon(hexagon(32, 34.5, 46, 50, True, 2.5)) - 2.5
+    cv.over(rgb(NAVY), cv.cover(well))
+    wi = well + 1.6
+    t = np.clip((cv.Y - 10) / 50, 0, 1)
+    col = lerp(rgb("#0F1A5C"), rgb("#2350B8"), t[..., None])
+    inner = cv.polygon([(x, y + 3.0) for x, y in hexagon(32, 34.5, 46, 50, True, 2.5)]) - 2.5 + 1.6
+    sh = np.clip(cv.cover(wi) - cv.cover(inner), 0, 1)
+    col = lerp(col, rgb("#070C30"), sh[..., None] * 0.8)
+    cv.over(col, cv.cover(wi))
+    return cv
+
+
+def hud_round(light, base, lip):
+    def draw():
+        cv = Canvas(24, 25.5, seed=36)
+        chunky(cv, (0, 0, 24, 24), 12, light, base, lip, hi=0.55, outline=2.2, lip_h=3.2, drop=1.5, bevel=1.4,
+               bevel_k=0.15, wobble=0.0, gloss=0.85, gloss_edge=(0.45, 0.52), ink=NAVY, glint=(7.0, 6.0, 2.6, 1.1))
+        return cv
+    return draw
+
+
+def hud_square_blue():
+    cv = Canvas(40, 42.5, seed=37)
+    chunky(cv, (0, 0, 40, 40), 7, "#4DA2F7", "#1474E0", "#0A4AA6", hi=0.55, outline=2.6, lip_h=5.0, drop=2.5,
+           drop_alpha=0.4, bevel=1.6, bevel_k=0.14, wobble=0.0, gloss=1.0, gloss_edge=(0.44, 0.5), ink=NAVY,
+           glint=(7.0, 6.5, 3.0, 1.2))
+    return cv
+
+
+def hud_bar_track():
+    cv = Canvas(90, 24, seed=38)
+    d = cv.rrect(12, 4.5, 90, 19.5, 7.5)
+    cv.over(rgb("#11153A"), cv.cover(d))
+    di = d + 1.8
+    col = np.broadcast_to(rgb("#232A63"), cv.c.shape).copy()
+    sh = np.clip(cv.cover(di) - cv.cover(cv.rrect(13.8, 9.0, 88.2, 21.0, 5.7)), 0, 1)
+    col = lerp(col, rgb("#0E1236"), sh[..., None] * 0.85)
+    cv.over(col, cv.cover(di))
+    # the hexagon cap at the left end (an icon such as the heart sits on it)
+    chunky(cv, (0, 0, 22, 24), 2.0, "#5AB0FF", "#2A6FD6", "#173E96", hi=0.5, outline=2.2, lip_h=3.0, drop=0.0,
+           bevel=1.6, bevel_k=0.2, wobble=0.0, gloss=0.7, ink=NAVY, poly=hexagon(11, 12, 22, 24, True, 2.0))
+    return cv
+
+
+def hud_bar_fill_blue():
+    cv = Canvas(30, 14, seed=39)
+    d = cv.rrect(0, 0, 30, 14, 7)
+    cv.over(rgb("#0E58B8"), cv.cover(d))
+    di = d + 1.2
+    t = np.clip(cv.Y / 14, 0, 1)
+    col = lerp(rgb("#7FEBFF"), rgb("#2AA8F5"), t[..., None])
+    col = lerp(col, rgb("#1C7FE0"), smoothstep(0.55, 1.0, t)[..., None])
+    band = cv.cover(cv.rrect(3.5, 2.4, 26.5, 5.2, 1.4))
+    col = lerp(col, np.ones(3, np.float32), band[..., None] * 0.55)
+    cv.over(col, cv.cover(di))
+    return cv
+
+
+def hud_rank():
+    cv = Canvas(40, 16, seed=40)
+    d = cv.rrect(0, 0, 40, 16, 8)
+    cv.over(rgb(NAVY), cv.cover(d))
+    ring = d + 1.0
+    cv.over(rgb("#FAC602"), cv.cover(ring))
+    di = ring + 1.7
+    t = np.clip(cv.Y / 16, 0, 1)
+    col = lerp(rgb("#1C2254"), rgb("#2E3778"), t[..., None])
+    sh = np.clip(cv.cover(di) - cv.cover(cv.rrect(2.7, 5.0, 37.3, 16.3, 5.3)), 0, 1)
+    col = lerp(col, rgb("#0E1236"), sh[..., None] * 0.7)
+    cv.over(col, cv.cover(di))
+    return cv
+
+
 SKINS = {
     "panel": panel,
     "plank": plank,
     "section": section,
-    "btn_green": btn("btn_green", "#B9E66A", "#9ACC41", "#86BA30", "#5E8E1E"),
-    "btn_blue": btn("btn_blue", "#BCD6FA", "#94B9EF", "#7FA4E4", "#5476BC"),
-    "btn_orange": btn("btn_orange", "#FFD877", "#FDB939", "#F4A11E", "#C67314"),
-    "btn_grey": btn("btn_grey", "#D2D2D2", "#B3B3B3", "#A2A2A2", "#767676"),
-    "btn_red": btn("btn_red", "#F0806F", "#DD5444", "#CB4132", "#922418"),
-    "btn_brown": btn("btn_brown", "#ECB47A", "#D69553", "#C38045", "#87491E"),
+    # buttons in the blue casual kit's style (the warm-kit versions are btn(...) above, kept for reference)
+    "btn_green": kbtn("#7FE23C", "#4FC216", "#2A8A0A"),
+    "btn_blue": kbtn("#4DA2F7", "#1474E0", "#0A4AA6"),
+    "btn_orange": kbtn("#FFDB3A", "#FAC602", "#E8860A", stripes=0.55),   # the kit's yellow "level up"
+    "btn_grey": kbtn("#CDD2DC", "#A9B0BE", "#737B90"),
+    "btn_red": kbtn("#FF7468", "#EC3B3B", "#A21E2A"),
+    "btn_brown": kbtn("#5A5E8E", "#40436C", "#26284A"),                  # the kit's dark navy secondary
     "tab_on": tab_on,
     "tab_off": tab_off,
     "slot": slot,
@@ -391,6 +557,17 @@ SKINS = {
     "fill_red": fill("#F6998B", "#DD5444", "#BF3A2A", "#6E1A10"),
     "badge_green": badge("#B2E35E", "#76BA2E", "#55871C", 5, "badge_green"),
     "badge_red": badge("#F37B6A", "#D6402F", "#94241A", 10, "badge_red"),
+    # HUD pieces in the blue casual kit's style
+    "hud_capsule": hud_capsule,
+    "hud_plus": hud_plus,
+    "hud_hex": hud_hex,
+    "hud_hex_frame": hud_hex_frame,
+    "hud_round_blue": hud_round("#5CB0FF", "#1C7CE6", "#0C4AA8"),
+    "hud_round_yellow": hud_round("#FFDF4A", "#FAC602", "#E08000"),
+    "hud_square_blue": hud_square_blue,
+    "hud_bar_track": hud_bar_track,
+    "hud_bar_fill_blue": hud_bar_fill_blue,
+    "hud_rank": hud_rank,
 }
 
 

@@ -11,8 +11,9 @@ textures) and the OFL Changa One font.
 | `iconlib.py` | Blender helpers: the house camera and light rig, the toon "painted" material, chunky modelling primitives |
 | `blender_icons.py` | Every icon, modelled procedurally (villager portraits from the `Person_*` models); raw 512 px renders + object-index passes |
 | `post_icons.py` | Grade, inner ink lines between parts, the thick `#2B1A0E` outline, drop shadow, downsample to 128 px; contact sheets |
-| `skins.py` | The 9-slice skins (numpy signed-distance painting at 4x); sizes and slice borders come from `tools/ui/build_ui_assets.py` `SKINS` |
-| `blender_appicon.py` | The 1024 px app icon (opaque), written to Unity and the Xcode asset catalogue |
+| `skins.py` | The 9-slice skins (numpy signed-distance painting at 4x): warm wood/parchment popups, blue-kit buttons and `hud_*` pieces; sizes and slice borders come from `tools/ui/build_ui_assets.py` `SKINS` |
+| `blender_appicon.py` | The 1024 px app icon (opaque): the carved stone and gold "FOUNDERS / THE LONG RISE" emblem, written to Unity and the Xcode asset catalogue |
+| `blender_appicon_scene.py` | The earlier scene icon (the founder with a torch at dusk), kept as an alternative |
 | `preview_ui.py` | Review sheets: a mock popup built from the real skins and icons, and every skin native and stretched |
 | `build_art.py` | Runs the steps above |
 

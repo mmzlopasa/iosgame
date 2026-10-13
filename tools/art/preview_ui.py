@@ -154,6 +154,74 @@ def mock(skins, icons, out):
     bg.convert("RGB").save(out)
 
 
+def blue_hud(skins, icons, out):
+    """The combination: blue-kit HUD and buttons over the game, warm wood/parchment popups."""
+    W, H = 390, 720
+    bg = Image.new("RGBA", (W * K, H * K))
+    d = ImageDraw.Draw(bg)
+    for yy in range(H * K):
+        t = yy / (H * K)
+        d.line([(0, yy), (W * K, yy)], fill=(int(30 + 30 * t), int(110 - 40 * t), int(220 - 60 * t), 255))
+    navy = "#1B1F4A"
+
+    def put(name, x, y, w, h):
+        bg.alpha_composite(nine(skins, name, w, h), (int(x * K), int(y * K)))
+
+    # top HUD: avatar frame + name/rank, counters with +
+    put("hud_hex_frame", 10, 10, 64, 72)
+    icon(bg, icons, "face_m1", 18, 22, 48)
+    text(d, (80, 18), "FOUNDER", 16, outline=navy)
+    put("hud_rank", 80, 42, 70, 18)
+    text(d, (115, 43), "Lv. 7", 11, anchor="ma", fill="#FAC602", outline=navy)
+    for i, (ic, val) in enumerate((("wood", "1,250"), ("stone", "860"), ("food", "2.4K"))):
+        x = 172 + (i % 2) * 108
+        y = 14 + (i // 2) * 34
+        put("hud_capsule", x + 10, y, 92, 28)
+        icon(bg, icons, ic, x - 2, y - 4, 34)
+        text(d, (x + 56, y + 5), val, 14, anchor="ma", outline=navy)
+        put("hud_plus", x + 82, y + 2.5, 22, 23.5)
+    # side hex buttons and round buttons
+    for i, ic in enumerate(("storage", "flame", "trophy")):
+        put("hud_hex", 330, 100 + i * 58, 48, 48.5)
+        icon(bg, icons, ic, 338, 106 + i * 58, 32)
+    put("hud_round_blue", 290, 100, 26, 27.5)
+    icon(bg, icons, "close", 294, 103, 18)
+    put("hud_round_yellow", 290, 134, 26, 27.5)
+    icon(bg, icons, "info", 293, 137, 20)
+    # energy bar
+    put("hud_bar_track", 12, 96, 250, 26)
+    put("hud_bar_fill_blue", 34, 102, 160, 14)
+    icon(bg, icons, "sick", 13, 98, 22)
+    text(d, (140, 101), "68 / 100", 11, anchor="ma", outline=navy)
+    # warm popup (unchanged style)
+    px, py, pw, ph = 18, 290, 300, 250
+    put("panel", px, py, pw, ph)
+    put("plank", px - 4, py - 6, pw + 8, 38)
+    text(d, (px + pw / 2, py + 2), "Storehouse Lv. 2", 16, anchor="ma")
+    put("section", px + 12, py + 44, pw - 24, 110)
+    for i, (ic, label) in enumerate((("wood", "Wood"), ("stone", "Stone"))):
+        icon(bg, icons, ic, px + 22, py + 56 + i * 44, 30)
+        text(d, (px + 58, py + 62 + i * 44), label, 13)
+        icon(bg, icons, "check", px + pw - 60, py + 58 + i * 44, 26)
+    # buttons in the blue kit's style
+    y = py + 170
+    put("btn_brown", px + 14, y, 128, 46)
+    text(d, (px + 78, y + 12), "REMOVE", 14, anchor="ma", outline=navy)
+    put("btn_orange", px + 154, y, 132, 46)
+    text(d, (px + 220, y + 12), "LEVEL UP", 15, anchor="ma", outline="#8A4A00")
+    rows = [("btn_green", "VIEW ALL"), ("btn_blue", "CLOSE"), ("btn_red", "CANCEL"), ("btn_grey", "LOCKED")]
+    for i, (sk, lab) in enumerate(rows):
+        x = 14 + (i % 2) * 186
+        yy = 560 + (i // 2) * 52
+        put(sk, x, yy, 176, 44)
+        text(d, (x + 88, yy + 11), lab, 15, anchor="ma", outline=navy)
+    # bottom nav: square buttons
+    for i, ic in enumerate(("next", "back", "rotate", "close", "settings")):
+        put("hud_square_blue", 22 + i * 72, 668, 44, 46)
+        icon(bg, icons, ic, 30 + i * 72, 674, 28)
+    bg.convert("RGB").save(out)
+
+
 def sheet(skins, out):
     names = list(B.SKINS)
     W = 1500
@@ -182,5 +250,6 @@ if __name__ == "__main__":
     icons = a[a.index("--icons") + 1] if "--icons" in a else os.path.join(UI, "Icons")
     os.makedirs(out, exist_ok=True)
     mock(skins, icons, os.path.join(out, "ui_mock.png"))
+    blue_hud(skins, icons, os.path.join(out, "blue_hud.png"))
     sheet(skins, os.path.join(out, "skins_sheet.png"))
     print("wrote", os.path.join(out, "ui_mock.png"), os.path.join(out, "skins_sheet.png"))
