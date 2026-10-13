@@ -126,7 +126,9 @@ namespace Founders.UI
         }
 
         /// <summary>Outline width for outlined text of a size (the kit's outline is about an eighth of the size).</summary>
-        public static float OutlineFor(float size) => Mathf.Clamp(size * 0.12f, 1f, 2.4f);
+        // The SDF outline grows into the glyph as well as out of it: kept thin so the white fill stays bright
+        // and thin strokes (the "/" in 46/105) survive; the hard drop below carries the weight instead.
+        public static float OutlineFor(float size) => Mathf.Clamp(size * 0.085f, 0.8f, 1.7f);
 
         /// <summary>Width of a string in Changa One (plus its outline), from the measured advances.</summary>
         public static float TextWidth(string s, float size, bool outlined = true)
