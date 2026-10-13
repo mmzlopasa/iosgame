@@ -36,3 +36,13 @@ body{margin:0;width:844px;height:390px;position:relative;overflow:hidden;font-fa
 .sk-fill_red{border-style:solid;border-width:7px 7px 7px 7px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/fill_red.png) 21 21 21 21 fill / 7px 7px 7px 7px stretch}
 .sk-badge_green{border-style:solid;border-width:7px 7px 8px 7px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/badge_green.png) 21 21 24 21 fill / 7px 7px 8px 7px stretch}
 .sk-badge_red{border-style:solid;border-width:9px 9px 10px 9px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/badge_red.png) 27 27 30 27 fill / 9px 9px 10px 9px stretch}
+.sk-hud_capsule{border-style:solid;border-width:12px 13px 12px 13px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/hud_capsule.png) 36 39 36 39 fill / 12px 13px 12px 13px stretch}
+.sk-hud_plus{border-style:solid;border-width:10px 10px 11px 10px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/hud_plus.png) 30 30 33 30 fill / 10px 10px 11px 10px stretch}
+.sk-hud_hex{border-style:solid;border-width:21px 22px 24px 22px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/hud_hex.png) 63 66 72 66 fill / 21px 22px 24px 22px stretch}
+.sk-hud_hex_frame{border-style:solid;border-width:33px 30px 35px 30px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/hud_hex_frame.png) 99 90 105 90 fill / 33px 30px 35px 30px stretch}
+.sk-hud_round_blue{border-style:solid;border-width:11px 11px 12px 11px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/hud_round_blue.png) 33 33 36 33 fill / 11px 11px 12px 11px stretch}
+.sk-hud_round_yellow{border-style:solid;border-width:11px 11px 12px 11px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/hud_round_yellow.png) 33 33 36 33 fill / 11px 11px 12px 11px stretch}
+.sk-hud_square_blue{border-style:solid;border-width:11px 12px 14px 12px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/hud_square_blue.png) 33 36 42 36 fill / 11px 12px 14px 12px stretch}
+.sk-hud_bar_track{border-style:solid;border-width:8px 8px 8px 26px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/hud_bar_track.png) 24 24 24 78 fill / 8px 8px 8px 26px stretch}
+.sk-hud_bar_fill_blue{border-style:solid;border-width:7px 7px 7px 7px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/hud_bar_fill_blue.png) 21 21 21 21 fill / 7px 7px 7px 7px stretch}
+.sk-hud_rank{border-style:solid;border-width:8px 8px 8px 8px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/hud_rank.png) 24 24 24 24 fill / 8px 8px 8px 8px stretch}

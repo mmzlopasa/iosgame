@@ -304,7 +304,7 @@ namespace Founders.UI
                 Lead(E.Square(store.PaintMode ? "road" : "compass", Act(store.TogglePaintMode), store.PaintMode ? E.Kind.Orange : E.Kind.Blue, Theme.ButtonH), foot);
                 Lead(E.Square("rotate", Act(store.RotatePlacement), E.Kind.Blue, Theme.ButtonH), foot);
             }
-            Lead(E.Square("trash", Act(() => store.BeginDecorating(removing ? "dirt_path" : GameStore.RemoveTool)), E.Kind.Red, Theme.ButtonH), foot);
+            Lead(E.Square("trash", Act(() => store.BeginDecorating(removing ? "dirt_path" : GameStore.RemoveTool)), E.Kind.Brown, Theme.ButtonH), foot);
             foot.Add(Share(E.Button("Done", Act(store.EndDecorating), E.Kind.Green, Theme.ButtonH, "check"), foot));
         }
 
@@ -366,7 +366,7 @@ namespace Founders.UI
                 string verb = n.Terrain == TerrainType.Forest ? "Send woodcutters" : n.Terrain == TerrainType.Rock ? "Send quarriers"
                     : n.Terrain == TerrainType.Ore ? "Send miners" : n.Terrain == TerrainType.Water ? "Send fishers" : "Send foragers";
                 string tool = n.Terrain == TerrainType.Forest ? "axe" : n.Terrain == TerrainType.Water ? "spear" : n.Terrain == TerrainType.Grass ? "food" : "pickaxe";
-                if (n.Ordered) Lead(E.Square("close", Act(() => store.ToggleHarvest(x, y)), E.Kind.Red, Theme.ButtonH), foot);
+                if (n.Ordered) Lead(E.Square("close", Act(() => store.ToggleHarvest(x, y)), E.Kind.Brown, Theme.ButtonH), foot);
                 foot.Add(Share(E.Button(verb, Act(() => store.SendGatherer(x, y)), E.Kind.Green, Theme.ButtonH, tool, 16, null, CardW - 20 - (n.Ordered ? Theme.ButtonH + 8 : 0)), foot));
             }
             else foot.Hidden(true);
@@ -494,17 +494,17 @@ namespace Founders.UI
                     else { confirmDemolishUntil = Time.unscaledTime + 3f; foot.schedule.Execute(() => dirty = true).StartingIn(3100); }
                 });
                 if (confirm) foot.Add(Share(E.Button("Demolish?", demolish, E.Kind.Red, Theme.ButtonH, "trash", 16, SubLine("wood", "50% back")), foot));
-                else Lead(E.Square("trash", demolish, E.Kind.Red, Theme.ButtonH), foot);
+                else Lead(E.Square("trash", demolish, E.Kind.Brown, Theme.ButtonH), foot); // remove: the kit's navy secondary
             }
             if (def.Heart && G.HasWarmth && (complete || b.IsOperational)) foot.Add(Share(StokeButton(), foot));
             if (target != null && complete)
             {
-                var kind = canRebuild ? (canLevel ? E.Kind.Blue : E.Kind.Green) : E.Kind.Grey;
+                var kind = canRebuild ? (canLevel ? E.Kind.Blue : E.Kind.Orange) : E.Kind.Grey; // yellow when it is the card's primary
                 foot.Add(Share(E.Button("Rebuild", canRebuild ? Act(() => store.Upgrade(id)) : null, kind, Theme.ButtonH, null, 16,
                                         SubLine("clock", Fmt.Clock(G.EstimatedSeconds(target.BuildSeconds)))), foot));
             }
             if (canLevel)
-                foot.Add(Share(E.Button("Upgrade", can ? Act(() => store.UpgradeLevel(id)) : null, can ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 16,
+                foot.Add(Share(E.Button("Level up", can ? Act(() => store.UpgradeLevel(id)) : null, can ? E.Kind.Orange : E.Kind.Grey, Theme.ButtonH, null, 16,
                                         ready ? SubLine("clock", Fmt.Clock(G.EstimatedSeconds(lv.BuildSeconds))) : SubLine("lock", "Not ready", Theme.Pale)), foot));
             if (foot.childCount == 0) foot.Hidden(true);
         }

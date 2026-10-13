@@ -20,36 +20,33 @@ namespace Founders.UI
     {
         // MARK: - Metrics (panel units; the mock in tools/ui/mock uses the same numbers)
 
-        /// <summary>Top of the left rail (goal card, promise) below the safe top: under the second line.</summary>
-        const float RailY = 82;
-        /// <summary>Top of the right column (menu tiles, timers): right under the strip (the second line is on the left only).</summary>
-        const float TilesY = 54;
-        /// <summary>The top strip: the capsule's height (the avatar is a little taller).</summary>
-        const float StripH = 38;
-        const float AvatarSize = 46;
-        const float GearSize = 42;
-        const float ChipsH = 28;
+        /// <summary>Top of the left rail (goal card, promise): under the player block.</summary>
+        const float RailY = 86;
+        /// <summary>Top of the right column (menu hexagons, timers): under the settings button.</summary>
+        const float TilesY = 52;
         const float LeftRailW = 224;
         const float TimersW = 182;
-        const float TimerH = 42;
-        const float TileSize = 54;
-        const float TileGap = 6;
-        const float BuildButton = 70;
+        const float TimerH = 40;
+        /// <summary>The menu hexagons and the room each takes (its label hangs under the lower point).</summary>
+        const float TileSize = 48;
+        const float TileH = 58;
+        const float TileGap = 2;
+        /// <summary>Width of the right column (a hexagon and its label's overhang).</summary>
+        const float TileColW = TileSize + 16;
+        const float BuildButton = 72;
         const float SmallButton = 44;
-        const float CompassSize = 56;
+        const float CompassSize = 50;
         /// <summary>Width of the docked card (selection, placement): the kit's popup width, at most half the screen.</summary>
         float CardW => Mathf.Min(360, SafeWidth * 0.52f);
-        /// <summary>Top of popups (below the top strip).</summary>
+        /// <summary>Top of popups (below the compact top bar).</summary>
         float PopupTop => SafeTop + 56;
 
-        VisualElement topHost, chipsHost, leftHost, timersHost, tilesHost, bottomHost, toastLayer, contextPanel;
+        VisualElement topHost, leftHost, timersHost, tilesHost, bottomHost, toastLayer, contextPanel;
 
         void BuildHud()
         {
             topHost = E.Div("top").Ignore().Abs();
             AddRegion(topHost, TopKey, BuildTop);
-            chipsHost = E.Div("chips").Ignore().Abs();
-            AddRegion(chipsHost, ChipsKey, BuildChips);
             leftHost = E.Div("left").Ignore().Col(Align.FlexStart).Abs();
             AddRegion(leftHost, LeftKey, BuildLeft);
             timersHost = E.Div("timers").Ignore().Col(Align.FlexEnd).Abs();
@@ -68,7 +65,7 @@ namespace Founders.UI
             contextPanel.style.justifyContent = Justify.FlexEnd;
             AddRegion(contextPanel, ContextKey, BuildContext);
 
-            foreach (var e in new[] { chipsHost, leftHost, timersHost, tilesHost, bottomHost, toastLayer, contextPanel, topHost })
+            foreach (var e in new[] { leftHost, timersHost, tilesHost, bottomHost, toastLayer, contextPanel, topHost })
                 hudLayer.Add(e);
             lastSafe = default;
         }
@@ -79,22 +76,19 @@ namespace Founders.UI
             bool sheet = SheetOpen, card = ContextOpen;
             float l = SafeLeft + 8, r = SafeRight + 8, top = SafeTop;
             Place(topHost, l, top + 4, r, null);
-            Place(chipsHost, l + AvatarSize + 8, top + 4 + StripH + 4, null, null);
             Place(leftHost, l, top + RailY, null, null);
-            Place(timersHost, null, top + TilesY, r + TileSize + 10, null);
+            Place(timersHost, null, top + RailY, r + TileColW + 8, null);
             Place(tilesHost, null, top + TilesY, r, null);
             Place(bottomHost, l, null, SafeRight + 6, BottomPad + 4);
-            chipsHost.Hidden(sheet || card);
             leftHost.Hidden(sheet || card);
             timersHost.Hidden(sheet || card);
             tilesHost.Hidden(sheet);
             bottomHost.Hidden(sheet);
             // Notices between whatever occupies the two sides.
             float leftEdge = l + (card ? CardW : LeftRailW) + 10;
-            float rightEdge = r + TileSize + 10 + (card ? 0 : TimersW + 10);
+            float rightEdge = r + TileColW + 8 + (card ? 0 : TimersW + 10);
             Place(toastLayer, leftEdge, top + RailY, rightEdge, BottomPad + BuildButton + 10);
             contextPanel.style.width = CardW;
-            // The card's plank stays clear of the avatar's XP bar above it.
             Place(contextPanel, l, PopupTop + 4, null, BottomPad + 8);
             float maxCard = Mathf.Min(PanelH - PopupTop - 4 - BottomPad - 8, 470);
             contextPanel.style.maxHeight = maxCard;
@@ -160,132 +154,262 @@ namespace Founders.UI
         /// <summary>A red notification badge in the top-right corner of a parent.</summary>
         static VisualElement CornerBadge(string text, float size = 20) => E.Badge(text, true, size).Abs(null, -6, -6);
 
-        // MARK: - Top strip
-
         static readonly ResourceType[] StripOrder = { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Knowledge, ResourceType.Ore, ResourceType.Hides };
 
-        /// <summary>Which resources the strip shows at a density: all; without hides; without ore and hides.</summary>
-        IEnumerable<ResourceType> StripResources(int density)
+        // MARK: - Top: the player block and the resource counters (the blue kit)
+
+        /// <summary>One piece of the top bar: a counter or a chip, its width and how willingly it is dropped (higher goes first).</summary>
+        readonly struct TopItem
         {
+            public readonly string Id;
+            public readonly float Width;
+            public readonly int Drop;
+            public TopItem(string id, float width, int drop) { Id = id; Width = width; Drop = drop; }
+        }
+
+        const float CounterH = 30, CounterGap = 10, ChipH = 28;
+
+        /// <summary>Width of a counter showing a text (one digit of slack so it does not jump on every change).</summary>
+        static float CounterW(string text, bool plus) => 6 + E.CounterIconRoom + 4 + Theme.TextWidth(text + "0", Theme.Num) + (plus ? 6 + 24 - 3 : 12);
+
+        static float ChipW(string text) => 7 + (ChipH - 6) + 4 + Theme.TextWidth(text + "0", Theme.Body) + 10;
+
+        /// <summary>Compact (one row, no player block) while a window, a card or the build strip is open: the popup needs the height.</summary>
+        bool TopCompact => SheetOpen || ContextOpen;
+
+        /// <summary>Width of the player block: the hexagon frame, the name, the rank and the hope bar.</summary>
+        const float PlayerNameW = 156;
+        float PlayerW => HexFrameW + 8 + PlayerNameW;
+        const float HexFrameW = 64;
+
+        static bool PlusFor(ResourceType t) => t == ResourceType.Food || t == ResourceType.Wood;
+
+        /// <summary>Everything the top bar may show, in order, with its width now.</summary>
+        List<TopItem> TopCandidates()
+        {
+            var list = new List<TopItem>
+            {
+                new TopItem("people", CounterW($"{Fmt.Compact(G.State.Population)}/{Fmt.Compact(G.HousingCapacity())}", true), 0),
+            };
             foreach (var t in StripOrder)
             {
-                if (t == ResourceType.Hides && (density >= 1 || G.State.Resources.Hides < 1)) continue;
-                if (t == ResourceType.Ore && (density >= 2 || G.State.Resources.Ore < 1)) continue;
-                yield return t;
+                if (t == ResourceType.Hides && G.State.Resources.Hides < 1) continue;
+                if (t == ResourceType.Ore && G.State.Resources.Ore < 1) continue;
+                int drop = t == ResourceType.Hides ? 9 : t == ResourceType.Ore ? 8 : t == ResourceType.Knowledge ? 3 : t == ResourceType.Stone ? 2 : 0;
+                list.Add(new TopItem(t.ToString(), CounterW(Fmt.Compact(G.State.Resources[t]), PlusFor(t)), drop));
+            }
+            list.Add(new TopItem("clock", ChipW("00:00"), 7));
+            if (G.HasClimate) list.Add(new TopItem("temp", ChipW(G.Freezing ? "Freezing" : "−00°"), 4));
+            if (G.HasDiscontent) list.Add(new TopItem("discontent", ChipW("00"), 5));
+            if (G.HasHealth && G.SickCount > 0) list.Add(new TopItem("sick", ChipW(G.SickCount.ToString(Inv)), 1));
+            if (TopCompact) list.Add(new TopItem("hope", ChipW("100"), 6));
+            return list;
+        }
+
+        /// <summary>
+        /// The rows of the top bar: items in order, packed greedily into one row (compact) or two (beside the
+        /// player block); while they do not fit, the most expendable item is dropped (hides, ore, the clock…).
+        /// </summary>
+        List<List<TopItem>> TopRows()
+        {
+            float avail = SafeWidth - 16 - (TopCompact ? 0 : PlayerW + 10) - HudSquareSize - 10;
+            int rows = TopCompact ? 1 : 2;
+            // The second row ends where the menu hexagons begin (they start right under the settings button).
+            float Avail(int row) => row == 0 ? avail : SafeWidth - 16 - PlayerW - 10 - TileColW - 10;
+            var items = TopCandidates();
+            while (true)
+            {
+                var packed = new List<List<TopItem>> { new List<TopItem>() };
+                float x = 0;
+                bool fits = true;
+                foreach (var it in items)
+                {
+                    float w = (x > 0 ? CounterGap : 0) + it.Width;
+                    if (x + w > Avail(packed.Count - 1))
+                    {
+                        if (packed.Count == rows) { fits = false; break; }
+                        packed.Add(new List<TopItem>());
+                        x = 0;
+                        w = it.Width;
+                    }
+                    packed[packed.Count - 1].Add(it);
+                    x += w;
+                }
+                if (fits || items.Count <= 1) return packed;
+                int worst = 0;
+                for (int i = 1; i < items.Count; i++) if (items[i].Drop > items[worst].Drop) worst = i;
+                items.RemoveAt(worst);
             }
         }
 
-        string TopKey() => $"{SafeWidth}|{G.State.EpochId}|{MilestoneReady() || G.PendingStory != null}|{TopDensity()}|{G.State.Resources.Ore >= 1}|{G.State.Resources.Hides >= 1}";
-
-        /// <summary>
-        /// How much the strip must give up to fit the safe width: 0 everything, 1 no hides, 2 no ore, 3 no clock,
-        /// 4 smaller numbers. Re-evaluated every tick (cheap): the strip only rebuilds when this changes.
-        /// </summary>
-        int TopDensity()
-        {
-            // Avatar 46 + 8, capsule padding 22, settings 42 + 10, margins 16.
-            float usable = SafeWidth - AvatarSize - 8 - 22 - GearSize - 10 - 16;
-            for (int level = 0; level < 4; level++)
-                if (StripWidth(level, Theme.Num) <= usable) return level;
-            return 4;
-        }
-
-        const float StripIcon = 24, StripGap = 12;
-
-        float StripWidth(int density, float size)
-        {
-            const float item = StripIcon + 4, gap = StripGap;
-            float w = item + Theme.TextWidth($"{Fmt.Compact(G.State.Population)}/{Fmt.Compact(G.HousingCapacity())}", size) + 4 + 18;
-            if (density < 3) w += gap + item + Theme.TextWidth("00:00", size);
-            foreach (var t in StripResources(density)) w += gap + item + Theme.TextWidth(Fmt.Compact(G.State.Resources[t]) + "0", size);
-            return w;
-        }
+        string TopKey() => $"{SafeWidth}|{TopCompact}|{G.State.EpochId}|{MilestoneReady() || G.PendingStory != null}|{G.State.SettlementName}|" +
+                           string.Join("/", TopRows().Select(r => string.Join(",", r.Select(i => i.Id))));
 
         void BuildTop(VisualElement host)
         {
-            int density = TopDensity();
-            float size = density >= 4 ? 13 : Theme.Num;
-            var row = E.Div().Row(0, Align.FlexStart).Ignore();
-            row.style.width = SafeWidth - 16;
+            var bar = E.Div().Row(0, Align.FlexStart).Ignore();
+            bar.style.width = SafeWidth - 16;
 
-            // Settlement tile with the chapter's progress under it (tap: Goals).
-            // The founder's portrait, as the kit's player avatar.
-            var avatar = E.Slot("face_m1", AvatarSize, E.Cell.Tile, 0.92f);
-            // The kit's XP bar under the portrait: the chapter's progress.
-            var chapter = LiveBar(() =>
+            if (!TopCompact)
             {
-                var req = G.ChapterRequirements();
-                return req.Count == 0 ? 1 : req.Count(r => r.Met) / (double)req.Count;
-            }, 10).Abs(2, null, 2, -6);
-            avatar.Add(chapter);
-            if (MilestoneReady() || G.PendingStory != null) avatar.Add(CornerBadge("!", 18));
-            Tap(avatar, () => store.ActivePanel = Panel.Objectives);
-            row.Add(avatar);
-
-            // The capsule: the hour, people, resources (tap people: People; a resource: who makes it).
-            var cap = E.Capsule(StripH);
-            cap.style.marginLeft = 8;
-            cap.style.marginTop = 2;
-            if (density < 3)
-            {
-                var hour = StripItem(cap, "summer", size);
-                var clockIcon = hour.ElementAt(0);
-                var clock = (Label)hour.ElementAt(1);
-                bool night = false;
+                // The player block: the founder in the hexagon frame (tap: Goals), the settlement's name, the
+                // heart's level on the rank pill and hope as the kit's energy bar.
+                var frame = E.HexFrame("face_m1", HexFrameW);
+                if (MilestoneReady() || G.PendingStory != null) frame.Add(CornerBadge("!", 20).Abs(null, 2, 0));
+                Tap(frame, () => store.ActivePanel = Panel.Objectives);
+                bar.Add(frame);
+                var col = E.Div().Col().Ignore().Size(PlayerNameW);
+                col.style.marginLeft = 8;
+                col.style.paddingTop = 2;
+                var name = E.T(G.State.SettlementName ?? "Founder", Theme.H2).Fit(PlayerNameW, Theme.Body);
+                name.style.whiteSpace = WhiteSpace.NoWrap;
+                col.Add(name);
+                var rank = E.RankPill(out var lv);
+                rank.style.alignSelf = Align.FlexStart;
+                rank.style.marginTop = 2;
+                Bind(() => { string s = $"Lv.{G.HeartLevel}"; if (lv.text != s) lv.text = s; });
+                Tap(rank, () => { if (G.Heart != null) store.FocusBuilding(G.Heart.Id); });
+                col.Add(rank);
+                var hope = E.HudBar("approval", out var fill, out var label, PlayerNameW);
+                hope.style.marginTop = 6;
                 Bind(() =>
                 {
-                    bool n = Atmosphere.Nightness > 0.3f;
-                    if (n != night || clock.text == "") { night = n; E.SetIcon(clockIcon, n ? "moon" : SeasonIcon(G.Season?.Id ?? "summer")); }
-                    string t = ShortClock();
-                    if (clock.text != t) clock.text = t;
+                    int a = ApprovalNow;
+                    E.SetFill(fill, a / 100.0);
+                    string s = $"{a}/100";
+                    if (label.text != s) label.text = s;
                 });
-                Tap(hour, () => store.ActivePanel = G.HasClimate ? Panel.Weather : Panel.People);
+                Tap(hope, () => { peopleTab = 2; store.ActivePanel = Panel.People; });
+                col.Add(hope);
+                bar.Add(col);
             }
-            var people = StripItem(cap, "people", size);
-            var pop = (Label)people.ElementAt(1);
-            var idle = E.Badge("!", true, 18);
-            idle.style.marginLeft = 4;
-            people.Add(idle);
-            Bind(() =>
+
+            // The counters and chips, in one or two rows.
+            var rowsCol = E.Div().Col().Ignore();
+            rowsCol.style.marginLeft = TopCompact ? 0 : 10;
+            foreach (var row in TopRows())
             {
-                string s = $"{Fmt.Compact(G.State.Population)}/{Fmt.Compact(G.HousingCapacity())}";
-                if (pop.text != s) pop.text = s;
-                idle.Hidden(!(G.IdleWorkers > 0 || G.State.FoodShortage));
-            });
-            Tap(people, () => { peopleTab = 0; store.ActivePanel = Panel.People; });
-            foreach (var t in StripResources(density))
-            {
-                var item = StripItem(cap, IconFor(t), size);
-                var v = (Label)item.ElementAt(1);
-                var type = t;
-                Bind(() =>
+                var r = E.Div().Row().Ignore();
+                r.style.height = CounterH + 6;
+                foreach (var it in row)
                 {
-                    double x = G.State.Resources[type];
-                    string s = Fmt.Compact(x);
-                    if (v.text != s) v.text = s;
-                    E.Tint(v, x >= caps[type] - 0.5 ? Theme.Gold : econ.Net[type] < -0.0005 && x < 20 ? Theme.Bad : Color.white);
-                });
-                Tap(item, () => { if (type == ResourceType.Knowledge) store.ActivePanel = Panel.Research; else { peopleTab = 0; store.ActivePanel = Panel.People; } });
+                    var e = TopPiece(it.Id);
+                    if (e == null) continue;
+                    if (r.childCount > 0) e.style.marginLeft = CounterGap + e.style.marginLeft.value.value;
+                    r.Add(e);
+                }
+                rowsCol.Add(r);
             }
-            row.Add(cap);
-            row.Add(E.Div().Grow().Ignore());
-            var gear = E.Square("settings", Act(() => store.ActivePanel = Panel.Settings), E.Kind.Brown, GearSize);
-            row.Add(gear);
-            host.Add(row);
+            bar.Add(rowsCol);
+            bar.Add(E.Div().Grow().Ignore());
+            bar.Add(E.HudSquare("settings", Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
+            host.Add(bar);
         }
 
-        /// <summary>An icon and an outlined number inside the strip capsule.</summary>
-        static VisualElement StripItem(VisualElement capsule, string icon, float size)
+        const float HudSquareSize = 40;
+
+        /// <summary>One counter or chip of the top bar, with its binding and its tap.</summary>
+        VisualElement TopPiece(string id)
         {
-            var item = E.Div().Row();
-            if (capsule.childCount > 0) item.style.marginLeft = StripGap;
-            item.Add(E.Icon(icon, StripIcon));
-            var l = E.T("", size);
-            l.style.marginLeft = 4;
-            item.Add(l);
-            item.pickingMode = PickingMode.Position;
-            capsule.Add(item);
-            return item;
+            switch (id)
+            {
+                case "people":
+                {
+                    var c = E.HudCounter("people", out var v, Act(() => { peopleTab = 0; store.ActivePanel = Panel.People; }), CounterH);
+                    var idle = E.Badge("!", true, 18).Abs(14, -6);
+                    c.Add(idle);
+                    Bind(() =>
+                    {
+                        string s = $"{Fmt.Compact(G.State.Population)}/{Fmt.Compact(G.HousingCapacity())}";
+                        if (v.text != s) v.text = s;
+                        idle.Hidden(!(G.IdleWorkers > 0 || G.State.FoodShortage));
+                    });
+                    Tap(c, () => { peopleTab = 0; store.ActivePanel = Panel.People; });
+                    return c;
+                }
+                case "clock":
+                {
+                    var c = E.HudChip("summer", out var v, ChipH);
+                    var clockIcon = c.ElementAt(0);
+                    bool night = false;
+                    Bind(() =>
+                    {
+                        bool n = Atmosphere.Nightness > 0.3f;
+                        if (n != night || v.text == "") { night = n; E.SetIcon(clockIcon, n ? "moon" : SeasonIcon(G.Season?.Id ?? "summer")); }
+                        string t = ShortClock();
+                        if (v.text != t) v.text = t;
+                    });
+                    Tap(c, () => store.ActivePanel = G.HasClimate ? Panel.Weather : Panel.People);
+                    return c;
+                }
+                case "temp":
+                {
+                    var c = E.HudChip("thermometer", out var v, ChipH);
+                    var icon = c.ElementAt(0);
+                    int last = -1;
+                    Bind(() =>
+                    {
+                        double temp = G.Temperature;
+                        bool snap = CurrentSnap() != null;
+                        int state = G.Freezing ? 2 : snap ? 1 : 0;
+                        string s = G.Freezing ? "Freezing" : Deg(temp);
+                        if (v.text != s) v.text = s;
+                        E.Tint(v, G.Freezing ? Theme.Bad : snap ? Theme.Icy : ExposureColor(G.ExposureOf(temp)));
+                        if (state != last) { last = state; E.SetIcon(icon, state == 2 ? "alert" : state == 1 ? "winter" : "thermometer"); }
+                    });
+                    Tap(c, () => store.ActivePanel = Panel.Weather);
+                    return c;
+                }
+                case "discontent":
+                {
+                    var c = E.HudChip("discontent", out var v, ChipH);
+                    Bind(() =>
+                    {
+                        string s = ((int)Math.Round(G.State.Discontent)).ToString(Inv);
+                        if (v.text != s) v.text = s;
+                        E.Tint(v, MoodColor(G.DiscontentMood));
+                    });
+                    Tap(c, () => { peopleTab = 2; store.ActivePanel = Panel.People; });
+                    return c;
+                }
+                case "sick":
+                {
+                    var c = E.HudChip("sick", out var v, ChipH);
+                    Bind(() => { string s = G.SickCount.ToString(Inv); if (v.text != s) v.text = s; E.Tint(v, Theme.Hex("#FFB3A8")); });
+                    Tap(c, () => { peopleTab = 2; store.ActivePanel = Panel.People; });
+                    return c;
+                }
+                case "hope":
+                {
+                    var c = E.HudChip("approval", out var v, ChipH);
+                    Bind(() => { int a = ApprovalNow; string s = a.ToString(Inv); if (v.text != s) v.text = s; E.Tint(v, ApprovalColor(a)); });
+                    Tap(c, () => { peopleTab = 2; store.ActivePanel = Panel.People; });
+                    return c;
+                }
+            }
+            if (!Enum.TryParse(id, out ResourceType type)) return null;
+            // The green + only where it leads somewhere useful: food and wood open Build on the places that make them.
+            Action plus = type == ResourceType.Food ? Act(() => OpenBuild("Food")) : type == ResourceType.Wood ? Act(() => OpenBuild("Work")) : null;
+            var counter = E.HudCounter(IconFor(type), out var value, plus, CounterH);
+            Bind(() =>
+            {
+                double x = G.State.Resources[type];
+                string s = Fmt.Compact(x);
+                if (value.text != s) value.text = s;
+                E.Tint(value, x >= caps[type] - 0.5 ? Theme.Gold : econ.Net[type] < -0.0005 && x < 20 ? Theme.Bad : Color.white);
+            });
+            Tap(counter, () => { if (type == ResourceType.Knowledge) store.ActivePanel = Panel.Research; else { peopleTab = 0; store.ActivePanel = Panel.People; } });
+            return counter;
+        }
+
+        /// <summary>Opens the build strip on a category.</summary>
+        void OpenBuild(string tab)
+        {
+            store.CancelPlacement();
+            store.SelectedBuildingId = null;
+            store.SelectedNode = null;
+            pendingTab = tab;
+            store.ActivePanel = Panel.Build;
         }
 
         /// <summary>The hour of the game clock (one day lasts six real hours).</summary>
@@ -297,97 +421,6 @@ namespace Founders.UI
             double hours = p < 0.75 ? 6 + p / 0.75 * 15 : 21 + (p - 0.75) / 0.25 * 9;
             hours %= 24;
             return $"{(int)hours:00}:{(int)(hours % 1 * 60):00}";
-        }
-
-        int Day => (int)(G.State.SimTime / Atmosphere.DayLength) + 1;
-
-        // MARK: - Second line: season, temperature, hope, discontent, the sick
-
-        string ChipsKey() => $"{G.Season?.Id}|{G.HasClimate}|{G.HasDiscontent}|{G.HasHealth}|{G.Freezing}";
-
-        void BuildChips(VisualElement host)
-        {
-            var cap = E.Capsule(ChipsH).Pad(0, 10);
-            var season = G.Season;
-            if (season != null)
-            {
-                var s = Chip(cap, G.Freezing ? "alert" : SeasonIcon(season.Id));
-                Bind(() =>
-                {
-                    string t = G.Freezing ? "Freezing!" : $"{season.Name} · Day {Day}";
-                    var l = (Label)s.ElementAt(1);
-                    if (l.text != t) l.text = t;
-                    E.Tint(l, G.Freezing ? Theme.Bad : Color.white);
-                });
-                Tap(s, () => store.ActivePanel = G.HasClimate ? Panel.Weather : Panel.People);
-            }
-            if (G.HasClimate)
-            {
-                var th = Chip(cap, "thermometer");
-                var icon = th.ElementAt(0);
-                int lastSnap = -1;
-                Bind(() =>
-                {
-                    double temp = G.Temperature;
-                    bool snap = CurrentSnap() != null;
-                    var l = (Label)th.ElementAt(1);
-                    string s = Deg(temp);
-                    if (l.text != s) l.text = s;
-                    E.Tint(l, snap ? Theme.Icy : ExposureColor(G.ExposureOf(temp)));
-                    if ((snap ? 1 : 0) != lastSnap) { lastSnap = snap ? 1 : 0; E.SetIcon(icon, snap ? "winter" : "thermometer"); }
-                });
-                Tap(th, () => store.ActivePanel = Panel.Weather);
-            }
-            var hope = Chip(cap, "approval");
-            Bind(() =>
-            {
-                int a = ApprovalNow;
-                var l = (Label)hope.ElementAt(1);
-                string s = a.ToString(Inv);
-                if (l.text != s) l.text = s;
-                E.Tint(l, ApprovalColor(a));
-            });
-            Tap(hope, () => { peopleTab = 2; store.ActivePanel = Panel.People; });
-            if (G.HasDiscontent)
-            {
-                var dis = Chip(cap, "discontent");
-                Bind(() =>
-                {
-                    var l = (Label)dis.ElementAt(1);
-                    string s = ((int)Math.Round(G.State.Discontent)).ToString(Inv);
-                    if (l.text != s) l.text = s;
-                    E.Tint(l, MoodColor(G.DiscontentMood));
-                });
-                Tap(dis, () => { peopleTab = 2; store.ActivePanel = Panel.People; });
-            }
-            if (G.HasHealth)
-            {
-                var sick = Chip(cap, "sick");
-                Bind(() =>
-                {
-                    int n = G.SickCount;
-                    sick.Hidden(n == 0);
-                    var l = (Label)sick.ElementAt(1);
-                    string s = n.ToString(Inv);
-                    if (l.text != s) l.text = s;
-                    E.Tint(l, Theme.Hex("#FFB3A8"));
-                });
-                Tap(sick, () => { peopleTab = 2; store.ActivePanel = Panel.People; });
-            }
-            host.Add(cap);
-        }
-
-        static VisualElement Chip(VisualElement capsule, string icon)
-        {
-            var c = E.Div().Row();
-            if (capsule.childCount > 0) c.style.marginLeft = 12;
-            c.Add(E.Icon(icon, 20));
-            var l = E.T("", Theme.Body);
-            l.style.marginLeft = 4;
-            c.Add(l);
-            c.pickingMode = PickingMode.Position;
-            capsule.Add(c);
-            return c;
         }
 
         // MARK: - Left rail: the goal and a promise
@@ -426,7 +459,7 @@ namespace Founders.UI
 
         // MARK: - Timers (research, scouting, construction)
 
-        int MaxTimers() => Mathf.Clamp(Mathf.FloorToInt((PanelH - SafeTop - TilesY - BottomPad - 12) / (TimerH + 6)), 0, 5);
+        int MaxTimers() => Mathf.Clamp(Mathf.FloorToInt((PanelH - SafeTop - RailY - BottomPad - 12) / (TimerH + 6)), 0, 5);
 
         string TimersKey()
         {
@@ -472,19 +505,19 @@ namespace Founders.UI
         /// <summary>A running job: icon, name and time left over a thin bar.</summary>
         VisualElement TimerCard(string icon, string name, Func<double> progress, Func<string> left, E.FillKind fill, Action onTap)
         {
-            var c = E.Capsule(TimerH).Pad(4, 10, 4, 8);
+            // A navy HUD capsule with the job's icon overlapping its left end (like the counters).
+            var c = E.HudCapsule(TimerH).Pad(4, 12, 5, E.CounterIconRoom + 6);
             c.style.height = StyleKeyword.Auto;
             c.style.minHeight = TimerH;
             c.style.width = TimersW;
             c.style.marginBottom = 6;
-            c.Add(E.Icon(icon, 28));
+            c.Add(E.Icon(icon, 34).Abs(-8, 2));
             var col = E.Div().Col().Grow().Ignore();
-            col.style.marginLeft = 6;
             // The name on its own line (it wraps rather than being cut), the bar and the time left under it.
-            col.Add(E.T(name, Theme.Small).Fit(TimersW - 18 - 28 - 6));
+            col.Add(E.T(name, Theme.Small).Fit(TimersW - 12 - E.CounterIconRoom - 6));
             var line = E.Div().Row().Ignore();
             line.style.marginTop = 1;
-            var bar = LiveBar(progress, 9, fill).Grow();
+            var bar = LiveBar(progress, 9, fill == E.FillKind.Blue ? E.FillKind.Hud : fill).Grow();
             line.Add(bar);
             line.Add(Live(left, Theme.Small).NoShrink().Margin(0, 0, 0, 5));
             col.Add(line);
@@ -507,20 +540,13 @@ namespace Founders.UI
             if (HasCustoms) host.Add(MenuTile("customs", "Customs", LawReady() ? "!" : null, () => store.ActivePanel = Panel.Customs));
         }
 
-        /// <summary>A wooden menu tile: icon with an outlined label inside the bottom edge, a red badge on top.</summary>
+        /// <summary>A menu button: the kit's blue hexagon with the icon, an outlined label under it, a red badge on top.</summary>
         VisualElement MenuTile(string icon, string label, string badge, Action onTap)
         {
-            var t = E.Div().Center().Skin("tile").Size(TileSize, TileSize).Pad(0, 0, 3, 0);
+            var t = E.HudHex(icon, label, TileSize);
+            t.style.height = TileH;
             t.style.marginBottom = TileGap;
-            t.style.justifyContent = Justify.FlexStart;
-            var ic = E.Icon(icon, 34);
-            ic.style.marginTop = 3;
-            t.Add(ic);
-            // The label sits on the tile's lower edge and may reach a little past its sides (like a badge).
-            var l = E.T(label, Theme.Small).Align(TextAnchor.MiddleCenter).Abs(-8, null, -8, 2);
-            l.style.whiteSpace = WhiteSpace.NoWrap;
-            t.Add(l);
-            if (badge != null) t.Add(CornerBadge(badge));
+            if (badge != null) t.Add(CornerBadge(badge, 20).Abs(null, -4, 2));
             Tap(t, onTap);
             return t;
         }
@@ -536,7 +562,7 @@ namespace Founders.UI
             {
                 var left = E.Div().Row(0, Align.FlexEnd).Ignore().NoShrink();
                 // The compass needle follows the camera; tap it to face north-west again.
-                var compass = E.Slot("compass", CompassSize, E.Cell.Tile, 0.72f);
+                var compass = E.HudSquare("compass", null, CompassSize);
                 var needle = compass.ElementAt(0);
                 Bind(() => needle.style.rotate = new Rotate(new Angle(-(CameraRig.Yaw + 45f), AngleUnit.Degree)));
                 Tap(compass, () => store.Rig?.ResetView());
@@ -544,20 +570,20 @@ namespace Founders.UI
                 void Small(VisualElement b) { b.style.marginLeft = 8; left.Add(b); }
                 if (G.PendingEvent != null && store.EventMinimized)
                 {
-                    var bell = E.Square("bell", Act(() => store.EventMinimized = false), E.Kind.Orange, SmallButton);
+                    var bell = E.Square("bell", Act(() => store.EventMinimized = false), E.Kind.Orange, SmallButton); // yellow: it wants an answer
                     bell.Add(CornerBadge("1", 18));
                     Small(bell);
                 }
-                Small(E.Square("world", Act(() => { mapTab = 0; store.ActivePanel = Panel.Map; }), E.Kind.Brown, SmallButton));
-                Small(E.Square("legacy", Act(() => store.ActivePanel = Panel.Profile), E.Kind.Brown, SmallButton));
-                Small(E.Square("eye_off", Act(() =>
+                Small(E.HudSquare("world", Act(() => { mapTab = 0; store.ActivePanel = Panel.Map; }), SmallButton));
+                Small(E.HudSquare("legacy", Act(() => store.ActivePanel = Panel.Profile), SmallButton));
+                Small(E.HudSquare("eye_off", Act(() =>
                 {
                     store.CancelPlacement();
                     store.SelectedBuildingId = null;
                     store.SelectedNode = null;
                     store.ActivePanel = Panel.None;
                     store.HudHidden = true;
-                }), E.Kind.Brown, SmallButton));
+                }), SmallButton));
                 host.Add(left);
             }
 
@@ -568,29 +594,31 @@ namespace Founders.UI
             middle.style.marginRight = 10;
             if (!card)
             {
-                var news = E.Capsule(30).Pad(3, 12).Ignore();
+                // A navy HUD capsule with the bell overlapping its left end.
+                var news = E.HudCapsule(30).Pad(3, 14, 3, E.CounterIconRoom + 4).Ignore();
                 news.style.height = StyleKeyword.Auto;
                 news.style.minHeight = 30;
-                news.style.marginBottom = 6;
+                news.style.marginBottom = 8;
+                news.style.marginLeft = 6;
                 news.style.maxWidth = 380;
-                news.Add(E.Icon("bell", 20));
+                news.Add(E.Icon("bell", 32).Abs(-8, -1));
                 int squares = G.PendingEvent != null && store.EventMinimized ? 4 : 3;
-                float room = Mathf.Min(380, SafeWidth - 16 - CompassSize - squares * (SmallButton + 8) - 20 - BuildButton - 6) - 24 - 20 - 6;
+                float room = Mathf.Min(380, SafeWidth - 16 - CompassSize - squares * (SmallButton + 8) - 20 - BuildButton - 6) - 6 - E.CounterIconRoom - 4 - 14 - 6;
                 var line = LiveFit(() =>
                 {
                     if (store.Toasts.Count > 0) return store.Toasts[store.Toasts.Count - 1].Notice.Message;
                     var last = G.State.Legacy.LastOrDefault();
                     return last != null ? last.Title : $"{G.CurrentChapter?.Title ?? G.StageName}";
                 }, Theme.Small + 1, room, null, Theme.Small);
-                line.style.marginLeft = 6;
                 news.Add(line);
                 middle.Add(news);
             }
             host.Add(middle);
 
-            var build = E.Div().Col().Center().Skin("btn_orange").Size(BuildButton, BuildButton).Pad(0, 0, 5, 0);
-            build.Add(E.Icon("build", 40));
-            build.Add(E.T("Build", Theme.H2).Margin(-4));
+            // The big primary: the kit's striped yellow button.
+            var build = E.Div().Col().Center().Skin("btn_orange").Size(BuildButton, BuildButton).Pad(0, 0, 6, 0);
+            build.Add(E.Icon("build", 42));
+            build.Add(E.T("BUILD", Theme.Num).Margin(-4));
             Tap(build, () =>
             {
                 store.CancelPlacement();
@@ -626,15 +654,17 @@ namespace Founders.UI
                     NoticeKind.Milestone => "sparkle",
                     _ => "bell",
                 };
-                var t = E.Panel().Row().Pad(7, 12, 10, 11).Ignore();
+                // A navy HUD capsule, its icon overlapping the left end; white outlined text (red for warnings).
+                var t = E.HudCapsule(36).Pad(6, 16, 7, E.CounterIconRoom + 6).Ignore();
+                t.style.height = StyleKeyword.Auto;
+                t.style.minHeight = 36;
                 t.style.maxWidth = maxW;
-                t.style.flexShrink = 0;
+                t.style.marginLeft = 6;
                 t.style.marginBottom = 6;
-                t.Add(E.Icon(icon, 24).NoShrink());
+                t.Add(E.Icon(icon, 34).Abs(-8, 1));
                 var text = E.T(toast.Notice.Message, Theme.Body, toast.Notice.Kind == NoticeKind.Warning ? Theme.Bad : (Color?)null).Wrap();
-                text.style.marginLeft = 8;
                 text.style.flexShrink = 1;
-                text.style.maxWidth = maxW - 23 - 24 - 8;
+                text.style.maxWidth = maxW - 6 - E.CounterIconRoom - 6 - 16;
                 t.Add(text);
                 t.style.opacity = 0;
                 t.Transition(260, "opacity");

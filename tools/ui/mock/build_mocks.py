@@ -41,7 +41,7 @@ STRIP_H = 38            # the top capsule
 AVATAR = 46
 GEAR = 42
 CHIPS_H = 28
-RAIL_Y = 82             # left rail (goal card) below the second line
+RAIL_Y = 86             # left rail (goal card) under the player block
 TILES_Y = 54            # right column (tiles, timers) right under the strip
 LEFT_RAIL_W = 224
 TIMERS_W = 182
@@ -154,7 +154,7 @@ def btn(kind, label, w=None, h=BUTTON_H, sub=None, size=16, icon_name=None, shar
         sw += "flex:1 1 0;min-width:0;"
     else:
         sw += "flex:none;"
-    inner = f'<div class="row c" style="gap:5px">{icon(icon_name, size + 6) if icon_name else ""}{t(label, size)}</div>'
+    inner = f'<div class="row c" style="gap:5px">{icon(icon_name, size + 6) if icon_name else ""}{t(label.upper(), size)}</div>'
     if sub:
         inner += sub
     return box(f"btn_{kind}", f'<div class="col c" style="height:100%;padding:0 10px 4px">{inner}</div>', f"{sw}height:{h}px")
@@ -265,28 +265,103 @@ def notice(icon_name, text, bad=False, style=""):
     return inset(f'{icon(icon_name, 24)}{t(text, BODY, BAD if bad else "#fff", "margin-left:8px", "flex")}', style, cls="row")
 
 
-# MARK: - HUD
+# MARK: - HUD (the blue kit: hexagon player frame, navy counters, hexagon menu buttons, glossy blue squares)
+
+HEX_FRAME_W, PLAYER_NAME_W = 64, 156
+COUNTER_H, COUNTER_GAP, CHIP_H, ICON_ROOM = 30, 10, 28, 26
+HUD_SQUARE = 40
+TILE_COL_W = TILE + 16 - 8   # hexagon 48 + label overhang
+
+
+def hud_counter(icon_name, text, plus=False, color="#fff", badge_html=""):
+    pl = (f'<div class="bx dark" style="position:relative;width:24px;height:25.5px;margin:0 -3px 1px 6px;flex:none">'
+          f'<div class="a sk-hud_plus" style="inset:0"></div></div>') if plus else ""
+    inner = (f'<div class="a" style="left:-8px;top:-3px">{icon(icon_name, COUNTER_H + 6)}</div>{badge_html}'
+             f'{t(text, NUM, color)}{pl}')
+    return box("hud_capsule", f'<div class="row" style="height:100%;padding:0 {0 if plus else 12}px 0 {ICON_ROOM + 4}px">{inner}</div>',
+               f"height:{COUNTER_H}px;margin-left:6px;flex:none")
+
+
+def hud_chip(icon_name, text, color="#fff"):
+    return box("hud_capsule", f'<div class="row" style="height:100%;padding:0 10px 0 7px">{icon(icon_name, CHIP_H - 6)}{t(text, BODY, color, "margin-left:4px")}</div>',
+               f"height:{CHIP_H}px;flex:none")
+
+
+def hud_square(icon_name, size=44):
+    return box("hud_square_blue", f'<div class="col c" style="height:100%;padding-bottom:4px">{icon(icon_name, round(size * 0.6))}</div>',
+               f"width:{size}px;height:{round(size * 1.06)}px;flex:none")
+
+
+def hud_hex(icon_name, label, size=TILE, badge_text=None):
+    bd = f'<div class="a" style="right:2px;top:-4px">{badge(badge_text, "red", 20)}</div>' if badge_text else ""
+    return (f'<div class="bx dark" style="position:relative;width:{size + 16}px;height:58px;margin-bottom:2px;display:flex;flex-direction:column;align-items:center">'
+            + box("hud_hex", f'<div class="col c" style="height:100%;padding-bottom:4px">{icon(icon_name, round(size * 0.66))}</div>', f"width:{size}px;height:{size * 1.01}px;flex:none")
+            + f'<div class="a row c" style="left:-4px;right:-4px;bottom:0">{t(label, SMALL)}</div>{bd}</div>')
+
+
+def hud_bar(icon_name, frac, label, w, h=24):
+    return (f'<div class="dark" style="position:relative;width:{w}px;height:{h}px;flex:none"><div class="a sk-hud_bar_track" style="inset:0"></div>'
+            f'<div class="a" style="left:25px;top:5px;right:4px;bottom:5px"><div class="a sk-hud_bar_fill_blue" style="left:0;top:0;bottom:0;width:{frac * 100}%;min-width:{h - 10}px"></div></div>'
+            f'<div class="a row c" style="left:25px;right:4px;top:0;bottom:0">{t(label, SMALL)}</div>'
+            f'<div class="a" style="left:-1px;top:-1px">{icon(icon_name, h + 2)}</div></div>')
+
 
 def hud(narrow=False, panel_open=False, card_open=False):
     sl = 0 if narrow else SL
     sr = 0 if narrow else SR
     sb = 10 if narrow else SB
-    res = [("food", "486"), ("wood", "1.3K"), ("stone", "958"), ("knowledge", "237"), ("ore", "120"), ("hides", "78")]
-    if narrow:
-        res = res[:5]   # TopDensity drops hides first
-    items = (f'<div class="row">{icon("summer", 24)}{t("12:01", NUM, extra="margin-left:4px")}</div>'
-             f'<div class="row">{icon("people", 24)}{t("46/105", NUM, extra="margin-left:4px")}<div style="margin-left:4px">{badge("!", "red", 18)}</div></div>'
-             + "".join(f'<div class="row">{icon(i, 24)}{t(v, NUM, extra="margin-left:4px")}</div>' for i, v in res))
-    out = [f'<div class="a" style="left:{sl + 8}px;top:4px">{slot("face_m1", AVATAR, "tile", share=0.92)}'
-           f'<div class="a" style="left:2px;right:2px;bottom:-6px">{bar(0.62, "100%", 10)}</div>'
-           f'<div class="a" style="right:-6px;top:-6px">{badge("!", "red", 18)}</div></div>',
-           f'<div class="a" style="left:{sl + 8 + AVATAR + 8}px;top:6px">{capsule(items, STRIP_H)}</div>',
-           f'<div class="a" style="right:{sr + 8}px;top:4px">{sq("brown", "settings", GEAR)}</div>']
-    if not card_open and not panel_open:
-        chips = "".join(f'<div class="row">{icon(i, 20)}{t(v, BODY, c, "margin-left:4px")}</div>'
-                        for i, v, c in (("summer", "Summer · Day 12", "#fff"), ("thermometer", "21°", "#FFD27A"), ("approval", "100", UP),
-                                        ("discontent", "21", UP), ("sick", "2", "#FFB3A8")))
-        out.append(f'<div class="a" style="left:{sl + 8 + AVATAR + 8}px;top:{4 + STRIP_H + 4}px">{capsule(chips, CHIPS_H, pad="0 10px")}</div>')
+    sw = safe_w(narrow)
+    compact = panel_open or card_open
+    people_badge = f'<div class="a" style="left:14px;top:-6px">{badge("!", "red", 18)}</div>'
+    pieces = {
+        "people": hud_counter("people", "46/105", True, badge_html=people_badge),
+        "food": hud_counter("food", "486", True), "wood": hud_counter("wood", "1.3K", True), "stone": hud_counter("stone", "958"),
+        "knowledge": hud_counter("knowledge", "237"), "ore": hud_counter("ore", "120"), "hides": hud_counter("hides", "78"),
+        "clock": hud_chip("summer", "12:01"), "temp": hud_chip("thermometer", "21°", "#FFD27A"), "discontent": hud_chip("discontent", "21", UP),
+        "sick": hud_chip("sick", "2", "#FFB3A8"), "hope": hud_chip("approval", "68", GOLD),
+    }
+
+    def cw(text, plus):
+        return 6 + ICON_ROOM + 4 + text_w(text + "0", NUM) + (27 if plus else 12)
+
+    def chw(text):
+        return 7 + CHIP_H - 6 + 4 + text_w(text + "0", BODY) + 10
+
+    order = [("people", cw("46/105", True), 0), ("food", cw("486", True), 0), ("wood", cw("1.3K", True), 0), ("stone", cw("958", False), 2),
+             ("knowledge", cw("237", False), 3), ("ore", cw("120", False), 8), ("hides", cw("78", False), 9), ("clock", chw("00:00"), 7),
+             ("temp", chw("−00°"), 4), ("discontent", chw("00"), 5), ("sick", chw("2"), 1)]
+    if compact:
+        order.append(("hope", chw("100"), 6))
+    player_w = HEX_FRAME_W + 8 + PLAYER_NAME_W
+    avail0 = sw - 16 - (0 if compact else player_w + 10) - HUD_SQUARE - 10
+    avail1 = sw - 16 - player_w - 10 - TILE_COL_W - 10
+    rows_n = 1 if compact else 2
+    items = list(order)
+    while True:
+        rows, x, ok = [[]], 0, True
+        for it in items:
+            w = (COUNTER_GAP if x > 0 else 0) + it[1]
+            if x + w > (avail0 if len(rows) == 1 else avail1):
+                if len(rows) == rows_n:
+                    ok = False
+                    break
+                rows.append([])
+                x, w = 0, it[1]
+            rows[-1].append(it)
+            x += w
+        if ok:
+            break
+        items.remove(max(items, key=lambda i: i[2]))
+    rows_html = "".join(f'<div class="row" style="height:{COUNTER_H + 6}px;gap:{COUNTER_GAP}px">{"".join(pieces[i[0]] for i in r)}</div>' for r in rows)
+    player = ""
+    if not compact:
+        frame = box("hud_hex_frame", f'<div class="col c" style="height:100%;padding-bottom:3px">{icon("face_m1", round(HEX_FRAME_W * .74))}</div>'
+                    f'<div class="a" style="right:0;top:2px">{badge("!", "red", 20)}</div>', f"width:{HEX_FRAME_W}px;height:72px;flex:none")
+        rank = box("hud_rank", f'<div class="row c" style="height:100%;padding:0 12px 1px">{t("Lv.9", BODY, "#FFD23A")}</div>', "height:22px;align-self:flex-start;margin-top:2px")
+        player = (f'{frame}<div class="col" style="width:{PLAYER_NAME_W}px;margin-left:8px;padding-top:2px;flex:none">{t("Riverside", H2)}{rank}'
+                  f'<div style="margin-top:6px">{hud_bar("approval", .68, "68/100", PLAYER_NAME_W)}</div></div>')
+    out = [f'<div class="a row" style="left:{sl + 8}px;right:{sr + 8}px;top:4px;align-items:flex-start">{player}'
+           f'<div class="col" style="margin-left:{0 if compact else 10}px">{rows_html}</div><div class="grow"></div>{hud_square("settings", HUD_SQUARE)}</div>']
     if panel_open:
         return "".join(out)
     if not card_open:
@@ -295,36 +370,34 @@ def hud(narrow=False, panel_open=False, card_open=False):
                    f'{bar(0.5, "100%", 10, extra="margin-top:5px")}</div>', f"width:{LEFT_RAIL_W}px")
         out.append(f'<div class="a" style="left:{sl + 8}px;top:{RAIL_Y}px">{goal}</div>')
         timers = ""
-        for ic, name, tm, fr, k in (("knowledge", "Pottery", "1:12", .4, "blue"), ("build", "Woodcutters' Camp", "0:27", .7, "gold")):
-            timers += capsule(f'{icon(ic, 28)}<div class="col grow" style="margin-left:6px">{t(name, SMALL)}'
-                              f'<div class="row" style="margin-top:1px">{bar(fr, "auto", 9, k, extra="flex:1 1 0")}{t(tm, SMALL, extra="margin-left:5px")}</div></div>',
-                              TIMER_H, f"width:{TIMERS_W}px;margin-bottom:6px", pad="4px 10px 4px 8px", gap=0, grows=True)
-        out.append(f'<div class="a col" style="right:{sr + 8 + TILE + 10}px;top:{TILES_Y}px">{timers}</div>')
-    tiles = ""
-    for i, lab, b in (("goals", "Goals", "!"), ("people", "People", "29"), ("knowledge", "Research", None), ("customs", "Customs", "!")):
-        bd = f'<div class="a" style="right:-6px;top:-6px">{badge(b, "red", 20)}</div>' if b else ""
-        tiles += (f'<div style="position:relative;margin-bottom:{TILE_GAP}px">' + box("tile", f'<div class="col" style="height:100%;align-items:center;padding-top:3px">{icon(i, 34)}</div>'
-                  f'<div class="a row c" style="left:-8px;right:-8px;bottom:2px">{t(lab, SMALL)}</div>', f"width:{TILE}px;height:{TILE}px") + bd + "</div>")
-    out.append(f'<div class="a col" style="right:{sr + 8}px;top:{TILES_Y}px">{tiles}</div>')
-    build = box("btn_orange", f'<div class="col c" style="height:100%;padding-bottom:5px">{icon("build", 40)}{t("Build", H2, extra="margin-top:-4px")}</div>',
-                f"width:{BUILD_BTN}px;height:{BUILD_BTN}px")
+        for ic, name, tm, fr, k in (("knowledge", "Pottery", "1:12", .4, "hud_bar_fill_blue"), ("build", "Woodcutters' Camp", "0:27", .7, "fill_gold")):
+            fill = f'<div class="a sk-{k}" style="left:0;top:0;bottom:0;width:{fr * 100}%;min-width:9px"></div>'
+            timers += box("hud_capsule", f'<div class="row" style="padding:4px 12px 5px {ICON_ROOM + 6}px">'
+                          f'<div class="a" style="left:-8px;top:2px">{icon(ic, 34)}</div><div class="col grow">{t(name, SMALL)}'
+                          f'<div class="row" style="margin-top:1px"><div style="position:relative;flex:1 1 0;height:9px"><div class="a sk-bar_track" style="inset:0"></div>{fill}</div>'
+                          f'{t(tm, SMALL, extra="margin-left:5px")}</div></div></div>', f"width:{TIMERS_W}px;min-height:40px;margin:0 0 6px 6px")
+        out.append(f'<div class="a col" style="right:{sr + 8 + TILE_COL_W + 8}px;top:{RAIL_Y}px">{timers}</div>')
+    tiles = "".join(hud_hex(i, lab, TILE, b) for i, lab, b in (("goals", "Goals", "!"), ("people", "People", "29"), ("knowledge", "Research", None), ("customs", "Customs", "!")))
+    out.append(f'<div class="a col" style="right:{sr + 8}px;top:52px;align-items:flex-end">{tiles}</div>')
+    build = box("btn_orange", f'<div class="col c" style="height:100%;padding-bottom:6px">{icon("build", 42)}{t("BUILD", NUM, extra="margin-top:-4px")}</div>',
+                f"width:72px;height:72px")
     out.append(f'<div class="a" style="right:{sr + 6}px;bottom:{sb + 4}px">{build}</div>')
     if not card_open:
-        compass = slot("compass", COMPASS, "tile", share=0.72)
-        bl = compass + "".join(sq("brown", i, SMALL_BTN) for i in ("world", "legacy", "eye_off"))
+        bl = hud_square("compass", 50) + "".join(hud_square(i, SMALL_BTN) for i in ("world", "legacy", "eye_off"))
         out.append(f'<div class="a row" style="left:{sl + 8}px;bottom:{sb + 4}px;gap:8px;align-items:flex-end">{bl}</div>')
-        left_edge = sl + 8 + COMPASS + 3 * (SMALL_BTN + 8) + 10
-        right_edge = sr + 6 + BUILD_BTN + 10
-        news = capsule(f'{icon("bell", 20)}{t("A new member joined the community", 13, extra="margin-left:6px", cls="w")}', 30, "max-width:380px", pad="3px 12px", gap=0, grows=True)
-        out.append(f'<div class="a row c" style="left:{left_edge}px;right:{right_edge}px;bottom:{sb + 4 + 6}px">{news}</div>')
+        left_edge = sl + 8 + 50 + 3 * (SMALL_BTN + 8) + 10
+        right_edge = sr + 6 + 72 + 10
+        news = box("hud_capsule", f'<div class="row" style="padding:3px 14px 3px {ICON_ROOM + 4}px;min-height:30px"><div class="a" style="left:-8px;top:-1px">{icon("bell", 32)}</div>'
+                   f'{t("A new member joined the community", 13, cls="w")}</div>', "max-width:380px;min-height:30px;margin-left:6px")
+        out.append(f'<div class="a row c" style="left:{left_edge}px;right:{right_edge}px;bottom:{sb + 4 + 8}px">{news}</div>')
     return "".join(out)
 
 
 def toast(narrow=False):
-    n = box("panel", f'<div class="row" style="padding:7px 12px 10px 11px">{icon("check", 24)}{t("A new member joined the community", BODY, extra="margin-left:8px", cls="w")}</div>',
-            "max-width:380px")
+    n = box("hud_capsule", f'<div class="row" style="padding:6px 16px 7px {ICON_ROOM + 6}px;min-height:36px"><div class="a" style="left:-8px;top:1px">{icon("check", 34)}</div>'
+            f'{t("A new member joined the community", BODY, cls="w")}</div>', "max-width:380px;min-height:36px;margin-left:6px")
     sl = 0 if narrow else SL
-    return f'<div class="a row c" style="left:{sl + 8 + LEFT_RAIL_W + 10}px;right:{(0 if narrow else SR) + 8 + TILE + 10 + TIMERS_W + 10}px;top:{RAIL_Y}px">{n}</div>'
+    return f'<div class="a row c" style="left:{sl + 8 + LEFT_RAIL_W + 10}px;right:{(0 if narrow else SR) + 8 + TILE_COL_W + 8 + TIMERS_W + 10}px;top:{RAIL_Y}px">{n}</div>'
 
 
 def page_hud(narrow=False):
@@ -360,8 +433,8 @@ def page_heart():
                                         costrow("wood", "1.3K", "1.9K", True), costrow("stone", "958", "600", False)],
                   t("Lv.10", NUM, LV), "margin-top:8px")
     body = head("campfire", "legendary", "Heart", "The heart of the camp. Elders gather here to share knowledge.") + stats + res
-    foot = (sq("red", "trash", BUTTON_H) + btn("orange", "Stoke", sub=subline("wood", "48"), share=True)
-            + btn("grey", "Upgrade", sub=subline("lock", "Not ready", PALE), share=True))
+    foot = (sq("brown", "trash", BUTTON_H) + btn("blue", "Stoke", sub=subline("wood", "48"), share=True)
+            + btn("orange", "Level up", sub=subline("clock", "4:00"), share=True))
     return hud(card_open=True) + card("Stone Campfire", 9, body, foot), ""
 
 
@@ -384,7 +457,7 @@ def page_workplace():
                  t("Lv.4", NUM, LV), "margin-top:8px")
     body = head("thumb_axe", "common", "Work", "Cuts wood from the trees around it. Faster next to a road.") + stats + workers + up
     body = body.replace("thumb_axe", "axe")
-    foot = sq("red", "trash", BUTTON_H) + btn("grey", "Upgrade", sub=subline("stone", "300", BAD), share=True)
+    foot = sq("brown", "trash", BUTTON_H) + btn("grey", "Level up", sub=subline("stone", "300", BAD), share=True)
     return hud(card_open=True) + card("Woodcutters' Camp", 3, body, foot), ""
 
 
@@ -576,7 +649,7 @@ def page_goals():
               f'background:linear-gradient(90deg,#4A2E1A,#8A5A32)">{icon("campfire", 60)}'
               f'<div class="col" style="margin-left:12px;width:{text_wd}px;flex:none">{t("Chapter 6 · Middle Ages", BODY, GOLD)}{t("The Market Town", H1)}'
               f'{t("A market hall, a smithy and a watermill in a town of 60.", SMALL, PALE, "margin-top:2px", "w")}</div><div class="grow"></div>'
-              f'{btn("orange", "Story", story_w, BUTTON_H, None, 16, "legacy")}</div>')
+              f'{btn("blue", "Story", story_w, BUTTON_H, None, 16, "legacy")}</div>')
     tasks = ""
     for title, done in (("Reach The Market Town", False), ("Build a Watermill", True)):
         right = icon("check", 32) if done else btn("blue", "Go", 86, 42, None, 18)

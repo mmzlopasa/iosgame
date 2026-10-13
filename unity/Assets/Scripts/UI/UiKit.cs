@@ -662,6 +662,10 @@ namespace Founders.UI
 
         // MARK: - Buttons
 
+        /// <summary>
+        /// Button colours of the blue kit: Orange is the striped YELLOW primary (level up, build), Green confirms,
+        /// Blue is a secondary go/close, Brown is the dark NAVY secondary (remove), Red cancels, Grey is locked.
+        /// </summary>
         public enum Kind { Green, Blue, Orange, Grey, Red, Brown }
 
         static string SkinOf(Kind k) => k switch
@@ -687,7 +691,8 @@ namespace Founders.UI
             if (width > 0) b.style.width = width;
             var top = Div().Row().Center().Ignore();
             if (icon != null) top.Add(Icon(icon, size + 6).Margin(0, 5));
-            var l = T(label, size);
+            // The kit's buttons speak in capitals.
+            var l = T(label?.ToUpperInvariant(), size);
             // Shrinks to the width given; a label still too long at the minimum size wraps onto two lines.
             if (width > 0) l.Fit(width - 22 - (icon != null ? size + 11 : 0), Theme.Small).Align(TextAnchor.MiddleCenter);
             top.Add(l);
@@ -792,11 +797,151 @@ namespace Founders.UI
             return c;
         }
 
+        // MARK: - The blue HUD (after the casual blue kit: navy counters, hexagon buttons, glossy blue squares)
+
+        /// <summary>The kit's yellow used for ranks and levels in the HUD.</summary>
+        public static readonly Color RankYellow = Theme.Hex("#FFD23A");
+
+        /// <summary>A navy HUD capsule (counters, chips, news, timers); text on it is white and outlined.</summary>
+        public static VisualElement HudCapsule(float height = 30)
+        {
+            var c = Div("hud-capsule").Row().Skin("hud_capsule").Pad(0, 12);
+            c.style.height = height;
+            c.style.flexShrink = 0;
+            return c;
+        }
+
+        /// <summary>Width of the room an overlapping counter icon takes at the capsule's left end.</summary>
+        public const float CounterIconRoom = 26;
+
+        /// <summary>
+        /// A resource counter: the navy capsule with the 3D icon overlapping its left end, the number, and the
+        /// green + on the right when <paramref name="plus"/> is given (it gets its own tap).
+        /// </summary>
+        public static VisualElement HudCounter(string icon, out Label value, Action plus, float height = 30, float size = Theme.Num)
+        {
+            var c = HudCapsule(height);
+            c.style.paddingLeft = CounterIconRoom + 4;
+            c.style.paddingRight = plus != null ? 0 : 12;
+            c.style.marginLeft = 6; // room for the icon's overhang
+            float ic = height + 6;
+            c.Add(Icon(icon, ic).Abs(-8, -3));
+            value = T("", size);
+            c.Add(value.NoShrink());
+            if (plus != null)
+            {
+                var p = Div("hud-plus").Skin("hud_plus").Size(24, 25.5f);
+                p.style.marginLeft = 6;
+                p.style.marginRight = -3;
+                p.style.marginBottom = 1;
+                p.OnTap(plus);
+                c.Add(p);
+            }
+            c.pickingMode = PickingMode.Position;
+            return c;
+        }
+
+        /// <summary>A small navy chip: icon and an outlined text (temperature, discontent, the sick…).</summary>
+        public static VisualElement HudChip(string icon, out Label value, float height = 28)
+        {
+            var c = HudCapsule(height).Pad(0, 10, 0, 7);
+            c.Add(Icon(icon, height - 6));
+            value = T("", Theme.Body);
+            value.style.marginLeft = 4;
+            c.Add(value);
+            c.pickingMode = PickingMode.Position;
+            return c;
+        }
+
+        /// <summary>The kit's glossy blue square button (navigation, settings) with an icon.</summary>
+        public static VisualElement HudSquare(string icon, Action onTap, float size = 44)
+        {
+            var b = Div("hud-square").Center().Skin("hud_square_blue").Pad(0, 0, 4, 0).Size(size, Mathf.Round(size * 1.06f));
+            b.Add(Icon(icon, Mathf.Round(size * 0.6f)));
+            if (onTap != null) b.OnTap(onTap);
+            else b.pickingMode = PickingMode.Position;
+            return b;
+        }
+
+        /// <summary>The kit's small round button (blue: close, yellow: info).</summary>
+        public static VisualElement HudRound(string icon, Action onTap, bool yellow = false, float size = 30)
+        {
+            var b = Div("hud-round").Center().Skin(yellow ? "hud_round_yellow" : "hud_round_blue").Pad(0, 0, 2, 0).Size(size, Mathf.Round(size * 1.06f));
+            b.Add(Icon(icon, Mathf.Round(size * 0.6f)));
+            if (onTap != null) b.OnTap(onTap);
+            return b;
+        }
+
+        /// <summary>The kit's blue hexagon button: the icon on the hexagon, an outlined label on its lower edge.</summary>
+        public static VisualElement HudHex(string icon, string label, float size = 48)
+        {
+            var c = Div("hud-hex").Col(UnityEngine.UIElements.Align.Center).Size(size + 16, size + 8);
+            var hex = Div().Center().Skin("hud_hex").Pad(0, 0, 4, 0).Size(size, size * 1.01f).Ignore();
+            hex.Add(Icon(icon, Mathf.Round(size * 0.66f)));
+            c.Add(hex);
+            if (!string.IsNullOrEmpty(label))
+            {
+                // The label sits on the hexagon's lower point and may reach past its sides (like the kit's labels).
+                var l = T(label, Theme.Small).Align(TextAnchor.MiddleCenter).Abs(-4, null, -4, 0);
+                l.style.whiteSpace = WhiteSpace.NoWrap;
+                c.Add(l);
+            }
+            c.pickingMode = PickingMode.Position;
+            return c;
+        }
+
+        /// <summary>The kit's big hexagon frame with a portrait in its centre (the player block).</summary>
+        public static VisualElement HexFrame(string portrait, float width = 64)
+        {
+            float h = Mathf.Round(width * 72f / 64f);
+            var f = Div("hex-frame").Center().Skin("hud_hex_frame").Pad(0, 0, 3, 0).Size(width, h);
+            f.Add(Icon(portrait, Mathf.Round(width * 0.74f)));
+            return f;
+        }
+
+        /// <summary>The kit's rank pill: navy with a yellow rim and yellow text ("Lv.9").</summary>
+        public static VisualElement RankPill(out Label value, float height = 22)
+        {
+            var p = Div("rank").Row().Center().Skin("hud_rank").Pad(0, 12, 1, 12);
+            p.style.height = height;
+            p.style.flexShrink = 0;
+            value = T("", Theme.Body, RankYellow);
+            p.Add(value);
+            return p;
+        }
+
+        /// <summary>
+        /// The kit's energy bar: a navy track whose left end is a hexagon cap holding an icon, a cyan fill and a
+        /// centred outlined label. Returns the fill (for <see cref="SetFill"/>) and the label.
+        /// </summary>
+        public static VisualElement HudBar(string icon, out VisualElement fill, out Label label, float width, float height = 24)
+        {
+            var track = Div("hud-bar").Skin("hud_bar_track");
+            track.style.width = width;
+            track.style.height = height;
+            track.style.flexShrink = 0;
+            var area = Div().Ignore().Abs(25, 5, 4, 5);
+            fill = Div().Skin("hud_bar_fill_blue").Ignore().Abs(0, 0, null, 0);
+            fill.style.minWidth = height - 10;
+            fill.style.width = Length.Percent(0);
+            fill.style.display = DisplayStyle.None;
+            area.Add(fill);
+            track.Add(area);
+            label = T("", Theme.Small).Align(TextAnchor.MiddleCenter);
+            label.Abs(25, 0, 4, 0);
+            track.Add(label);
+            track.Add(Icon(icon, height + 2).Abs(-1, -1));
+            return track;
+        }
+
         // MARK: - Progress
 
-        public enum FillKind { Green, Gold, Blue, Red }
+        public enum FillKind { Green, Gold, Blue, Red, Hud }
 
-        static string SkinOf(FillKind k) => k switch { FillKind.Gold => "fill_gold", FillKind.Blue => "fill_blue", FillKind.Red => "fill_red", _ => "fill_green" };
+        static string SkinOf(FillKind k) => k switch
+        {
+            FillKind.Gold => "fill_gold", FillKind.Blue => "fill_blue", FillKind.Red => "fill_red", FillKind.Hud => "hud_bar_fill_blue", _ => "fill_green",
+        };
 
         /// <summary>A progress bar (dark track, coloured fill); returns the fill for <see cref="SetFill"/>.</summary>
         public static VisualElement Bar(out VisualElement fill, float height = 12, FillKind kind = FillKind.Green)

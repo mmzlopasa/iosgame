@@ -348,7 +348,8 @@ namespace Founders.UI
             }
             if (!lit) return E.Button("Stoke", null, E.Kind.Grey, Theme.ButtonH, null, 16, SubLine("alert", "Not lit", Theme.Pale));
             bool can = G.State.Resources.Wood >= StokeNeed;
-            return E.Button("Stoke", can ? Act(store.StokeHeart) : null, can ? E.Kind.Orange : E.Kind.Grey, Theme.ButtonH, null, 16,
+            // Blue: the yellow is the card's primary (Level up) beside it.
+            return E.Button("Stoke", can ? Act(store.StokeHeart) : null, can ? E.Kind.Blue : E.Kind.Grey, Theme.ButtonH, null, 16,
                             SubLine("wood", Fmt.Compact(Math.Ceiling(StokeNeed)), can ? (Color?)null : Theme.Bad));
         }
 

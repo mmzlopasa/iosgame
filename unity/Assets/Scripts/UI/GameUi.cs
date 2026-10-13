@@ -145,7 +145,7 @@ namespace Founders.UI
             loadingLayer = E.Div("loading").Fill().Ignore().Hidden(true);
             root.Add(hudLayer);
             // While the HUD is hidden only this small eye button remains, to bring it back (top right).
-            showHud = E.Square("eye", Act(() => store.HudHidden = false), E.Kind.Brown, 44).Abs(null, 8, 10);
+            showHud = E.HudSquare("eye", Act(() => store.HudHidden = false), 44).Abs(null, 8, 10);
             showHud.style.opacity = 0.85f;
             root.Add(showHud);
             root.Add(sheetLayer);

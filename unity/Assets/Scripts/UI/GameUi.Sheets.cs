@@ -616,7 +616,7 @@ namespace Founders.UI
             col.Add(E.T(current.Title, Theme.H1).Fit(textW, Theme.H2));
             col.Add(E.T(current.Goal, Theme.Small, Theme.Pale).Wrap().Margin(2));
             banner.Add(col);
-            banner.Add(E.Button("Story", Act(() => G.State.PendingStory = current.Id), E.Kind.Orange, Theme.ButtonH, "legacy", 16, null, storyW).Margin(0, 0, 0, 10));
+            banner.Add(E.Button("Story", Act(() => G.State.PendingStory = current.Id), E.Kind.Blue, Theme.ButtonH, "legacy", 16, null, storyW).Margin(0, 0, 0, 10));
             host.Add(banner);
 
             if (current.Locked) host.Add(Notice("lock", "The next era is still being built. Your settlement keeps growing until it arrives."));
