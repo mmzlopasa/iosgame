@@ -87,17 +87,17 @@ namespace Founders.UI
         /// <summary>The card: plank title and close, a body that scrolls when needed, a fixed button row.</summary>
         VisualElement CardShell(VisualElement host, string title, int? level, Action onClose, out VisualElement body, out VisualElement foot)
         {
-            var card = E.Panel().Pad(0, 8, 9, 8);
+            var card = E.Panel().Pad(0, 10, 11, 10);
             card.style.flexShrink = 1;
             card.style.minHeight = 0;
-            var plank = E.Plank(title, level, 15, CardW + 8);
-            plank.style.marginTop = -4;
-            plank.style.marginLeft = -12;
-            plank.style.marginRight = -12;
+            var plank = E.Plank(title, level, Theme.H1, CardW + 8);
+            plank.style.marginTop = -6;
+            plank.style.marginLeft = -14;
+            plank.style.marginRight = -14;
             card.Add(plank);
-            card.Add(E.Close(Act(onClose)).Abs(null, -9, -8));
+            card.Add(E.Close(Act(onClose)).Abs(null, -12, -10));
             var scroll = E.FitScroll();
-            scroll.contentContainer.style.paddingTop = 5;
+            scroll.contentContainer.style.paddingTop = 8;
             scroll.contentContainer.style.paddingBottom = 2;
             scroll.verticalScroller.valueChanged += _ => lastContextScroll = scroll.scrollOffset;
             contextBody = scroll;
@@ -105,7 +105,7 @@ namespace Founders.UI
             body = scroll.contentContainer;
             foot = E.Div().Row().Ignore();
             foot.style.flexShrink = 0;
-            foot.style.paddingTop = 6;
+            foot.style.paddingTop = 8;
             card.Add(foot);
             host.Add(card);
             return card;
@@ -114,17 +114,14 @@ namespace Founders.UI
         /// <summary>A footer button that takes an equal share of the row.</summary>
         static VisualElement Share(VisualElement b, VisualElement row)
         {
-            b.style.flexGrow = 1;
-            b.style.flexBasis = 0;
-            b.style.flexShrink = 1;
-            b.style.minWidth = 0;
-            if (row.childCount > 0) b.style.marginLeft = 6;
+            b.Shared();
+            if (row.childCount > 0) b.style.marginLeft = 8;
             return b;
         }
 
         static void Lead(VisualElement b, VisualElement row)
         {
-            if (row.childCount > 0) b.style.marginLeft = 6;
+            if (row.childCount > 0) b.style.marginLeft = 8;
             row.Add(b);
         }
 
@@ -132,15 +129,15 @@ namespace Founders.UI
         static VisualElement SubLine(string icon, string text, Color? color = null)
         {
             var r = E.Div().Row().Ignore();
-            r.Add(E.Icon(icon, 13));
-            var l = E.T(text, 10, color);
-            l.style.marginLeft = 2;
+            r.Add(E.Icon(icon, 16));
+            var l = E.T(text, 13, color);
+            l.style.marginLeft = 3;
             r.Add(l);
             return r;
         }
 
-        /// <summary>A whole cost as small icon + number pairs (red where the stores fall short).</summary>
-        VisualElement CostLine(ResourceBundle cost, float size = 10.5f, bool center = false)
+        /// <summary>A whole cost as icon + number pairs (red where the stores fall short); wraps onto a second line.</summary>
+        VisualElement CostLine(ResourceBundle cost, float size = Theme.Body, bool center = false)
         {
             var row = E.Div().Row().Ignore();
             row.style.flexWrap = Wrap.Wrap;
@@ -150,8 +147,9 @@ namespace Founders.UI
             {
                 bool shortOf = G.State.Resources[kv.Key] + 1e-6 < kv.Value;
                 var item = E.Div().Row().Ignore();
-                item.style.marginRight = 5;
-                item.Add(E.Icon(IconFor(kv.Key), size + 4));
+                item.style.marginLeft = 3;
+                item.style.marginRight = 3;
+                item.Add(E.Icon(IconFor(kv.Key), size + 5));
                 var t = E.T(Fmt.Compact(kv.Value), size, shortOf ? Theme.Bad : (Color?)null);
                 t.style.marginLeft = 1;
                 item.Add(t);
@@ -176,16 +174,16 @@ namespace Founders.UI
             {
                 var type = kv.Key;
                 double need = kv.Value;
-                var r = E.Line(sep, 27);
+                var r = E.Line(sep);
                 sep = true;
-                r.Add(E.Icon(IconFor(type), 16).Margin(0, 5));
-                var have = E.T("", 11.5f);
-                var rest = E.T(" / " + Fmt.Compact(need), 11.5f);
+                r.Add(E.RowIcon(IconFor(type)));
+                var have = E.T("", Theme.Num);
+                var rest = E.T(" / " + Fmt.Compact(need), Theme.Num);
                 r.Add(have);
                 r.Add(rest);
                 r.Add(E.Div().Grow().Ignore());
                 bool met = G.State.Resources[type] + 1e-6 >= need;
-                r.Add(met ? E.Icon("check", 20) : GoButton(() => { peopleTab = 0; store.ActivePanel = Panel.People; }));
+                r.Add(RowEnd(met ? E.Icon("check", 28) : GoButton(() => { peopleTab = 0; store.ActivePanel = Panel.People; })));
                 Bind(() =>
                 {
                     double x = G.State.Resources[type];
@@ -197,15 +195,26 @@ namespace Founders.UI
             }
         }
 
-        VisualElement GoButton(Action onTap) => E.Button("Go", Act(onTap), E.Kind.Blue, 24, null, 11.5f, null, 46);
+        const float GoW = 68;
 
-        /// <summary>A requirement row: the text, then ✓ or Go.</summary>
+        VisualElement GoButton(Action onTap) => E.Button("Go", Act(onTap), E.Kind.Blue, Theme.GoH, null, Theme.Num, null, GoW);
+
+        /// <summary>The right end of a row (✓, Go): a fixed-width box so every check and Go line up.</summary>
+        static VisualElement RowEnd(VisualElement content)
+        {
+            var box = E.Div().Row().Center().Ignore().Size(GoW);
+            box.style.marginLeft = 8;
+            box.Add(content);
+            return box;
+        }
+
+        /// <summary>A requirement row: the text (wraps if long), then ✓ or Go. The width is no longer needed.</summary>
         VisualElement RequirementRow(string icon, string text, bool met, Action go, bool sep, float width = 0)
         {
-            var r = E.Line(sep, 27);
-            r.Add(E.Icon(icon, 16).Margin(0, 5));
-            r.Add(E.T(text, 11.5f, met ? (Color?)null : Theme.Pale).Fit((width > 0 ? width : CardW) - 100, 8).Grow());
-            r.Add(met ? E.Icon("check", 20) : go != null ? GoButton(go) : E.IconDim("check", 20));
+            var r = E.Line(sep);
+            r.Add(E.RowIcon(icon));
+            r.Add(E.T(text, Theme.Body, met ? (Color?)null : Theme.Pale).Flex());
+            r.Add(RowEnd(met ? E.Icon("check", 28) : go != null ? GoButton(go) : E.IconDim("check", 28)));
             return r;
         }
 
@@ -221,24 +230,24 @@ namespace Founders.UI
             bool ok = issues.Count == 0;
             CardShell(host, def.Name, null, store.CancelPlacement, out var body, out var foot);
 
-            var head = E.Div().Row(0, Align.FlexStart).Ignore();
-            head.Add(E.Slot(BuildingIcon(def), 48, CellFor(def)));
+            var head = E.Div().Row().Ignore();
+            head.Add(E.Slot(BuildingIcon(def), 64, CellFor(def)));
             var col = E.Div().Col().Grow().Ignore();
-            col.style.marginLeft = 8;
+            col.style.marginLeft = 10;
             var time = E.Div().Row().Ignore();
-            time.Add(E.Icon("clock", 15));
-            time.Add(E.T(Fmt.Clock(G.EstimatedSeconds(def.BuildSeconds)), 11.5f).Margin(0, 0, 0, 3));
+            time.Add(E.Icon("clock", 20));
+            time.Add(E.T(Fmt.Clock(G.EstimatedSeconds(def.BuildSeconds)), Theme.Num).Margin(0, 0, 0, 4));
             if (def.Footprint.Width > 1 || def.Footprint.Height > 1)
-                time.Add(E.T($"Size {def.Footprint.Width}×{def.Footprint.Height}", 11, Theme.Pale).Margin(0, 0, 0, 10));
+                time.Add(E.T($"Size {def.Footprint.Width}×{def.Footprint.Height}", Theme.Body, Theme.Pale).Margin(0, 0, 0, 12));
             col.Add(time);
-            col.Add(CostLine(def.Cost, 11).Margin(4));
+            col.Add(CostLine(def.Cost).Margin(6, 0, 0, -3));
             head.Add(col);
             body.Add(head);
 
-            var status = E.Inset().Row().Margin(6);
-            status.Add(E.Icon(ok ? "check" : "alert", 18).NoShrink());
-            var msg = E.T(ok ? "Good spot. Drag it or tap the ground to move it." : issues[0].Message, 11.5f, ok ? (Color?)null : Theme.Hex("#FFD2C8")).Wrap().Grow();
-            msg.style.marginLeft = 6;
+            var status = E.Inset().Row().Margin(8);
+            status.Add(E.Icon(ok ? "check" : "alert", 24).NoShrink());
+            var msg = E.T(ok ? "Good spot. Drag it or tap the ground to move it." : issues[0].Message, Theme.Body, ok ? (Color?)null : Theme.Bad).Flex();
+            msg.style.marginLeft = 8;
             status.Add(msg);
             body.Add(status);
             // Gatherers' camps: how much of their resource lies within reach of this spot.
@@ -251,10 +260,10 @@ namespace Founders.UI
                     body.Add(E.StatRow(IconFor(kind.Resource), $"{kind.Name} in reach", n.ToString(Inv), null, false, n > 4 ? (Color?)null : Theme.Bad).Margin(4));
                 }
 
-            Lead(E.Square("rotate", Act(store.RotatePlacement), E.Kind.Blue, 34), foot);
-            foot.Add(Share(E.Button("Cancel", Act(store.CancelPlacement), E.Kind.Red, 36), foot));
+            Lead(E.Square("rotate", Act(store.RotatePlacement), E.Kind.Blue, Theme.ButtonH), foot);
+            foot.Add(Share(E.Button("Cancel", Act(store.CancelPlacement), E.Kind.Red), foot));
             bool afford = G.State.Resources.Covers(def.Cost);
-            foot.Add(Share(E.Button("Build here", ok ? Act(store.ConfirmPlacement) : null, ok ? E.Kind.Green : E.Kind.Grey, 36, null, 13,
+            foot.Add(Share(E.Button("Build here", ok ? Act(store.ConfirmPlacement) : null, ok ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 16,
                                     afford ? SubLine("clock", Fmt.Clock(G.EstimatedSeconds(def.BuildSeconds))) : CostSub(def.Cost)), foot));
         }
 
@@ -266,14 +275,14 @@ namespace Founders.UI
             var def = removing ? null : G.Content.Decoration(store.DecoratingId);
             CardShell(host, removing ? "Clear decorations" : def?.Name ?? "Town", null, store.EndDecorating, out var body, out var foot);
             var head = E.Div().Row(0, Align.FlexStart).Ignore();
-            head.Add(E.Slot(removing ? "trash" : DecorIconFor(def), 48, removing ? E.Cell.Common : E.Cell.Epic));
+            head.Add(E.Slot(removing ? "trash" : DecorIconFor(def), 64, removing ? E.Cell.Common : E.Cell.Epic));
             var col = E.Div().Col().Grow().Ignore();
-            col.style.marginLeft = 8;
+            col.style.marginLeft = 10;
             string hint = removing ? "Tap a road, fence or ornament to remove it. Half of its cost comes back."
                 : store.PaintMode ? "Drag across the ground to draw. Tap the hand to move the camera instead."
                 : "Tap the ground to place. Each tap places one.";
-            col.Add(E.Ink(hint, 11));
-            if (def != null) col.Add(CostLine(def.Cost, 11).Margin(4));
+            col.Add(E.Ink(hint, Theme.Body));
+            if (def != null) col.Add(CostLine(def.Cost).Margin(6, 0, 0, -3));
             head.Add(col);
             body.Add(head);
             if (def != null && (def.Beauty > 0 || def.Heat != null))
@@ -287,16 +296,16 @@ namespace Founders.UI
                     rows.Add(E.StatRow("compass", "Reach", $"{Num(def.Heat.Radius)} cells"));
                     if (def.Heat.WoodPerSecond > 0) rows.Add(E.StatRow("wood", "Burns in the cold", $"{Num(def.Heat.WoodPerSecond * 3600)}/h"));
                 }
-                sec.style.marginTop = 6;
+                sec.style.marginTop = 8;
                 body.Add(sec);
             }
             if (!removing)
             {
-                Lead(E.Square(store.PaintMode ? "road" : "compass", Act(store.TogglePaintMode), store.PaintMode ? E.Kind.Orange : E.Kind.Blue, 34), foot);
-                Lead(E.Square("rotate", Act(store.RotatePlacement), E.Kind.Blue, 34), foot);
+                Lead(E.Square(store.PaintMode ? "road" : "compass", Act(store.TogglePaintMode), store.PaintMode ? E.Kind.Orange : E.Kind.Blue, Theme.ButtonH), foot);
+                Lead(E.Square("rotate", Act(store.RotatePlacement), E.Kind.Blue, Theme.ButtonH), foot);
             }
-            Lead(E.Square("trash", Act(() => store.BeginDecorating(removing ? "dirt_path" : GameStore.RemoveTool)), E.Kind.Red, 34), foot);
-            foot.Add(Share(E.Button("Done", Act(store.EndDecorating), E.Kind.Green, 36, "check"), foot));
+            Lead(E.Square("trash", Act(() => store.BeginDecorating(removing ? "dirt_path" : GameStore.RemoveTool)), E.Kind.Red, Theme.ButtonH), foot);
+            foot.Add(Share(E.Button("Done", Act(store.EndDecorating), E.Kind.Green, Theme.ButtonH, "check"), foot));
         }
 
         static string DecorIconFor(DecorationDefinition d)
@@ -319,17 +328,17 @@ namespace Founders.UI
             string jobName = G.Content.JobConfig(n.Job)?.Name ?? n.Job.Id();
 
             var head = E.Div().Row().Ignore();
-            head.Add(E.Slot(icon, 48, CellFor(n.Resource)));
+            head.Add(E.Slot(icon, 64, CellFor(n.Resource)));
             var col = E.Div().Col().Grow().Ignore();
-            col.style.marginLeft = 8;
-            col.Add(E.T(n.Ordered ? "Gathered first" : jobName, 12, n.Ordered ? Theme.Gold : (Color?)null));
-            col.Add(Live(() => $"{G.State.Assignments[n.Job]} at work", 11, Theme.Pale).Margin(2));
+            col.style.marginLeft = 10;
+            col.Add(E.T(n.Ordered ? "Gathered first" : jobName, Theme.H2, n.Ordered ? Theme.Gold : (Color?)null).Fit(CardW - 20 - 74));
+            col.Add(Live(() => $"{G.State.Assignments[n.Job]} at work", Theme.Body, Theme.Pale).Margin(3));
             head.Add(col);
             body.Add(head);
 
             bool endless = double.IsInfinity(n.Remaining);
             var sec = E.Section($"{n.Resource.DisplayName()} left", out var rows);
-            sec.style.marginTop = 6;
+            sec.style.marginTop = 8;
             string left = endless ? "Plenty" : n.Depleted ? "Used up" : $"{Fmt.Compact(n.Remaining)} / {Fmt.Compact(n.Capacity)}";
             var r1 = E.StatRow(IconFor(n.Resource), "Amount", left, null, false, n.Depleted ? Theme.Bad : (Color?)null);
             rows.Add(r1);
@@ -344,8 +353,8 @@ namespace Founders.UI
             });
             if (!endless)
             {
-                var bar = LiveBar(() => G.NodeAt(x, y)?.Fraction ?? 0, 10);
-                bar.style.marginBottom = 5;
+                var bar = LiveBar(() => G.NodeAt(x, y)?.Fraction ?? 0, 14);
+                bar.style.marginBottom = 8;
                 rows.Add(bar);
             }
             body.Add(sec);
@@ -357,8 +366,8 @@ namespace Founders.UI
                 string verb = n.Terrain == TerrainType.Forest ? "Send woodcutters" : n.Terrain == TerrainType.Rock ? "Send quarriers"
                     : n.Terrain == TerrainType.Ore ? "Send miners" : n.Terrain == TerrainType.Water ? "Send fishers" : "Send foragers";
                 string tool = n.Terrain == TerrainType.Forest ? "axe" : n.Terrain == TerrainType.Water ? "spear" : n.Terrain == TerrainType.Grass ? "food" : "pickaxe";
-                if (n.Ordered) Lead(E.Square("close", Act(() => store.ToggleHarvest(x, y)), E.Kind.Red, 34), foot);
-                foot.Add(Share(E.Button(verb, Act(() => store.SendGatherer(x, y)), E.Kind.Green, 36, tool, 13, null, CardW - 70), foot));
+                if (n.Ordered) Lead(E.Square("close", Act(() => store.ToggleHarvest(x, y)), E.Kind.Red, Theme.ButtonH), foot);
+                foot.Add(Share(E.Button(verb, Act(() => store.SendGatherer(x, y)), E.Kind.Green, Theme.ButtonH, tool, 16, null, CardW - 20 - (n.Ordered ? Theme.ButtonH + 8 : 0)), foot));
             }
             else foot.Hidden(true);
         }
@@ -366,10 +375,10 @@ namespace Founders.UI
         /// <summary>A hint in an inset box with an icon.</summary>
         static VisualElement Notice(string icon, string text, bool bad = false)
         {
-            var n = E.Inset().Row(0, Align.FlexStart).Margin(6);
-            n.Add(E.Icon(icon, 18).NoShrink());
-            var t = E.T(text, 11, bad ? Theme.Hex("#FFD2C8") : (Color?)null).Wrap().Grow();
-            t.style.marginLeft = 6;
+            var n = E.Inset().Row(0, Align.FlexStart).Margin(8);
+            n.Add(E.Icon(icon, 24).NoShrink());
+            var t = E.T(text, Theme.Body, bad ? Theme.Bad : (Color?)null).Flex();
+            t.style.marginLeft = 8;
             n.Add(t);
             return n;
         }
@@ -386,37 +395,32 @@ namespace Founders.UI
             CardShell(host, G.DisplayName(b), def.MaxLevel > 1 ? b.Level : (int?)null, () => store.SelectedBuildingId = null, out var body, out var foot);
 
             // Head: the building's cell, what it is and what it does.
+            // Head (the kit's "Title / Short Description" with the item's icon).
             var head = E.Div().Row(0, Align.FlexStart).Ignore();
-            head.Add(E.Slot(BuildingIcon(def, b.Level), 48, CellFor(def)));
+            head.Add(E.Slot(BuildingIcon(def, b.Level), 60, CellFor(def)));
             var col = E.Div().Col().Grow().Ignore();
-            col.style.marginLeft = 8;
+            col.style.marginLeft = 10;
             string state = complete ? Category(def) : b.Status == BuildingStatus.Upgrading ? "Upgrading" : "Under construction";
-            col.Add(E.T(state, 11.5f, complete ? (Color?)null : Theme.Gold));
-            col.Add(E.Ink(def.Description, 10.5f).Margin(1));
+            col.Add(E.T(state, Theme.Num, complete ? (Color?)null : Theme.Gold));
+            col.Add(E.Ink(def.Description, Theme.Small).Margin(2));
             var next = def.SuccessorId == null ? null : G.Content.Building(def.SuccessorId);
-            if (next != null) col.Add(E.Ink($"Becomes the {next.Name} when the settlement grows.", 10, Theme.InkSoft).Margin(2));
+            if (next != null) col.Add(E.Ink($"Becomes the {next.Name} when the settlement grows.", Theme.Small, Theme.InkSoft).Margin(3));
             head.Add(col);
+            body.Add(head);
             var lv = G.NextLevel(b);
             bool canLevel = lv != null && complete;
-            if (def.Heart && G.HasWarmth)
-            {
-                // The heart shows its reach like the kit's watchtower: the fire on a warm glow, reach now ➜ next.
-                body.Add(ReachIllustration(b.Level, canLevel));
-                body.Add(E.Ink(def.Description, 10.5f).Align(TextAnchor.MiddleCenter).Margin(0, 6, 0, 6));
-            }
-            else body.Add(head);
 
             if (!complete)
             {
                 var sec = E.Section("Construction", out var rows);
-                sec.style.marginTop = 6;
-                var bar = LiveLabeledBar(() => G.State.Building(id)?.Progress ?? 1, () => $"{(int)((G.State.Building(id)?.Progress ?? 1) * 100)}%", 13);
-                bar.style.marginTop = 5;
+                sec.style.marginTop = 8;
+                var bar = LiveLabeledBar(() => G.State.Building(id)?.Progress ?? 1, () => $"{(int)((G.State.Building(id)?.Progress ?? 1) * 100)}%", 20);
+                bar.style.marginTop = 8;
                 rows.Add(bar);
                 var tr = E.Line(false);
-                tr.Add(E.Icon("clock", 15).Margin(0, 5));
-                tr.Add(E.T("Time left", 11.5f).Grow());
-                tr.Add(Live(() => Fmt.Clock(G.EstimatedSeconds(G.State.Building(id)?.RemainingWork ?? 0)), 12));
+                tr.Add(E.RowIcon("clock"));
+                tr.Add(E.T("Time left", Theme.Body).Flex());
+                tr.Add(Live(() => Fmt.Clock(G.EstimatedSeconds(G.State.Building(id)?.RemainingWork ?? 0)), Theme.Num));
                 rows.Add(tr);
                 body.Add(sec);
             }
@@ -424,14 +428,14 @@ namespace Founders.UI
             StatsSection(body, b, def, canLevel);
             foreach (var slot in def.JobSlots ?? new List<JobSlot>())
                 if (body.Children().All(c => c.name != "workers-" + slot.Job)) body.Add(WorkersSection(slot.Job, b, def, canLevel));
-            if (def.Heart && G.HasWarmth && (complete || b.IsOperational)) body.Add(FireSection());
 
             // Upgrade Resources: what the next level needs.
             bool ready = false, can = false;
             if (canLevel)
             {
-                var sec = E.Section($"Upgrade to Lv.{b.Level + 1}", out var rows);
-                sec.style.marginTop = 6;
+                // The kit's "Upgrade Resources": requirements and costs, ✓ when met, Go (or a red amount) when not.
+                var sec = E.Section("Upgrade Resources", out var rows, E.T($"Lv.{b.Level + 1}", Theme.Num, Theme.Lv));
+                sec.style.marginTop = 8;
                 bool sep = false;
                 var reqs = G.LevelRequirements(b);
                 foreach (var r in reqs)
@@ -444,18 +448,21 @@ namespace Founders.UI
                 CostRows(rows, lv.Cost, ref sep);
                 var look = def.Looks.FirstOrDefault(l => l.Level > b.Level);
                 if (look != null && !string.IsNullOrEmpty(look.Name))
-                    rows.Add(E.T($"Becomes a {look.Name} at level {look.Level}.", 10.5f, Theme.Gold).Wrap().Margin(2, 0, 3));
+                    rows.Add(E.T($"Becomes a {look.Name} at level {look.Level}.", Theme.Small, Theme.Gold).Wrap().Margin(4, 0, 6));
                 if (def.Heart)
                 {
                     var era = G.Content.Milestones.Where(m => !G.State.ReachedMilestones.Contains(m.Id))
                         .Select(m => (m, lvl: m.Requirements.FirstOrDefault(r => r.Kind == ConditionKind.HeartLevelAtLeast)?.Amount ?? 0))
                         .Where(x => x.lvl > b.Level).OrderBy(x => x.lvl).FirstOrDefault();
-                    if (era.m != null) rows.Add(E.T($"Level {era.lvl:0} opens: {era.m.Name}.", 10.5f, Theme.Gold).Wrap().Margin(2, 0, 3));
+                    if (era.m != null) rows.Add(E.T($"Level {era.lvl:0} opens: {era.m.Name}.", Theme.Small, Theme.Gold).Wrap().Margin(4, 0, 6));
                 }
                 body.Add(sec);
                 ready = reqs.All(r => r.Met);
                 can = ready && G.State.Resources.Covers(lv.Cost);
             }
+
+            // The heart's stoking (its button sits in the footer, as the kit's orange "Finish Now").
+            if (def.Heart && G.HasWarmth && (complete || b.IsOperational)) body.Add(FireSection());
 
             // Rebuilding as a better building (e.g. a tent into a hut).
             var target = def.UpgradesTo == null ? null : G.Content.Building(def.UpgradesTo);
@@ -464,7 +471,7 @@ namespace Founders.UI
             {
                 bool locked = !G.IsUnlocked(target);
                 var sec = E.Section($"Rebuild as {target.Name}", out var rows);
-                sec.style.marginTop = 6;
+                sec.style.marginTop = 8;
                 bool sep = false;
                 if (locked)
                 {
@@ -486,50 +493,20 @@ namespace Founders.UI
                     if (Time.unscaledTime < confirmDemolishUntil) { confirmDemolishUntil = 0; store.Demolish(id); }
                     else { confirmDemolishUntil = Time.unscaledTime + 3f; foot.schedule.Execute(() => dirty = true).StartingIn(3100); }
                 });
-                if (confirm) foot.Add(Share(E.Button("Demolish?", demolish, E.Kind.Red, 36, "trash", 12, SubLine("wood", "50% back")), foot));
-                else Lead(E.Square("trash", demolish, E.Kind.Red, 36), foot);
+                if (confirm) foot.Add(Share(E.Button("Demolish?", demolish, E.Kind.Red, Theme.ButtonH, "trash", 16, SubLine("wood", "50% back")), foot));
+                else Lead(E.Square("trash", demolish, E.Kind.Red, Theme.ButtonH), foot);
             }
             if (def.Heart && G.HasWarmth && (complete || b.IsOperational)) foot.Add(Share(StokeButton(), foot));
             if (target != null && complete)
             {
                 var kind = canRebuild ? (canLevel ? E.Kind.Blue : E.Kind.Green) : E.Kind.Grey;
-                foot.Add(Share(E.Button("Rebuild", canRebuild ? Act(() => store.Upgrade(id)) : null, kind, 36, null, 13,
+                foot.Add(Share(E.Button("Rebuild", canRebuild ? Act(() => store.Upgrade(id)) : null, kind, Theme.ButtonH, null, 16,
                                         SubLine("clock", Fmt.Clock(G.EstimatedSeconds(target.BuildSeconds)))), foot));
             }
             if (canLevel)
-                foot.Add(Share(E.Button("Upgrade", can ? Act(() => store.UpgradeLevel(id)) : null, can ? E.Kind.Green : E.Kind.Grey, 36, null, 13,
+                foot.Add(Share(E.Button("Upgrade", can ? Act(() => store.UpgradeLevel(id)) : null, can ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 16,
                                         ready ? SubLine("clock", Fmt.Clock(G.EstimatedSeconds(lv.BuildSeconds))) : SubLine("lock", "Not ready", Theme.Pale)), foot));
             if (foot.childCount == 0) foot.Hidden(true);
-        }
-
-        /// <summary>The fire on a warm glow with its reach in cells (now ➜ next level).</summary>
-        VisualElement ReachIllustration(int level, bool showNext)
-        {
-            var w = G.Content.Balance.Warmth;
-            double r = w.HeartRadius + w.HeartRadiusPerLevel * (level - 1);
-            var box = E.Div("reach").Ignore();
-            box.style.height = 62;
-            box.style.flexShrink = 0;
-            var glow = E.Image(Theme.Image("glow"), 176, 56).Abs(null, 4);
-            glow.style.left = Length.Percent(50);
-            glow.style.marginLeft = -88;
-            box.Add(glow);
-            var fire = E.Icon("campfire", 46).Abs(null, 2);
-            fire.style.left = Length.Percent(50);
-            fire.style.marginLeft = -23;
-            box.Add(fire);
-            var label = E.Div().Row().Ignore().Abs(null, 30);
-            label.style.left = Length.Percent(50);
-            label.style.marginLeft = 30;
-            label.Add(E.T(Num(r), 11.5f, Theme.Gold));
-            if (showNext)
-            {
-                label.Add(E.Icon("arrow", 12).Margin(0, 3, 0, 3));
-                label.Add(E.T($"{Num(r + w.HeartRadiusPerLevel)} cells", 11.5f, Theme.Up));
-            }
-            else label.Add(E.T("cells", 11.5f, Theme.Gold));
-            box.Add(label);
-            return box;
         }
 
         /// <summary>Upgrade Stats: every number the building has, with the next level's value after a green arrow.</summary>
@@ -539,8 +516,8 @@ namespace Founders.UI
             double f = Game.LevelFactor(level), f2 = Game.LevelFactor(level + 1);
             string Next(string s) => showNext ? s : null;
             var sec = E.Section(showNext ? "Upgrade Stats" : "Stats", out var rows,
-                def.MaxLevel > 1 ? E.T($"Lv.{level}/{def.MaxLevel}", 11, Theme.Lv) : null);
-            sec.style.marginTop = 6;
+                def.MaxLevel > 1 ? E.T($"Lv.{level}/{def.MaxLevel}", Theme.Num, Theme.Lv) : null);
+            sec.style.marginTop = 8;
             bool sep = false;
             void Add(VisualElement r) { rows.Add(r); sep = true; }
 
@@ -605,15 +582,15 @@ namespace Founders.UI
             int workers = G.State.Assignments[job];
             int capacity = G.JobCapacity(job);
             bool unlimited = config?.UnlimitedSlots ?? false;
-            var sec = E.Section($"{config?.Name ?? job.Id()}", out var rows, E.T(unlimited ? $"{workers}" : $"{workers}/{capacity}", 11.5f, Theme.Lv));
+            var sec = E.Section($"{config?.Name ?? job.Id()}", out var rows, E.T(unlimited ? $"{workers}" : $"{workers}/{capacity}", Theme.Num, Theme.Lv));
             sec.name = "workers-" + job;
-            sec.style.marginTop = 6;
+            sec.style.marginTop = 8;
 
             // Up to five places in a row (the card is narrow): people first, then vacant, then one locked.
             const int MaxShown = 5;
-            float cellW = (CardW - 16 - 16) / MaxShown;
+            float cellW = Mathf.Floor((CardW - 20 - 20) / MaxShown);
             var grid = E.Div().Row(0, Align.FlexStart).Ignore();
-            grid.style.paddingTop = 5;
+            grid.style.paddingTop = 8;
             string id = job.Id();
             var onJob = G.State.People.Where(p => p.Job == id).Take(MaxShown).ToList();
             foreach (var p in onJob) grid.Add(Portrait(FaceFor(p), p.Name, cellW, false, p.Sick));
@@ -622,22 +599,22 @@ namespace Founders.UI
             int more = showLocked ? (int)Math.Floor(def.Slots(job) * Game.LevelFactor(b.Level + 1) + 0.5) - G.SlotsOf(b, def, job) : 0;
             if (more > 0 && grid.childCount < MaxShown) grid.Add(Portrait("lock", $"Lv.{b.Level + 1}", cellW, true, false));
             int hidden = workers - onJob.Count;
-            if (hidden > 0 && grid.childCount == MaxShown) grid.Add(E.T($"+{hidden}", 11, Theme.Pale).Abs(null, null, 2, 22));
+            if (hidden > 0 && grid.childCount == MaxShown) grid.Add(E.T($"+{hidden}", Theme.Small, Theme.Pale).Abs(null, null, 2, 30));
             if (grid.childCount > 0) { grid.style.position = Position.Relative; rows.Add(grid); }
 
-            var effect = Live(() => EffectText(job, G.State.Assignments[job]), 10.5f, Theme.Pale).Wrap();
-            effect.style.marginTop = 3;
+            var effect = Live(() => EffectText(job, G.State.Assignments[job]), Theme.Small, Theme.Pale).Wrap();
+            effect.style.marginTop = 4;
             rows.Add(effect);
 
-            var stepper = E.Div().Row().Center().Ignore().Margin(4, 0, 3);
-            stepper.Add(E.Square("minus", workers > 0 ? Act(() => store.SetWorkers(job, G.State.Assignments[job] - 1)) : null, workers > 0 ? E.Kind.Red : E.Kind.Grey, 28));
-            var count = E.Capsule(24).Pad(0, 10);
-            count.style.marginLeft = -2; count.style.marginRight = -2;
-            count.Add(E.Icon("user", 16));
-            count.Add(E.T(unlimited ? $"{workers}" : $"{workers}/{capacity}", 12.5f).Margin(0, 0, 0, 4));
+            var stepper = E.Div().Row().Center().Ignore().Margin(6, 0, 6);
+            stepper.Add(E.Square("minus", workers > 0 ? Act(() => store.SetWorkers(job, G.State.Assignments[job] - 1)) : null, workers > 0 ? E.Kind.Red : E.Kind.Grey, 40));
+            var count = E.Capsule(32).Pad(0, 14);
+            count.style.marginLeft = -3; count.style.marginRight = -3;
+            count.Add(E.Icon("user", 22));
+            count.Add(E.T(unlimited ? $"{workers}" : $"{workers}/{capacity}", Theme.Num).Margin(0, 0, 0, 5));
             stepper.Add(count);
             bool canAdd = G.IdleWorkers > 0 && workers < capacity;
-            stepper.Add(E.Square("plus", canAdd ? Act(() => store.SetWorkers(job, G.State.Assignments[job] + 1)) : null, canAdd ? E.Kind.Green : E.Kind.Grey, 28));
+            stepper.Add(E.Square("plus", canAdd ? Act(() => store.SetWorkers(job, G.State.Assignments[job] + 1)) : null, canAdd ? E.Kind.Green : E.Kind.Grey, 40));
             rows.Add(stepper);
             return sec;
         }
@@ -646,10 +623,10 @@ namespace Founders.UI
         static VisualElement Portrait(string face, string name, float width, bool dim, bool sick)
         {
             var c = E.Div().Col(Align.Center).Ignore().Size(width);
-            var slot = E.Slot(face, 38, E.Cell.Slot, face.StartsWith("face", StringComparison.Ordinal) ? 0.86f : 0.6f, dim && face == "lock");
-            if (sick) slot.Add(E.Icon("sick", 15).Abs(null, null, -4, -2));
+            var slot = E.Slot(face, 48, E.Cell.Slot, face.StartsWith("face", StringComparison.Ordinal) ? 0.86f : 0.6f, dim && face == "lock");
+            if (sick) slot.Add(E.Icon("sick", 20).Abs(null, null, -5, -3));
             c.Add(slot);
-            c.Add(E.T(name, 9.5f, dim ? Theme.Pale : (Color?)null).Fit(width - 2, 7).Margin(1));
+            c.Add(E.T(name, Theme.Small, dim ? Theme.Pale : (Color?)null).Fit(width - 2).Align(TextAnchor.MiddleCenter).Margin(2));
             return c;
         }
 

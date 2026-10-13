@@ -138,14 +138,14 @@ namespace Founders.UI
 
             hudLayer = E.Div("hud").Fill().Ignore();
             // A soft shade behind the top strip only (the world stays bright everywhere else).
-            hudLayer.Add(E.Div().Abs(0, 0, 0).Size(null, 70).BgImage(Theme.TopShade).Ignore());
+            hudLayer.Add(E.Div().Abs(0, 0, 0).Size(null, 84).BgImage(Theme.TopShade).Ignore());
 
             sheetLayer = E.Div("sheets").Fill().Ignore().Hidden(true);
             modalLayer = E.Div("modals").Fill().Ignore().Hidden(true);
             loadingLayer = E.Div("loading").Fill().Ignore().Hidden(true);
             root.Add(hudLayer);
             // While the HUD is hidden only this small eye button remains, to bring it back (top right).
-            showHud = E.Square("eye", Act(() => store.HudHidden = false), E.Kind.Brown, 34).Abs(null, 8, 10);
+            showHud = E.Square("eye", Act(() => store.HudHidden = false), E.Kind.Brown, 44).Abs(null, 8, 10);
             showHud.style.opacity = 0.85f;
             root.Add(showHud);
             root.Add(sheetLayer);
@@ -202,39 +202,48 @@ namespace Founders.UI
         }
 
         /// <summary>A live outlined label.</summary>
-        Label Live(Func<string> text, float size = 12, Color? color = null)
+        Label Live(Func<string> text, float size = Theme.Num, Color? color = null)
         {
             var l = E.T("", size, color);
             Bind(() => { var t = text(); if (l.text != t) l.text = t; });
             return l;
         }
 
-        /// <summary>A live outlined label that shrinks to fit a width when its text grows.</summary>
-        Label LiveFit(Func<string> text, float size, float maxWidth, Color? color = null, float min = 7f)
+        /// <summary>
+        /// A live outlined label that shrinks to fit a width when its text grows (not below the minimum size);
+        /// text still too long wraps onto a second line instead of being cut.
+        /// </summary>
+        Label LiveFit(Func<string> text, float size, float maxWidth, Color? color = null, float min = Theme.Small)
         {
+            min = Mathf.Max(min, Theme.Small);
             var l = E.T("", size, color);
             l.style.maxWidth = maxWidth;
-            l.style.overflow = Overflow.Hidden;
             Bind(() =>
             {
                 var t = text();
                 if (l.text == t) return;
                 l.text = t;
                 float fit = Theme.FitSize(t, maxWidth, size, min);
-                if (!Mathf.Approximately(l.style.fontSize.value.value, fit)) { l.style.fontSize = fit; E.Outline(l, fit); }
+                if (!Mathf.Approximately(l.style.fontSize.value.value, fit))
+                {
+                    l.style.fontSize = fit;
+                    if (!l.ClassListContains("ink-mode")) E.Outline(l, fit);
+                }
+                var ws = Theme.TextWidth(t, fit) > maxWidth ? WhiteSpace.Normal : WhiteSpace.NoWrap;
+                if (l.style.whiteSpace != ws) l.style.whiteSpace = ws;
             });
             return l;
         }
 
         /// <summary>A live plain (ink) label.</summary>
-        Label LiveInk(Func<string> text, float size = 11, Color? color = null)
+        Label LiveInk(Func<string> text, float size = Theme.Body, Color? color = null)
         {
             var l = E.Ink("", size, color);
             Bind(() => { var t = text(); if (l.text != t) l.text = t; });
             return l;
         }
 
-        VisualElement LiveBar(Func<double> value, float height = 10, E.FillKind kind = E.FillKind.Green)
+        VisualElement LiveBar(Func<double> value, float height = 12, E.FillKind kind = E.FillKind.Green)
         {
             var bar = E.Bar(out var fill, height, kind);
             Bind(() => E.SetFill(fill, value()));
@@ -242,7 +251,7 @@ namespace Founders.UI
         }
 
         /// <summary>A bar with a live centred label ("73%").</summary>
-        VisualElement LiveLabeledBar(Func<double> value, Func<string> label, float height = 12, E.FillKind kind = E.FillKind.Green)
+        VisualElement LiveLabeledBar(Func<double> value, Func<string> label, float height = 18, E.FillKind kind = E.FillKind.Green)
         {
             var bar = E.LabeledBar(out var fill, out var l, height, kind);
             Bind(() =>

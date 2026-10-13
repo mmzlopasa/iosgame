@@ -20,19 +20,27 @@ namespace Founders.UI
     {
         // MARK: - Metrics (panel units; the mock in tools/ui/mock uses the same numbers)
 
-        /// <summary>Top of the rails (goal card, timers, menu tiles) below the safe top.</summary>
-        const float RailY = 74;
-        const float StripH = 40;
-        const float AvatarSize = 40;
-        const float LeftRailW = 206;
-        const float TimersW = 142;
-        const float TileSize = 46;
+        /// <summary>Top of the left rail (goal card, promise) below the safe top: under the second line.</summary>
+        const float RailY = 82;
+        /// <summary>Top of the right column (menu tiles, timers): right under the strip (the second line is on the left only).</summary>
+        const float TilesY = 54;
+        /// <summary>The top strip: the capsule's height (the avatar is a little taller).</summary>
+        const float StripH = 38;
+        const float AvatarSize = 46;
+        const float GearSize = 42;
+        const float ChipsH = 28;
+        const float LeftRailW = 224;
+        const float TimersW = 182;
+        const float TimerH = 42;
+        const float TileSize = 54;
         const float TileGap = 6;
-        const float BuildButton = 58;
-        /// <summary>Width of the docked card (selection, placement), at most 45% of the screen.</summary>
-        float CardW => Mathf.Min(330, PanelW * 0.45f - 8);
+        const float BuildButton = 70;
+        const float SmallButton = 44;
+        const float CompassSize = 56;
+        /// <summary>Width of the docked card (selection, placement): the kit's popup width, at most half the screen.</summary>
+        float CardW => Mathf.Min(360, SafeWidth * 0.52f);
         /// <summary>Top of popups (below the top strip).</summary>
-        float PopupTop => SafeTop + 50;
+        float PopupTop => SafeTop + 56;
 
         VisualElement topHost, chipsHost, leftHost, timersHost, tilesHost, bottomHost, toastLayer, contextPanel;
 
@@ -70,11 +78,11 @@ namespace Founders.UI
         {
             bool sheet = SheetOpen, card = ContextOpen;
             float l = SafeLeft + 8, r = SafeRight + 8, top = SafeTop;
-            Place(topHost, l, top + 6, r, null);
-            Place(chipsHost, l + AvatarSize + 6, top + 37, null, null);
+            Place(topHost, l, top + 4, r, null);
+            Place(chipsHost, l + AvatarSize + 8, top + 4 + StripH + 4, null, null);
             Place(leftHost, l, top + RailY, null, null);
-            Place(timersHost, null, top + RailY, r + TileSize + 8, null);
-            Place(tilesHost, null, top + RailY, r, null);
+            Place(timersHost, null, top + TilesY, r + TileSize + 10, null);
+            Place(tilesHost, null, top + TilesY, r, null);
             Place(bottomHost, l, null, SafeRight + 6, BottomPad + 4);
             chipsHost.Hidden(sheet || card);
             leftHost.Hidden(sheet || card);
@@ -83,11 +91,12 @@ namespace Founders.UI
             bottomHost.Hidden(sheet);
             // Notices between whatever occupies the two sides.
             float leftEdge = l + (card ? CardW : LeftRailW) + 10;
-            float rightEdge = r + TileSize + 8 + (card ? 0 : TimersW + 8);
+            float rightEdge = r + TileSize + 10 + (card ? 0 : TimersW + 10);
             Place(toastLayer, leftEdge, top + RailY, rightEdge, BottomPad + BuildButton + 10);
             contextPanel.style.width = CardW;
-            Place(contextPanel, l, PopupTop, null, BottomPad + 8);
-            float maxCard = Mathf.Min(PanelH - PopupTop - BottomPad - 8, 430);
+            // The card's plank stays clear of the avatar's XP bar above it.
+            Place(contextPanel, l, PopupTop + 4, null, BottomPad + 8);
+            float maxCard = Mathf.Min(PanelH - PopupTop - 4 - BottomPad - 8, 470);
             contextPanel.style.maxHeight = maxCard;
         }
 
@@ -149,7 +158,7 @@ namespace Founders.UI
         static string BuildingIcon(BuildingDefinition def, int level = 1) => "thumb:" + def.SpriteAt(level);
 
         /// <summary>A red notification badge in the top-right corner of a parent.</summary>
-        static VisualElement CornerBadge(string text, float size = 16) => E.Badge(text, true, size).Abs(null, -5, -5);
+        static VisualElement CornerBadge(string text, float size = 20) => E.Badge(text, true, size).Abs(null, -6, -6);
 
         // MARK: - Top strip
 
@@ -174,17 +183,19 @@ namespace Founders.UI
         /// </summary>
         int TopDensity()
         {
-            // Avatar 40 + 6, capsule slices 18, settings 30 + 8, margins 16.
-            float usable = SafeWidth - 118;
+            // Avatar 46 + 8, capsule padding 22, settings 42 + 10, margins 16.
+            float usable = SafeWidth - AvatarSize - 8 - 22 - GearSize - 10 - 16;
             for (int level = 0; level < 4; level++)
-                if (StripWidth(level, 13) <= usable) return level;
+                if (StripWidth(level, Theme.Num) <= usable) return level;
             return 4;
         }
 
+        const float StripIcon = 24, StripGap = 12;
+
         float StripWidth(int density, float size)
         {
-            const float item = 18 + 3, gap = 8;
-            float w = item + Theme.TextWidth($"{Fmt.Compact(G.State.Population)}/{Fmt.Compact(G.HousingCapacity())}", size) + 17;
+            const float item = StripIcon + 4, gap = StripGap;
+            float w = item + Theme.TextWidth($"{Fmt.Compact(G.State.Population)}/{Fmt.Compact(G.HousingCapacity())}", size) + 4 + 18;
             if (density < 3) w += gap + item + Theme.TextWidth("00:00", size);
             foreach (var t in StripResources(density)) w += gap + item + Theme.TextWidth(Fmt.Compact(G.State.Resources[t]) + "0", size);
             return w;
@@ -193,27 +204,28 @@ namespace Founders.UI
         void BuildTop(VisualElement host)
         {
             int density = TopDensity();
-            float size = density >= 4 ? 12 : 13;
+            float size = density >= 4 ? 13 : Theme.Num;
             var row = E.Div().Row(0, Align.FlexStart).Ignore();
             row.style.width = SafeWidth - 16;
 
             // Settlement tile with the chapter's progress under it (tap: Goals).
             // The founder's portrait, as the kit's player avatar.
             var avatar = E.Slot("face_m1", AvatarSize, E.Cell.Tile, 0.92f);
+            // The kit's XP bar under the portrait: the chapter's progress.
             var chapter = LiveBar(() =>
             {
                 var req = G.ChapterRequirements();
                 return req.Count == 0 ? 1 : req.Count(r => r.Met) / (double)req.Count;
-            }, 7).Abs(3, null, 3, -4);
+            }, 10).Abs(2, null, 2, -6);
             avatar.Add(chapter);
-            if (MilestoneReady() || G.PendingStory != null) avatar.Add(CornerBadge("!", 14));
+            if (MilestoneReady() || G.PendingStory != null) avatar.Add(CornerBadge("!", 18));
             Tap(avatar, () => store.ActivePanel = Panel.Objectives);
             row.Add(avatar);
 
             // The capsule: the hour, people, resources (tap people: People; a resource: who makes it).
-            var cap = E.Capsule(28);
-            cap.style.marginLeft = 6;
-            cap.style.marginTop = 3;
+            var cap = E.Capsule(StripH);
+            cap.style.marginLeft = 8;
+            cap.style.marginTop = 2;
             if (density < 3)
             {
                 var hour = StripItem(cap, "summer", size);
@@ -231,8 +243,8 @@ namespace Founders.UI
             }
             var people = StripItem(cap, "people", size);
             var pop = (Label)people.ElementAt(1);
-            var idle = E.Badge("!", true, 14);
-            idle.style.marginLeft = 3;
+            var idle = E.Badge("!", true, 18);
+            idle.style.marginLeft = 4;
             people.Add(idle);
             Bind(() =>
             {
@@ -257,8 +269,7 @@ namespace Founders.UI
             }
             row.Add(cap);
             row.Add(E.Div().Grow().Ignore());
-            var gear = E.Square("settings", Act(() => store.ActivePanel = Panel.Settings), E.Kind.Brown, 30);
-            gear.style.marginTop = 2;
+            var gear = E.Square("settings", Act(() => store.ActivePanel = Panel.Settings), E.Kind.Brown, GearSize);
             row.Add(gear);
             host.Add(row);
         }
@@ -267,10 +278,10 @@ namespace Founders.UI
         static VisualElement StripItem(VisualElement capsule, string icon, float size)
         {
             var item = E.Div().Row();
-            if (capsule.childCount > 0) item.style.marginLeft = 8;
-            item.Add(E.Icon(icon, 18));
+            if (capsule.childCount > 0) item.style.marginLeft = StripGap;
+            item.Add(E.Icon(icon, StripIcon));
             var l = E.T("", size);
-            l.style.marginLeft = 3;
+            l.style.marginLeft = 4;
             item.Add(l);
             item.pickingMode = PickingMode.Position;
             capsule.Add(item);
@@ -296,7 +307,7 @@ namespace Founders.UI
 
         void BuildChips(VisualElement host)
         {
-            var cap = E.Capsule(21).Pad(0, 7);
+            var cap = E.Capsule(ChipsH).Pad(0, 10);
             var season = G.Season;
             if (season != null)
             {
@@ -369,10 +380,10 @@ namespace Founders.UI
         static VisualElement Chip(VisualElement capsule, string icon)
         {
             var c = E.Div().Row();
-            if (capsule.childCount > 0) c.style.marginLeft = 8;
-            c.Add(E.Icon(icon, 15));
-            var l = E.T("", 11);
-            l.style.marginLeft = 3;
+            if (capsule.childCount > 0) c.style.marginLeft = 12;
+            c.Add(E.Icon(icon, 20));
+            var l = E.T("", Theme.Body);
+            l.style.marginLeft = 4;
             c.Add(l);
             c.pickingMode = PickingMode.Position;
             capsule.Add(c);
@@ -388,22 +399,23 @@ namespace Founders.UI
             var o = G.CurrentObjective;
             if (o != null)
             {
-                var card = E.Panel().Pad(5, 9, 9, 9);
+                var card = E.Panel().Pad(7, 11, 11, 11);
                 card.style.width = LeftRailW;
-                card.style.marginBottom = 6;
+                card.style.marginBottom = 8;
                 var head = E.Div().Row().Ignore();
-                head.Add(E.Icon("goals", 18));
-                var t = E.T(o.Title, 11.5f).Wrap().Grow();
-                t.style.marginLeft = 5;
-                t.style.maxHeight = 30;
+                head.Add(E.Icon("goals", 24));
+                // Two lines at most: the title shrinks (not below the minimum) to fit them.
+                var t = E.T(o.Title, Theme.Body).TwoLines(LeftRailW - 22 - 24 - 6);
+                t.style.unityTextAlign = TextAnchor.MiddleLeft;
+                t.style.marginLeft = 6;
                 head.Add(t);
                 card.Add(head);
                 var bar = LiveBar(() =>
                 {
                     var st = G.Status(o.Conditions);
                     return st.Count == 0 ? 0 : st.Count(s => s.Met) / (double)st.Count;
-                }, 8);
-                bar.style.marginTop = 4;
+                }, 10);
+                bar.style.marginTop = 5;
                 card.Add(bar);
                 Tap(card, () => { goalsTab = 2; store.ActivePanel = Panel.Objectives; });
                 host.Add(card);
@@ -414,7 +426,7 @@ namespace Founders.UI
 
         // MARK: - Timers (research, scouting, construction)
 
-        int MaxTimers() => Mathf.Clamp(Mathf.FloorToInt((PanelH - SafeTop - RailY - BottomPad - 12) / 39f), 0, 5);
+        int MaxTimers() => Mathf.Clamp(Mathf.FloorToInt((PanelH - SafeTop - TilesY - BottomPad - 12) / (TimerH + 6)), 0, 5);
 
         string TimersKey()
         {
@@ -457,23 +469,25 @@ namespace Founders.UI
             foreach (var c in cards.Take(MaxTimers())) host.Add(c);
         }
 
-        /// <summary>A running job: icon, name and time left over a thin bar, 34 tall.</summary>
+        /// <summary>A running job: icon, name and time left over a thin bar.</summary>
         VisualElement TimerCard(string icon, string name, Func<double> progress, Func<string> left, E.FillKind fill, Action onTap)
         {
-            var c = E.Capsule(34).Pad(0, 8, 0, 6);
+            var c = E.Capsule(TimerH).Pad(4, 10, 4, 8);
+            c.style.height = StyleKeyword.Auto;
+            c.style.minHeight = TimerH;
             c.style.width = TimersW;
-            c.style.marginBottom = 5;
-            c.Add(E.Icon(icon, 22));
+            c.style.marginBottom = 6;
+            c.Add(E.Icon(icon, 28));
             var col = E.Div().Col().Grow().Ignore();
-            col.style.marginLeft = 5;
-            var head = E.Div().Row().Ignore();
-            var time = Live(left, 10.5f);
-            head.Add(E.T(name, 10.5f).Fit(TimersW - 22 - 5 - 16 - 36).Grow());
-            head.Add(time.NoShrink());
-            col.Add(head);
-            var bar = LiveBar(progress, 7, fill);
-            bar.style.marginTop = 2;
-            col.Add(bar);
+            col.style.marginLeft = 6;
+            // The name on its own line (it wraps rather than being cut), the bar and the time left under it.
+            col.Add(E.T(name, Theme.Small).Fit(TimersW - 18 - 28 - 6));
+            var line = E.Div().Row().Ignore();
+            line.style.marginTop = 1;
+            var bar = LiveBar(progress, 9, fill).Grow();
+            line.Add(bar);
+            line.Add(Live(left, Theme.Small).NoShrink().Margin(0, 0, 0, 5));
+            col.Add(line);
             c.Add(col);
             Tap(c, onTap);
             return c;
@@ -499,11 +513,12 @@ namespace Founders.UI
             var t = E.Div().Center().Skin("tile").Size(TileSize, TileSize).Pad(0, 0, 3, 0);
             t.style.marginBottom = TileGap;
             t.style.justifyContent = Justify.FlexStart;
-            var ic = E.Icon(icon, 28);
+            var ic = E.Icon(icon, 34);
             ic.style.marginTop = 3;
             t.Add(ic);
-            var l = E.T(label, 9.5f).Fit(TileSize - 6, 7).Align(TextAnchor.MiddleCenter);
-            l.style.marginTop = -2;
+            // The label sits on the tile's lower edge and may reach a little past its sides (like a badge).
+            var l = E.T(label, Theme.Small).Align(TextAnchor.MiddleCenter).Abs(-8, null, -8, 2);
+            l.style.whiteSpace = WhiteSpace.NoWrap;
             t.Add(l);
             if (badge != null) t.Add(CornerBadge(badge));
             Tap(t, onTap);
@@ -521,20 +536,20 @@ namespace Founders.UI
             {
                 var left = E.Div().Row(0, Align.FlexEnd).Ignore().NoShrink();
                 // The compass needle follows the camera; tap it to face north-west again.
-                var compass = E.Slot("compass", 50, E.Cell.Tile, 0.72f);
+                var compass = E.Slot("compass", CompassSize, E.Cell.Tile, 0.72f);
                 var needle = compass.ElementAt(0);
                 Bind(() => needle.style.rotate = new Rotate(new Angle(-(CameraRig.Yaw + 45f), AngleUnit.Degree)));
                 Tap(compass, () => store.Rig?.ResetView());
                 left.Add(compass);
-                void Small(VisualElement b) { b.style.marginLeft = 6; left.Add(b); }
+                void Small(VisualElement b) { b.style.marginLeft = 8; left.Add(b); }
                 if (G.PendingEvent != null && store.EventMinimized)
                 {
-                    var bell = E.Square("bell", Act(() => store.EventMinimized = false), E.Kind.Orange, 34);
-                    bell.Add(CornerBadge("1", 14));
+                    var bell = E.Square("bell", Act(() => store.EventMinimized = false), E.Kind.Orange, SmallButton);
+                    bell.Add(CornerBadge("1", 18));
                     Small(bell);
                 }
-                Small(E.Square("world", Act(() => { mapTab = 0; store.ActivePanel = Panel.Map; }), E.Kind.Brown, 34));
-                Small(E.Square("legacy", Act(() => store.ActivePanel = Panel.Profile), E.Kind.Brown, 34));
+                Small(E.Square("world", Act(() => { mapTab = 0; store.ActivePanel = Panel.Map; }), E.Kind.Brown, SmallButton));
+                Small(E.Square("legacy", Act(() => store.ActivePanel = Panel.Profile), E.Kind.Brown, SmallButton));
                 Small(E.Square("eye_off", Act(() =>
                 {
                     store.CancelPlacement();
@@ -542,7 +557,7 @@ namespace Founders.UI
                     store.SelectedNode = null;
                     store.ActivePanel = Panel.None;
                     store.HudHidden = true;
-                }), E.Kind.Brown, 34));
+                }), E.Kind.Brown, SmallButton));
                 host.Add(left);
             }
 
@@ -553,27 +568,29 @@ namespace Founders.UI
             middle.style.marginRight = 10;
             if (!card)
             {
-                var news = E.Capsule(24).Ignore();
-                news.style.marginBottom = 4;
-                news.style.maxWidth = 340;
-                news.style.overflow = Overflow.Hidden;
-                news.Add(E.Icon("bell", 16));
-                float room = Mathf.Min(340, SafeWidth - 16 - 50 - 3 * 40 - 20 - BuildButton - 20) - 40;
+                var news = E.Capsule(30).Pad(3, 12).Ignore();
+                news.style.height = StyleKeyword.Auto;
+                news.style.minHeight = 30;
+                news.style.marginBottom = 6;
+                news.style.maxWidth = 380;
+                news.Add(E.Icon("bell", 20));
+                int squares = G.PendingEvent != null && store.EventMinimized ? 4 : 3;
+                float room = Mathf.Min(380, SafeWidth - 16 - CompassSize - squares * (SmallButton + 8) - 20 - BuildButton - 6) - 24 - 20 - 6;
                 var line = LiveFit(() =>
                 {
                     if (store.Toasts.Count > 0) return store.Toasts[store.Toasts.Count - 1].Notice.Message;
                     var last = G.State.Legacy.LastOrDefault();
                     return last != null ? last.Title : $"{G.CurrentChapter?.Title ?? G.StageName}";
-                }, 11, room, null, 8);
-                line.style.marginLeft = 4;
+                }, Theme.Small + 1, room, null, Theme.Small);
+                line.style.marginLeft = 6;
                 news.Add(line);
                 middle.Add(news);
             }
             host.Add(middle);
 
-            var build = E.Div().Col().Center().Skin("btn_orange").Size(BuildButton, BuildButton).Pad(0, 0, 4, 0);
-            build.Add(E.Icon("build", 30));
-            build.Add(E.T("Build", 11.5f).Margin(-2));
+            var build = E.Div().Col().Center().Skin("btn_orange").Size(BuildButton, BuildButton).Pad(0, 0, 5, 0);
+            build.Add(E.Icon("build", 40));
+            build.Add(E.T("Build", Theme.H2).Margin(-4));
             Tap(build, () =>
             {
                 store.CancelPlacement();
@@ -589,13 +606,13 @@ namespace Founders.UI
 
         void BuildToasts(VisualElement host)
         {
-            float maxW = Mathf.Min(380, PanelW - SafeLeft - SafeRight - 2 * (LeftRailW + 30));
+            float maxW = Mathf.Min(400, PanelW - SafeLeft - SafeRight - 2 * (LeftRailW + 24));
             maxW = Mathf.Max(220, maxW);
             // A decision put off for later stays on top until it is answered.
             if (G.PendingEvent != null && store.EventMinimized && store.PlacingBuildingId == null)
             {
-                var pill = E.Button($"Decision waiting: {G.PendingEvent.Title}", Act(() => store.EventMinimized = false), E.Kind.Orange, 30, "bell", 12, null, maxW);
-                pill.style.marginBottom = 6;
+                var pill = E.Button($"Decision waiting: {G.PendingEvent.Title}", Act(() => store.EventMinimized = false), E.Kind.Orange, 40, "bell", Theme.Body, null, maxW);
+                pill.style.marginBottom = 8;
                 host.Add(pill);
             }
             // Newest first: if the column ever runs out of height, the oldest is the one cut.
@@ -609,15 +626,15 @@ namespace Founders.UI
                     NoticeKind.Milestone => "sparkle",
                     _ => "bell",
                 };
-                var t = E.Panel().Row().Pad(4, 10, 7, 9).Ignore();
+                var t = E.Panel().Row().Pad(7, 12, 10, 11).Ignore();
                 t.style.maxWidth = maxW;
                 t.style.flexShrink = 0;
-                t.style.marginBottom = 5;
-                t.Add(E.Icon(icon, 18).NoShrink());
-                var text = E.T(toast.Notice.Message, 11.5f, toast.Notice.Kind == NoticeKind.Warning ? Theme.Hex("#FFD2C8") : (Color?)null).Wrap();
-                text.style.marginLeft = 6;
+                t.style.marginBottom = 6;
+                t.Add(E.Icon(icon, 24).NoShrink());
+                var text = E.T(toast.Notice.Message, Theme.Body, toast.Notice.Kind == NoticeKind.Warning ? Theme.Bad : (Color?)null).Wrap();
+                text.style.marginLeft = 8;
                 text.style.flexShrink = 1;
-                text.style.maxWidth = maxW - 46;
+                text.style.maxWidth = maxW - 23 - 24 - 8;
                 t.Add(text);
                 t.style.opacity = 0;
                 t.Transition(260, "opacity");

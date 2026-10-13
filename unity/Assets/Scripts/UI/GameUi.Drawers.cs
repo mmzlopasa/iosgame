@@ -23,11 +23,12 @@ namespace Founders.UI
         /// <summary>Opens the build strip on a category next time (used by the capture tour).</summary>
         public void SelectTab(string tab) => pendingTab = tab;
 
-        const float BuildStripH = 158;
+        /// <summary>Height of the build strip: plank, a row of item cells with their names and costs.</summary>
+        const float BuildStripH = 204;
 
         void BuildDrawer()
         {
-            drawer = E.Panel().Abs().Pad(0, 8, 9, 8);
+            drawer = E.Panel().Abs().Pad(0, 10, 10, 10);
             drawer.name = "build-strip";
             drawer.style.height = BuildStripH;
             drawer.Transition(220, "translate", "opacity");
@@ -72,12 +73,15 @@ namespace Founders.UI
         {
             if (store.ActivePanel != Panel.Build) return;
             var head = E.Div().Row(0, Align.FlexEnd).Ignore();
-            head.style.marginTop = -4;
-            head.style.marginLeft = -12;
+            head.style.marginTop = -6;
+            head.style.marginLeft = -14;
             head.style.flexShrink = 0;
             string title = buildTab == "All" ? "Build" : buildTab;
-            var plank = E.Plank(title, null, 15, 150);
-            plank.style.width = 150;
+            const float plankW = 176;
+            var plank = E.Plank(title, null, Theme.H1, 0);
+            plank.style.width = plankW;
+            plank.style.paddingLeft = 16; plank.style.paddingRight = 16;
+            ((Label)plank.ElementAt(0)).Fit(plankW - 34, Theme.Body).style.whiteSpace = WhiteSpace.NoWrap;
             head.Add(plank);
 
             // Category tabs: icons, the selected one raised with its name.
@@ -85,7 +89,7 @@ namespace Founders.UI
             tabs.style.flexGrow = 1;
             tabs.style.flexShrink = 1;
             tabs.style.minWidth = 0;
-            tabs.style.marginLeft = 6;
+            tabs.style.marginLeft = 8;
             tabs.contentContainer.style.alignItems = Align.FlexEnd;
             var decorCats = new HashSet<string>(G.Content.Decorations.Select(d => d.Category));
             foreach (var (tab, icon) in BuildTabs)
@@ -93,25 +97,26 @@ namespace Founders.UI
                 if (tab != "All" && !decorCats.Contains(tab) && !G.Content.Buildings.Any(b => b.Buildable && Category(b) == tab)) continue;
                 bool on = tab == buildTab;
                 string name = tab;
-                var t = E.Tab(on ? tab : null, on, Act(() => buildTab = name), null, 26, 11.5f, icon);
-                t.style.marginRight = 3;
+                var t = E.Tab(on ? tab : null, on, Act(() => buildTab = name), null, Theme.TabH, Theme.Num, icon);
+                t.style.minWidth = 48;
+                t.style.marginRight = 4;
                 tabs.Add(t);
             }
             head.Add(tabs);
-            var queue = E.Capsule(22).Pad(0, 7);
-            queue.style.marginLeft = 6;
-            queue.style.marginRight = 26;
+            var queue = E.Capsule(32).Pad(0, 10);
+            queue.style.marginLeft = 8;
+            queue.style.marginRight = Theme.CloseSize;
             queue.style.marginBottom = 2;
-            queue.Add(E.Icon("build", 16));
-            queue.Add(Live(() => $"{G.ActiveConstructionCount()}/{G.Content.Balance.MaxConcurrentConstructions}", 11.5f).Margin(0, 0, 0, 3));
+            queue.Add(E.Icon("build", 22));
+            queue.Add(Live(() => $"{G.ActiveConstructionCount()}/{G.Content.Balance.MaxConcurrentConstructions}", Theme.Num).Margin(0, 0, 0, 4));
             head.Add(queue);
             host.Add(head);
-            host.Add(E.Close(Act(() => store.ActivePanel = Panel.None)).Abs(null, -9, -10));
+            host.Add(E.Close(Act(() => store.ActivePanel = Panel.None)).Abs(null, -12, -12));
 
             var strip = E.Scroll(ScrollViewMode.Horizontal);
             strip.style.flexGrow = 1;
             strip.contentContainer.style.alignItems = Align.FlexStart;
-            strip.contentContainer.style.paddingTop = 8;
+            strip.contentContainer.style.paddingTop = 10;
             bool decorTab = decorCats.Contains(buildTab);
             if (!decorTab)
             {
@@ -126,26 +131,26 @@ namespace Founders.UI
             if (decorTab)
             {
                 var remove = ItemCard("trash", E.Cell.Common, "Remove", false, null);
-                remove.Add(E.T("Half back", 10, Theme.Pale).Margin(2));
+                remove.Add(E.T("Half back", Theme.Small, Theme.Pale).Margin(2));
                 Tap(remove, () => store.BeginDecorating(GameStore.RemoveTool));
                 strip.Add(remove);
             }
             host.Add(strip);
         }
 
-        const float ItemW = 82;
+        const float ItemW = 104, ItemCell = 78;
 
         /// <summary>An item of the strip: rarity cell with the icon (badge: how many stand), the name in two lines.</summary>
         static VisualElement ItemCard(string icon, E.Cell cell, string name, bool locked, string count)
         {
             var c = E.Div().Col(Align.Center).Size(ItemW);
-            c.style.marginRight = 4;
+            c.style.marginRight = 6;
             c.pickingMode = PickingMode.Position;
-            var slot = E.Slot(icon, 54, locked ? E.Cell.Common : cell, 0.66f, locked);
-            if (count != null) slot.Add(E.Badge(count, false, 16).Abs(-4, null, null, -2));
-            if (locked) slot.Add(E.Icon("lock", 18).Abs(null, null, -4, -3));
+            var slot = E.Slot(icon, ItemCell, locked ? E.Cell.Common : cell, 0.66f, locked);
+            if (count != null) slot.Add(E.Badge(count, false, 22).Abs(-5, null, null, -3));
+            if (locked) slot.Add(E.Icon("lock", 26).Abs(null, null, -5, -4));
             c.Add(slot);
-            c.Add(E.T(name, 11).TwoLines(ItemW - 2, 7.5f).Margin(2));
+            c.Add(E.T(name, Theme.Body).TwoLines(ItemW - 2).Margin(3));
             return c;
         }
 
@@ -156,11 +161,11 @@ namespace Founders.UI
             bool limit = def.MaxCount.HasValue && count >= def.MaxCount.Value;
             var card = ItemCard(BuildingIcon(def), CellFor(def), def.Name, !unlocked, count > 0 ? (def.MaxCount.HasValue ? $"{count}/{def.MaxCount}" : $"×{count}") : null);
             if (!unlocked)
-                card.Add(E.T(G.Content.Technology(def.RequiresTech ?? "")?.Name ?? "Research", 10, Theme.Lilac).Fit(ItemW - 2, 7));
-            else if (limit) card.Add(E.T("Limit reached", 10, Theme.Pale).Fit(ItemW - 2, 7));
+                card.Add(E.T(G.Content.Technology(def.RequiresTech ?? "")?.Name ?? "Research", Theme.Small, Theme.Lilac).Fit(ItemW - 2).Align(TextAnchor.MiddleCenter));
+            else if (limit) card.Add(E.T("Limit reached", Theme.Small, Theme.Pale).Fit(ItemW - 2).Align(TextAnchor.MiddleCenter));
             else
             {
-                card.Add(CostLine(def.Cost, 10, true).Also(r => r.style.maxWidth = ItemW));
+                card.Add(CostLine(def.Cost, 13, true).Also(r => r.style.maxWidth = ItemW));
             }
             string id = def.Id;
             Tap(card, () =>
@@ -176,10 +181,10 @@ namespace Founders.UI
             bool unlocked = DecorationUnlocked(d);
             var card = ItemCard(DecorIconFor(d), E.Cell.Epic, d.Name, !unlocked, null);
             if (!unlocked)
-                card.Add(E.T(G.Content.Technology(d.RequiresTech)?.Name ?? "Research", 10, Theme.Lilac).Fit(ItemW - 2, 7));
+                card.Add(E.T(G.Content.Technology(d.RequiresTech)?.Name ?? "Research", Theme.Small, Theme.Lilac).Fit(ItemW - 2).Align(TextAnchor.MiddleCenter));
             else
             {
-                card.Add(CostLine(d.Cost, 10, true).Also(r => r.style.maxWidth = ItemW));
+                card.Add(CostLine(d.Cost, 13, true).Also(r => r.style.maxWidth = ItemW));
                 string id = d.Id;
                 Tap(card, () => store.BeginDecorating(id));
             }
@@ -191,7 +196,7 @@ namespace Founders.UI
         /// <summary>The campfire level band a technology belongs to (columns of the tree).</summary>
         static int Tier(TechnologyDefinition t) => Math.Max(0, ((t.HeartLevel ?? 1) - 1) / 5);
 
-        const float TechColW = 124, TechDetailW = 200;
+        const float TechColW = 162, TechDetailW = 240;
 
         void BuildResearch(VisualElement host)
         {
@@ -217,11 +222,11 @@ namespace Founders.UI
                 int from = group.Key * 5 + 1, to = from + 4;
                 bool reached = G.HeartLevel >= from;
                 var col = E.Div().Col().Ignore().Size(TechColW);
-                col.style.marginRight = 5;
+                col.style.marginRight = 8;
                 var head = E.Div().Row().Center().Ignore();
-                head.style.height = 20;
-                head.Add(E.Icon(reached ? "flame" : "lock", 15));
-                head.Add(E.T(group.Key >= 6 ? $"Level {from}+" : $"Level {from}–{to}", 11, reached ? Color.white : Theme.Pale).Margin(0, 0, 0, 3));
+                head.style.height = 28;
+                head.Add(E.Icon(reached ? "flame" : "lock", 22));
+                head.Add(E.T(group.Key >= 6 ? $"Level {from}+" : $"Level {from}–{to}", Theme.Num, reached ? Color.white : Theme.Pale).Margin(0, 0, 0, 5));
                 col.Add(head);
                 foreach (var t in group) col.Add(TechNode(t));
                 tree.Add(col);
@@ -231,20 +236,22 @@ namespace Founders.UI
             var side = E.Scroll(ScrollViewMode.Vertical);
             side.style.width = TechDetailW;
             side.style.flexShrink = 0;
-            side.style.marginLeft = 6;
+            side.style.marginLeft = 8;
             side.contentContainer.style.paddingBottom = 6;
             if (active != null)
             {
                 var tech = G.Content.Technology(active.TechId);
-                var bar = E.Capsule(34).Pad(0, 8, 0, 6).Margin(0, 0, 6);
-                bar.Add(E.Icon("clock", 20));
+                var bar = E.Capsule(46).Pad(4, 12, 4, 8).Margin(0, 0, 8);
+                bar.style.height = StyleKeyword.Auto;
+                bar.style.minHeight = 46;
+                bar.Add(E.Icon("clock", 28));
                 var col = E.Div().Col().Grow().Ignore();
-                col.style.marginLeft = 5;
-                var r = E.Div().Row().Ignore();
-                r.Add(E.T(tech?.Name ?? active.TechId, 10.5f).Fit(TechDetailW - 90, 7).Grow());
-                r.Add(Live(() => Fmt.Clock(G.State.ActiveResearch?.RemainingSeconds ?? 0), 10.5f));
+                col.style.marginLeft = 8;
+                col.Add(E.T(tech?.Name ?? active.TechId, Theme.Body).Fit(TechDetailW - 20 - 36 - 8));
+                var r = E.Div().Row().Ignore().Margin(2);
+                r.Add(LiveBar(() => G.GetResearchStatus(active.TechId).Progress, 10, E.FillKind.Blue).Grow());
+                r.Add(Live(() => Fmt.Clock(G.State.ActiveResearch?.RemainingSeconds ?? 0), Theme.Small).Margin(0, 0, 0, 6));
                 col.Add(r);
-                col.Add(LiveBar(() => G.GetResearchStatus(active.TechId).Progress, 7, E.FillKind.Blue).Margin(2));
                 bar.Add(col);
                 string id = active.TechId;
                 Tap(bar, () => selectedTech = id);
@@ -270,15 +277,15 @@ namespace Founders.UI
             var st = G.GetResearchStatus(t.Id);
             bool sel = t.Id == selectedTech;
             var (cell, icon) = TechLook(st.State);
-            var n = E.Div().Row().Skin(sel ? "slot" : "section").Pad(0, 4, sel ? 3 : 0, 4).Margin(0, 0, 5);
-            n.style.height = 42;
-            n.Add(E.Slot(icon, 30, cell, 0.62f));
-            var name = E.T(t.Name, 11, st.State == ResearchState.Blocked ? Theme.Pale : (Color?)null).TwoLines(TechColW - 46, 7);
+            var n = E.Div().Row().Skin(sel ? "slot" : "section").Pad(0, 6, sel ? 3 : 0, 6).Margin(0, 0, 8);
+            n.style.minHeight = 56;
+            n.Add(E.Slot(icon, 40, cell, 0.62f));
+            var name = E.T(t.Name, Theme.Body, st.State == ResearchState.Blocked ? Theme.Pale : (Color?)null).TwoLines(TechColW - 12 - 40 - 6);
             name.style.unityTextAlign = TextAnchor.MiddleLeft;
-            name.style.marginLeft = 4;
+            name.style.marginLeft = 6;
             n.Add(name);
             if (st.State == ResearchState.InProgress)
-                n.Add(LiveBar(() => G.GetResearchStatus(t.Id).Progress, 5, E.FillKind.Blue).Abs(6, null, 6, 4));
+                n.Add(LiveBar(() => G.GetResearchStatus(t.Id).Progress, 7, E.FillKind.Blue).Abs(8, null, 8, 5));
             string id = t.Id;
             Tap(n, () => selectedTech = id);
             return n;
@@ -313,40 +320,40 @@ namespace Founders.UI
 
         VisualElement TechDetail(TechnologyDefinition t)
         {
-            var card = E.Inset().Col().Pad(7, 8);
+            var card = E.Inset().Col().Pad(10, 10);
             if (t == null) return card;
             var st = G.GetResearchStatus(t.Id);
             var (cell, icon) = TechLook(st.State);
             var head = E.Div().Row().Ignore();
-            head.Add(E.Slot(st.State == ResearchState.Blocked ? "lock" : "knowledge", 40, cell, 0.62f));
+            head.Add(E.Slot(st.State == ResearchState.Blocked ? "lock" : "knowledge", 52, cell, 0.62f));
             var col = E.Div().Col().Grow().Ignore();
-            col.style.marginLeft = 6;
-            col.Add(E.T(t.Name, 13).TwoLines(TechDetailW - 70, 8).Also(l => l.style.unityTextAlign = TextAnchor.MiddleLeft));
+            col.style.marginLeft = 8;
+            col.Add(E.T(t.Name, Theme.H2).TwoLines(TechDetailW - 20 - 52 - 8, Theme.Body).Also(l => l.style.unityTextAlign = TextAnchor.MiddleLeft));
             var time = E.Div().Row().Ignore();
-            time.Add(E.Icon("clock", 14));
-            time.Add(E.T(Fmt.Clock(t.ResearchSeconds), 10.5f).Margin(0, 0, 0, 3));
+            time.Add(E.Icon("clock", 20));
+            time.Add(E.T(Fmt.Clock(t.ResearchSeconds), Theme.Num).Margin(0, 0, 0, 4));
             col.Add(time);
             head.Add(col);
             card.Add(head);
-            card.Add(E.Ink(t.Description, 10.5f).Margin(4));
+            card.Add(E.Ink(t.Description, Theme.Body).Margin(6));
             string fx = EffectsText(t);
-            if (fx.Length > 0) card.Add(E.T(fx, 10.5f, Theme.Up).Wrap().Margin(4));
+            if (fx.Length > 0) card.Add(E.T(fx, Theme.Body, Theme.Up).Wrap().Margin(6));
 
-            var bottom = E.Div().Col().Ignore().Margin(6);
+            var bottom = E.Div().Col().Ignore().Margin(8);
             switch (st.State)
             {
                 case ResearchState.Researched:
-                    bottom.Add(E.Div().Row().Ignore().Kids(E.Icon("check", 20), E.T("Discovered", 12, Theme.Up).Margin(0, 0, 0, 4)));
+                    bottom.Add(E.Div().Row().Ignore().Kids(E.Icon("check", 28), E.T("Discovered", Theme.H2, Theme.Up).Margin(0, 0, 0, 6)));
                     break;
                 case ResearchState.InProgress:
-                    bottom.Add(LiveLabeledBar(() => G.GetResearchStatus(t.Id).Progress, () => Fmt.Clock(G.State.ActiveResearch?.RemainingSeconds ?? 0), 14, E.FillKind.Blue));
+                    bottom.Add(LiveLabeledBar(() => G.GetResearchStatus(t.Id).Progress, () => Fmt.Clock(G.State.ActiveResearch?.RemainingSeconds ?? 0), 20, E.FillKind.Blue));
                     break;
                 case ResearchState.Blocked:
                     foreach (var m in st.Missing)
                     {
-                        var r = E.Div().Row(0, Align.FlexStart).Ignore().Margin(2);
-                        r.Add(E.Icon("lock", 15));
-                        r.Add(E.T(m, 10.5f, Theme.Pale).Wrap().Grow().Margin(0, 0, 0, 4));
+                        var r = E.Div().Row(0, Align.FlexStart).Ignore().Margin(4);
+                        r.Add(E.Icon("lock", 20));
+                        r.Add(E.T(m, Theme.Body, Theme.Pale).Flex().Margin(0, 0, 0, 6));
                         bottom.Add(r);
                     }
                     break;
@@ -358,8 +365,8 @@ namespace Founders.UI
                     bool can = !busy && G.State.Resources.Covers(t.Cost);
                     string id = t.Id;
                     var b = E.Button(busy ? "One at a time" : "Research", can ? Act(() => store.StartResearch(id)) : null,
-                                     can ? E.Kind.Green : E.Kind.Grey, 34, null, 13, SubLine("clock", Fmt.Clock(t.ResearchSeconds)));
-                    b.style.marginTop = 6;
+                                     can ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 16, SubLine("clock", Fmt.Clock(t.ResearchSeconds)), TechDetailW - 20);
+                    b.style.marginTop = 8;
                     bottom.Add(b);
                     break;
                 }

@@ -73,17 +73,17 @@ namespace Founders.UI
             var sub = E.T("THE LONG RISE", 14, Theme.Gold);
             sub.style.letterSpacing = 3;
             brand.Add(sub);
-            brand.Add(E.T("Build a world that outlives you.", 12.5f, Theme.Pale).Margin(6));
+            brand.Add(E.T("Build a world that outlives you.", Theme.Body, Theme.Pale).Margin(6));
             layer.Add(brand);
 
             tipRow = E.Div().Col(Align.Center).Pad(0, 24).Abs(0, null, 0, 76).Ignore();
-            card = E.Panel().Row().Pad(5, 12, 9, 10).Ignore();
-            card.style.maxWidth = 560;
-            card.Add(E.Icon("knowledge", 26));
+            card = E.Panel().Row().Pad(7, 14, 11, 12).Ignore();
+            card.style.maxWidth = 600;
+            card.Add(E.Icon("knowledge", 32));
             var tipCol = E.Div().Col().Grow().Ignore();
-            tipCol.style.marginLeft = 8;
-            tipCol.Add(E.T("Founder's tip", 11, Theme.Gold));
-            tipCol.Add(E.T(Tips[Random.Range(0, Tips.Length)], 11.5f).Wrap());
+            tipCol.style.marginLeft = 10;
+            tipCol.Add(E.T("Founder's tip", Theme.Small, Theme.Gold));
+            tipCol.Add(E.T(Tips[Random.Range(0, Tips.Length)], Theme.Body).Wrap());
             card.Add(tipCol);
             tipRow.Add(card);
             layer.Add(tipRow);
@@ -93,9 +93,9 @@ namespace Founders.UI
             progress.style.width = Length.Percent(100);
             progress.style.maxWidth = 520;
             var labels = E.Div().Row().Between().Ignore();
-            status = E.T("Kindling the hearth…", 12, Theme.Pale);
+            status = E.T("Kindling the hearth…", Theme.Body, Theme.Pale);
             labels.Add(status);
-            percent = E.T("0%", 12, Theme.Gold);
+            percent = E.T("0%", Theme.Num, Theme.Gold);
             labels.Add(percent);
             progress.Add(labels);
             var bar = E.Bar(out fill, 12);
@@ -104,7 +104,7 @@ namespace Founders.UI
             progressRow.Add(progress);
             layer.Add(progressRow);
 
-            version = E.T($"v{Application.version} · Era I — First Communities", 10, Theme.Pale)
+            version = E.T($"v{Application.version} · Era I — First Communities", Theme.Small, Theme.Pale)
                 .Align(TextAnchor.MiddleCenter).Abs(0, null, 0, 10);
             layer.Add(version);
         }

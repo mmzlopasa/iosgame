@@ -57,6 +57,32 @@ namespace Founders.UI
         public static readonly Color RowLine = Hex("#CFA878");
         public static readonly Color Scrim = new Color(0.10f, 0.06f, 0.03f, 0.45f);
 
+        // MARK: - Type scale and metrics (panel units; the phone is 390 tall in landscape)
+
+        /// <summary>Window and card titles on the wooden plank.</summary>
+        public const float H1 = 20;
+        /// <summary>Section headers (the tan band), names in banners and hero lines.</summary>
+        public const float H2 = 17;
+        /// <summary>Numbers that matter: resources, stat values, "now ➜ next", counters.</summary>
+        public const float Num = 15;
+        /// <summary>Row labels, button sub-titles' big brother, sentences.</summary>
+        public const float Body = 14;
+        /// <summary>The smallest text anywhere: hints, sub-lines, captions. Nothing is drawn smaller.</summary>
+        public const float Small = 12;
+
+        /// <summary>A list row (stat, requirement, resource).</summary>
+        public const float RowH = 40;
+        /// <summary>A denser list row (long lists of factors), still a comfortable tap.</summary>
+        public const float RowTightH = 36;
+        /// <summary>The chunky button (one or two lines).</summary>
+        public const float ButtonH = 46;
+        /// <summary>The small blue "Go" in rows.</summary>
+        public const float GoH = 34;
+        public const float TabH = 36;
+        public const float PlankH = 38;
+        public const float SectionHeadH = 30;
+        public const float CloseSize = 38;
+
         public static Color Hex(string hex) => ColorUtility.TryParseHtmlString(hex, out var c) ? c : Color.magenta;
         public static Color Alpha(Color c, float a) => new Color(c.r, c.g, c.b, a);
 
@@ -100,7 +126,7 @@ namespace Founders.UI
         }
 
         /// <summary>Outline width for outlined text of a size (the kit's outline is about an eighth of the size).</summary>
-        public static float OutlineFor(float size) => Mathf.Clamp(size * 0.12f, 1f, 2.2f);
+        public static float OutlineFor(float size) => Mathf.Clamp(size * 0.12f, 1f, 2.4f);
 
         /// <summary>Width of a string in Changa One (plus its outline), from the measured advances.</summary>
         public static float TextWidth(string s, float size, bool outlined = true)
@@ -119,12 +145,38 @@ namespace Founders.UI
         }
 
         /// <summary>The largest size (at most <paramref name="size"/>, at least <paramref name="min"/>) at which a line fits a width.</summary>
-        public static float FitSize(string s, float maxWidth, float size, float min = 7f)
+        public static float FitSize(string s, float maxWidth, float size, float min = Small)
         {
             if (maxWidth <= 0) return size;
             float w = TextWidth(s, size);
             if (w <= maxWidth) return size;
             return Mathf.Max(min, Mathf.Floor(size * maxWidth / w * 4f) / 4f);
+        }
+
+        /// <summary>How many lines a text takes in a width when it wraps word by word (measured advances, 5% slack).</summary>
+        public static int WrappedLines(string s, float size, float width)
+        {
+            if (string.IsNullOrEmpty(s)) return 1;
+            float room = width * 0.95f - 2 * Mathf.Ceil(OutlineFor(size)) - 1;
+            float space = UiGenerated.Advance(' ') * size;
+            int lines = 1;
+            float x = 0;
+            foreach (var word in s.Split(' '))
+            {
+                float w = TextWidth(word, size, false) - 1;
+                if (x > 0 && x + space + w > room) { lines++; x = w; }
+                else x += (x > 0 ? space : 0) + w;
+                if (w > room) lines++; // a word wider than the line breaks inside itself
+            }
+            return lines;
+        }
+
+        /// <summary>The largest size (at most <paramref name="size"/>, at least <paramref name="min"/>) at which a text wraps into two lines of a width.</summary>
+        public static float TwoLineSize(string s, float width, float size, float min = Small)
+        {
+            for (float f = size; f > min; f -= 0.25f)
+                if (WrappedLines(s, f, width) <= 2) return f;
+            return min;
         }
 
         // MARK: - Textures
@@ -378,7 +430,7 @@ namespace Founders.UI
         /// The kit's text: white (or a colour) with a dark outline and a hard drop; one line. Placed on light
         /// parchment it turns into plain dark ink of the same hue instead, which reads far better at small sizes.
         /// </summary>
-        public static Label T(string text, float size = 12, Color? color = null)
+        public static Label T(string text, float size = Theme.Body, Color? color = null)
         {
             var l = Bare(text, size, color ?? Color.white);
             Outline(l, size);
@@ -440,7 +492,7 @@ namespace Founders.UI
         }
 
         /// <summary>Plain dark text on parchment for sentences; wraps.</summary>
-        public static Label Ink(string text, float size = 11, Color? color = null)
+        public static Label Ink(string text, float size = Theme.Body, Color? color = null)
         {
             var l = Bare(text, size, color ?? Theme.InkText);
             l.style.whiteSpace = WhiteSpace.Normal;
@@ -454,41 +506,51 @@ namespace Founders.UI
             return l;
         }
 
-        /// <summary>Shrinks the label's font until one line fits the width (no ellipsis anywhere).</summary>
-        public static Label Fit(this Label l, float maxWidth, float min = 7f)
+        /// <summary>
+        /// The label of a row: takes the room left between fixed neighbours and wraps onto a second line
+        /// when it must (never clipped, never under the minimum size).
+        /// </summary>
+        public static Label Flex(this Label l)
         {
-            float size = l.style.fontSize.value.value;
-            float fit = Theme.FitSize(l.text, maxWidth, size, min);
-            if (!Mathf.Approximately(fit, size)) { l.style.fontSize = fit; if (l.style.unityTextOutlineWidth.value > 0) Outline(l, fit); }
-            l.style.maxWidth = maxWidth;
-            l.style.overflow = Overflow.Hidden;
+            l.style.whiteSpace = WhiteSpace.Normal;
+            l.style.flexGrow = 1;
+            l.style.flexShrink = 1;
+            l.style.flexBasis = 0;
+            l.style.minWidth = 0;
             return l;
         }
 
         /// <summary>
-        /// Two lines at most in a fixed box: the size shrinks until the longest word fits the width and the
-        /// whole text fits two lines (estimated conservatively).
+        /// Shrinks the label's font (down to <paramref name="min"/>, never below <see cref="Theme.Small"/>) until
+        /// one line fits the width; text that still does not fit wraps instead of being clipped.
         /// </summary>
-        public static Label TwoLines(this Label l, float width, float min = 7f)
+        public static Label Fit(this Label l, float maxWidth, float min = Theme.Small)
         {
+            min = Mathf.Max(min, Theme.Small);
             float size = l.style.fontSize.value.value;
-            string s = l.text ?? "";
-            float longest = 0;
-            foreach (var word in s.Split(' ')) longest = Mathf.Max(longest, Theme.TextWidth(word, 1, false));
-            float total = Theme.TextWidth(s, 1, false);
-            float fit = size;
-            // Every word on a line of its own must fit; the whole must fit 2 lines with 15% slack for wrapping.
-            if (longest * fit + 2 * Theme.OutlineFor(fit) > width) fit = (width - 4) / Mathf.Max(0.01f, longest);
-            // Words wrap whole, so a line holds less than its width: allow for that generously.
-            if (total * fit * 1.4f > width * 2) fit = Mathf.Min(fit, width * 2 / (total * 1.4f));
-            fit = Mathf.Clamp(Mathf.Floor(fit * 4) / 4, min, size);
+            float fit = Theme.FitSize(l.text, maxWidth, size, min);
+            if (!Mathf.Approximately(fit, size)) { l.style.fontSize = fit; if (l.style.unityTextOutlineWidth.value > 0) Outline(l, fit); }
+            l.style.maxWidth = maxWidth;
+            if (Theme.TextWidth(l.text, fit) > maxWidth) l.style.whiteSpace = WhiteSpace.Normal;
+            return l;
+        }
+
+        /// <summary>
+        /// Two lines in a box of a fixed width (names under cells): the size shrinks (not below the minimum)
+        /// until the longest word fits the width and the whole text fits two lines (estimated conservatively).
+        /// The box is as tall as two lines, so neighbours line up.
+        /// </summary>
+        public static Label TwoLines(this Label l, float width, float min = Theme.Small)
+        {
+            min = Mathf.Max(min, Theme.Small);
+            float size = l.style.fontSize.value.value;
+            float fit = Theme.TwoLineSize(l.text ?? "", width, size, min);
             l.style.fontSize = fit;
             if (l.style.unityTextOutlineWidth.value > 0) Outline(l, fit);
             l.style.whiteSpace = WhiteSpace.Normal;
             l.style.width = width;
-            l.style.height = fit * 2.2f;
+            l.style.minHeight = fit * 2.3f;
             l.style.unityTextAlign = TextAnchor.MiddleCenter;
-            l.style.overflow = Overflow.Hidden;
             return l;
         }
 
@@ -529,17 +591,19 @@ namespace Founders.UI
         // MARK: - Containers
 
         /// <summary>The parchment popup body (padding covers the outline and lip).</summary>
-        public static VisualElement Panel() => Div("panel").Col().Skin("panel").Pad(4, 8, 8, 8);
+        public static VisualElement Panel() => Div("panel").Col().Skin("panel").Pad(4, 10, 10, 10);
 
         /// <summary>The wooden title strip: name and an optional "Lv.N" in yellow-green.</summary>
-        public static VisualElement Plank(string title, int? level = null, float size = 15, float width = 0)
+        public static VisualElement Plank(string title, int? level = null, float size = Theme.H1, float width = 0)
         {
-            var p = Div("plank").Row().Center().Skin("plank").Pad(0, 30, 3, 30).Ignore();
-            p.style.height = 30;
+            var p = Div("plank").Row().Center().Skin("plank").Pad(0, 40, 4, 40).Ignore();
+            p.style.height = Theme.PlankH;
             p.style.flexShrink = 0;
             string text = level.HasValue ? $"{title} <color=#D7F25A>Lv.{level.Value}</color>" : title;
             var l = T(text, size);
-            if (width > 0) l.Fit(width - 64, 9);
+            // Room for the close button on the right and the same on the left: the title stays centred.
+            if (width > 0) l.Fit(width - 2 * (Theme.CloseSize + 10), Theme.Body);
+            l.style.whiteSpace = WhiteSpace.NoWrap;
             p.Add(l);
             return p;
         }
@@ -549,43 +613,49 @@ namespace Founders.UI
         {
             var s = Div("section").Col().Skin("section");
             s.style.flexShrink = 0;
-            var head = Div().Row().Ignore().Bg(Theme.SectionHead).Radius(7, 0).Pad(0, 8);
-            head.style.height = 20;
-            head.style.borderBottomWidth = 1;
+            // The tan band is wood, not parchment: its title is the kit's white outlined text.
+            var head = Div().Row().Ignore().Bg(Theme.SectionHead).Radius(8, 0).Pad(0, 10);
+            head.AddToClassList("surf-dark");
+            head.style.minHeight = Theme.SectionHeadH;
+            head.style.borderBottomWidth = 1.5f;
             head.style.borderBottomColor = Theme.SectionLine;
-            head.style.marginLeft = 1; head.style.marginRight = 1; head.style.marginTop = 1;
-            head.Add(T(title, 11.5f).Grow().Also(l => l.style.overflow = Overflow.Hidden));
-            if (extra != null) head.Add(extra.NoShrink());
+            head.style.marginLeft = 1.5f; head.style.marginRight = 1.5f; head.style.marginTop = 1.5f;
+            head.Add(T(title, Theme.H2).Flex());
+            if (extra != null) head.Add(extra.NoShrink().Margin(0, 0, 0, 8));
             s.Add(head);
-            body = Div().Col().Pad(0, 8, 3, 8);
+            body = Div().Col().Pad(0, 10, 4, 10);
             s.Add(body);
             return s;
         }
 
         /// <summary>A plain inset box (no header).</summary>
-        public static VisualElement Inset() { var s = Div().Col().Skin("section").Pad(5, 8); s.style.flexShrink = 0; return s; }
+        public static VisualElement Inset() { var s = Div().Col().Skin("section").Pad(7, 10); s.style.flexShrink = 0; return s; }
 
         /// <summary>A section row: icon, label on the left, content on the right; a hairline above unless first.</summary>
-        public static VisualElement Line(bool separator, float height = 23)
+        public static VisualElement Line(bool separator, float height = Theme.RowH)
         {
             var r = Div().Row(0).Ignore();
             r.style.minHeight = height;
             r.style.flexShrink = 0;
-            if (separator) { r.style.borderTopWidth = 1; r.style.borderTopColor = Theme.RowLine; }
+            r.style.paddingTop = 2; r.style.paddingBottom = 2;
+            if (separator) { r.style.borderTopWidth = 1.5f; r.style.borderTopColor = Theme.RowLine; }
             return r;
         }
+
+        /// <summary>The icon at the start of a row.</summary>
+        public static VisualElement RowIcon(string icon) => Icon(icon, 24).Margin(0, 8);
 
         /// <summary>Stat row: "Label:  now ➜ next" (the next value green), right-aligned values.</summary>
         public static VisualElement StatRow(string icon, string label, string now, string next = null, bool separator = true, Color? nowColor = null)
         {
             var r = Line(separator);
-            if (icon != null) r.Add(Icon(icon, 15).Margin(0, 5));
-            r.Add(T(label, 11.5f).Grow().Also(l => l.style.overflow = Overflow.Hidden));
-            r.Add(T(now, 12, nowColor).NoShrink());
+            if (icon != null) r.Add(RowIcon(icon));
+            r.Add(T(label, Theme.Body).Flex());
+            r.Add(T(now, Theme.Num, nowColor).NoShrink().Margin(0, 0, 0, 8));
             if (next != null)
             {
-                r.Add(Icon("arrow", 13).Margin(0, 4, 0, 4));
-                r.Add(T(next, 12, Theme.Up).NoShrink());
+                r.Add(Icon("arrow", 20).Margin(0, 6, 0, 6));
+                r.Add(T(next, Theme.Num, Theme.Up).NoShrink());
             }
             return r;
         }
@@ -608,27 +678,38 @@ namespace Founders.UI
         /// The kit's chunky button: label, optional icon and an optional second line (a cost or a timer).
         /// Grey buttons swallow taps but do nothing. The label shrinks to the width it is given (<paramref name="width"/>).
         /// </summary>
-        public static VisualElement Button(string label, Action onTap, Kind kind = Kind.Green, float height = 34, string icon = null,
-                                           float size = 13, VisualElement sub = null, float width = 0)
+        public static VisualElement Button(string label, Action onTap, Kind kind = Kind.Green, float height = Theme.ButtonH, string icon = null,
+                                           float size = 16, VisualElement sub = null, float width = 0)
         {
-            var b = Div("button").Col().Center().Skin(SkinOf(kind)).Pad(0, 8, 3, 8);
+            var b = Div("button").Col().Center().Skin(SkinOf(kind)).Pad(0, 10, 4, 10);
             b.style.height = height;
             b.style.flexShrink = 0;
             if (width > 0) b.style.width = width;
             var top = Div().Row().Center().Ignore();
-            if (icon != null) top.Add(Icon(icon, size + 5).Margin(0, 4));
+            if (icon != null) top.Add(Icon(icon, size + 6).Margin(0, 5));
             var l = T(label, size);
-            if (width > 0) l.Fit(width - 18 - (icon != null ? size + 9 : 0), 8);
+            // Shrinks to the width given; a label still too long at the minimum size wraps onto two lines.
+            if (width > 0) l.Fit(width - 22 - (icon != null ? size + 11 : 0), Theme.Small).Align(TextAnchor.MiddleCenter);
             top.Add(l);
             b.Add(top);
-            if (sub != null) { sub.style.marginTop = -1; b.Add(sub); }
+            if (sub != null) { sub.style.marginTop = -2; b.Add(sub); }
             if (onTap != null && kind != Kind.Grey) b.OnTap(onTap);
             else b.pickingMode = PickingMode.Position; // still swallows taps
             return b;
         }
 
+        /// <summary>A button that takes an equal share of a row of buttons (the label shrinks to its share).</summary>
+        public static VisualElement Shared(this VisualElement b)
+        {
+            b.style.flexGrow = 1;
+            b.style.flexBasis = 0;
+            b.style.flexShrink = 1;
+            b.style.minWidth = 0;
+            return b;
+        }
+
         /// <summary>A square button with an icon (close, −, +, rotate, trash…).</summary>
-        public static VisualElement Square(string icon, Action onTap, Kind kind = Kind.Brown, float size = 30)
+        public static VisualElement Square(string icon, Action onTap, Kind kind = Kind.Brown, float size = 40)
         {
             var b = Div("square").Center().Skin(SkinOf(kind)).Pad(0, 0, 3, 0).Size(size, size);
             b.Add(Icon(icon, Mathf.Round(size * 0.6f)));
@@ -638,25 +719,33 @@ namespace Founders.UI
         }
 
         /// <summary>The red close button that sits on a popup's top-right corner.</summary>
-        public static VisualElement Close(Action onTap) => Square("close", onTap, Kind.Red, 30);
+        public static VisualElement Close(Action onTap) => Square("close", onTap, Kind.Red, Theme.CloseSize);
 
         /// <summary>A tab: raised gold when selected, flat brown otherwise; text may carry a counter.</summary>
-        public static VisualElement Tab(string label, bool on, Action onTap, string count = null, float height = 26, float size = 12, string icon = null)
+        public static VisualElement Tab(string label, bool on, Action onTap, string count = null, float height = Theme.TabH, float size = Theme.Num, string icon = null)
         {
-            var t = Div("tab").Row().Center().Skin(on ? "tab_on" : "tab_off").Pad(0, 8, on ? 3 : 2, 8);
-            t.style.height = on ? height + 2 : height;
+            var t = Div("tab").Row().Center().Skin(on ? "tab_on" : "tab_off").Pad(0, 10, on ? 4 : 3, 10);
+            t.style.height = on ? height + 3 : height;
             t.style.flexShrink = 0;
             t.style.alignSelf = UnityEngine.UIElements.Align.FlexEnd;
-            if (icon != null) t.Add(Icon(icon, 18));
+            if (icon != null) t.Add(Icon(icon, 24));
             if (!string.IsNullOrEmpty(label))
             {
                 string text = count != null ? $"{label} <color=#D7F25A>{count}</color>" : label;
                 var l = T(text, size, on ? Color.white : Theme.Pale);
-                if (icon != null) l.style.marginLeft = 3;
+                if (icon != null) l.style.marginLeft = 4;
                 t.Add(l);
             }
             if (onTap != null) t.OnTap(onTap);
             return t;
+        }
+
+        /// <summary>Shrinks a tab's label to the width the tab is given (tabs sharing a row).</summary>
+        public static VisualElement FitTab(this VisualElement tab, float width)
+        {
+            foreach (var c in tab.Children())
+                if (c is Label l) l.Fit(width - 22 - (tab.childCount > 1 ? 28 : 0), Theme.Small).style.whiteSpace = WhiteSpace.NoWrap;
+            return tab;
         }
 
         // MARK: - Slots, cells, badges
@@ -684,20 +773,20 @@ namespace Founders.UI
         }
 
         /// <summary>A small badge: green level square or red notification dot, with a number or "!".</summary>
-        public static VisualElement Badge(string text, bool red = true, float size = 16)
+        public static VisualElement Badge(string text, bool red = true, float size = 20)
         {
-            var b = Div("badge").Center().Skin(red ? "badge_red" : "badge_green").Pad(0, 3, 1, 3).Ignore();
+            var b = Div("badge").Center().Skin(red ? "badge_red" : "badge_green").Pad(0, 4, 1, 4).Ignore();
             b.style.minWidth = size;
             b.style.height = size;
             b.style.flexShrink = 0;
-            b.Add(T(text, Mathf.Round(size * 0.66f)));
+            b.Add(T(text, Mathf.Max(Theme.Small, Mathf.Round(size * 0.66f))));
             return b;
         }
 
         /// <summary>The dark translucent HUD capsule.</summary>
-        public static VisualElement Capsule(float height = 28)
+        public static VisualElement Capsule(float height = 32)
         {
-            var c = Div("capsule").Row().Skin("capsule").Pad(0, 9);
+            var c = Div("capsule").Row().Skin("capsule").Pad(0, 11);
             c.style.height = height;
             c.style.flexShrink = 0;
             return c;
@@ -710,7 +799,7 @@ namespace Founders.UI
         static string SkinOf(FillKind k) => k switch { FillKind.Gold => "fill_gold", FillKind.Blue => "fill_blue", FillKind.Red => "fill_red", _ => "fill_green" };
 
         /// <summary>A progress bar (dark track, coloured fill); returns the fill for <see cref="SetFill"/>.</summary>
-        public static VisualElement Bar(out VisualElement fill, float height = 10, FillKind kind = FillKind.Green)
+        public static VisualElement Bar(out VisualElement fill, float height = 12, FillKind kind = FillKind.Green)
         {
             var track = Div("bar").Skin("bar_track").Ignore();
             track.style.height = height;
@@ -724,10 +813,10 @@ namespace Founders.UI
         }
 
         /// <summary>A bar with a centred outlined label ("73%"); returns the fill and the label.</summary>
-        public static VisualElement LabeledBar(out VisualElement fill, out Label label, float height = 12, FillKind kind = FillKind.Green)
+        public static VisualElement LabeledBar(out VisualElement fill, out Label label, float height = 18, FillKind kind = FillKind.Green)
         {
             var bar = Bar(out fill, height, kind);
-            label = T("", Mathf.Max(8, height - 2)).Align(TextAnchor.MiddleCenter);
+            label = T("", Mathf.Max(Theme.Small, height - 4)).Align(TextAnchor.MiddleCenter);
             label.Fill();
             bar.Add(label);
             return bar;

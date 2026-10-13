@@ -60,28 +60,31 @@ namespace Founders.UI
             }).StartingIn(16);
         }
 
+        /// <summary>Width of the wide dialogs (event, petition) and of their picture column.</summary>
+        const float DialogW = 680, DialogArtW = 230;
+
         /// <summary>A dialog window: plank title, a body that scrolls when it must, a fixed button row.</summary>
         VisualElement DialogShell(string title, float width, out VisualElement body, out VisualElement foot)
         {
             float w = Mathf.Min(width, SafeWidth - 40);
-            var c = E.Panel().Pad(0, 10, 10, 10);
+            var c = E.Panel().Pad(0, 12, 12, 12);
             c.name = "dialog";
             c.style.width = w;
-            c.style.maxHeight = PanelH - PopupTop - BottomPad - 12;
+            c.style.maxHeight = PanelH - PopupTop - BottomPad - 10;
             c.style.flexShrink = 1;
-            var plank = E.Plank(title, null, 16, w);
-            plank.style.marginLeft = -14;
-            plank.style.marginRight = -14;
-            plank.style.marginTop = -4;
+            var plank = E.Plank(title, null, Theme.H1, w);
+            plank.style.marginLeft = -16;
+            plank.style.marginRight = -16;
+            plank.style.marginTop = -6;
             c.Add(plank);
             var scroll = E.FitScroll();
-            scroll.contentContainer.style.paddingTop = 8;
+            scroll.contentContainer.style.paddingTop = 10;
             scroll.contentContainer.style.paddingBottom = 4;
             c.Add(scroll);
             body = scroll.contentContainer;
             foot = E.Div().Row().Center().Ignore();
             foot.style.flexShrink = 0;
-            foot.style.paddingTop = 6;
+            foot.style.paddingTop = 8;
             c.Add(foot);
             return c;
         }
@@ -91,37 +94,39 @@ namespace Founders.UI
         void StoryBox(VisualElement host)
         {
             var ch = G.PendingStory;
-            float left = SafeLeft + 16, right = SafeRight + 16;
-            var box = E.Panel().Abs(left + 96, null, right, BottomPad + 6).Pad(10, 16, 12, 84);
-            box.style.maxHeight = PanelH - PopupTop - BottomPad - 10;
-            var head = E.Div().Row().Ignore();
-            head.Add(E.T($"Chapter {ch.Number} · {ch.Era}", 11, Theme.Pale));
-            head.Add(E.Div().Grow().Ignore());
-            box.Add(head);
-            box.Add(E.T(ch.Title, 17, Theme.Gold).Fit(SafeWidth - 260, 10));
+            float left = SafeLeft + 12, right = SafeRight + 12;
+            // The kit's dialogue box: a wide parchment box along the bottom, the narrator standing large at its
+            // left end (over its edge), the text beside them and the ▼ marker in the corner.
+            const float portrait = 210, overlap = 100;
+            float textLeft = portrait - overlap + 14;
+            var box = E.Panel().Abs(left + overlap, null, right, BottomPad + 6).Pad(14, 22, 14, textLeft);
+            box.style.maxHeight = PanelH - PopupTop - BottomPad - 6;
+            float textW = SafeWidth - 24 - overlap - textLeft - 22;
+            box.Add(E.T($"Chapter {ch.Number} · {ch.Era}", Theme.Body, Theme.Pale).Fit(textW));
+            box.Add(E.T(ch.Title, Theme.H1 + 4, Theme.Gold).Fit(textW, Theme.H2).Margin(2));
             var scroll = E.FitScroll();
-            scroll.contentContainer.style.paddingTop = 4;
+            scroll.contentContainer.style.paddingTop = 6;
             foreach (var para in ch.Story.Split('\n'))
             {
                 if (string.IsNullOrWhiteSpace(para)) continue;
-                scroll.Add(E.T(para.Trim(), 12.5f).Wrap().Margin(0, 0, 6));
+                scroll.Add(E.T(para.Trim(), Theme.Num).Wrap().Margin(0, 0, 8));
             }
-            var goal = E.Inset().Row(0, Align.FlexStart).Margin(2);
-            goal.Add(E.Icon(ch.Locked ? "lock" : "goals", 18));
-            goal.Add(E.T(ch.Goal, 11.5f, Theme.Gold).Wrap().Grow().Margin(0, 0, 0, 6));
+            var goal = E.Inset().Row().Margin(2);
+            goal.Add(E.Icon(ch.Locked ? "lock" : "goals", 26));
+            goal.Add(E.T(ch.Goal, Theme.Body, Theme.Gold).Flex().Margin(0, 0, 0, 8));
             scroll.Add(goal);
             box.Add(scroll);
             var foot = E.Div().Row().Ignore();
             foot.style.flexShrink = 0;
             foot.style.justifyContent = Justify.FlexEnd;
-            foot.style.paddingTop = 6;
-            foot.Add(E.Button(ch.Number == 1 ? "Begin" : "Continue", Act(() => store.DismissStory()), E.Kind.Green, 34, null, 13.5f, null, 150));
-            foot.Add(E.Icon("next", 18).Also(i => i.style.rotate = new Rotate(new Angle(90, AngleUnit.Degree))).Margin(0, 0, 0, 10));
+            foot.style.paddingTop = 8;
+            foot.Add(E.Button(ch.Number == 1 ? "Begin" : "Continue", Act(() => store.DismissStory()), E.Kind.Green, Theme.ButtonH, null, 17, null, 180));
+            foot.Add(E.Icon("next", 26).Also(i => i.style.rotate = new Rotate(new Angle(90, AngleUnit.Degree))).Margin(0, 0, 0, 12));
             box.Add(foot);
             host.Add(box);
-            // The narrator stands at the left edge of the box, larger than it.
-            var portrait = E.Icon("face_f1", 150).Abs(left, null, null, BottomPad + 30);
-            host.Add(portrait);
+            // The narrator stands at the left end of the box, larger than it.
+            var face = E.Icon("face_f1", portrait).Abs(left, null, null, BottomPad + 6);
+            host.Add(face);
             Pop(box);
         }
 
@@ -130,20 +135,20 @@ namespace Founders.UI
         VisualElement MilestoneCard()
         {
             var ms = G.Content.Milestones.LastOrDefault(m => G.State.ReachedMilestones.Contains(m.Id));
-            var c = DialogShell("Milestone reached", 460, out var body, out var foot);
+            var c = DialogShell("Milestone reached", 520, out var body, out var foot);
             var hero = E.Div().Row().Ignore();
-            hero.Add(E.Slot("trophy", 64, E.Cell.Legendary, 0.7f));
+            hero.Add(E.Slot("trophy", 84, E.Cell.Legendary, 0.7f));
             var col = E.Div().Col().Grow().Ignore();
-            col.style.marginLeft = 10;
-            col.Add(E.T(ms?.Name ?? "A new chapter", 17, Theme.Gold).Wrap());
-            col.Add(E.Ink(store.Celebration, 11.5f).Margin(3));
+            col.style.marginLeft = 14;
+            col.Add(E.T(ms?.Name ?? "A new chapter", Theme.H1, Theme.Gold).Wrap());
+            col.Add(E.Ink(store.Celebration, Theme.Body).Margin(4));
             hero.Add(col);
             body.Add(hero);
-            var note = E.Inset().Row().Margin(8);
-            note.Add(E.Icon("legacy", 18));
-            note.Add(E.T("Recorded in your Legacy Timeline.", 11).Margin(0, 0, 0, 6));
+            var note = E.Inset().Row().Margin(10);
+            note.Add(E.Icon("legacy", 24));
+            note.Add(E.T("Recorded in your Legacy Timeline.", Theme.Body).Flex().Margin(0, 0, 0, 8));
             body.Add(note);
-            foot.Add(E.Button("Continue", Act(() => store.Celebration = null), E.Kind.Orange, 38, null, 14, null, 200));
+            foot.Add(E.Button("Continue", Act(() => store.Celebration = null), E.Kind.Orange, Theme.ButtonH, null, 17, null, 240));
             return c;
         }
 
@@ -152,24 +157,24 @@ namespace Founders.UI
         VisualElement WelcomeCard()
         {
             var report = store.Offline;
-            var c = DialogShell("Welcome back, Founder", 560, out var body, out var foot);
+            var c = DialogShell("Welcome back, Founder", 600, out var body, out var foot);
             int mins = (int)(report.Seconds / 60);
             string away = mins >= 60 ? $"{mins / 60} h {mins % 60} min" : $"{mins} min";
-            body.Add(E.T($"Your people kept the fire alive for {away}.", 12.5f).Wrap());
+            body.Add(E.T($"Your people kept the fire alive for {away}.", Theme.Num).Wrap());
             double cap = G.Content.Balance.MaxOfflineSeconds / 3600.0;
-            body.Add(E.Ink($"Time away counts for up to {cap.ToString("0.#", CultureInfo.InvariantCulture)} hours.", 10.5f).Margin(2));
+            body.Add(E.Ink($"Time away counts for up to {cap.ToString("0.#", CultureInfo.InvariantCulture)} hours.", Theme.Small).Margin(3));
 
             // Gathered: the kit's reward cells with the amount at the bottom.
             var gathered = E.Section("Gathered", out var rows);
-            gathered.style.marginTop = 6;
-            var cells = E.Div().Row().Ignore().Margin(6, 0, 5);
+            gathered.style.marginTop = 8;
+            var cells = E.Div().Row().Ignore().Margin(10, 0, 8);
             cells.style.flexWrap = Wrap.Wrap;
             foreach (var type in ResourceTypes.All)
             {
                 double v = report.Gained[type];
-                var cell = RewardCell(IconFor(type), CellFor(type), Fmt.Signed(v) == "0" ? "0" : (v < 0 ? "−" : "+") + Fmt.Compact(System.Math.Abs(v)), 46);
-                cell.style.marginRight = 6;
-                if (v < -0.5) cell.Add(E.Icon("alert", 16).Abs(null, -4, -4));
+                var cell = RewardCell(IconFor(type), CellFor(type), Fmt.Signed(v) == "0" ? "0" : (v < 0 ? "−" : "+") + Fmt.Compact(System.Math.Abs(v)), 58);
+                cell.style.marginRight = 10;
+                if (v < -0.5) cell.Add(E.Icon("alert", 22).Abs(null, -6, -6));
                 cells.Add(cell);
             }
             rows.Add(cells);
@@ -177,19 +182,19 @@ namespace Founders.UI
             if (report.Events.Count > 0)
             {
                 var village = E.Section("The village", out var vrows);
-                village.style.marginTop = 6;
+                village.style.marginTop = 8;
                 bool sep = false;
                 foreach (var line in report.Events.Take(5))
                 {
-                    var r = E.Line(sep, 24);
+                    var r = E.Line(sep, Theme.RowTightH);
                     sep = true;
-                    r.Add(E.Icon("check", 16).Margin(0, 5));
-                    r.Add(E.T(line, 11).Wrap().Grow());
+                    r.Add(E.RowIcon("check"));
+                    r.Add(E.T(line, Theme.Body).Flex());
                     vrows.Add(r);
                 }
                 body.Add(village);
             }
-            foot.Add(E.Button("Back to the village", Act(() => store.Offline = null), E.Kind.Green, 38, null, 14, null, 240));
+            foot.Add(E.Button("Back to the village", Act(() => store.Offline = null), E.Kind.Green, Theme.ButtonH, null, 17, null, 280));
             return c;
         }
 
@@ -198,39 +203,40 @@ namespace Founders.UI
         VisualElement EventCard()
         {
             var ev = G.PendingEvent;
-            var c = DialogShell(ev.Title, 600, out var body, out var foot);
+            var c = DialogShell(ev.Title, DialogW, out var body, out var foot);
             var row = E.Div().Row(0, Align.FlexStart).Ignore();
             // Left: the scene and the story.
-            var left = E.Div().Col().Ignore().Size(210);
-            var art = E.Div().Row().Center().Radius(9).Border(Theme.Outline, 2).Ignore();
-            art.style.height = 70;
+            var left = E.Div().Col().Ignore().Size(DialogArtW);
+            var art = E.Div().Row().Center().Radius(10).Border(Theme.Outline, 2.5f).Ignore();
+            art.style.height = 90;
             art.BgImage(Theme.Gradient("eventart", true, Theme.Hex("#8A5A32"), Theme.Hex("#4A2E1A")));
-            art.Add(E.Icon("campfire", 52));
+            art.Add(E.Icon("campfire", 68));
             left.Add(art);
-            left.Add(E.Ink(ev.Text, 11).Margin(5));
-            var note = E.Div().Row(0, Align.FlexStart).Ignore().Margin(5);
-            note.Add(E.Icon("legacy", 16));
-            note.Add(E.Ink("Your choice is written into the Legacy Timeline.", 10, Theme.InkSoft).Grow().Margin(0, 0, 0, 4));
+            left.Add(E.Ink(ev.Text, Theme.Body).Margin(8));
+            var note = E.Div().Row(0, Align.FlexStart).Ignore().Margin(8);
+            note.Add(E.Icon("legacy", 22));
+            note.Add(E.Ink("Your choice is written into the Legacy Timeline.", Theme.Small, Theme.InkSoft).Grow().Margin(0, 0, 0, 6));
             left.Add(note);
             row.Add(left);
 
             // Right: the options.
             var right = E.Div().Col().Grow().Ignore();
-            right.style.marginLeft = 10;
+            right.style.marginLeft = 12;
             foreach (var option in ev.Options)
             {
                 var blocker = G.OptionBlocker(option);
                 bool on = chosenOption == option.Id;
-                var o = E.Div().Col().Skin(on ? "slot" : "section").Pad(7, 9, on ? 10 : 7, 9).Margin(0, 0, 6);
+                var o = E.Div().Col().Skin(on ? "slot" : "section").Pad(10, 12, on ? 13 : 10, 12).Margin(0, 0, 8);
                 o.style.flexShrink = 0;
+                o.style.minHeight = 52;
                 if (blocker != null) o.style.opacity = 0.6f;
-                var head = E.Div().Row(0, Align.FlexStart).Ignore();
-                head.Add(on ? E.Icon("check", 20) : E.Icon("next", 18));
-                head.Add(E.T(option.Label, 12.5f).Wrap().Grow().Margin(0, 0, 0, 6));
-                if (option.Cost.HasValue && !option.Cost.Value.IsZero) head.Add(CostLine(option.Cost.Value, 10.5f).Also(r => r.style.maxWidth = 120));
+                var head = E.Div().Row().Ignore();
+                head.Add(on ? E.Icon("check", 26) : E.Icon("next", 22));
+                head.Add(E.T(option.Label, Theme.Num).Flex().Margin(0, 0, 0, 8));
+                if (option.Cost.HasValue && !option.Cost.Value.IsZero) head.Add(CostLine(option.Cost.Value).Also(r => { r.style.maxWidth = 150; r.style.flexShrink = 0; }));
                 o.Add(head);
-                if (!string.IsNullOrEmpty(option.TradeOff)) o.Add(E.T(option.TradeOff, 10.5f, Theme.Pale).Wrap().Margin(2, 0, 0, 26));
-                if (blocker != null) o.Add(E.T(blocker, 10.5f, Theme.Bad).Wrap().Margin(2, 0, 0, 26));
+                if (!string.IsNullOrEmpty(option.TradeOff)) o.Add(E.T(option.TradeOff, Theme.Small, Theme.Pale).Wrap().Margin(3, 0, 0, 34));
+                if (blocker != null) o.Add(E.T(blocker, Theme.Small, Theme.Bad).Wrap().Margin(3, 0, 0, 34));
                 if (blocker == null)
                 {
                     string id = option.Id;
@@ -241,10 +247,11 @@ namespace Founders.UI
             row.Add(right);
             body.Add(row);
 
-            foot.Add(Share(E.Button("Decide later", Act(() => store.EventMinimized = true), E.Kind.Blue, 36, null, 13), foot));
+            // The kit's pair: secondary on the left, primary on the right, each a fixed comfortable width.
+            foot.Add(E.Button("Decide later", Act(() => store.EventMinimized = true), E.Kind.Blue, Theme.ButtonH, null, 17, null, 220));
             bool ready = chosenOption != null;
-            foot.Add(Share(E.Button("Confirm", ready ? Act(() => { store.ResolveEvent(chosenOption); chosenOption = null; }) : null,
-                                    ready ? E.Kind.Green : E.Kind.Grey, 36, null, 13), foot));
+            foot.Add(E.Button("Confirm", ready ? Act(() => { store.ResolveEvent(chosenOption); chosenOption = null; }) : null,
+                              ready ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 17, null, 220).Margin(0, 0, 0, 16));
             return c;
         }
     }
