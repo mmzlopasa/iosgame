@@ -1,0 +1,92 @@
+name: Export building models (OBJ)
+
+# Assembles every building / decoration exactly as the game does and exports it as OBJ + MTL +
+# textures + manifest.json (unity/Assets/Editor/ExportBuildingModels.cs), for the offline Blender
+# renders of the build-menu pictures (tools/art/blender_buildings.py). Download the
+# "building-models" artifact, then: python3 tools/art/render_buildings.py --models <zip or dir>
+on:
+  push:
+    paths:
+      - "unity/Assets/Scripts/BuildingModels.cs"
+      - "unity/Assets/Scripts/Visuals.cs"
+      - "unity/Assets/Editor/ExportBuildingModels.cs"
+      - "unity/Assets/Resources/content.json"
+      - ".github/workflows/export-models.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: export-models-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  license:
+    name: Check Unity license secrets
+    runs-on: ubuntu-latest
+    outputs:
+      ok: ${{ steps.check.outputs.ok }}
+    steps:
+      - id: check
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        run: |
+          if [ -n "$UNITY_LICENSE" ] && [ -n "$UNITY_EMAIL" ] && [ -n "$UNITY_PASSWORD" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::Unity secrets missing. Add UNITY_LICENSE, UNITY_EMAIL and UNITY_PASSWORD under Settings → Secrets and variables → Actions (see README)."
+          fi
+
+  export:
+    name: Unity → OBJ building models
+    needs: license
+    if: needs.license.outputs.ok == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Free disk space (Unity images are large)
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          large-packages: false
+
+      - uses: actions/checkout@v4
+
+      # Same target as the iOS build, so the imported Library from unity-build.yml can be reused.
+      - uses: actions/cache@v4
+        with:
+          path: unity/Library
+          key: Library-iOS-${{ hashFiles('unity/Packages/**', 'unity/ProjectSettings/**', 'unity/Assets/**') }}
+          restore-keys: Library-iOS-
+
+      - uses: game-ci/unity-builder@v4
+        env:
+          UNITY_LICENSE: ${{ secrets.UNITY_LICENSE }}
+          UNITY_EMAIL: ${{ secrets.UNITY_EMAIL }}
+          UNITY_PASSWORD: ${{ secrets.UNITY_PASSWORD }}
+        with:
+          projectPath: unity
+          targetPlatform: iOS
+          buildName: Founders
+          buildMethod: FoundersEditor.ExportBuildingModels.Export
+          # The container's working directory is the repository root (/github/workspace).
+          customParameters: -exportPath /github/workspace/build/BuildingModels
+
+      - name: Check and zip the export
+        run: |
+          sudo chown -R "$USER" build
+          test -f build/BuildingModels/manifest.json
+          python3 -c "import json;m=json.load(open('build/BuildingModels/manifest.json'));print(len(m['models']),'models:',' '.join(x['key'] for x in m['models']))"
+          (cd build && zip -qr ../building-models.zip BuildingModels)
+          ls -lh building-models.zip
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: building-models
+          path: building-models.zip
+          if-no-files-found: error
+          retention-days: 14
