@@ -827,6 +827,7 @@ namespace Founders.UI
             return row;
         }
 
+        /// <summary>The cell a custom sits on in a state, and the mark on its corner (signed: a tick, locked: a padlock).</summary>
         static (E.Cell cell, string icon) LawLook(LawState s) => s switch
         {
             LawState.Signed => (E.Cell.Uncommon, "check"),
@@ -834,14 +835,33 @@ namespace Founders.UI
             _ => (E.Cell.Common, "lock"),
         };
 
+        /// <summary>The custom's own picture (Icons/law_&lt;id&gt;), "customs" if it has none yet.</summary>
+        static string LawIcon(LawDefinition law)
+        {
+            string name = "law_" + law.Id;
+            return UnityEngine.Resources.Load<Texture2D>("UI/Icons/" + name) != null ? name : "customs";
+        }
+
+        /// <summary>
+        /// A custom's picture on its state's cell (gold: can be signed, green: signed, grey and dimmed: locked), with a
+        /// small tick or padlock on the corner.
+        /// </summary>
+        static VisualElement LawSlot(LawStatus st, float size)
+        {
+            var (cell, mark) = LawLook(st.State);
+            var slot = E.Slot(LawIcon(st.Law), size, cell, 0.72f, st.State == LawState.Locked);
+            if (st.State != LawState.Available)
+                slot.Add(E.Icon(mark, Mathf.Round(size * 0.44f)).Abs(null, null, -5, -4));
+            return slot;
+        }
+
         VisualElement LawNode(LawStatus st, float width)
         {
             var law = st.Law;
             bool sel = law.Id == selectedLaw;
-            var (cell, icon) = LawLook(st.State);
             var n = E.Div().Row().Skin(sel ? "slot" : "section").Pad(6, 6, sel ? 9 : 6, 6).Margin(0, 0, 8);
             n.style.minHeight = 60;
-            n.Add(E.Slot(icon, 42, cell, 0.62f));
+            n.Add(LawSlot(st, 42));
             var col = E.Div().Col().Grow().Ignore();
             col.style.marginLeft = 8;
             col.Add(E.T(law.Name, Theme.Num, st.State == LawState.Locked ? Theme.Pale : (Color?)null).Fit(width - 12 - 42 - 8));
@@ -895,10 +915,9 @@ namespace Founders.UI
         VisualElement LawDetail(LawStatus st, float detailW)
         {
             var law = st.Law;
-            var (cell, icon) = LawLook(st.State);
             var card = E.Inset().Col().Pad(10, 10);
             var head = E.Div().Row().Ignore();
-            head.Add(E.Slot(icon, 52, cell, 0.62f));
+            head.Add(LawSlot(st, 52));
             var names = E.Div().Col().Grow().Ignore();
             names.style.marginLeft = 8;
             names.Add(E.T(law.Branch, Theme.Small, Theme.Pale));

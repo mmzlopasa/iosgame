@@ -54,6 +54,9 @@ namespace Founders.UI
             ["hud_rank"] = new SkinSlice(8, 8, 8, 8),
         };
 
+        /// <summary>Skins whose middle and edges repeat (tiled) instead of stretching: real wood and parchment.</summary>
+        public static readonly HashSet<string> Tiled = new HashSet<string> { "panel", "plank", "section" };
+
         /// <summary>Advance widths (em) of Changa One for ' '..'~'.</summary>
         static readonly float[] Ascii = { 0.150f, 0.330f, 0.500f, 0.746f, 0.551f, 0.862f, 0.664f, 0.250f, 0.314f, 0.314f, 0.536f, 0.600f, 0.277f, 0.350f, 0.267f, 0.503f, 0.600f, 0.600f, 0.600f, 0.600f, 0.600f, 0.600f, 0.600f, 0.600f, 0.600f, 0.600f, 0.277f, 0.277f, 0.600f, 0.600f, 0.600f, 0.528f, 0.867f, 0.609f, 0.592f, 0.500f, 0.645f, 0.530f, 0.470f, 0.600f, 0.650f, 0.300f, 0.366f, 0.593f, 0.455f, 0.811f, 0.655f, 0.630f, 0.590f, 0.630f, 0.615f, 0.577f, 0.500f, 0.607f, 0.602f, 0.821f, 0.592f, 0.560f, 0.589f, 0.339f, 0.503f, 0.339f, 0.600f, 0.595f, 0.429f, 0.567f, 0.595f, 0.459f, 0.595f, 0.565f, 0.358f, 0.536f, 0.595f, 0.300f, 0.300f, 0.560f, 0.309f, 0.854f, 0.595f, 0.590f, 0.595f, 0.595f, 0.375f, 0.526f, 0.364f, 0.590f, 0.520f, 0.800f, 0.540f, 0.520f, 0.530f, 0.339f, 0.420f, 0.339f, 0.600f };
 

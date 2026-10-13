@@ -3,10 +3,12 @@
 and measurements as the Unity UI (GameUi*.cs / UiKit.cs), and rendered with headless Chromium so the design
 can be reviewed without Unity:
 
-  l_*  landscape, 844 x 390 points (iPhone with the notch on the left and the home indicator below);
-  p_*  portrait, 390 x 844 points (the same phone turned: the Dynamic Island on top, the kit's phone layouts:
+  l_*  landscape, 965 x 446 units (a 390-point iPhone at GameUi.PhoneShortSide = 446 units across, ~0.875 pt per
+       unit; the notch on the left and the home indicator below);
+  p_*  portrait, 446 x 965 units (the same phone turned: the Dynamic Island on top, the kit's phone layouts:
        resource bar on top, menu hexagons on the right, every card / strip / window / dialog a bottom sheet
-       across the screen with the back arrow under it).
+       across about the lower half of the screen with the back arrow under it);
+  sl_* / sp_*  a small phone (iPhone SE, 667 x 375 points: 762 x 428 units, no notch), landscape and portrait.
 
 Text follows the game's surface rule (UiKit E.T): white Changa One with a dark outline and a hard drop on
 wood, buttons, cells and capsules; plain dark ink of the same hue on light parchment (panel, section, slot).
@@ -15,7 +17,7 @@ Every page is also checked for text that overflows its box (clipped, spilling ou
 the report is printed after each page and the run exits non-zero when anything overflows.
 
 Usage: python3 tools/ui/mock/build_mocks.py [out_dir] [background.png]
-Writes tools/ui/mock/{l,p}_*.html (+ kit.css, bg.jpg) and PNGs (2x) into out_dir.
+Writes tools/ui/mock/{l,p,sl,sp}_*.html (+ kit.css, bg.jpg) and PNGs (2x) into out_dir.
 """
 import colorsys
 import html as htmlmod
@@ -33,14 +35,18 @@ sys.path.insert(0, os.path.dirname(HERE))
 import build_ui_assets as kit  # noqa: E402
 
 UI = "../../../unity/Assets/Art/UI/Resources/UI/"
-W, H = 844, 390
-# Insets of a notched iPhone in landscape (points): the notch side and the home indicator.
-SL, SR, SB, ST = 44, 44, 21, 0
+W, H = 965, 446
+# Insets of a notched iPhone in landscape (units): the notch side and the home indicator (47 / 21 pt).
+SL, SR, SB, ST = 54, 54, 24, 0
 ORIENT = "l"
 
-# Portrait (GameUi.Portrait): the phone turned, the panel matched on its short side (390 across), the Dynamic
-# Island on top and the home indicator below.
-ORIENTATIONS = {"l": (844, 390, 44, 44, 21, 0), "p": (390, 844, 0, 0, 34, 59)}
+# Every screen in panel units (GameUi.ReferenceFor): a regular phone is 446 units across its short side in either
+# orientation; a small phone (375 pt: SE, mini) 428, so a unit never drops under 0.875 pt. Portrait: the Dynamic
+# Island on top (59 pt) and the home indicator below (34 pt). The SE has no notch (20 pt status bar in portrait).
+ORIENTATIONS = {"l": (965, 446, 54, 54, 24, 0), "p": (446, 965, 0, 0, 39, 67),
+                "sl": (762, 428, 0, 0, 0, 0), "sp": (428, 762, 0, 0, 0, 23)}
+# Points per unit of each screen (for the side-by-side physical comparison).
+PT_PER_UNIT = {"l": 390 / 446, "p": 390 / 446, "sl": 375 / 428, "sp": 375 / 428}
 
 
 def set_orient(o):
@@ -50,7 +56,7 @@ def set_orient(o):
 
 
 def P():
-    return ORIENT == "p"
+    return ORIENT in ("p", "sp")
 
 
 def bottom_pad():
@@ -80,7 +86,7 @@ TILE_GAP = 2
 BUILD_BTN = 70
 SMALL_BTN = 44
 COMPASS = 56
-POPUP_TOP = 56
+POPUP_TOP = 50
 GO_W = 68
 
 
@@ -151,8 +157,9 @@ def css():
              ".ic{background-size:100% 100%;flex:none}"]
     for name, (_h, w, hgt, l, t, r, b) in kit.SKINS.items():
         s = kit.SKIN_SCALE
+        mode = "round" if name in kit.TILED else "stretch"   # UiKit: tiled skins repeat (-unity-slice-type: tiled)
         rules.append(f".sk-{name}{{border-style:solid;border-width:{t}px {r}px {b}px {l}px;"
-                     f"border-image:url({UI}Skin/{name}.png) {t * s} {r * s} {b * s} {l * s} fill / {t}px {r}px {b}px {l}px stretch}}")
+                     f"border-image:url({UI}Skin/{name}.png) {t * s} {r * s} {b * s} {l * s} fill / {t}px {r}px {b}px {l}px {mode}}}")
     return "\n".join(rules)
 
 
@@ -543,8 +550,8 @@ def card(title, lv, body, foot, w=None, narrow=False):
     maxh = H - POPUP_TOP - 4 - SB - 8   # LayoutHud: the card starts 4 below PopupTop (clear of the XP bar)
     back = ""
     if P():
-        # A bottom sheet across the screen, at most the lower ~60%, the back arrow under it.
-        top_limit = max(popup_top(True), round(H * 0.36))
+        # A bottom sheet across the screen, at most about the lower half, the back arrow under it.
+        top_limit = max(popup_top(True), round(H * 0.45))
         bottom = sheet_bottom()
         maxh = H - top_limit - bottom
         sl = SL + (safe_w() - w) / 2 - 8
@@ -658,9 +665,9 @@ def item_card(ic, name, rar, cst, cnt, locked, margin):
 
 
 def page_build_p(tabs, items):
-    """GameUi.BuildDrawerPortrait: a bottom sheet over the lower ~55%: plank, tabs and queue, items in rows of three."""
+    """GameUi.BuildDrawerPortrait: a bottom sheet over about the lower half: plank, tabs and queue, items in rows."""
     w = card_w()
-    top = max(popup_top(True), round(H * 0.42))
+    top = max(popup_top(True), round(H * 0.48))
     row_w = w - 20
     per = max(1, int(row_w // 104))
     side = math.floor((row_w - per * 104) / (2 * per))
@@ -731,8 +738,8 @@ def window(title, body, tabs=None, foot=None, bottom=None, back=True, narrow=Fal
     bottom = (sheet_bottom() if P() else SB + 8) if bottom is None else bottom
     left = sl + (sw - w) / 2
     if top is None:
-        # Portrait: a bottom sheet over the lower ~60% (GameUi.WindowTopPortrait).
-        top = max(popup_top(True), round(H * 0.30)) if P() else POPUP_TOP
+        # Portrait: a bottom sheet over about the lower half (GameUi.WindowTopPortrait).
+        top = max(popup_top(True), round(H * 0.40)) if P() else POPUP_TOP
     tabs_html = f'<div class="row" style="gap:6px;margin-top:6px;align-items:flex-end;flex:none">{tabs}</div>' if tabs else ""
     foot_html = f'<div class="row c" style="gap:16px;padding-top:8px;flex:none">{foot}</div>' if foot else ""
     win = (f'<div class="a" style="left:{left}px;top:{top}px;width:{w}px;bottom:{bottom}px">'
@@ -874,15 +881,17 @@ def page_goals():
     body = banner + tasks + road
     w = window_w()
     left = SL + (safe_w(False) - w) / 2
+    # GameUi.BottomTabsRoom: the window ends above its bottom tabs (the list never runs under them).
+    room = 40 + 3 + 5
     if P():
         # The kit's task screen: from under the resource bar down to the bottom tabs, the back arrow under them.
-        bottom = sheet_bottom() + 34
+        bottom = sheet_bottom() + room
         tw = min(150, math.floor((w - 20 - 12) / 3))
-        btabs = (f'<div class="a row" style="left:{left + 10}px;bottom:{sheet_bottom() - 4}px;gap:6px;align-items:flex-end">'
+        btabs = (f'<div class="a row" style="left:{left + 10}px;bottom:{sheet_bottom()}px;gap:6px;align-items:flex-end">'
                  + tab("Chapter", True, tw, 40) + tab("Milestones", False, tw, 40, "!") + tab("First Steps", False, tw, 40) + "</div>")
         return hud(panel_open=True) + window("Chapter Tasks", body, None, bottom=bottom, top=popup_top(True)) + btabs, ""
-    bottom = SB + 8 + 34
-    btabs = (f'<div class="a row" style="left:{left + 16}px;bottom:{SB + 4}px;gap:6px;align-items:flex-end">'
+    bottom = SB + 8 + room
+    btabs = (f'<div class="a row" style="left:{left + 16}px;bottom:{SB + 8}px;gap:6px;align-items:flex-end">'
              + tab("Chapter", True, 150, 40) + tab("Milestones", False, 150, 40, "!") + tab("First Steps", False, 150, 40) + "</div>")
     return hud(panel_open=True) + window("Chapter Tasks", body, None, bottom=bottom) + btabs, ""
 
@@ -910,6 +919,14 @@ def page_weather():
     return hud(panel_open=True) + window("Weather & Warmth", forecast + homes, tabs), ""
 
 
+LAWNAME = [""]
+
+
+def name_id(_ic):
+    """The law id of the node being drawn (its name in lower case with underscores)."""
+    return re.sub(r"[^a-z]+", "_", LAWNAME[0].lower()).strip("_")
+
+
 def page_customs():
     chip = capsule(icon("clock", 22) + t("A law can be signed", BODY, extra="margin-left:5px"), 34, gap=0)
     tabs = f'<div class="grow">{t("1/14 customs signed · discontent 21", BODY, PALE)}</div>' + chip
@@ -919,11 +936,21 @@ def page_customs():
     detail_w = iw if P() else 248
     col_w = math.floor((iw - detail_w - 8 - 8) / 2)
 
+    def lawslot(ic, kind, size):
+        """GameUi.LawSlot: the custom's own picture on its state's cell, a tick (signed) or padlock (locked) on the corner."""
+        law = "law_" + name_id(ic)
+        mark = {"check": "check", "lock": "lock"}.get(ic)
+        cell = slot(law, size, kind, dim=ic == "lock", share=.72)
+        if mark:
+            cell = cell.replace('</div></div>', f'<div class="a" style="right:-5px;bottom:-4px">{icon(mark, round(size * .44))}</div></div></div>', 1)
+        return cell
+
     def node(name, meta, mcol, kind, ic, sel=False, w=col_w):
         nw = w - 12 - 42 - 8
         size = max(SMALL, min(NUM, (nw - 2 * math.ceil(ow(NUM)) - 1) / max(.01, text_w(name, 1, False)))) if text_w(name, NUM) > nw else NUM
         size = math.floor(size * 4) / 4
-        return box("slot" if sel else "section", f'<div class="row" style="padding:6px 6px {9 if sel else 6}px">{slot(ic, 42, kind, share=.62)}'
+        LAWNAME[0] = name
+        return box("slot" if sel else "section", f'<div class="row" style="padding:6px 6px {9 if sel else 6}px">{lawslot(ic, kind, 42)}'
                    f'<div class="col grow" style="margin-left:8px">{t(name, size, PALE if ic == "lock" else "#fff", cls="w")}{t(meta, SMALL, mcol, cls="w")}</div></div>',
                    "min-height:60px;margin-bottom:8px")
 
@@ -937,7 +964,8 @@ def page_customs():
           f'{node("Day of Rest", "Signed", UP, "uncommon", "check")}{node("Burial Rites", "Can be signed", GOLD, "legendary", "customs")}{node("Harvest Festival", "Can be signed", GOLD, "legendary", "customs")}</div>')
     effects = "".join(f'<div class="row" style="align-items:flex-start;margin-top:5px">{icon("check" if g else "alert", 22)}{t(tx, BODY, UP if g else BAD, "margin-left:6px", "flex")}</div>'
                       for tx, g in (("+15% work", True), ("+25% illness", False), ("+2 discontent per hour", False), ("+4 discontent when signed", False)))
-    detail = inset(f'<div class="row">{slot("customs", 52, "legendary", share=.62)}<div class="col grow" style="margin-left:8px">{t("Survival", SMALL, PALE)}{t("Long Days", H2)}</div></div>'
+    LAWNAME[0] = "Long Days"
+    detail = inset(f'<div class="row">{lawslot("customs", "legendary", 52)}<div class="col grow" style="margin-left:8px">{t("Survival", SMALL, PALE)}{t("Long Days", H2)}</div></div>'
                    f'{ink("Work from first light until dark. Everyone works 15% more, but falls ill more and grumbles.", BODY, extra="margin-top:6px")}'
                    f'{effects}' + btn("green", "Sign the custom", detail_w - 20, icon_name="customs").replace("flex:none", "flex:none;margin-top:8px"),
                    f"width:{detail_w}px", "10px 10px")
@@ -1054,7 +1082,7 @@ def page_story_p(scrim):
 
 def page_loading():
     """LoadingScreen: the montage (bg here) filling the screen, the title, the tip, the bar and the version."""
-    top = f"top:{ST + 96}px" if P() else "top:9%"
+    top = f"top:{ST + 64}px" if P() else "top:9%"
     side = 16 if P() else 24
     b = bottom_pad()
     shades = ('<div class="a" style="left:0;right:0;top:0;height:45%;background:linear-gradient(180deg,rgba(20,13,5,.55),rgba(20,13,5,0))"></div>'
@@ -1063,7 +1091,7 @@ def page_loading():
              f'{t("FOUNDERS", 38, extra="letter-spacing:4px;margin-top:6px")}{t("THE LONG RISE", 14, GOLD, "letter-spacing:3px")}'
              f'{t("Build a world that outlives you.", BODY, PALE, "margin-top:6px")}</div>')
     tip = box("panel", f'<div class="row" style="padding:7px 14px 11px 12px">{icon("knowledge", 32)}<div class="col grow" style="margin-left:10px">'
-              f'{t("Founder&#39;s tip", SMALL, GOLD)}{t("Food spoils in the open. A storage pit keeps part of it safe.", BODY, cls="w")}</div></div>', "max-width:600px")
+              f'{t("Founder&#39;s tip", SMALL, GOLD)}{t("Food spoils in the open. A storage pit keeps part of it safe.", BODY, cls="w")}</div></div>', "width:100%;max-width:600px")
     tip_row = f'<div class="a col" style="left:0;right:0;bottom:{b + 76}px;align-items:center;padding:0 {side}px">{tip}</div>'
     prog = (f'<div class="a col" style="left:0;right:0;bottom:{b + 34}px;align-items:center;padding:0 {side}px"><div class="col" style="width:100%;max-width:520px">'
             f'<div class="row" style="justify-content:space-between">{t("Kindling the hearth…", BODY, PALE)}{t("64%", NUM, GOLD)}</div>{bar(.64, "100%", 12, extra="margin-top:4px")}</div></div>')
@@ -1094,7 +1122,7 @@ def page_settings():
 
 
 PAGES = {
-    "01_hud": page_hud, "01b_hud_693": lambda: page_hud(True), "02_heart_card": page_heart, "03_workplace_card": page_workplace,
+    "01_hud": page_hud, "02_heart_card": page_heart, "03_workplace_card": page_workplace,
     "04_build": page_build, "05_people": page_people, "05b_people_work": page_people_work, "06_research": page_research,
     "07_goals": page_goals, "08_event": page_event, "09_story": page_story, "10_welcome_back": page_welcome,
     "11_weather": page_weather, "12_customs": page_customs, "13_settings": page_settings, "14_loading": page_loading,
@@ -1132,16 +1160,14 @@ def main():
         f.write(css())
     problems = 0
     only = os.environ.get("MOCKS")  # e.g. MOCKS=p_04 renders the pages whose names start with it
-    for o in ("l", "p"):
+    for o in ORIENTATIONS:
         set_orient(o)
         for base, fn in PAGES.items():
-            if o == "p" and "693" in base:
-                continue
             name = f"{o}_{base}"
             if only and not any(name.startswith(x) for x in only.split(",")):
                 continue
             body, body_style = fn()
-            width = 693 if "693" in base else W
+            width = W
             doc = (f'<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="kit.css"></head>'
                    f'<body style="width:{width}px;height:{H}px;{body_style}">{body}{CHECK_JS}</body></html>')
             path = os.path.join(HERE, name + ".html")

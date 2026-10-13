@@ -103,6 +103,30 @@ class Canvas:
             amp *= 0.5
         return total / norm
 
+    def pnoise(self, period, cells, octaves=3, origin=(0.0, 0.0), seed=0, gain=0.5):
+        """Periodic value noise in -1..1: repeats every `period` (px, py) points from `origin`, with `cells`
+        (cx, cy) lattice cells per period at the first octave (doubling each octave). Tiled 9-slice skins use it
+        so their middle and edges repeat without seams."""
+        rnd = np.random.default_rng(seed)
+        total = np.zeros_like(self.X)
+        amp, norm = 1.0, 0.0
+        for o in range(octaves):
+            cx, cy = int(cells[0] * 2 ** o), int(cells[1] * 2 ** o)
+            g = rnd.uniform(-1, 1, (cy, cx)).astype(np.float32)
+            fx = (self.X - origin[0]) / period[0] * cx
+            fy = (self.Y - origin[1]) / period[1] * cy
+            ix, iy = np.floor(fx).astype(int), np.floor(fy).astype(int)
+            tx, ty = fx - ix, fy - iy
+            tx = tx * tx * tx * (tx * (tx * 6 - 15) + 10)
+            ty = ty * ty * ty * (ty * (ty * 6 - 15) + 10)
+            x0, x1, y0, y1 = ix % cx, (ix + 1) % cx, iy % cy, (iy + 1) % cy
+            v = (g[y0, x0] * (1 - tx) * (1 - ty) + g[y0, x1] * tx * (1 - ty) + g[y1, x0] * (1 - tx) * ty +
+                 g[y1, x1] * tx * ty)
+            total += v * amp
+            norm += amp
+            amp *= gain
+        return total / norm
+
     def polygon(self, pts):
         """Exact signed distance (pt) to a polygon; negative inside."""
         X, Y = self.X, self.Y
@@ -230,6 +254,133 @@ def notch(x, y, side, size=1.6):
     return [(x + 0.5, y - s), (x + 0.5, y + s), (x - s * 1.1, y - s * 0.2)]
 
 
+# ---------------------------------------------------------------- procedural materials (CC0 by construction)
+# Real-looking wood, parchment and wrought iron, painted from periodic noise so the tiled skins (panel, plank,
+# section: -unity-slice-type: tiled) repeat their middle and edges without seams. Every material returns a colour
+# (H x W x 3) and, where it has relief, a height map that light_relief() turns into shading (light from the top left).
+
+LIGHT = np.array([-0.45, -0.65], np.float32)    # screen-space direction the light comes from (x, y)
+
+
+def light_relief(cv, height, strength):
+    """Shading factor (~1) from a height map: slopes facing the light are brighter, the others darker."""
+    gy, gx = np.gradient(height, 1.0 / PPT)
+    return 1 + (gx * LIGHT[0] + gy * LIGHT[1]) * strength
+
+
+def wood(cv, period, origin, along="x", light="#C98A52", dark="#7A4422", ring=7.0, seed=1, knots=True):
+    """Sawn oak/walnut grain running `along` x or y, periodic over `period` points: warped growth rings with dark
+    latewood lines, fine fibres, scattered pores and the odd knot. Returns (colour, height)."""
+    if along == "y":
+        # paint it lying down and turn it: grain along y with the period along y
+        X, Y = cv.X, cv.Y
+        cv.X, cv.Y = Y, X
+        col, h = wood(cv, (period[1], period[0]), (origin[1], origin[0]), "x", light, dark, ring, seed, knots)
+        cv.X, cv.Y = X, Y
+        return col, h
+    pu = period[0]
+    warp = cv.pnoise((pu, pu), (2, 3), 3, origin, seed) * 2.6 + cv.pnoise((pu, pu), (1, 2), 2, origin, seed + 1) * 3.5
+    if knots:  # a knot or two: the rings swirl round a point
+        rnd = np.random.default_rng(seed + 7)
+        for _ in range(2):
+            kx, ky = origin[0] + rnd.uniform(0.1, 0.9) * pu, origin[1] + rnd.uniform(0.2, 0.8) * period[1]
+            for sx in (-pu, 0, pu):  # periodic copies
+                dx, dy = (cv.X - kx - sx) / 3.2, (cv.Y - ky) / 1.6
+                warp += np.exp(-(dx * dx + dy * dy)) * 2.2
+    v = cv.Y / ring + warp * 0.55
+    ph = v - np.floor(v)
+    # the dark latewood line of each ring: thin, its strength drifting along the board
+    late = smoothstep(0.7, 0.86, ph) * (1 - smoothstep(0.88, 0.97, ph))
+    fade = 0.55 + 0.45 * cv.pnoise((pu, pu), (3, 2), 2, origin, seed + 5)
+    late = late * np.clip(fade, 0.15, 1)
+    early = smoothstep(0.0, 0.5, ph) * 0.18                               # earlywood darkens towards the line
+    fib = cv.pnoise((pu, pu), (int(pu / 10), int(pu / 0.55)), 3, origin, seed + 2)   # long thin fibres
+    pores = (cv.pnoise((pu, pu), (int(pu / 2.2), int(pu / 0.4)), 1, origin, seed + 3) > 0.7).astype(np.float32)
+    blot = cv.pnoise((pu, pu), (3, 2), 3, origin, seed + 4)
+    t = np.clip(0.22 + early + late * 0.6 + fib * 0.16 + pores * 0.1 + blot * 0.14, 0, 1)
+    col = lerp(rgb(light), rgb(dark), t[..., None])
+    height = -late * 0.25 - pores * 0.18 + fib * 0.1
+    return col, height
+
+
+def parchment(cv, period, origin, base="#ECD6B0", seed=11, stains=True):
+    """Aged parchment, periodic over `period`: cloudy mottling, laid fibres, flecks and faint tide-mark stains.
+    Returns (colour, height)."""
+    p = period
+    cloud = cv.pnoise(p, (3, 3), 4, origin, seed) * 0.6 + cv.pnoise(p, (1, 1), 2, origin, seed + 1) * 0.4
+    fib = cv.pnoise(p, (int(p[0] / 9), int(p[1] / 1.2)), 2, origin, seed + 2) * 0.5 + \
+        cv.pnoise(p, (int(p[0] / 1.2), int(p[1] / 7)), 2, origin, seed + 3) * 0.5
+    grain = cv.pnoise(p, (int(p[0] / 0.7), int(p[1] / 0.7)), 1, origin, seed + 4)
+    fleck = (cv.pnoise(p, (int(p[0] / 1.1), int(p[1] / 1.1)), 1, origin, seed + 5) > 0.8).astype(np.float32)
+    col = rgb(base) * (1 + cloud[..., None] * 0.045 + fib[..., None] * 0.04 + grain[..., None] * 0.025)
+    col = lerp(col, rgb("#B58552"), (np.clip(-cloud - 0.35, 0, 1) * 0.3)[..., None])   # darker age patches
+    col = lerp(col, rgb("#8A5A30"), (fleck * 0.2)[..., None])
+    if stains:  # faint tide marks: thin darker rims of dried spills
+        s = cv.pnoise(p, (2, 2), 3, origin, seed + 6)
+        rim = np.exp(-((s - 0.45) / 0.02) ** 2) * 0.06
+        col = lerp(col, rgb("#A87A48"), rim[..., None])
+    height = fib * 0.05 + grain * 0.04
+    return np.clip(col, 0, 1), height
+
+
+def iron(cv, seed=21):
+    """Hammered wrought iron: dark blue-grey with pitting and a few lighter worn spots. Returns (colour, height)."""
+    pit = cv.noise(1.2, 2, seed=seed)
+    wear = cv.noise(4.0, 2, seed=seed + 1)
+    col = rgb("#4C5058") * (1 + pit[..., None] * 0.12)
+    col = lerp(col, rgb("#7E848C"), (np.clip(wear - 0.3, 0, 1) * 0.6)[..., None])
+    return col, pit * 0.12
+
+
+def metal_piece(cv, d, seed=21, outline=0.9, bevel=1.4):
+    """Draws a wrought-iron piece whose outline is the signed distance `d` (pt): dark edge, bevelled, lit, a hard
+    contact shadow under it."""
+    shadow = np.roll(cv.cover(d), int(0.8 * PPT), axis=0)
+    cv.over(np.zeros(3, np.float32), shadow * 0.35)
+    cv.over(rgb("#15171C"), cv.cover(d))
+    di = d + outline
+    col, h = iron(cv, seed)
+    gy, gx = np.gradient(di, 1.0 / PPT)
+    n = np.hypot(gx, gy) + 1e-6
+    band = smoothstep(-bevel, 0.0, di)
+    shade = (-(gx / n) * LIGHT[0] - (gy / n) * LIGHT[1]) * band * 0.55
+    col = np.clip(col * (light_relief(cv, h, 0.6) + shade)[..., None], 0, 1)
+    cv.over(col, cv.cover(di))
+
+
+def rivet(cv, x, y, r=1.35, metal="#7A808A"):
+    """A domed rivet head: a small sphere lit from the top left with a sharp highlight and a dark rim."""
+    dx, dy = (cv.X - x) / r, (cv.Y - y) / r
+    rr = dx * dx + dy * dy
+    inside = np.clip((1 - rr) * r * PPT * 0.5, 0, 1)
+    shadow = np.clip((1 - ((cv.X - x - 0.35) ** 2 + (cv.Y - y - 0.55) ** 2) / (r * 1.25) ** 2) * 3, 0, 1)
+    cv.over(np.zeros(3, np.float32), shadow * 0.45)
+    nz = np.sqrt(np.clip(1 - rr, 0, 1))
+    lam = np.clip(-dx * LIGHT[0] * 0.8 - dy * LIGHT[1] * 0.8 + nz * 0.55, 0, 1.4)
+    spec = np.clip(1 - ((dx + 0.38) ** 2 + (dy + 0.45) ** 2) / 0.09, 0, 1) ** 2
+    col = rgb(metal) * (0.35 + lam[..., None] * 0.8) + spec[..., None] * 0.85
+    rim = smoothstep(0.62, 1.0, rr)
+    col = lerp(col, rgb("#1A1C22"), (rim * 0.75)[..., None])
+    cv.over(np.clip(col, 0, 1), inside)
+
+
+def corner_brackets(cv, x0, y0, x1, y1, leg=15.0, width=5.0, inset=1.0, r=1.4, seed=40):
+    """Wrought-iron L brackets on the four corners of a frame (each inside its corner slice), three rivets each."""
+    for sx, sy in ((0, 0), (1, 0), (0, 1), (1, 1)):
+        cx = x0 + inset if sx == 0 else x1 - inset
+        cy = y0 + inset if sy == 0 else y1 - inset
+        ex = 1 if sx == 0 else -1
+        ey = 1 if sy == 0 else -1
+        a = cv.rrect(min(cx, cx + ex * leg), min(cy, cy + ey * width), max(cx, cx + ex * leg), max(cy, cy + ey * width), r)
+        b = cv.rrect(min(cx, cx + ex * width), min(cy, cy + ey * leg), max(cx, cx + ex * width), max(cy, cy + ey * leg), r)
+        d = np.minimum(a, b)
+        # cut the inner corner round, like a forged bracket
+        metal_piece(cv, d, seed + sx + 2 * sy)
+        h = width / 2
+        for px, py in ((h, h), (leg - 2.6, h), (h, leg - 2.6)):
+            rivet(cv, cx + ex * px, cy + ey * py, 1.15)
+
+
 # ---------------------------------------------------------------- skins
 def parchment_detail(cv):
     fib = cv.noise(5.0, 3, aspect=(3.0, 0.6), seed=11) * 0.5 + cv.noise(2.0, 2, seed=12) * 0.5
@@ -263,66 +414,144 @@ def tab_on():
 
 def tab_off():
     cv = Canvas(48, 33.5, seed=6)
-    g = wood_grain(cv, 0.22)
+    wc, wh = wood(cv, (48, 48), (0, 0), "x", "#C88A58", "#7A4626", 4.0, seed=6, knots=False)
+    g = ((wc @ np.array([0.3, 0.59, 0.11], np.float32)) / 0.5 - 1 + wh) * 0.4
     chunky(cv, (0, 0, 48, 32), 7, "#BD7F4E", "#A0643A", "#7A4522", hi=0.22, lip_h=2.5, drop=1.5, grain=g,
            notches=[notch(39.5, 2.2, "top", 1.2)])
     return cv
 
 
+PANEL_TILE = 160    # the repeating middle of the tiled panel (points); its slices are 16/16/16/19
+PANEL_W, PANEL_BODY = 16 + PANEL_TILE + 16, 16 + PANEL_TILE + 16
+
+
+def frame_profile(cv, outer, inner, bevel=1.8):
+    """Height (0..1) of a moulded frame between two signed distances: rounded up from the outer edge and
+    down again into the inner opening."""
+    a = np.clip(-outer / bevel, 0, 1)
+    b = np.clip(inner / bevel, 0, 1)
+    return np.sin(np.minimum(a, b) * np.pi / 2)
+
+
 def panel():
-    cv = Canvas(72, 74.5, seed=8)
-    det = parchment_detail(cv)
-    chunky(cv, (0, 0, 72, 72), 11, "#EED7B4", "#E6C89F", "#C9A275", hi=0.0, lip_h=3.5, bevel=2.0, bevel_k=0.12,
-           detail=det, detail_k=0.07, ring=("#FBEEDA", 1.6), wobble=0.22,
-           notches=[notch(0.8, 9.0, "left", 2.3), notch(71.2, 62.0, "right", 2.3), notch(10.0, 0.8, "top", 2.0),
-                    notch(60.0, 71.2, "bottom", 2.0)])
-    # speckles of darker fibre (sparse)
-    sp = (cv.noise(0.8, 1, seed=21) > 0.82).astype(np.float32) * 0.18
-    cv.over(rgb("#9A6A3A"), sp * cv.cover(cv.rrect(4, 4, 68, 67, 8)))
+    """The popup: parchment in a mitred walnut frame with wrought-iron corner brackets. Tiled: the middle
+    (parchment) and the edges (frame) repeat every PANEL_TILE points without seams."""
+    W, B = PANEL_W, PANEL_BODY
+    cv = Canvas(W, B + 3, seed=8)
+    o = (16.0, 16.0)
+    per = (PANEL_TILE, PANEL_TILE)
+    d = cv.rrect(0, 0, W, B, 11)
+    cv.over(np.zeros(3, np.float32), cv.cover(cv.rrect(0, 2.5, W, B + 2.5, 11)) * 0.38)   # drop shadow
+    cv.over(rgb(INK), cv.cover(d))
+    # the frame: horizontal grain on the top and bottom rails, vertical on the stiles, mitred at the corners
+    fi = 9.0                                    # frame inner edge (from the outside)
+    inner = cv.rrect(fi, fi, W - fi, B - fi, 4.5)
+    wh, hh = wood(cv, per, o, "x", "#B97A48", "#5A3218", 2.6, seed=3)
+    wv, hv = wood(cv, per, o, "y", "#B97A48", "#5A3218", 2.6, seed=4)
+    dist_h = np.minimum(cv.Y, B - cv.Y)
+    dist_v = np.minimum(cv.X, W - cv.X)
+    horiz = dist_h <= dist_v
+    wcol = np.where(horiz[..., None], wh, wv)
+    wht = np.where(horiz, hh, hv)
+    prof = frame_profile(cv, d + 1.8, inner, 2.2)
+    wcol = wcol * light_relief(cv, wht * 0.6 + prof * 1.6, 0.18)[..., None]
+    mitre = np.exp(-((dist_h - dist_v) / 0.25) ** 2) * (dist_h < fi + 0.5)
+    wcol = lerp(wcol, rgb("#24130A"), (mitre * 0.7)[..., None])
+    cv.over(np.clip(wcol, 0, 1), cv.cover(d + 1.8))
+    # a dark groove where the parchment meets the frame, then the parchment itself
+    cv.over(rgb("#2A170B"), cv.cover(inner - 0.9))
+    pcol, ph = parchment(cv, per, o, "#EDD8B3", seed=11)
+    pcol = pcol * light_relief(cv, ph, 0.12)[..., None]
+    # the frame's shadow on the parchment (top and left) and a little age burn along every edge; both fade out
+    # inside the slices so the tiled middle stays clean
+    din = np.clip(-inner, 0, 9)
+    burn = (1 - smoothstep(0.0, 6.5, din)) * 0.22
+    shadow_in = np.clip(-cv.rrect(fi + 0.6, fi + 1.6, W - fi + 0.6, B - fi + 1.6, 4.5), 0, 9)
+    sh = (1 - smoothstep(0.0, 2.6, shadow_in)) * 0.35 * cv.cover(inner)
+    pcol = lerp(pcol, rgb("#8E5E32"), burn[..., None])
+    pcol = pcol * (1 - sh[..., None])
+    cv.over(np.clip(pcol, 0, 1), cv.cover(inner))
+    corner_brackets(cv, 0, 0, W, B, leg=14.5, width=5.4, inset=0.6)
     return cv
+
+
+PLANK_TILE = 160
 
 
 def plank():
-    cv = Canvas(80, 36.5, seed=9)
-    g = wood_grain(cv, 0.42, 0.5)
-    chunky(cv, (0, 0, 80, 34), 6, "#E7A869", "#C98450", "#9A5A2E", hi=0.45, lip_h=3.5, bevel=2.2, bevel_k=0.2,
-           grain=g, wobble=0.3,
-           notches=[notch(0.8, 8, "left", 2.1), notch(79.2, 24, "right", 2.1), notch(11, 0.8, "top", 1.8),
-                    notch(68, 33.2, "bottom", 1.8)],
-           glint=(7.0, 6.0, 4.0, 1.4))
+    """The title board: a thick oak plank with an engraved border, iron straps and rivets at both ends. Tiled
+    along its length (the grain repeats every PLANK_TILE points); exactly Theme.PlankH (38) tall."""
+    W, H, body = 14 + PLANK_TILE + 14, 38, 35.5
+    cv = Canvas(W, H, seed=9)
+    d = cv.rrect(0, 0, W, body, 6)
+    cv.over(np.zeros(3, np.float32), cv.cover(cv.rrect(0, 2.5, W, body + 2.5, 6)) * 0.4)
+    cv.over(rgb(INK), cv.cover(d))
+    di = d + 2.0
+    col, h = wood(cv, (PLANK_TILE, 64), (14.0, 0.0), "x", "#DE9A60", "#7E4220", 3.2, seed=9, knots=False)
+    # the board is rounded over at its edges, and its lower third falls into shade
+    prof = np.clip(-di / 2.4, 0, 1)
+    t = np.clip(cv.Y / body, 0, 1)
+    col = col * (1.06 - 0.16 * smoothstep(0.45, 1.0, t))[..., None]
+    col = col * light_relief(cv, h * 0.7 + np.sin(prof * np.pi / 2) * 1.4, 0.2)[..., None]
+    # engraved border: a dark cut with a light lower lip (a recessed line in the wood)
+    eng = cv.rrect(11.5, 4.2, W - 11.5, body - 5.2, 3)
+    cut = np.exp(-(eng / 0.45) ** 2)
+    lip = np.exp(-((eng + 0.75) / 0.4) ** 2) * (cv.Y > body / 2) + np.exp(-((eng - 0.75) / 0.4) ** 2) * (cv.Y < body / 2)
+    col = lerp(col, rgb("#4A2610"), (cut * 0.75)[..., None])
+    col = lerp(col, rgb("#F4C38A"), (lip * 0.35)[..., None])
+    # a soft sheen along the top edge
+    hi = np.clip(cv.cover(di) - cv.cover(cv.rrect(0, 1.3, W, body + 1.3, 6) + 2.0), 0, 1)
+    col = lerp(col, rgb("#FFE2B8"), (hi * 0.55)[..., None])
+    cv.over(np.clip(col, 0, 1), cv.cover(di))
+    # iron straps over both ends
+    for x0 in (2.6, W - 9.6):
+        strap = cv.rrect(x0, -0.6, x0 + 7.0, body + 0.6, 1.2)
+        metal_piece(cv, np.maximum(strap, d + 0.8), seed=50 + int(x0))
+        for y in (7.0, body - 8.0):
+            rivet(cv, x0 + 3.5, y, 1.3)
     return cv
 
 
+SECTION_TILE = 96
+
+
 def section():
-    cv = Canvas(48, 48, seed=10)
-    d = cv.rrect(0.3, 0.3, 47.7, 47.7, 8) + cv.noise(6.0, 2, seed=7) * 0.12
-    det = parchment_detail(cv)
-    t = np.clip(cv.Y / 48, 0, 1)
-    col = lerp(rgb("#DDB78A"), rgb("#E2BE93"), t[..., None]) * (1 + det[..., None] * 0.05)
-    # inner shadow along the top and left, light lip at the bottom (an inset in the parchment)
-    lowered = cv.rrect(0.3, 2.2, 47.7, 49.6, 8)
+    """An inset in the parchment (tiled; slices 12): a slightly darker, recessed sheet with a shadow under its
+    top edge and a light lip along the bottom."""
+    W = 12 + SECTION_TILE + 12
+    cv = Canvas(W, W, seed=10)
+    d = cv.rrect(0.3, 0.3, W - 0.3, W - 0.3, 8)
+    col, h = parchment(cv, (SECTION_TILE, SECTION_TILE), (12.0, 12.0), "#E2C397", seed=31, stains=False)
+    col = col * light_relief(cv, h, 0.1)[..., None]
+    lowered = cv.rrect(0.3, 2.4, W - 0.3, W + 1.6, 8)
     sh = np.clip(cv.cover(d) - cv.cover(lowered), 0, 1)
-    col = lerp(col, rgb("#B98D5E"), sh[..., None] * 0.7)
-    edge = np.clip(cv.cover(d) - cv.cover(d + 1.2), 0, 1)
-    col = lerp(col, rgb("#C49A6A"), edge[..., None] * 0.8)
-    raised = cv.rrect(0.3, -1.4, 47.7, 46.3, 8)
+    col = lerp(col, rgb("#A97C4E"), sh[..., None] * 0.7)
+    inside = np.clip(-d, 0, 8)
+    soft = (1 - smoothstep(0, 5.5, inside)) * 0.12
+    col = col * (1 - soft[..., None])
+    edge = np.clip(cv.cover(d) - cv.cover(d + 1.1), 0, 1)
+    col = lerp(col, rgb("#B88C5C"), edge[..., None] * 0.85)
+    raised = cv.rrect(0.3, -1.4, W - 0.3, W - 1.7, 8)
     lip = np.clip(cv.cover(d) - cv.cover(raised), 0, 1)
-    col = lerp(col, rgb("#F4E2C6"), lip[..., None] * 0.9)
-    cv.over(col, cv.cover(d))
+    col = lerp(col, rgb("#F6E6CC"), lip[..., None] * 0.9)
+    cv.over(np.clip(col, 0, 1), cv.cover(d))
     return cv
 
 
 def slot():
     cv = Canvas(48, 50.5, seed=12)
-    chunky(cv, (0, 0, 48, 48), 8, "#F6E7CD", "#ECD3AC", "#CFA978", hi=0.6, lip_h=3, bevel_k=0.12,
-           detail=parchment_detail(cv), detail_k=0.05, notches=[notch(0.8, 9, "left", 1.3)])
+    pc, ph = parchment(cv, (48, 48), (0, 0), "#F3E2C4", seed=41, stains=False)
+    det = (pc @ np.array([0.3, 0.59, 0.11], np.float32)) / 0.85 - 1 + ph * 0.5
+    chunky(cv, (0, 0, 48, 48), 8, "#F6E7CD", "#ECD3AC", "#CFA978", hi=0.6, lip_h=3, bevel_k=0.16,
+           detail=det, detail_k=0.6, notches=[notch(0.8, 9, "left", 1.3)])
     return cv
 
 
 def tile():
     cv = Canvas(48, 50.5, seed=13)
-    g = wood_grain(cv, 0.38, 0.45, (200, 60))
-    chunky(cv, (0, 0, 48, 48), 9, "#F0B97C", "#D0905A", "#995A2E", hi=0.45, lip_h=4, bevel_k=0.22, grain=g,
+    wc, wh = wood(cv, (48, 48), (0, 0), "x", "#F2BE84", "#B87440", 4.5, seed=13, knots=False)
+    g = (wc @ np.array([0.3, 0.59, 0.11], np.float32)) / 0.62 - 1 + wh
+    chunky(cv, (0, 0, 48, 48), 9, "#F0B97C", "#D0905A", "#995A2E", hi=0.45, lip_h=4, bevel_k=0.22, grain=g * 0.5,
            ring=("#F9CF98", 1.2), notches=[notch(0.8, 9, "left", 1.4), notch(39, 47.2, "bottom", 1.3)],
            glint=(6.5, 6.5, 3.5, 1.5))
     return cv
@@ -400,9 +629,13 @@ def kbtn(light, base, lip, stripes=0.0):
     """Blue-kit button: thick navy outline, bright glossy top half, strong darker bottom lip."""
     def draw():
         cv = Canvas(48, 42.5, seed=31)
-        chunky(cv, (0, 0, 48, 40), 6.5, light, base, lip, hi=0.55, outline=2.6, lip_h=6.0, drop=2.5,
-               drop_alpha=0.4, bevel=1.6, bevel_k=0.14, wobble=0.0, gloss=1.0, gloss_edge=(0.44, 0.5),
-               gloss_add=0.09, stripes=stripes, ink=NAVY, glint=(7.0, 6.5, 3.2, 1.3))
+        # enamel over a pressed tin body: a faint orange-peel texture, a bevelled rim and a hard specular streak
+        peel = cv.noise(0.9, 2, seed=5) * 0.6 + cv.noise(3.0, 2, seed=6) * 0.4
+        chunky(cv, (0, 0, 48, 40), 6.5, light, base, lip, hi=0.7, outline=2.6, lip_h=6.0, drop=2.5,
+               drop_alpha=0.4, bevel=2.0, bevel_k=0.24, wobble=0.0, gloss=1.0, gloss_edge=(0.44, 0.5),
+               gloss_add=0.09, stripes=stripes, ink=NAVY, glint=(7.0, 6.5, 3.2, 1.3), detail=peel, detail_k=0.035)
+        streak = cv.cover(cv.rrect(10.5, 3.6, 37.5, 5.0, 0.7)) * 0.32
+        cv.over(np.ones(3, np.float32), streak)
         return cv
     return draw
 
@@ -429,6 +662,13 @@ def hud_capsule():
     lo = np.clip(cv.cover(di) - cv.cover(cv.rrect(2, 0.8, 58, 22.8, 10)), 0, 1)   # light bottom edge
     col = lerp(col, rgb("#4A56A8"), lo[..., None] * 0.7)
     cv.over(col, cv.cover(di))
+    # a thin bevelled steel bezel just inside the outline (lit on top, dark below) and a brushed sheen
+    ring = np.clip(cv.cover(d + 1.2) - cv.cover(d + 2.4), 0, 1)
+    t2 = np.clip(cv.Y / 26, 0, 1)
+    steel = lerp(rgb("#B9C6E8"), rgb("#3A4478"), smoothstep(0.15, 0.85, t2)[..., None])
+    cv.over(steel, ring * 0.85)
+    brush = cv.noise(0.6, 2, aspect=(14.0, 0.4), seed=36) * 0.5 + 0.5
+    cv.over(rgb("#5A68B8"), cv.cover(di) * brush * 0.06)
     return cv
 
 

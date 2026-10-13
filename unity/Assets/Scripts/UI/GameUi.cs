@@ -100,25 +100,75 @@ namespace Founders.UI
 
         // MARK: - Setup
 
-        /// <summary>Design canvas: a landscape phone, 844 × 390 points (portrait: the same phone turned, 390 × 844).</summary>
-        public static readonly Vector2Int ReferenceResolution = new Vector2Int(844, 390);
+        /// <summary>
+        /// Units across a phone's short side on a regular phone (390 pt wide): 446, i.e. ~0.875 pt per unit, everything
+        /// 12–13% smaller than the first 390-unit design so more of the world shows. Smaller phones get fewer units
+        /// (see <see cref="ShortSideUnits"/>) so text never drops below 10.5 pt.
+        /// </summary>
+        public const float PhoneShortSide = 446;
+        /// <summary>Never fewer iOS points per panel unit than this (Small text, 12 units, stays ≥ 10.5 pt; a 46-unit tap is 40 pt).</summary>
+        public const float MinPointsPerUnit = 0.875f;
+        /// <summary>The short side a phone may not drop below (the first design's canvas).</summary>
+        const float MinShortSide = 390;
+        /// <summary>iPads: units along the long side (the first design matched 844 there; 12% smaller now).</summary>
+        public const float TabletLongSide = 960;
 
-        /// <summary>The design canvas for a screen: 844 × 390 in landscape, 390 × 844 in portrait.</summary>
-        public static Vector2Int ReferenceFor(int width, int height) =>
-            height > width ? new Vector2Int(ReferenceResolution.y, ReferenceResolution.x) : ReferenceResolution;
+        /// <summary>Design canvas of a regular phone in landscape (portrait: the same phone turned).</summary>
+        public static readonly Vector2Int ReferenceResolution = new Vector2Int(965, 446);
+
+        static bool IsPhone(int width, int height) =>
+            Mathf.Max(width, height) / (float)Mathf.Max(1, Mathf.Min(width, height)) >= 1.7f;
 
         /// <summary>
-        /// Phones (16:9 and longer) are matched on their short side, so the panel is always 390 units across it in
-        /// either orientation and text and buttons keep the same physical size when the phone turns (690–850 units
-        /// along the long side). Squarer screens (iPad) are matched on their long side: 844 units, so the short side
-        /// gets more than 390.
+        /// The screen's short side in iOS points: pixels over the device's scale (2x or 3x, from its pixel density;
+        /// an unknown density counts as a regular 390-point phone).
         /// </summary>
-        public static float MatchFor(int width, int height)
+        public static float ShortSidePoints(int width, int height, float dpi)
+        {
+            float px = Mathf.Min(width, height);
+            if (dpi <= 0) return 390;
+            float scale = Mathf.Max(1, Mathf.Round(dpi / 163f));
+            return px / scale;
+        }
+
+        /// <summary>
+        /// Units across a phone's short side: <see cref="PhoneShortSide"/>, or fewer on a small phone (iPhone SE /
+        /// mini, 375 pt: 428 units) so a unit is never under <see cref="MinPointsPerUnit"/> points.
+        /// </summary>
+        public static float ShortSideUnits(int width, int height, float dpi)
+        {
+            float pts = ShortSidePoints(width, height, dpi);
+            return Mathf.Clamp(Mathf.Round(pts / MinPointsPerUnit), MinShortSide, PhoneShortSide);
+        }
+
+        /// <summary>
+        /// The design canvas for a screen. Phones (16:9 and longer) are matched on their short side
+        /// (<see cref="ShortSideUnits"/> across it in either orientation, so text and buttons keep their physical size
+        /// when the phone turns); squarer screens (iPad) on their long side (<see cref="TabletLongSide"/>).
+        /// </summary>
+        public static Vector2Int ReferenceFor(int width, int height, float dpi)
         {
             bool portrait = height > width;
             float ratio = Mathf.Max(width, height) / (float)Mathf.Max(1, Mathf.Min(width, height));
-            bool phone = ratio >= 1.7f;
-            // match 0 = width, 1 = height.
+            int shortSide, longSide;
+            if (IsPhone(width, height))
+            {
+                shortSide = Mathf.RoundToInt(ShortSideUnits(width, height, dpi));
+                longSide = Mathf.RoundToInt(shortSide * ratio);
+            }
+            else
+            {
+                longSide = Mathf.RoundToInt(TabletLongSide);
+                shortSide = Mathf.RoundToInt(TabletLongSide / ratio);
+            }
+            return portrait ? new Vector2Int(shortSide, longSide) : new Vector2Int(longSide, shortSide);
+        }
+
+        /// <summary>Phones are matched on their short side, iPads on their long side (match 0 = width, 1 = height).</summary>
+        public static float MatchFor(int width, int height)
+        {
+            bool portrait = height > width;
+            bool phone = IsPhone(width, height);
             return portrait ? (phone ? 0f : 1f) : (phone ? 1f : 0f);
         }
 
@@ -131,7 +181,7 @@ namespace Founders.UI
                 settings = ScriptableObject.CreateInstance<PanelSettings>();
             }
             settings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
-            settings.referenceResolution = ReferenceFor(Screen.width, Screen.height);
+            settings.referenceResolution = ReferenceFor(Screen.width, Screen.height, Screen.dpi);
             settings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
             settings.match = MatchFor(Screen.width, Screen.height);
             settings.sortingOrder = 10;
@@ -328,13 +378,13 @@ namespace Founders.UI
 
         /// <summary>
         /// Keeps the panel's design canvas and match in step with the screen (the phone turned, a resize): phones are
-        /// matched on their short side in both orientations, iPads on their long side (see <see cref="MatchFor"/>).
+        /// matched on their short side in both orientations, iPads on their long side (see <see cref="ReferenceFor"/>).
         /// </summary>
         void UpdateScale()
         {
             var settings = doc.panelSettings;
             if (settings == null) return;
-            var reference = ReferenceFor(Screen.width, Screen.height);
+            var reference = ReferenceFor(Screen.width, Screen.height, Screen.dpi);
             if (settings.referenceResolution != reference) settings.referenceResolution = reference;
             float m = MatchFor(Screen.width, Screen.height);
             if (!Mathf.Approximately(settings.match, m)) settings.match = m;
@@ -343,7 +393,7 @@ namespace Founders.UI
         // MARK: - Safe area and orientation
 
         /// <summary>Panel size and the safe-area insets (notch / Dynamic Island on top in portrait or on a side in landscape, home indicator below), in panel units.</summary>
-        float PanelW = 844, PanelH = 390, SafeTop, SafeBottom, SafeLeft, SafeRight;
+        float PanelW = 965, PanelH = 446, SafeTop, SafeBottom, SafeLeft, SafeRight;
         float lastHeight;
 
         /// <summary>

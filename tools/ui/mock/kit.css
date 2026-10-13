@@ -10,9 +10,9 @@ body{margin:0;position:relative;overflow:hidden;font-family:Changa;background:#3
 .dark .light .o{color:var(--ci);-webkit-text-stroke-width:0 !important;text-shadow:0 1px 0 rgba(255,248,230,.55) !important}
 .ink{color:#5A3A1E;line-height:1.18}
 .ic{background-size:100% 100%;flex:none}
-.sk-panel{border-style:solid;border-width:16px 16px 19px 16px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/panel.png) 48 48 57 48 fill / 16px 16px 19px 16px stretch}
-.sk-plank{border-style:solid;border-width:11px 14px 14px 14px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/plank.png) 33 42 42 42 fill / 11px 14px 14px 14px stretch}
-.sk-section{border-style:solid;border-width:12px 12px 12px 12px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/section.png) 36 36 36 36 fill / 12px 12px 12px 12px stretch}
+.sk-panel{border-style:solid;border-width:16px 16px 19px 16px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/panel.png) 48 48 57 48 fill / 16px 16px 19px 16px round}
+.sk-plank{border-style:solid;border-width:11px 14px 14px 14px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/plank.png) 33 42 42 42 fill / 11px 14px 14px 14px round}
+.sk-section{border-style:solid;border-width:12px 12px 12px 12px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/section.png) 36 36 36 36 fill / 12px 12px 12px 12px round}
 .sk-btn_green{border-style:solid;border-width:10px 11px 13px 11px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/btn_green.png) 30 33 39 33 fill / 10px 11px 13px 11px stretch}
 .sk-btn_blue{border-style:solid;border-width:10px 11px 13px 11px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/btn_blue.png) 30 33 39 33 fill / 10px 11px 13px 11px stretch}
 .sk-btn_orange{border-style:solid;border-width:10px 11px 13px 11px;border-image:url(../../../unity/Assets/Art/UI/Resources/UI/Skin/btn_orange.png) 30 33 39 33 fill / 10px 11px 13px 11px stretch}

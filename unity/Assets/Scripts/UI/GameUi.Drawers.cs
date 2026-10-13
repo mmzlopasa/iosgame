@@ -47,10 +47,10 @@ namespace Founders.UI
             if (!d) return;
             if (Portrait)
             {
-                // A bottom sheet over the lower ~55%, the back arrow under it; its items wrap in rows and scroll.
+                // A bottom sheet over about the lower half, the back arrow under it; its items wrap in rows and scroll.
                 float w = SheetW;
                 float left = SafeLeft + (SafeWidth - w) / 2;
-                Place(drawer, left, Mathf.Max(PopupTop, Mathf.Round(PanelH * 0.42f)), SafeLeft + SafeWidth + SafeRight - left - w, SheetBottom);
+                Place(drawer, left, Mathf.Max(PopupTop, Mathf.Round(PanelH * 0.48f)), SafeLeft + SafeWidth + SafeRight - left - w, SheetBottom);
                 if (drawer.style.height.keyword != StyleKeyword.Auto) drawer.style.height = StyleKeyword.Auto;
             }
             else

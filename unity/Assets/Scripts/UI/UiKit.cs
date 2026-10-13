@@ -13,10 +13,12 @@ namespace Founders.UI
     /// blue secondary, orange premium, grey disabled, red cancel), rarity cells behind icons, painted icons
     /// and one typeface (Changa One), white with a dark outline and a hard drop.
     ///
-    /// Sizes are in panel units: the panel is scaled so a phone screen is 390 units across its short side
-    /// in either orientation (690–850 along the long side), so text and buttons keep their physical size
-    /// when the phone turns; see <see cref="GameUi.MatchFor"/>. The skins (9-slice textures) and
-    /// the font advances come from tools/ui/build_ui_assets.py through <see cref="UiGenerated"/>.
+    /// Sizes are in panel units: a phone screen is <see cref="GameUi.PhoneShortSide"/> (446) units across its short
+    /// side in either orientation (fewer on a small phone, so nothing drops under <see cref="GameUi.MinPointsPerUnit"/>
+    /// points per unit), so text and buttons keep their physical size when the phone turns; see
+    /// <see cref="GameUi.ShortSideUnits"/>. One unit is ~0.88 iOS points: Small text (12) is never under 10.5 pt and
+    /// taps are at least <see cref="MinTap"/> units (40 pt) thanks to <see cref="Ux.HitSlop"/>. The skins (9-slice
+    /// textures) and the font advances come from tools/ui/build_ui_assets.py through <see cref="UiGenerated"/>.
     /// </summary>
     public static class Theme
     {
@@ -58,7 +60,7 @@ namespace Founders.UI
         public static readonly Color RowLine = Hex("#CFA878");
         public static readonly Color Scrim = new Color(0.10f, 0.06f, 0.03f, 0.45f);
 
-        // MARK: - Type scale and metrics (panel units; the phone is 390 across its short side)
+        // MARK: - Type scale and metrics (panel units; a phone is 446 across its short side, ~0.88 pt per unit)
 
         /// <summary>Window and card titles on the wooden plank.</summary>
         public const float H1 = 20;
@@ -83,6 +85,8 @@ namespace Founders.UI
         public const float PlankH = 38;
         public const float SectionHeadH = 30;
         public const float CloseSize = 38;
+        /// <summary>The smallest touch area of anything tappable (46 units = 40 pt at the smallest scale).</summary>
+        public const float MinTap = 46;
 
         public static Color Hex(string hex) => ColorUtility.TryParseHtmlString(hex, out var c) ? c : Color.magenta;
         public static Color Alpha(Color c, float a) => new Color(c.r, c.g, c.b, a);
@@ -336,6 +340,9 @@ namespace Founders.UI
             if (tex == null) return e;
             e.style.backgroundImage = new StyleBackground(tex);
             e.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100));
+            // Real wood and parchment repeat (tiled) rather than stretch, so their grain keeps its size.
+            var slice = UiGenerated.Tiled.Contains(name) ? SliceType.Tiled : SliceType.Sliced;
+            if (e.style.unitySliceType != slice) e.style.unitySliceType = slice;
             if (UiGenerated.Skins.TryGetValue(name, out var s))
             {
                 int k = UiGenerated.SkinScale;
@@ -403,6 +410,23 @@ namespace Founders.UI
         {
             e.pickingMode = PickingMode.Position;
             e.AddManipulator(new Clickable(() => action()));
+            return e;
+        }
+
+        /// <summary>
+        /// Grows the touch area of a small button to at least <paramref name="w"/> × <paramref name="h"/> units without
+        /// changing its look or layout: a transparent child reaching past its edges takes the taps (a tap on a child
+        /// counts as a tap on the button).
+        /// </summary>
+        public static T HitSlop<T>(this T e, float w, float h, float min = Theme.MinTap) where T : VisualElement
+        {
+            float sx = Mathf.Max(0, (min - w) / 2), sy = Mathf.Max(0, (min - h) / 2);
+            if (sx <= 0 && sy <= 0) return e;
+            var slop = new VisualElement { name = "hit-slop" };
+            slop.style.position = Position.Absolute;
+            slop.style.left = -sx; slop.style.right = -sx; slop.style.top = -sy; slop.style.bottom = -sy;
+            slop.pickingMode = PickingMode.Position;
+            e.Add(slop);
             return e;
         }
 
@@ -703,6 +727,7 @@ namespace Founders.UI
             if (sub != null) { sub.style.marginTop = -2; b.Add(sub); }
             if (onTap != null && kind != Kind.Grey) b.OnTap(onTap);
             else b.pickingMode = PickingMode.Position; // still swallows taps
+            if (onTap != null && height < Theme.MinTap) b.HitSlop(Theme.MinTap, height);
             return b;
         }
 
@@ -723,6 +748,7 @@ namespace Founders.UI
             b.Add(Icon(icon, Mathf.Round(size * 0.6f)));
             if (onTap != null && kind != Kind.Grey) b.OnTap(onTap);
             else b.pickingMode = PickingMode.Position;
+            if (onTap != null) b.HitSlop(size, size);
             return b;
         }
 
@@ -744,15 +770,17 @@ namespace Founders.UI
                 if (icon != null) l.style.marginLeft = 4;
                 t.Add(l);
             }
-            if (onTap != null) t.OnTap(onTap);
+            if (onTap != null) t.OnTap(onTap).HitSlop(Theme.MinTap, height);
             return t;
         }
 
         /// <summary>Shrinks a tab's label to the width the tab is given (tabs sharing a row).</summary>
         public static VisualElement FitTab(this VisualElement tab, float width)
         {
+            int kids = 0;
+            foreach (var c in tab.Children()) if (c.name != "hit-slop") kids++;
             foreach (var c in tab.Children())
-                if (c is Label l) l.Fit(width - 22 - (tab.childCount > 1 ? 28 : 0), Theme.Small).style.whiteSpace = WhiteSpace.NoWrap;
+                if (c is Label l) l.Fit(width - 22 - (kids > 1 ? 28 : 0), Theme.Small).style.whiteSpace = WhiteSpace.NoWrap;
             return tab;
         }
 
@@ -837,7 +865,7 @@ namespace Founders.UI
                 p.style.marginLeft = 6;
                 p.style.marginRight = -3;
                 p.style.marginBottom = 1;
-                p.OnTap(plus);
+                p.OnTap(plus).HitSlop(24, 25.5f, 36);
                 c.Add(p);
             }
             c.pickingMode = PickingMode.Position;
@@ -861,7 +889,7 @@ namespace Founders.UI
         {
             var b = Div("hud-square").Center().Skin("hud_square_blue").Pad(0, 0, 4, 0).Size(size, Mathf.Round(size * 1.06f));
             b.Add(Icon(icon, Mathf.Round(size * 0.6f)));
-            if (onTap != null) b.OnTap(onTap);
+            if (onTap != null) b.OnTap(onTap).HitSlop(size, size * 1.06f);
             else b.pickingMode = PickingMode.Position;
             return b;
         }
@@ -871,7 +899,7 @@ namespace Founders.UI
         {
             var b = Div("hud-round").Center().Skin(yellow ? "hud_round_yellow" : "hud_round_blue").Pad(0, 0, 2, 0).Size(size, Mathf.Round(size * 1.06f));
             b.Add(Icon(icon, Mathf.Round(size * 0.6f)));
-            if (onTap != null) b.OnTap(onTap);
+            if (onTap != null) b.OnTap(onTap).HitSlop(size, size * 1.06f);
             return b;
         }
 

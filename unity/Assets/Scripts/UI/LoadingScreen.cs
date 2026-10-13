@@ -8,7 +8,9 @@ namespace Founders.UI
 {
     /// <summary>
     /// The loading screen shown while the world is generated: a looping montage (any aspect; it fills the
-    /// screen, cropped like aspect-fill) behind the title, a tip and the progress bar.
+    /// screen, cropped like aspect-fill) behind the title, a tip and the progress bar. Portrait plays its own cut
+    /// (loading_portrait.mp4: the whole island across the middle of a tall frame) instead of a blown-up strip of the
+    /// landscape film.
     /// </summary>
     public sealed class LoadingScreen
     {
@@ -30,6 +32,7 @@ namespace Founders.UI
         RenderTexture videoTexture;
         readonly Label percent, status;
         float shown;
+        bool portraitFilm;
 
         public bool Visible { get; private set; }
 
@@ -78,6 +81,8 @@ namespace Founders.UI
 
             tipRow = E.Div().Col(Align.Center).Pad(0, 24).Abs(0, null, 0, 76).Ignore();
             card = E.Panel().Row().Pad(7, 14, 11, 12).Ignore();
+            // A definite width: sized to its content the wrapping tip would shrink to a one-letter column.
+            card.style.width = Length.Percent(100);
             card.style.maxWidth = 600;
             card.Add(E.Icon("knowledge", 32));
             var tipCol = E.Div().Col().Grow().Ignore();
@@ -116,13 +121,26 @@ namespace Founders.UI
         /// </summary>
         public void SetInsets(float top, float bottom, bool portrait)
         {
-            brand.style.top = portrait ? new Length(top + 96) : Length.Percent(9);
+            brand.style.top = portrait ? new Length(top + 64) : Length.Percent(9);
             tipRow.style.bottom = bottom + 76;
             progressRow.style.bottom = bottom + 34;
             version.style.bottom = bottom + 10;
             float side = portrait ? 16 : 24;
             tipRow.style.paddingLeft = side; tipRow.style.paddingRight = side;
             progressRow.style.paddingLeft = side; progressRow.style.paddingRight = side;
+            // The phone turned while loading: play the film cut for this shape.
+            if (portrait != portraitFilm && videoHost != null && (player != null || Visible))
+            {
+                StopVideo();
+                StartVideo(videoHost);
+            }
+        }
+
+        static string FilmPath(bool portrait)
+        {
+            string dir = Application.streamingAssetsPath;
+            string p = System.IO.Path.Combine(dir, portrait ? "loading_portrait.mp4" : "loading.mp4");
+            return portrait && !System.IO.File.Exists(p) ? System.IO.Path.Combine(dir, "loading.mp4") : p;
         }
 
         /// <summary>Starts the loading montage (Resources/Video/loading) on a VideoPlayer owned by <paramref name="host"/>.</summary>
@@ -130,7 +148,8 @@ namespace Founders.UI
         {
             videoHost = host;
             // Played from StreamingAssets by URL: no import step, so every build machine can ship it.
-            string path = System.IO.Path.Combine(Application.streamingAssetsPath, "loading.mp4");
+            portraitFilm = Screen.height > Screen.width;
+            string path = FilmPath(portraitFilm);
             if (!System.IO.File.Exists(path)) { Debug.LogWarning("[FOUNDERS] loading video: missing " + path); return; }
             player = host.AddComponent<VideoPlayer>();
             player.playOnAwake = false;

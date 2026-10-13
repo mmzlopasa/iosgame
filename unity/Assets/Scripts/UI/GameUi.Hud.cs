@@ -46,8 +46,8 @@ namespace Founders.UI
         /// that keeps the close button on the plank's corner inside the screen; at most 560 (iPad).
         /// </summary>
         float SheetW => Mathf.Min(560, SafeWidth - 28);
-        /// <summary>Top of popups (below the compact top bar).</summary>
-        float PopupTop => Portrait ? BarBottom + 8 : SafeTop + 56;
+        /// <summary>Top of popups (below the compact top bar: one row of counters, 40 units).</summary>
+        float PopupTop => Portrait ? BarBottom + 8 : SafeTop + 50;
 
         // MARK: Portrait metrics (the kit's phone screens)
 
@@ -61,8 +61,8 @@ namespace Founders.UI
         const float BackZone = 60;
         /// <summary>Bottom edge of every bottom sheet in portrait: the back arrow sits under it.</summary>
         float SheetBottom => BottomPad + BackZone;
-        /// <summary>Highest top edge of a card in portrait: it covers at most the lower ~60% of the screen.</summary>
-        float CardTopLimit => Mathf.Max(PopupTop, Mathf.Round(PanelH * 0.36f));
+        /// <summary>Highest top edge of a card in portrait: it covers at most about the lower half of the screen.</summary>
+        float CardTopLimit => Mathf.Max(PopupTop, Mathf.Round(PanelH * 0.45f));
 
         VisualElement topHost, leftHost, timersHost, tilesHost, bottomHost, toastLayer, contextPanel, cardBack;
 

@@ -11,7 +11,7 @@ namespace Founders.UI
     /// <summary>
     /// Windows opened from the HUD (People, Goals, Research, Customs, Weather, World, Profile, Settings),
     /// after the kit's popup frame: a parchment window centred under the top strip in landscape, a bottom
-    /// sheet across the screen in portrait (the lower ~60%, the world showing above; Goals, with its bottom
+    /// sheet across the screen in portrait (about the lower half, the world showing above; Goals, with its bottom
     /// tabs, reaches up to the resource bar like the kit's task screen), a wooden plank with the title and
     /// the red close button, a tab strip under it (or along the bottom for Goals) and the golden back arrow
     /// bottom-left, outside the window.
@@ -37,14 +37,16 @@ namespace Founders.UI
         /// </summary>
         float WindowW => Portrait ? SheetW : Mathf.Clamp(SafeWidth - 120, 560, 680);
 
-        /// <summary>Top of a portrait window: the lower ~60% of the screen (Goals: right under the resource bar).</summary>
-        float WindowTopPortrait => store.ActivePanel == Panel.Objectives ? PopupTop : Mathf.Max(PopupTop, Mathf.Round(PanelH * 0.30f));
+        /// <summary>Top of a portrait window: about the lower half of the screen (Goals: right under the resource bar).</summary>
+        float WindowTopPortrait => store.ActivePanel == Panel.Objectives ? PopupTop : Mathf.Max(PopupTop, Mathf.Round(PanelH * 0.40f));
 
         /// <summary>Usable width inside a window's body (panel padding 10 + 10).</summary>
         float InnerW => WindowW - 20;
 
         /// <summary>Height of the goals' bottom tabs under the window.</summary>
         const float BottomTabsH = 40;
+        /// <summary>Room the goals' bottom tabs take under the window: the raised (selected) tab and a little air.</summary>
+        const float BottomTabsRoom = BottomTabsH + 3 + 5;
 
         void BuildSheet()
         {
@@ -98,7 +100,8 @@ namespace Founders.UI
             sheet.Hidden(!window);
             sheetTabsBottom.Hidden(!window || store.ActivePanel != Panel.Objectives);
             float w = WindowW;
-            float bottomTabs = store.ActivePanel == Panel.Objectives ? BottomTabsH - 6 : 0;
+            // Goals: the window ends above its bottom tabs (the list must never run under them).
+            float bottomTabs = store.ActivePanel == Panel.Objectives ? BottomTabsRoom : 0;
             float top, bottom;
             if (Portrait)
             {
@@ -117,7 +120,7 @@ namespace Founders.UI
             float left = SafeLeft + (SafeWidth - w) / 2;
             Place(sheet, left, top, null, bottom);
             if (!Mathf.Approximately(sheet.style.width.value.value, w)) sheet.style.width = w;
-            Place(sheetTabsBottom, left + (Portrait ? 10 : 16), null, null, bottom - bottomTabs - 4);
+            Place(sheetTabsBottom, left + (Portrait ? 10 : 16), null, null, bottom - bottomTabs);
             bool roomForBack = Portrait || (SafeWidth - w) / 2 >= 56;
             bool drawerOpen = store.ActivePanel == Panel.Build;
             backArrow.Hidden(!(window || (Portrait && drawerOpen)) || !roomForBack);

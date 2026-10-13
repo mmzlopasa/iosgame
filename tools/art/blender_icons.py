@@ -1008,6 +1008,235 @@ def _world():
         L.parent(parts, loc=(x, 0, 0), rot=(0, 0, ang))
 
 
+# ---------------------------------------------------------------- laws (the Book of Customs: one picture per custom)
+def pot(r=1.0, h=1.1, m=None, loc=(0, 0, 0)):
+    """A round-bellied iron cauldron (lathe), open at the top."""
+    prof = [(0.0, 0.0), (0.45 * r, 0.02), (0.85 * r, 0.25 * h), (1.0 * r, 0.6 * h), (0.92 * r, 0.92 * h),
+            (0.96 * r, 1.0 * h), (0.0, 1.0 * h)]
+    return lathe(prof, loc, m or M("iron"), verts=40, sub=2)
+
+
+@icon("law_shared_stew", el=24, az=-14)
+def _law_shared_stew():
+    iron = M("iron")
+    pot(1.0, 1.1, iron, (0, 0, -0.55))
+    disc(0.9, 0.06, P("#C88A3A", hue_dark="#5A2A10", light=0.35, spec=0.6, rough=0.15), loc=(0, 0, 0.5),
+         axis_rot=(0, 0, 0), bevel=0.02)
+    for x, y, c in ((-0.35, -0.2, "#F2A33A"), (0.3, 0.1, "#E8E0B0"), (0.0, 0.35, "#7CC24A"), (0.45, -0.3, "#F2A33A")):
+        sphere(0.14, (x, y, 0.56), P(c, spec=0.4))
+    tube([(0.75, -0.2, 1.7), (0.35, -0.1, 0.9), (0.15, 0.0, 0.5)], 0.06, M("wood_light"))
+    sphere(0.2, (0.15, 0.0, 0.48), M("wood_light"), scale=(1, 1, 0.5))
+    for sx in (-1, 1):
+        tube([(sx * 0.98, 0, 0.35), (sx * 1.25, 0, 0.45), (sx * 1.2, 0, 0.7)], 0.07, iron)
+    steam = P("#FFFFFF", shade=0.85, light=0.3, spec=0, rim=0.2, alpha=0.9)
+    for x, z in ((-0.4, 1.05), (0.1, 1.35), (-0.15, 1.7)):
+        sphere(0.2, (x, -0.1, z), steam, scale=(1, 0.6, 0.8))
+
+
+@icon("law_hearty_meals", el=20, az=-14)
+def _law_hearty_meals():
+    bowl = P("#B8743E", hue_dark="#4A1A20", spec=0.25, rough=0.4)
+    lathe([(0.0, 0.0), (0.5, 0.0), (1.05, 0.4), (1.2, 0.75), (1.1, 0.78), (0.0, 0.78)], (0, 0.2, -0.6), bowl,
+          verts=40, sub=2)
+    disc(1.08, 0.05, P("#D88A3A", hue_dark="#6A2A10", light=0.4, spec=0.5), loc=(0, 0.2, 0.12), axis_rot=(0, 0, 0))
+    meat = P("#C8612A", hue_dark="#4A0A2A", light=0.42, light_col="#FFD890", spec=0.55, rough=0.2)
+    bone = P("#F6EBD6", hue_dark="#7A5A7A", shade=0.66, light=0.25, spec=0.3)
+    parts = [lathe([(0.0, 0.0), (0.32, 0.05), (0.5, 0.3), (0.52, 0.6), (0.4, 0.9), (0.2, 1.05), (0.0, 1.08)],
+                   (0, 0, 0), meat, verts=32, sub=2)]
+    parts.append(cylinder(0.1, 0.5, (0, 0, 1.25), bone, bevel=0.03))
+    parts.append(sphere(0.14, (0.08, 0, 1.52), bone))
+    parts.append(sphere(0.14, (-0.08, 0, 1.54), bone))
+    L.parent(parts, loc=(-0.3, 0.0, 0.1), rot=(0, 50, -10))
+    bread = P("#E6A858", hue_dark="#7A3A10", light=0.4, spec=0.3)
+    sphere(0.48, (0.55, -0.2, 0.3), bread, scale=(1.1, 0.8, 0.6))
+    for k in range(3):
+        box((0.06, 0.6, 0.05), (0.38 + k * 0.18, -0.2, 0.58), P("#B86A2A", spec=0, ao=0), rot=(0, 0, 30), bevel=0.02)
+
+
+@icon("law_long_days", **GLYPH)
+def _law_long_days():
+    wood_ = M("wood")
+    for z in (-1.05, 1.05):
+        cylinder(0.85, 0.18, (0, 0, z), wood_, bevel=0.06)
+    for a in (45, 135, 225, 315):
+        x, y = 0.7 * math.cos(math.radians(a)), 0.7 * math.sin(math.radians(a))
+        cylinder(0.07, 2.0, (x, y, 0), M("wood_dark"), bevel=0.02)
+    glass = P("#DDF2FF", hue_dark="#3A4A9A", shade=0.72, light=0.35, light_col="#FFFFFF", spec=0.8, rough=0.08, alpha=0.75)
+    prof = [(0.0, -0.95), (0.55, -0.9), (0.6, -0.5), (0.12, -0.05), (0.12, 0.05), (0.6, 0.5), (0.55, 0.9), (0.0, 0.95)]
+    lathe(prof, (0, 0, 0), glass, verts=36, sub=2)
+    sand = P("#F2C060", hue_dark="#8A4A10", light=0.4, spec=0.2)
+    lathe([(0.0, -0.92), (0.5, -0.88), (0.45, -0.55), (0.0, -0.4)], (0, 0, 0), sand, verts=32, sub=1)
+    lathe([(0.0, 0.2), (0.3, 0.32), (0.5, 0.6), (0.0, 0.6)], (0, 0, 0), sand, verts=32, sub=1)
+    tube([(0, -0.05, 0.1), (0, -0.05, -0.45)], 0.03, sand)
+
+
+@icon("law_dawn_to_dusk", el=10, az=-10)
+def _law_dawn_to_dusk():
+    sun = P("#FFC21F", hue_dark="#C0400A", shade=0.8, light=0.6, light_col="#FFFFE0", spec=0.4, emit="#FFB020",
+            emit_strength=0.5)
+    glyph([circle_pts(0.75, 48, 0, 0, 0, 180, closed=False)], sun, depth=0.3, bevel=0.08,
+          loc=(0, 0, -0.1))
+    for k in range(7):
+        a = math.radians(15 + k * 25)
+        ray = [(-0.1, 0.0), (0.1, 0.0), (0.0, 0.45)]
+        glyph([ray], sun, depth=0.2, bevel=0.05, loc=(1.1 * math.cos(a), 0, -0.1 + 1.1 * math.sin(a)),
+                  rot=(90, -(math.degrees(a) - 90), 0))
+    hill = P("#6FB43A", hue_dark="#123A3A", spec=0.2)
+    glyph([L.rounded_poly([(-1.6, -0.12), (-0.8, 0.02), (0, -0.06), (0.8, 0.04), (1.6, -0.12), (1.6, -0.5),
+                           (-1.6, -0.5)], 0.05)], hill, depth=0.5, bevel=0.08, loc=(0, -0.3, -0.12))
+    glyph([L.rounded_poly([(-1.6, -0.3), (-0.4, -0.18), (0.7, -0.32), (1.6, -0.22), (1.6, -0.62), (-1.6, -0.62)], 0.05)],
+          P("#4E9A2A", hue_dark="#0A2A2A", spec=0.2), depth=0.4, bevel=0.08, loc=(0, -0.55, -0.12))
+
+
+@icon("law_fire_wardens", **TOOL)
+def _law_fire_wardens():
+    parts = [handle(2.4, 0.13)]
+    parts += wraps(0.55, 3, 0.16, P("#C9A060", spec=0.2))
+    parts.append(cylinder(0.26, 0.5, (0, 0, 1.2), M("iron"), r2=0.36, bevel=0.05))
+    L.parent(parts, rot=(0, 18, 0))
+    fl = flame(scale=0.62, loc=(0.32, -0.1, 1.15))
+    for o in fl:
+        o.rotation_euler.y = math.radians(18)
+
+
+@icon("law_bitter_remedies", el=22, az=-14)
+def _law_bitter_remedies():
+    stone = P("#A9AFB8", hue_dark="#2A2A5A", shade=0.5, light=0.35, spec=0.25)
+    lathe([(0.0, 0.0), (0.7, 0.0), (0.85, 0.15), (1.0, 0.75), (0.9, 0.8), (0.0, 0.6)], (0, 0, -0.7), stone,
+          verts=40, sub=2)
+    disc(0.82, 0.04, P("#6CB83A", hue_dark="#0A4A2A", light=0.35, spec=0.4), loc=(0, 0, 0.02), axis_rot=(0, 0, 0))
+    tube([(0.2, 0, -0.1), (0.75, 0, 1.25)], 0.12, P("#C9CED6", hue_dark="#2A2C66", spec=0.4), radii=[1.3, 0.9])
+    leaf = M("leaf")
+    for x, a in ((-0.6, 30), (-0.9, 70), (0.9, -40)):
+        glyph([[(0, 0), (0.22, 0.12), (0.5, 0.1), (0.7, 0.0), (0.5, -0.1), (0.22, -0.1)]], leaf, depth=0.04,
+              bevel=0.02, smooth_curve=True, loc=(x, -0.6, -0.55), rot=(90, a, 0))
+
+
+@icon("law_watch_the_sick", el=14, az=-12)
+def _law_watch_the_sick():
+    brass = M("gold")
+    cylinder(0.75, 0.12, (0, 0, -0.95), brass, bevel=0.05)
+    tube([(0.72, 0, -0.9), (1.1, 0, -0.7), (1.05, 0, -0.35), (0.8, 0, -0.45)], 0.07, brass)
+    wax = P("#FBF3E0", hue_dark="#8A6A60", shade=0.66, light=0.3, spec=0.3, rough=0.3)
+    cylinder(0.32, 1.5, (0, 0, -0.15), wax, bevel=0.06)
+    for x, z in ((0.25, 0.4), (-0.22, 0.2)):
+        sphere(0.09, (x, -0.28, z), wax, scale=(0.7, 0.7, 1.6))
+    tube([(0, 0, 0.6), (0, 0, 0.75)], 0.03, P("#3A2314", spec=0, rim=0))
+    flame(scale=0.32, loc=(0, -0.05, 0.62))
+
+
+@icon("law_apprentices", **TOOL)
+def _law_apprentices():
+    iron = M("iron")
+    steel = M("steel")
+    anvil = [(-1.2, 0.35), (-0.55, 0.35), (-0.4, 0.5), (0.9, 0.5), (0.95, 0.25), (0.45, 0.1), (0.3, -0.35),
+             (0.6, -0.65), (-0.6, -0.65), (-0.3, -0.35), (-0.45, 0.1), (-1.05, 0.2)]
+    glyph([L.rounded_poly(anvil, 0.04)], iron, depth=0.7, bevel=0.07, loc=(0, 0, -0.55))
+    parts = [handle(1.7, 0.09)]
+    parts.append(box((0.8, 0.36, 0.38), (0.1, 0, 0.8), steel, bevel=0.08))
+    L.parent(parts, loc=(0.25, -0.5, 0.35), rot=(0, -45, 0))
+    for x, z in ((0.7, 0.25), (0.95, 0.45), (0.6, 0.55)):
+        glyph([L.rounded_poly(star_pts(0.12, 0.04, 4, 45), 0.01)], P("#FFD24A", emit="#FFB020", emit_strength=0.8,
+                                                                       spec=0.2), depth=0.04, bevel=0.01,
+              loc=(x, -0.8, z))
+
+
+@icon("law_day_of_rest", el=12, az=-12)
+def _law_day_of_rest():
+    m = paint("Moon", "#8A9CF4", rough=0.3, spec=0.55, coat=0.35, hue_dark="#24186A", shade=0.42, light=0.25,
+              light_col="#EEF2FF")
+    shape2d([crescent()], depth=0.5, bevel=0.17, m=m, loc=(-0.35, 0, -0.15), rot=(90, 0, -18), res=6)
+    zm = P("#FBF8F2", hue_dark="#5A5AA0", shade=0.66, light=0.2, spec=0.45, rough=0.2)
+    for (x, z, s) in ((0.55, 0.35, 0.7), (1.0, 0.95, 0.52), (1.3, 1.4, 0.38)):
+        text3d("z", size=s, depth=0.12, bevel=0.03, m=zm, loc=(x, -0.3, z))
+    pillow = P("#F6E2B8", hue_dark="#8A4A60", shade=0.62, light=0.3, spec=0.15, rough=0.5)
+    box((2.2, 0.9, 0.42), (0.1, 0.2, -1.0), pillow, bevel=0.2, segs=4)
+
+
+@icon("law_burial_rites", el=14, az=-16)
+def _law_burial_rites():
+    stone = P("#B4C2C0", hue_dark="#2C3260", shade=0.48, light=0.4, light_col="#F6FFF8", spec=0.2)
+    pts = [(-0.75, -1.0), (0.75, -1.0), (0.75, 0.55)] + [(0.75 * math.cos(math.radians(a)), 0.55 + 0.75 * math.sin(math.radians(a))) for a in range(10, 171, 10)] + [(-0.75, 0.55)]
+    glyph([pts], stone, depth=0.42, bevel=0.1, loc=(0, 0.1, 0.1))
+    carve = P("#6A7A80", hue_dark="#1A2040", spec=0, rim=0, concave=True)
+    box((0.12, 0.06, 0.9), (0, -0.14, 0.45), carve, bevel=0.02)
+    box((0.55, 0.06, 0.12), (0, -0.14, 0.62), carve, bevel=0.02)
+    earth = P("#7A5A3A", hue_dark="#2A1020", spec=0.1)
+    sphere(1.2, (0, 0.1, -1.0), earth, scale=(1.25, 0.8, 0.28))
+    for x, c in ((-0.75, "#F2E35A"), (-0.5, "#FFFFFF"), (0.65, "#E86A8A")):
+        tube([(x, -0.5, -0.85), (x + 0.05, -0.5, -0.45)], 0.03, M("leaf"))
+        for k in range(5):
+            a = 2 * math.pi * k / 5
+            sphere(0.09, (x + 0.05 + 0.1 * math.cos(a), -0.55, -0.4 + 0.1 * math.sin(a)), P(c, spec=0.3))
+        sphere(0.07, (x + 0.05, -0.6, -0.4), P("#FFC21F", spec=0.3))
+
+
+@icon("law_story_nights", el=12, az=-14)
+def _law_story_nights():
+    wood_ = M("wood")
+    # a lyre: two curved arms on a sound box, a crossbar and strings
+    box((1.3, 0.35, 0.55), (0, 0, -0.95), wood_, bevel=0.12)
+    for sx in (-1, 1):
+        tube([(sx * 0.5, 0, -0.75), (sx * 0.85, 0, -0.1), (sx * 0.65, 0, 0.6), (sx * 0.85, 0, 1.05)], 0.11, wood_)
+    tube([(-0.95, 0, 0.85), (0.95, 0, 0.85)], 0.08, M("wood_dark"))
+    gold = M("gold")
+    for k in range(5):
+        x = -0.36 + k * 0.18
+        tube([(x, -0.05, -0.7), (x * 1.05, -0.05, 0.85)], 0.018, gold)
+    star = P("#FFE680", hue_dark="#B0400A", light=0.5, spec=0.5, emit="#FFC020", emit_strength=0.4)
+    for x, z, r in ((1.1, 1.3, 0.2), (-1.15, 1.2, 0.14)):
+        glyph([L.rounded_poly(star_pts(r, r * 0.4, 5, 90), 0.01)], star, depth=0.08, bevel=0.03, loc=(x, -0.3, z))
+
+
+@icon("law_harvest_festival", el=20, az=-14)
+def _law_harvest_festival():
+    basket = P("#C98A44", hue_dark="#5A2A10", spec=0.2, rough=0.5, pattern=("streaks", 9.0, "#8A5A2A", 0.5, 0.7))
+    lathe([(0.0, 0.0), (0.7, 0.0), (1.1, 0.5), (1.2, 0.85), (1.1, 0.88), (0.0, 0.7)], (0, 0.2, -0.85), basket,
+          verts=40, sub=2)
+    tube([(-1.05, 0.2, 0.0), (-0.6, 0.2, 1.0), (0.6, 0.2, 1.0), (1.05, 0.2, 0.0)], 0.07, basket)
+    apple = P("#E8302A", hue_dark="#5A0A50", light=0.35, light_col="#FFE0B0", spec=0.6, rough=0.15)
+    pear = P("#A8D040", hue_dark="#2A5A10", light=0.4, spec=0.5)
+    for x, y, c in ((-0.45, -0.2, apple), (0.35, -0.25, apple), (0.0, 0.1, pear), (-0.1, -0.45, pear)):
+        sphere(0.32, (x, y, 0.1), c)
+    grain = P("#F2C35A", hue_dark="#8A4A10", light=0.4, spec=0.3)
+    for k, a in enumerate((-25, -10, 8, 22)):
+        x0 = 0.55 + k * 0.08
+        tube([(x0, 0.35, -0.1), (x0 + 0.5 * math.sin(math.radians(a + 20)), 0.35, 1.0)], 0.03, grain)
+        sphere(0.11, (x0 + 0.5 * math.sin(math.radians(a + 20)), 0.35, 1.05), grain, scale=(0.7, 0.7, 1.8))
+
+
+@icon("law_elders_council", el=14, az=-14)
+def _law_elders_council():
+    wood_ = M("wood")
+    # the elder's staff: a crook with a leather grip and a ribbon, over a small round council table
+    tube([(0.1, 0, -1.3), (0.15, 0, 0.6), (0.2, 0, 1.0), (0.5, 0, 1.3), (0.8, 0, 1.15), (0.78, 0, 0.85)], 0.11, wood_)
+    wraps(0.05, 3, 0.14)
+    ribbon = M("red")
+    glyph([[(0, 0), (0.45, -0.1), (0.38, -0.55), (0.2, -0.35), (0.05, -0.6)]], ribbon, depth=0.04, bevel=0.02,
+          loc=(0.2, -0.18, 0.75))
+    table = M("wood_dark")
+    cylinder(1.0, 0.16, (-0.35, 0.3, -0.75), table, bevel=0.05)
+    cylinder(0.14, 0.6, (-0.35, 0.3, -1.1), table, bevel=0.03)
+    for x, c in ((-0.85, "#4F8FDB"), (-0.35, "#6FB43A"), (0.15, "#F0A030")):
+        cylinder(0.14, 0.5, (x, -0.1, -0.45), P(c, spec=0.2), bevel=0.06, r2=0.2)
+        sphere(0.12, (x, -0.1, -0.12), M("skin"))
+
+
+@icon("law_watchmen", el=12, az=-14)
+def _law_watchmen():
+    parts = [handle(3.4, 0.09)]
+    blade = [(0, 0), (0.28, 0.35), (0.22, 0.8), (0, 1.25), (-0.22, 0.8), (-0.28, 0.35)]
+    parts.append(glyph([blade], M("steel"), depth=0.16, bevel=0.05, smooth_curve=True, loc=(0, 0, 1.45)))
+    L.parent(parts, loc=(0.35, 0.4, 0.2), rot=(0, 28, 0))
+    shield = [(-0.95, 0.85), (0.95, 0.85), (0.9, -0.1), (0.5, -0.75), (0.0, -1.1), (-0.5, -0.75), (-0.9, -0.1)]
+    glyph([L.rounded_poly(shield, 0.08)], M("blue"), depth=0.3, bevel=0.1, smooth_curve=True, loc=(-0.2, 0, -0.1))
+    rim = M("iron")
+    tube([(x, -0.17, y - 0.1) for x, y in L.rounded_poly(shield, 0.08)], 0.07, rim, loc=(-0.2, 0, 0), cyclic=True)
+    disc(0.26, 0.2, M("gold"), loc=(-0.2, -0.2, 0.0), bevel=0.07)
+    glyph([[(-0.08, 0.6), (0.08, 0.6), (0.08, -0.7), (-0.08, -0.7)]], M("gold"), depth=0.05, bevel=0.02,
+          loc=(-0.2, -0.2, -0.05))
+
+
 # ---------------------------------------------------------------- villager portraits (CC0 Quaternius people)
 FACES = {
     "face_m1": ("Person_Farmer_Male", {"Main": "#4F8FDB", "Hair": "#6A3A1A"}),
