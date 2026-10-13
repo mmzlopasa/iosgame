@@ -561,6 +561,10 @@ namespace Founders.UI
             {
                 rows.Add(hero);
                 strip.style.marginBottom = 6;
+                // In the column it must keep its own height, not grow or get squeezed under the rows.
+                strip.style.flexGrow = 0;
+                strip.style.flexShrink = 0;
+                strip.style.flexBasis = StyleKeyword.Auto;
                 rows.Add(strip);
             }
             else
