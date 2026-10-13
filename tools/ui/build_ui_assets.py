@@ -7,7 +7,12 @@ as text. The look follows a casual mobile strategy kit (parchment popups, wooden
 outlined buttons, rarity cells, painted icons, Changa One type); nothing is copied, it is all drawn here.
 The font (SIL OFL) is fetched from google/fonts.
 
-Usage:  python3 tools/ui/build_ui_assets.py [--no-fonts] [--icons-only]   (needs: pip install fonttools pillow)
+The icons, the 9-slice skin textures and the app icon are now rendered by tools/art (Blender + numpy;
+see tools/art/README.md). This script still owns the skin sizes and slice borders (SKINS below, which
+tools/art/skins.py paints to), the images, fonts and UiGenerated.cs; pass --legacy-art to rebuild the
+old CSS/SVG icons, skins and app icon instead.
+
+Usage:  python3 tools/ui/build_ui_assets.py [--no-fonts] [--icons-only] [--legacy-art]   (needs: pip install fonttools pillow)
 Output: unity/Assets/Art/UI/Resources/UI/{Icons,Skin,Images,Fonts}, unity/Assets/Scripts/UI/UiGenerated.cs
 """
 import glob
@@ -250,11 +255,13 @@ def build_images():
     old_ring = os.path.join(out, "avatar_ring.png")
     if os.path.exists(old_ring):
         os.remove(old_ring)
-    # The app icon lives outside Resources (it is only referenced by the build script).
-    icon_dir = os.path.join(ROOT, "unity", "Assets", "Art", "UI", "AppIcon")
-    os.makedirs(icon_dir, exist_ok=True)
-    render(APP_ICON, 1024, 1024, os.path.join(icon_dir, "AppIcon.png"), transparent=False)
-    print("images: glow, logo_mark, loading_bg, AppIcon")
+    # The app icon lives outside Resources (it is only referenced by the build script); it is rendered by
+    # tools/art/blender_appicon.py unless the legacy art is asked for.
+    if LEGACY:
+        icon_dir = os.path.join(ROOT, "unity", "Assets", "Art", "UI", "AppIcon")
+        os.makedirs(icon_dir, exist_ok=True)
+        render(APP_ICON, 1024, 1024, os.path.join(icon_dir, "AppIcon.png"), transparent=False)
+    print("images: glow, logo_mark, loading_bg" + (", AppIcon" if LEGACY else ""))
 
 
 # MARK: - Fonts
@@ -342,11 +349,15 @@ namespace Founders.UI
     print("generated: " + os.path.relpath(GENERATED_CS, ROOT))
 
 
+LEGACY = "--legacy-art" in sys.argv
+
 if __name__ == "__main__":
-    build_icons()
+    if LEGACY:
+        build_icons()
     if "--icons-only" in sys.argv:
         sys.exit(0)
-    build_skins()
+    if LEGACY:
+        build_skins()
     build_images()
     if "--no-fonts" not in sys.argv:
         build_fonts()
