@@ -235,7 +235,9 @@ namespace Founders
                     }
                     else
                     {
-                        y = Mathf.Lerp(-0.45f, 0f, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(s / 2.2f)));
+                        // A short bank: the beach cells beside the water are level ground, so what
+                        // is built on the sand stands as firmly as on the meadow.
+                        y = Mathf.Lerp(-0.45f, 0f, Mathf.SmoothStep(0f, 1f, Mathf.Clamp01(s / 1.1f)));
                     }
                     // Fine ground relief.
                     y += (Mathf.PerlinNoise(w.x * 0.18f + 3f, w.y * 0.18f + 9f) - 0.5f) * 0.18f * Mathf.Clamp01(s / 3f);

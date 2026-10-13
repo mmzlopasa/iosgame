@@ -4569,7 +4569,8 @@
    "buildSeconds": 30,
    "sprite": "farm_field",
    "allowedTerrain": [
-    "grass"
+    "grass",
+    "sand"
    ],
    "buildable": true,
    "requiresTech": "agriculture",
@@ -4751,7 +4752,8 @@
    "buildSeconds": 30,
    "sprite": "animal_pen",
    "allowedTerrain": [
-    "grass"
+    "grass",
+    "sand"
    ],
    "buildable": true,
    "requiresTech": "animal_husbandry",
@@ -7112,7 +7114,8 @@
    "buildSeconds": 45,
    "sprite": "pasture",
    "allowedTerrain": [
-    "grass"
+    "grass",
+    "sand"
    ],
    "buildable": true,
    "requiresTech": "animal_husbandry",
@@ -7904,7 +7907,7 @@
      "value": 1.15
     }
    ],
-   "heartLevel": 31
+   "heartLevel": 30
   },
   {
    "id": "burgher_rights",
@@ -7924,7 +7927,7 @@
      "value": 1.1
     }
    ],
-   "heartLevel": 32
+   "heartLevel": 30
   },
   {
    "id": "monastic_orders",
@@ -7945,7 +7948,7 @@
      "value": 1.2
     }
    ],
-   "heartLevel": 32
+   "heartLevel": 30
   },
   {
    "id": "animal_breeding",
@@ -8833,70 +8836,70 @@
    "iron mountains"
   ],
   "rows": [
-   "TTTT.....,~,RRRRRR.......TTTTT........TTTTTTTTT......TMMMMMMMMMM",
-   "TTTTTTTT.,~,RRRRRRR.......TTTTT.......TTTTTTTTT.....TTTMMMMMMMMM",
-   "TTTTT....,~,.RRRRR........TTTTTTT......TTTTTTTTTTTTTTTTOMMMMMMMM",
-   ".TTT.....,~,..RRR............................TTTTTTTT...OMMMMMMM",
+   "..TT.....,~,RRRRRR..........TT.......................TMMMMMMMMMM",
+   ".TTTT....,~,RRRRRRR.........TTT.....................TTTMMMMMMMMM",
+   "TTTTT....,~,.RRRRR..........TTT...............TTTT.TTTTOMMMMMMMM",
+   ".TTT.....,~,..RRR............................TTTTT.TT...OMMMMMMM",
    "TTT..TT..,~,...RR...T....................RRRRTTTTTTT....OMMMMMMM",
-   "TT...T...,~,...RR.......................RRRRRRTTTTT.......MMMMMM",
-   "TT.......,~,..RRRR......................RRRRRRTTTT......OMMMMMMM",
-   "T....R...,~,...RR..R....................RRRRRR..T........MMMMMMM",
-   "T...RR...,~,.......RR......RRRRRRRRR....RRRRRR..........MMMMMMMM",
-   "TT.......,~,..RRR..RR.....RRRRRRRRRRR...RRRRR...TT.....MMMMMMMMM",
-   "TT......,~~,...RR...R....RRRRRRRRRRRRR..RRRRR.........OMMMMOMMMM",
-   "TTT.....,~,.........R...RRRRRRRRRRRRRRR.RRRRR....T.....MMMM.MMMM",
-   "TTTT...,~~,....TT...R..TRRRRRRRRRRRRRRRRRRRRRTTTTT.....MMMMMMMMM",
-   "TTTTT..,~,....TTTT..TTTTRRRRRRRRRRRRRRRRRRRRR.TTTTT...MMMMMMMMMM",
-   "TTT...,~~,..TTTTTTT.TTTTTRRRRRRRRRRRRRRR.RRR...TTT...OMMMMMMMMMM",
-   "TTT...,~,..TTTTTTTTTT...TRRRRRRRRRRRRRR..RRR.........OMMMMMMMMMM",
-   "TTT...,~~,..TTTTTTTTT.....RRRRRRRRRRRR...RRR........TOMMMMMMMMMM",
-   "TTT....,~,...TTTT.TTT......RRRRRRRRRRTT..RRR..........OMMMMMMMMM",
-   "TTT....,~~,...TT...TT.......RRRRRRRRTTTT.RR...........OMMMMMMMMM",
-   "TTT.....,~,....T....T........RRRRRTTTTTT..R............OMMMMMMMM",
-   "..TT....,~,...TTTTTTT................TTTTTTTT..........OMMMMMMMM",
+   "TT...T...,~,...RR.......................RRRRRR.TTTT.......MMMMMM",
+   "TT.......,~,..RRRR......................RRRRRR.TTT......OMMMMMMM",
+   ".....R...,~,...RR..R....................RRRRRR...........MMMMMMM",
+   "....RR...,~,.......RR......RRRRRRRRR....RRRRRR..........MMMMMMMM",
+   ".........,~,..RRR..RR.....RRRRRRRRRRR...RRRRR...T......MMMMMMMMM",
+   "........,~~,...RR...R....RRRRRRRRRRRRR..RRRRR.........OMMMMOMMMM",
+   "........,~,.........R...RRRRRRRRRRRRRRR.RRRRR..........MMMM.MMMM",
+   ".......,~~,....TT...R...RRRRRRRRRRRRRRRRRRRRR.TTT......MMMMMMMMM",
+   "...TT..,~,....TTTT..TTT.RRRRRRRRRRRRRRRRRRRRR.TTT.....MMMMMMMMMM",
+   "TTT...,~~,..TTTTTTT.TTTT.RRRRRRRRRRRRRRR.RRR.........OMMMMMMMMMM",
+   "TTT...,~,...TTTTTTTTT....RRRRRRRRRRRRRR..RRR.........OMMMMMMMMMM",
+   "TTT...,~~,...TTTTTTTT.....RRRRRRRRRRRR...RRR.........OMMMMMMMMMM",
+   "TTT....,~,...TTTT.TTT......RRRRRRRRRR....RRR..........OMMMMMMMMM",
+   ".TT....,~~,...TT...TT.......RRRRRRRR..TT.RR...........OMMMMMMMMM",
+   "..T.....,~,....T....T........RRRRR..TTTT..R............OMMMMMMMM",
+   "........,~,...TTTT..T................TTTTTTT...........OMMMMMMMM",
    "........~~,,TTTT.......................TTTTTT..........OMMMMMMMM",
-   "....TT..T~~TTT................RR........TTTT..........OMMMMMMMMM",
-   "....TT..,.~~,................RRR......................OMMMMMMMMM",
-   "...TTT....,~~................RRRR.....................MMMMMMMMMM",
-   "...TTT...T,.~~,..............RRR......................MMMMMMMMMM",
-   "...TTTTTTTT.~~.,......................................MMMMMMMMMM",
-   "......TTTTT,,~~,......................................MMMMMMMMMM",
-   "TT......TTTT,~~.,,...................................OMMMMMMMMMM",
-   "TTT......T,T,,~~~.,.,..RRR.........RRR...............OMMMMMMMMMM",
-   "TTT.....,,,~~~~~~~~~,..RRR.........RRR...............OMMMMMMMMMM",
-   "TTT....,,~~~~~~~~~~~~,.,RR.........RR................OMMMMMMMMMM",
-   "TT......~~~~~~~~~~~~~~~.,.............................MMMMMMMMMM",
+   ".........~~.TT................RR........TTTT..........OMMMMMMMMM",
+   "....T...,.~~,................RRR......................OMMMMMMMMM",
+   "..........,~~................RRRR.....................MMMMMMMMMM",
+   "..........,.~~,..............RRR......................MMMMMMMMMM",
+   "............~~.,......................................MMMMMMMMMM",
+   "...........,,~~,......................................MMMMMMMMMM",
+   ".T......TTT.,~~.,,...................................OMMMMMMMMMM",
+   "..........,.,,~~~.,.,..RRR.........RRR...............OMMMMMMMMMM",
+   "........,,,~~~~~~~~~,..RRR.........RRR...............OMMMMMMMMMM",
+   ".......,,~~~~~~~~~~~~,.,RR.........RR................OMMMMMMMMMM",
+   "........~~~~~~~~~~~~~~~.,.............................MMMMMMMMMM",
    ".......~~~~~~~~~~~~~~~~~,.............................MMMMMMMMMM",
    "......,~~~~~~~~~~~~~~~~~,,............................MMMMMMMMMM",
-   "......,~~~~~~~~~~~~~~~~~~,............T.............OMMMMMMMMMMM",
+   "......,~~~~~~~~~~~~~~~~~~,..........................OMMMMMMMMMMM",
    "......,~~~~~~~~~~~~~~~~~~,...........................OMMMMMMMMMM",
    "......,~~~~~~~~~~~~~~~~~..............................O.MMMMMMMM",
-   "......,.~~~~~~~~~~~~~~~.,...T.....TTT..T..................MMMMMM",
-   ".......,,,~~~~~~~~~~~~.,...TT......TTTTTT.................MMMMMM",
-   ".......TTT,~~~~~~~~..,,...............TTTTTTT.............MMMMMM",
-   "....TTTTTT,,T,,~,,,,...................TTTTTTT............MMMMMM",
-   "...TTTTTTTTTTT,,,~~.....................TTTTT.............MMMMMM",
-   "...TTTTTTTTTTTTT,~~.....................TTTTT............MMMMMMM",
-   "....TTTTTTTTTTTT,,~~.....................TTTT...........MMMMMMMM",
-   "....TTTTTTT...TTT,~~,,...................TTT............MMMMMMMM",
-   ".TTTTTTTTT.....TT,,~~....................TTTT...........MMMMMMMM",
-   ".TTTTTTTTT.....TT..~~,......TTT.............TT........OMMMMMMMMM",
-   "TTTTTTTTTT.....TT.,~~,.....TTTT..............TTT......OMMMMMMMMM",
-   "TTTTTTTTTT.....TT.,~~,,....TTT.......................OMMMMMMMMMM",
-   "TTTTTTTTT......TTT,.~~....TTT.........................MMMMMOMMMM",
-   "TTTTTTTTT.......TTT~~,,...............................MMMMMMMMMM",
-   "TT................,~~,....................T..........OMMMMMMMMMM",
+   "......,.~~~~~~~~~~~~~~~.,..........TT.....................MMMMMM",
+   ".......,,,~~~~~~~~~~~~.,...........TTTTTT.................MMMMMM",
+   ".......T..,~~~~~~~~..,,...............TTTTTTT.............MMMMMM",
+   "....TTTT..,,.,,~,,,,...................TTTTTTT............MMMMMM",
+   "...TTTTT......,,,~~.....................TTTTT.............MMMMMM",
+   "...TTTTTTT......,~~.....................TTTTT............MMMMMMM",
+   "....TTTTTTTTT...,,~~.....................T.TT...........MMMMMMMM",
+   "....TTTTTTT......,~~,,...................TT.............MMMMMMMM",
+   "..TTTTTTTT.......,,~~.....................T.............MMMMMMMM",
+   ".TTT.TTTTT.........~~,.......................T........OMMMMMMMMM",
+   "..T......T......T.,~~,................................OMMMMMMMMM",
+   ".........T........,~~,,..............................OMMMMMMMMMM",
+   ".................T,.~~................................MMMMMOMMMM",
+   ".................T.~~,,...............................MMMMMMMMMM",
+   "..................,~~,...............................OMMMMMMMMMM",
    "TT................,~~,.............TTTTTTTTT............OOMMMMMM",
    "TTT................~~,...........TTTTTTTTTTT......MMO.....OMMMMM",
-   "TTTT...............~~,..........TTTTTTTTTTTT.....MMMMO....OMMMMM",
-   "TTTTT............,~~,,..........TTTTTTTTTTTTT...OMMMMO...OMMMMMM",
-   "TTTTTTTTTTT.....,,~~,..........TTTTTTTTTTTTTTT...OMMMMMMMMMMMMMM",
-   "TTTTTTTTTTTT.....~~.,...........TTTTTTTTTTTTTT.O..OOMMMMMMMMMMMM",
-   "TTTTTTTTTTTTTTT..~~,............TTTTTTTTTTTTTMMMO..OMMMMMMMMMMMM",
-   "TTTTTTTTTTTTTTTT.~~,.............TTTTTTTTTTOMMMMO...MMMMMMMMMMMM",
-   "TTTTTTTTTTTTTTT,,~~,.............TTTTTTTTTTOMMMMOOO.MMMMMMMMMMMM",
-   "TTTTTTTTTTTTTTT,~~,,...TT....TTTTTTTTTTTTTTTMMMMMMMMMMMMMMMMMMMM",
-   "...TTTTTTTTTTTT,~~.....TTT...TTTTTT.TTTTTTTTMMMMMMMMMMMMMMMMMMMM"
+   "TTT................~~,...........TTTTTTTTTTT.....MMMMO....OMMMMM",
+   "TTT..............,~~,,...........TTTTTTTTTTTT...OMMMMO...OMMMMMM",
+   "TTTT...TTTT.....,,~~,............TTTTTTTTTTTTT...OMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTT.....~~.,...........TT.TTTTTTTTTTT.O..OOMMMMMMMMMMMM",
+   "TTTTTTTTTTTTT....~~,............T...T...T..TTMMMO..OMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTT...~~,...............TT...T..OMMMMO...MMMMMMMMMMMM",
+   "TTTTTTTTTTTTT..,,~~,.............TTTT......OMMMMOOO.MMMMMMMMMMMM",
+   ".TTTTTTTTTTT...,~~,,.........TTTTTTT........MMMMMMMMMMMMMMMMMMMM",
+   ".........TT....,~~......T....TTTTT..........MMMMMMMMMMMMMMMMMMMM"
   ],
   "startBuildings": [
    {
@@ -8920,7 +8923,8 @@
     "y": 6
    }
   ],
-  "forestThinned": true
+  "forestThinned": true,
+  "forestThinning": 2
  },
  "decorations": [
   {

@@ -250,37 +250,77 @@ RESEARCH = {
 }
 
 
+def _lattice(ix, iy, seed):
+    v = (ix * 374761393 + iy * 668265263 + seed) & 0xFFFFFFFF
+    v = ((v ^ (v >> 13)) * 1274126177) & 0xFFFFFFFF
+    return (v ^ (v >> 16)) / 0xFFFFFFFF
+
+
+def _noise(x, y, scale, seed=977):
+    fx, fy = x / scale, y / scale
+    ix, iy = int(math.floor(fx)), int(math.floor(fy))
+    tx, ty = fx - ix, fy - iy
+    tx, ty = tx * tx * (3 - 2 * tx), ty * ty * (3 - 2 * ty)
+    a = _lattice(ix, iy, seed) * (1 - tx) + _lattice(ix + 1, iy, seed) * tx
+    b = _lattice(ix, iy + 1, seed) * (1 - tx) + _lattice(ix + 1, iy + 1, seed) * tx
+    return a * (1 - ty) + b * ty
+
+
+CAMP = (6, 7)
+
+
 def thin_forest(m):
     """Opens meadows in the forest (once): woods stay in clusters, the land between is free to plan."""
     if m.get("forestThinned"):
         return
     rows = [list(r) for r in m["rows"]]
     h, w = len(rows), len(rows[0])
-
-    def lattice(ix, iy):
-        v = (ix * 374761393 + iy * 668265263 + 977) & 0xFFFFFFFF
-        v = ((v ^ (v >> 13)) * 1274126177) & 0xFFFFFFFF
-        return (v ^ (v >> 16)) / 0xFFFFFFFF
-
-    def noise(x, y, scale):
-        fx, fy = x / scale, y / scale
-        ix, iy = int(math.floor(fx)), int(math.floor(fy))
-        tx, ty = fx - ix, fy - iy
-        tx, ty = tx * tx * (3 - 2 * tx), ty * ty * (3 - 2 * ty)
-        a = lattice(ix, iy) * (1 - tx) + lattice(ix + 1, iy) * tx
-        b = lattice(ix, iy + 1) * (1 - tx) + lattice(ix + 1, iy + 1) * tx
-        return a * (1 - ty) + b * ty
-
-    camp = (6, 7)
     for y in range(h):
         for x in range(w):
-            if rows[y][x] != "T" or math.hypot(x - camp[0], y - camp[1]) < 7:
+            if rows[y][x] != "T" or math.hypot(x - CAMP[0], y - CAMP[1]) < 7:
                 continue
-            n = noise(x, y, 6.0) * 0.75 + noise(x + 100, y + 100, 2.5) * 0.25
+            n = _noise(x, y, 6.0) * 0.75 + _noise(x + 100, y + 100, 2.5) * 0.25
             if n < 0.47:
                 rows[y][x] = "."
     m["rows"] = ["".join(r) for r in rows]
     m["forestThinned"] = True
+
+
+def thin_forest_more(m):
+    """Second clearing (once, about 40 % of the woods): the valley was too cluttered to read.
+
+    Lone trees and thin strips in open land go first, the land around the camp opens up, but the
+    trees right next to the camp (the first wood camp's) stay, and the Northern Forest keeps its woods.
+    """
+    if m.get("forestThinning", 1 if m.get("forestThinned") else 0) >= 2:
+        return
+    rows = [list(r) for r in m["rows"]]
+    h, w = len(rows), len(rows[0])
+
+    def neighbours(x, y):
+        return sum(1 for dx in (-1, 0, 1) for dy in (-1, 0, 1)
+                   if (dx or dy) and 0 <= x + dx < w and 0 <= y + dy < h and rows[y + dy][x + dx] == "T")
+
+    out = [r[:] for r in rows]
+    for y in range(h):
+        for x in range(w):
+            if rows[y][x] != "T":
+                continue
+            d = math.hypot(x - CAMP[0], y - CAMP[1])
+            if d < 3.5:
+                continue
+            n = _noise(x, y, 5.0, 4241) * 0.7 + _noise(x + 50, y + 50, 2.0, 4241) * 0.3
+            t = 0.46
+            if d < 12:
+                t += 0.06           # open up the land around the start
+            if neighbours(x, y) <= 3:
+                t += 0.2            # lone trees and thin strips in the meadows
+            if y <= 2 and x < 12:
+                t -= 0.35           # the Northern Forest (an expedition goes there)
+            if n < t:
+                out[y][x] = "."
+    m["rows"] = ["".join(r) for r in out]
+    m["forestThinning"] = 2
 
 
 def main():
@@ -289,6 +329,7 @@ def main():
     b = c["balance"]
     before = sum(r.count("T") for r in c["map"]["rows"])
     thin_forest(c["map"])
+    thin_forest_more(c["map"])
     after = sum(r.count("T") for r in c["map"]["rows"])
     if before != after:
         print(f"forest cells: {before} -> {after}")
@@ -330,6 +371,10 @@ def main():
             bld["levels"] = building_levels(bld)
         if bid == "storage_pit":
             bld["storage"] = 150
+        # The river's sandy banks are building land like the meadows.
+        allowed = bld.get("allowedTerrain")
+        if allowed and "grass" in allowed and "sand" not in allowed:
+            allowed.insert(allowed.index("grass") + 1, "sand")
         if bid in LOOKS:
             bld["looks"] = [{"level": lv, "sprite": sp, **({"name": nm} if nm else {})} for lv, sp, nm in LOOKS[bid]]
 
@@ -356,7 +401,8 @@ def main():
     for t in c["technologies"]:
         if t["id"] in RESEARCH:
             lvl, minutes, cost = RESEARCH[t["id"]]
-            t["heartLevel"] = lvl
+            # The heart tops out at HEART_MAX: a tech asking for more could never be studied.
+            t["heartLevel"] = min(lvl, HEART_MAX)
             t["researchSeconds"] = float(minutes * 60)
             t["cost"] = {"knowledge": cost}
 

@@ -183,8 +183,10 @@ namespace Founders
             {
                 case TerrainType.Forest:
                 {
-                    // One tree per cell (two now and then): the forest reads as woods, not a wall.
-                    int trees = inside && rng.Next(4) == 0 ? 2 : 1;
+                    // Beyond the map only some of the woods get trees: the valley walls read as woods, not a wall.
+                    if (!inside && rng.Next(3) == 0) break;
+                    // One tree per cell (rarely two): the forest reads as woods, not a wall.
+                    int trees = inside && rng.Next(8) == 0 ? 2 : 1;
                     for (int i = 0; i < trees; i++)
                     {
                         bool pine = rng.Next(3) != 0;
@@ -245,7 +247,7 @@ namespace Founders
                     int r = rng.Next(14);
                     if (r == 0) Model("sn_bush", Jitter(c, rng, 1.4f), 0.5f + r01() * 0.2f);
                     else if (r == 1) Model("sn_bush_flowers", Jitter(c, rng, 1.4f), 0.5f + r01() * 0.2f);
-                    else if (r == 2 && !inside) Tree("LeafTree", Jitter(c, rng, 1.4f), 5f);
+                    else if (r == 2 && !inside && rng.Next(2) == 0) Tree("LeafTree", Jitter(c, rng, 1.4f), 5f);
                     else if (r == 4) Model("sn_flowers", Jitter(c, rng, 1.4f), 0.28f, false);
                     else if (r == 5) Model("sn_clover", Jitter(c, rng, 1.4f), 0.5f, false);
                     break;
@@ -450,9 +452,21 @@ namespace Founders
 
         BuildingView CreateBuilding(PlacedBuilding b, BuildingDefinition def, string key)
         {
-            var center = Ground.OnGround(Grid.FootprintCenter(b.X, b.Y, store.Game.FootprintOf(b)));
+            var fpWorld = store.Game.FootprintOf(b);
+            var center = Ground.OnGround(Grid.FootprintCenter(b.X, b.Y, fpWorld));
+            float low = LowestGround(center, fpWorld);
+            // Never below the water line (beach plots by the river).
+            center.y = Mathf.Max(center.y, WorldTerrain.WaterLevel + 0.12f);
             var root = Parts.Group($"Building_{b.Id}", objectRoot, center, b.Rotation * 90f);
             float size = Grid.CellSize * Mathf.Min(def.Footprint.Width, def.Footprint.Height);
+            // Where the ground falls away under the plot (a sandy bank, a slope) a packed-earth
+            // footing carries the building, so nothing floats over the edge.
+            if (center.y - low > 0.12f)
+            {
+                float depth = center.y - low + 0.15f;
+                Parts.Prim(PrimitiveType.Cube, root.transform, new Vector3(0, 0.02f - depth * 0.5f, 0),
+                           new Vector3(def.Footprint.Width * Grid.CellSize * 0.9f, depth, def.Footprint.Height * Grid.CellSize * 0.9f), "Earth");
+            }
             var model = BuildingModels.Create(store.Game.SpriteOf(b), root.transform, null, size);
             // Buildings without level models of their own show their level with crates, torches and banners.
             if (def.Looks.Count == 0 && b.Status == BuildingStatus.Complete) BuildingModels.Dress(model.transform, b.Level, size);
@@ -463,6 +477,17 @@ namespace Founders
             var view = new BuildingView { Key = key, Root = root, Model = model.transform, Bar = bar, BarFill = fill };
             SetProgress(view, b);
             return view;
+        }
+
+        /// <summary>Lowest ground (or water surface) under the corners and edges of a footprint.</summary>
+        float LowestGround(Vector3 center, Footprint fp)
+        {
+            float hx = fp.Width * Grid.CellSize * 0.45f, hz = fp.Height * Grid.CellSize * 0.45f;
+            float low = center.y;
+            for (int i = -1; i <= 1; i++)
+                for (int j = -1; j <= 1; j++)
+                    low = Mathf.Min(low, Mathf.Max(WorldTerrain.WaterLevel, Ground.HeightAt(center + new Vector3(i * hx, 0, j * hz))));
+            return low;
         }
 
         static void SetProgress(BuildingView view, PlacedBuilding b)
@@ -749,6 +774,7 @@ namespace Founders
                 for (int dx = 0; dx < fp.Width; dx++)
                     ghost.Add(Marker(cell.Value.x + dx, cell.Value.y + dy, mat));
             var center = Ground.OnGround(Grid.FootprintCenter(cell.Value.x, cell.Value.y, fp));
+            center.y = Mathf.Max(center.y, WorldTerrain.WaterLevel + 0.12f); // as the building will stand (beach plots)
             var preview = Parts.Group("GhostModel", overlayRoot, center, rot * 90f);
             BuildingModels.Create(def.Sprite, preview.transform, valid ? null : Palette.Get("GhostBad"), Grid.CellSize * Mathf.Min(def.Footprint.Width, def.Footprint.Height));
             if (!valid) preview.transform.localScale = new Vector3(1f, 0.6f, 1f);

@@ -55,6 +55,27 @@ namespace Founders.Core
         /// <summary>Jobs whose last step found nothing left to gather within reach.</summary>
         readonly HashSet<JobType> exhaustedJobs = new HashSet<JobType>();
         readonly Dictionary<JobType, List<(int x, int y)>> gatherCache = new Dictionary<JobType, List<(int x, int y)>>();
+        long gatherStamp = long.MinValue;
+
+        long GatherStamp()
+        {
+            var s = State;
+            int complete = 0, operational = 0;
+            foreach (var b in s.Buildings)
+            {
+                if (b.Status == BuildingStatus.Complete) complete++;
+                if (b.IsOperational) operational++;
+            }
+            unchecked
+            {
+                long h = 17;
+                foreach (long v in new long[] { s.Buildings.Count, s.NextBuildingId, complete, operational, s.Decorations.Count, s.NextDecorationId,
+                                                s.HarvestOrders.Count, s.HarvestOrders.Count > 0 ? s.HarvestOrders[0] : -1, s.ExploredRegions.Count,
+                                                s.NodeCleared.Count, s.ReachedMilestones.Count })
+                    h = h * 1000003 + v;
+                return h;
+            }
+        }
 
         public bool NodesEnabled => NodeKinds.Any(k => k.Capacity > 0);
 
@@ -239,6 +260,15 @@ namespace Founders.Core
         /// </summary>
         public List<(int x, int y)> GatherCells(JobType job)
         {
+            // The cells only change when something is built, finished, taken down, marked, explored,
+            // used up or grown back: until then the list is kept (working it out is the heaviest
+            // part of a step, and a long absence is thousands of steps).
+            long stamp = GatherStamp();
+            if (stamp != gatherStamp)
+            {
+                gatherCache.Clear();
+                gatherStamp = stamp;
+            }
             if (gatherCache.TryGetValue(job, out var cached)) return cached;
             var result = new List<(int x, int y)>();
             var kinds = NodeKinds.Where(k => k.Job == job).ToList();
@@ -341,7 +371,11 @@ namespace Founders.Core
                     var t = Content.Map.Terrain(cell % Content.Map.Width, cell / Content.Map.Width);
                     var kind = NodeKinds.FirstOrDefault(k => k.Slot == slot && k.Terrain == t);
                     double regrow = kind?.RegrowSeconds ?? Content.Balance.TreeRegrowSeconds;
-                    if (regrow > 0 && State.SimTime - kv.Value >= regrow) regrown.Add(kv.Key);
+                    if (!(regrow > 0 && State.SimTime - kv.Value >= regrow)) continue;
+                    // No forest grows back under a house built on the clearing (it would stand in the woods
+                    // and be cut down by the woodcutters); it returns once the building is gone.
+                    if (kind != null && kind.ClearsTerrain && BuildingIdAt(cell % Content.Map.Width, cell / Content.Map.Width) != null) continue;
+                    regrown.Add(kv.Key);
                 }
                 foreach (var key in regrown)
                 {

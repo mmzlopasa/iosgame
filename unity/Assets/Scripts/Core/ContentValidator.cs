@@ -100,8 +100,11 @@ namespace Founders.Core
             }
 
             // Technologies: references and cycles
+            int heartTop = c.Buildings.Where(x => x.Heart).Select(x => x.MaxLevel).DefaultIfEmpty(1).Max();
             foreach (var tech in c.Technologies)
             {
+                if (tech.HeartLevel.HasValue && tech.HeartLevel.Value > heartTop)
+                    problems.Add($"tech '{tech.Id}' needs heart level {tech.HeartLevel.Value}, but the heart stops at {heartTop}");
                 foreach (var p in tech.Prerequisites)
                     if (!techIds.Contains(p)) problems.Add($"tech '{tech.Id}' has unknown prerequisite '{p}'");
                 if (tech.ResearchSeconds <= 0) problems.Add($"tech '{tech.Id}' needs researchSeconds > 0");

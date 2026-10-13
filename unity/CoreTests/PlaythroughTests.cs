@@ -92,7 +92,8 @@ namespace Founders.Tests
             Assert.That(game.State.StageId, Is.EqualTo("village"));
             Assert.That(game.State.CompletedObjectives.Count, Is.EqualTo(game.Content.Objectives.Count));
             Assert.That(t, Is.LessThan(Hours * 3600));
-            Assert.That(t, Is.GreaterThan(3 * 3600), "the first era change should take hours, not minutes");
+            // About three hours (the thinner woods leave more meadow and berry bushes: a little under).
+            Assert.That(t, Is.GreaterThan(2.5 * 3600), "the first era change should take hours, not minutes");
         }
 
         /// <summary>Levels the heart, or whatever its next level is waiting for.</summary>

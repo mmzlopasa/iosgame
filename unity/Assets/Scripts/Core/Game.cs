@@ -143,7 +143,6 @@ namespace Founders.Core
                 stepEffects = null;
                 stepApproval = null;
                 stepWarmth = null;
-                gatherCache.Clear();
             }
         }
 

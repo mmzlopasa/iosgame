@@ -538,7 +538,8 @@ namespace Founders
             }
             else if (PlacingBuildingId != null)
             {
-                GhostCell = (x, y);
+                // The building's middle goes where the ground was tapped (as when it is dragged).
+                DragGhost(screen);
             }
             else
             {
