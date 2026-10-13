@@ -15,6 +15,8 @@ textures) and the OFL Changa One font.
 | `blender_appicon.py` | The 1024 px app icon (opaque): the carved stone and gold "FOUNDERS / THE LONG RISE" emblem, written to Unity and the Xcode asset catalogue |
 | `blender_appicon_scene.py` | The earlier scene icon (the founder with a torch at dusk), kept as an alternative |
 | `preview_ui.py` | Review sheets: a mock popup built from the real skins and icons, and every skin native and stretched |
+| `blender_buildings.py` | Path-traced build-menu pictures of every building (Cycles, game sky HDRI + warm sun, shadow catcher, AgX); one job per model from the Unity OBJ export or a kit FBX |
+| `render_buildings.py` | Driver for the above: `--models <building-models.zip>` (CI artifact of `export-models.yml`) or `--fbx` (local fallback, medieval_* only); adds the outline and contact shadow, writes 256 px `UI/Buildings/<key>.png` |
 | `build_art.py` | Runs the steps above |
 
 ## Re-running
