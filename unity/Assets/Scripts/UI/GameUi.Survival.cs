@@ -839,7 +839,7 @@ namespace Founders.UI
         static string LawIcon(LawDefinition law)
         {
             string name = "law_" + law.Id;
-            return UnityEngine.Resources.Load<Texture2D>("UI/Icons/" + name) != null ? name : "customs";
+            return Theme.HasIcon(name) ? name : "customs";
         }
 
         /// <summary>

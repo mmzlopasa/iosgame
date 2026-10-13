@@ -467,9 +467,12 @@ namespace Founders
                 Parts.Prim(PrimitiveType.Cube, root.transform, new Vector3(0, 0.02f - depth * 0.5f, 0),
                            new Vector3(def.Footprint.Width * Grid.CellSize * 0.9f, depth, def.Footprint.Height * Grid.CellSize * 0.9f), "Earth");
             }
-            var model = BuildingModels.Create(store.Game.SpriteOf(b), root.transform, null, size);
-            // Buildings without level models of their own show their level with crates, torches and banners.
-            if (def.Looks.Count == 0 && b.Status == BuildingStatus.Complete) BuildingModels.Dress(model.transform, b.Level, size);
+            var model = BuildingModels.Create(store.Game.SpriteOf(b), root.transform, null, size, b.Level,
+                                              new Vector2(def.Footprint.Width, def.Footprint.Height) * Grid.CellSize);
+            // Buildings without level models of their own show their level with crates, torches and banners
+            // (the player's own models show exactly what their files hold).
+            if (def.Looks.Count == 0 && b.Status == BuildingStatus.Complete && model.GetComponent<CustomModel>() == null)
+                BuildingModels.Dress(model.transform, b.Level, size);
             var bar = Parts.Group("Progress", root.transform, new Vector3(0, 2.6f, 0));
             bar.transform.rotation = Quaternion.Euler(0, CameraRig.Yaw, 0);
             Parts.Prim(PrimitiveType.Cube, bar.transform, Vector3.zero, new Vector3(1.4f, 0.16f, 0.06f), "BarBack");
@@ -776,7 +779,8 @@ namespace Founders
             var center = Ground.OnGround(Grid.FootprintCenter(cell.Value.x, cell.Value.y, fp));
             center.y = Mathf.Max(center.y, WorldTerrain.WaterLevel + 0.12f); // as the building will stand (beach plots)
             var preview = Parts.Group("GhostModel", overlayRoot, center, rot * 90f);
-            BuildingModels.Create(def.Sprite, preview.transform, valid ? null : Palette.Get("GhostBad"), Grid.CellSize * Mathf.Min(def.Footprint.Width, def.Footprint.Height));
+            BuildingModels.Create(def.Sprite, preview.transform, valid ? null : Palette.Get("GhostBad"), Grid.CellSize * Mathf.Min(def.Footprint.Width, def.Footprint.Height),
+                                  1, new Vector2(def.Footprint.Width, def.Footprint.Height) * Grid.CellSize);
             if (!valid) preview.transform.localScale = new Vector3(1f, 0.6f, 1f);
             ghost.Add(preview);
         }
@@ -838,7 +842,7 @@ namespace Founders
             {
                 int index = villagers.Count;
                 var person = index < game.State.People.Count ? game.State.People[index] : null;
-                var v = Villager.Spawn(peopleRoot, RandomSpot(game), person?.Id ?? index, person?.Female ?? index % 2 == 1);
+                var v = Villager.Spawn(peopleRoot, RandomSpot(game), person?.Id ?? index, person?.Female ?? index % 2 == 1, job: person?.Job);
                 v.NextTask = from => TaskFor(index, from);
                 v.Ground = Ground;
                 villagers.Add(v);

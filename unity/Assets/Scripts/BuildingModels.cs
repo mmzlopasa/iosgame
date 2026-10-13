@@ -10,8 +10,13 @@ namespace Founders
     /// </summary>
     public static class BuildingModels
     {
-        public static GameObject Create(string sprite, Transform parent, Material tint, float footprintMetres = 2f)
+        /// <param name="level">Building level: picks the player's level variant (Assets/Custom, "&lt;sprite&gt;@L5").</param>
+        /// <param name="footprint">Footprint in metres (x, z) for a custom model; square <paramref name="footprintMetres"/> when null.</param>
+        public static GameObject Create(string sprite, Transform parent, Material tint, float footprintMetres = 2f, int level = 1, Vector2? footprint = null)
         {
+            // The player's own model (Assets/Custom/Resources/Custom/Buildings) replaces the built one.
+            var custom = CustomAssets.Building(sprite, level, parent, tint, footprint ?? new Vector2(footprintMetres, footprintMetres));
+            if (custom != null) return custom;
             var root = new GameObject("Model_" + sprite);
             root.transform.SetParent(parent, false);
             var b = new Builder(root.transform, tint, tint == null);
@@ -766,6 +771,15 @@ namespace Founders
 
         public static GameObject Decoration(string sprite, Transform parent, Material tint, int rotation, int connect)
         {
+            if (CustomAssets.HasDecoration(sprite))
+            {
+                // A bridge runs along the neighbours it joins, as the built one does.
+                bool ew = (connect & (East | West)) != 0, ns = (connect & (North | South)) != 0;
+                bool alongX = ew && (!ns || (connect & (East | West)) == (East | West));
+                bool bridge = sprite == "wooden_bridge";
+                var custom = CustomAssets.Decoration(sprite, parent, tint, bridge ? (alongX ? 90f : 0f) : rotation * 90f, bridge);
+                if (custom != null) return custom;
+            }
             var root = new GameObject("Decoration_" + sprite);
             root.transform.SetParent(parent, false);
             var b = new Builder(root.transform, tint, tint == null);

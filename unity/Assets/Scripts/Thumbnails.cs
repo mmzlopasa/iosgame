@@ -38,16 +38,22 @@ namespace Founders
             return cache.TryGetValue(key, out var t) ? t : null;
         }
 
-        /// <summary>The pre-rendered picture (Resources/UI/Buildings/&lt;key with ':' as '_'&gt;.png), or null.</summary>
+        /// <summary>
+        /// The ready picture, or null: the player's own (Custom/Icons/&lt;key with ':' as '_'&gt;.png) first,
+        /// else the pre-rendered one (Resources/UI/Buildings) unless the player replaced the model, whose
+        /// picture is then photographed in the studio.
+        /// </summary>
         static Texture2D Baked(string key)
         {
             if (baked.TryGetValue(key, out var t)) return t;
-            t = Resources.Load<Texture2D>(BakedFolder + "/" + key.Replace(':', '_'));
+            string file = key.Replace(':', '_');
+            t = CustomAssets.Texture("Icons/" + file);
+            if (t == null && !CustomAssets.HasModelFor(key)) t = Resources.Load<Texture2D>(BakedFolder + "/" + file);
             baked[key] = t;
             return t;
         }
 
-        static string Folder => Path.Combine(Application.persistentDataPath, "thumbs", Application.version + "_" + Application.buildGUID);
+        static string Folder => Path.Combine(Application.persistentDataPath, "thumbs", Application.version + "_" + Application.buildGUID + CustomAssets.Signature);
 
         /// <summary>Every picture the UI can ask for: buildings at each look, and decorations.</summary>
         static List<(string key, string sprite, bool decoration, float metres)> Wanted(GameContent content)

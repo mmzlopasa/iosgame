@@ -32,6 +32,13 @@ namespace FoundersEditor
             AssetDatabase.Refresh();
             ArtSetup.Run();
             UiSetup.Run();
+            // The player's own art (Assets/Custom): prepare it and list what the build will use.
+            try
+            {
+                CustomAssetsEditor.Prepare();
+                Debug.Log(CustomAssetsEditor.Check());
+            }
+            catch (Exception e) { Debug.LogWarning("[FOUNDERS] custom assets check failed: " + e); }
             GenerateScene();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();

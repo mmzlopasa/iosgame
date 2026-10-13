@@ -198,22 +198,36 @@ namespace Founders.UI
             // "thumb:medieval_house" / "thumb:deco:well": a picture of the real model (see Thumbnails).
             if (name.StartsWith("thumb:")) return Thumbnails.Get(name.Substring(6)) ?? Icon("build");
             if (icons.TryGetValue(name, out var t)) return t;
-            t = UnityEngine.Resources.Load<Texture2D>("UI/Icons/" + name);
+            // The player's own icon (Assets/Custom/Resources/Custom/UI/Icons) wins over the game's.
+            t = CustomAssets.Texture("UI/Icons/" + name) ?? UnityEngine.Resources.Load<Texture2D>("UI/Icons/" + name);
             if (t == null) Debug.LogWarning($"[FOUNDERS] UI icon missing: {name}");
             icons[name] = t;
             return t;
         }
 
+        public static bool HasIcon(string name) =>
+            CustomAssets.Texture("UI/Icons/" + name) != null || UnityEngine.Resources.Load<Texture2D>("UI/Icons/" + name) != null;
+
+        static readonly Dictionary<string, float> skinPixels = new Dictionary<string, float>();
+
         public static Texture2D SkinTexture(string name)
         {
             if (skins.TryGetValue(name, out var t)) return t;
-            t = UnityEngine.Resources.Load<Texture2D>("UI/Skin/" + name);
+            var own = UnityEngine.Resources.Load<Texture2D>("UI/Skin/" + name);
+            // The player's own skin (Custom/UI/Skin) may be drawn at another resolution: its slices scale with it.
+            t = CustomAssets.Texture("UI/Skin/" + name);
+            if (t != null && own != null && own.width > 0) skinPixels[name] = UiGenerated.SkinScale * t.width / (float)own.width;
+            if (t == null) t = own;
             if (t == null) Debug.LogWarning($"[FOUNDERS] UI skin missing: {name}");
             skins[name] = t;
             return t;
         }
 
-        public static Texture2D Image(string name) => UnityEngine.Resources.Load<Texture2D>("UI/Images/" + name);
+        /// <summary>Pixels per point of a skin texture (3 for the game's own).</summary>
+        public static float SkinPixelsPerPoint(string name) => skinPixels.TryGetValue(name, out var k) ? k : UiGenerated.SkinScale;
+
+        public static Texture2D Image(string name) =>
+            CustomAssets.Texture("UI/Images/" + name) ?? UnityEngine.Resources.Load<Texture2D>("UI/Images/" + name);
 
         /// <summary>A gradient through evenly spaced stops (vertical: top → bottom).</summary>
         public static Texture2D Gradient(string key, bool vertical, params Color[] stops)
@@ -345,11 +359,11 @@ namespace Founders.UI
             if (e.style.unitySliceType != slice) e.style.unitySliceType = slice;
             if (UiGenerated.Skins.TryGetValue(name, out var s))
             {
-                int k = UiGenerated.SkinScale;
-                e.style.unitySliceLeft = s.Left * k;
-                e.style.unitySliceTop = s.Top * k;
-                e.style.unitySliceRight = s.Right * k;
-                e.style.unitySliceBottom = s.Bottom * k;
+                float k = Theme.SkinPixelsPerPoint(name);
+                e.style.unitySliceLeft = Mathf.RoundToInt(s.Left * k);
+                e.style.unitySliceTop = Mathf.RoundToInt(s.Top * k);
+                e.style.unitySliceRight = Mathf.RoundToInt(s.Right * k);
+                e.style.unitySliceBottom = Mathf.RoundToInt(s.Bottom * k);
                 e.style.unitySliceScale = 1f / k;
             }
             return e;

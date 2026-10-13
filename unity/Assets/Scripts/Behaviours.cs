@@ -400,6 +400,8 @@ namespace Founders
         /// <summary>Height of the body model before scaling (metres), to size the seat.</summary>
         float bodyHeight = 1.78f;
         Animation anim;
+        /// <summary>Plays the clips of the player's own character (Assets/Custom People), else null.</summary>
+        CustomPersonAnimator customAnim;
         string current;
         readonly Dictionary<string, GameObject> tools = new Dictionary<string, GameObject>();
         string shownTool;
@@ -439,6 +441,13 @@ namespace Founders
             wait = Random.Range(0f, 3f);
             target = transform.position;
             anim = GetComponentInChildren<Animation>();
+            customAnim = GetComponentInChildren<CustomPersonAnimator>();
+            if (customAnim != null)
+            {
+                string first = Random.value < 0.5f ? "Idle" : "Talk";
+                customAnim.Play(first, 0f, randomStart: true); // desynchronised loops
+                current = first;
+            }
             foreach (var r in GetComponentsInChildren<MeshRenderer>(true))
             {
                 if (!r.name.StartsWith("Prop_")) continue;
@@ -457,6 +466,13 @@ namespace Founders
 
         void Play(string clip, float fade = 0.25f)
         {
+            if (customAnim != null)
+            {
+                if (current == clip) return;
+                customAnim.Play(clip, fade);
+                current = clip;
+                return;
+            }
             if (anim == null || current == clip) return;
             foreach (AnimationState st in anim)
             {
@@ -584,7 +600,7 @@ namespace Founders
             if (Ground != null) next.y = Ground.HeightAt(next);
             transform.position = next;
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(to), 6f * Time.deltaTime);
-            if (anim == null)
+            if (anim == null && customAnim == null)
                 body.localPosition = new Vector3(0, Mathf.Abs(Mathf.Sin(Time.time * speed * 7f)) * 0.05f, 0);
         }
 
@@ -657,12 +673,15 @@ namespace Founders
         /// A villager: one of the people (man, woman or elder), or a child (a smaller person). Skin
         /// tone, the dye of the main garment and the hair colour vary per person so no two look alike.
         /// </summary>
-        public static Villager Spawn(Transform parent, Vector3 at, int seed, bool female, bool child = false)
+        public static Villager Spawn(Transform parent, Vector3 at, int seed, bool female, bool child = false, string job = null)
         {
             var root = Parts.Group(child ? "Child" : "Villager", parent, at).transform;
             root.rotation = Quaternion.Euler(0, Random.Range(0f, 360f), 0);
             var rng = new System.Random(seed * 7919 + 17);
             bool elder = !child && rng.Next(7) == 0;
+            // The player's own characters (Assets/Custom/Resources/Custom/People) replace the game's people.
+            var custom = CustomAssets.PickPerson(rng, female, child, elder, job);
+            if (custom != null) return SpawnCustom(root, custom, rng, female, child, elder);
             var pool = PersonModels().FindAll(p => p.Gender == (female ? "female" : "male") && p.Age == (elder ? "elder" : "adult"));
             if (pool.Count == 0) pool = PersonModels();
             var person = pool.Count > 0 ? pool[rng.Next(pool.Count)] : null;
@@ -747,6 +766,36 @@ namespace Founders
             Parts.Prim(PrimitiveType.Capsule, figure, new Vector3(-0.08f, 0.18f, 0), new Vector3(0.11f, 0.2f, 0.11f), "Skin");
             Parts.Prim(PrimitiveType.Capsule, figure, new Vector3(0.08f, 0.18f, 0), new Vector3(0.11f, 0.2f, 0.11f), "Skin");
             return root.gameObject.AddComponent<Villager>();
+        }
+
+        /// <summary>A villager drawn with the player's own rigged character and clips, at a real height.</summary>
+        static Villager SpawnCustom(Transform root, CustomAssets.Person person, System.Random rng, bool female, bool child, bool elder)
+        {
+            var body = Instantiate(person.Prefab, root);
+            body.name = "Body";
+            body.transform.localPosition = Vector3.zero;
+            body.transform.localRotation = Quaternion.identity;
+            foreach (var c in body.GetComponentsInChildren<Collider>(true)) Destroy(c);
+            CustomAssets.FixMaterials(body);
+            foreach (var r in body.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.On;
+                r.updateWhenOffscreen = false;
+            }
+            var bounds = CustomAssets.LocalBounds(body, root);
+            float scale0 = Mathf.Max(0.0001f, body.transform.localScale.y);
+            float height = child ? 1.0f + (float)rng.NextDouble() * 0.15f : (female ? 1.6f : 1.7f) + (float)rng.NextDouble() * 0.12f;
+            if (elder) height -= 0.06f;
+            // A child drawn with a grown-up's model is that model made smaller; a Child_ model keeps its proportions.
+            if (bounds.size.y > 0.01f) body.transform.localScale *= height / bounds.size.y;
+            var animator = body.GetComponentInChildren<Animator>();
+            if (animator == null) animator = body.AddComponent<Animator>();
+            body.AddComponent<CustomPersonAnimator>().Init(animator, person.Clips);
+            var v = root.gameObject.AddComponent<Villager>();
+            v.child = child;
+            v.elder = elder;
+            if (bounds.size.y > 0.01f) v.bodyHeight = bounds.size.y / scale0;
+            return v;
         }
 
         /// <summary>

@@ -62,7 +62,18 @@ namespace Founders
             foreach (var n in OutputLayers)
             {
                 var l = Resources.Load<TerrainLayer>("TerrainLayers/" + n);
-                layers.Add(l != null ? l : new TerrainLayer { diffuseTexture = Texture2D.grayTexture, tileSize = new Vector2(5, 5) });
+                if (l == null) l = new TerrainLayer { diffuseTexture = Texture2D.grayTexture, tileSize = new Vector2(5, 5) };
+                // The player's own ground (Custom/Textures/Terrain/<Layer>.png, optional <Layer>_normal.png).
+                var albedo = CustomAssets.Texture("Textures/Terrain/" + n);
+                if (albedo != null)
+                {
+                    l = new TerrainLayer
+                    {
+                        name = n + "_Custom", diffuseTexture = albedo, normalMapTexture = CustomAssets.Texture("Textures/Terrain/" + n + "_normal"),
+                        tileSize = l.tileSize, normalScale = 1f, smoothness = l.smoothness, metallic = 0f,
+                    };
+                }
+                layers.Add(l);
             }
             data.terrainLayers = layers.ToArray();
 
