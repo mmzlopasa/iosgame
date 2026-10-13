@@ -186,6 +186,46 @@ namespace Founders
             Debug.Log($"[FOUNDERS] captured {name}");
         }
 
+        /// <summary>
+        /// A close view of one villager, nearer than the strategy camera goes: the rig pauses and the
+        /// camera follows the person at <paramref name="offset"/> (their own space: x right, z ahead),
+        /// looking at <paramref name="heightFrac"/> of their height, <paramref name="ahead"/> metres in front.
+        /// </summary>
+        IEnumerator CloseUp(string name, Villager v, Vector3 offset, float heightFrac, float ahead)
+        {
+            if (v == null)
+            {
+                Debug.LogWarning($"[FOUNDERS] capture: nobody for {name}");
+                yield break;
+            }
+            var rig = store.Rig;
+            var cam = rig.Cam;
+            float height = 1.7f;
+            var body = v.GetComponentInChildren<SkinnedMeshRenderer>();
+            if (body != null) height = Mathf.Max(0.5f, body.bounds.max.y - v.transform.position.y);
+            rig.enabled = false;
+            NatureField.KeepNearCamera = true;
+            cam.ResetProjectionMatrix();
+            bool following = true;
+            IEnumerator Follow()
+            {
+                while (following && v != null)
+                {
+                    var t = v.transform;
+                    var look = t.position + Vector3.up * (height * heightFrac) + t.forward * ahead;
+                    cam.transform.position = look + t.rotation * offset;
+                    cam.transform.rotation = Quaternion.LookRotation(look - cam.transform.position);
+                    yield return null;
+                }
+            }
+            var follow = StartCoroutine(Follow());
+            yield return Shot(name, false);
+            following = false;
+            StopCoroutine(follow);
+            NatureField.KeepNearCamera = false;
+            rig.enabled = true;
+        }
+
         void Focus(Vector3 p, float zoom) => store.Rig.SetFocus(store.World.Ground.OnGround(p), true, zoom);
 
         Vector3 Camp()
@@ -646,6 +686,26 @@ namespace Founders
                 yield return new WaitForSeconds(0.4f);
                 yield return Shot("06l_woodcutters", false);
             }
+            // Up close (nearer than the strategy camera goes): a woodcutter at the trunk, a quarrier at
+            // the rock, and a villager's face, to judge the people and where they work.
+            chopper = store.World.FindVillager("Chop", "Prop_Axe") ?? chopper;
+            yield return CloseUp("06l2_woodcutter_close", chopper, new Vector3(-2.3f, 0.5f, 2.1f), 0.55f, 0.6f);
+            store.SetWorkers(JobType.Stonecutting, game.JobCapacity(JobType.Stonecutting));
+            Villager quarrier = null;
+            for (int i = 0; i < 300 && quarrier == null; i++)
+            {
+                quarrier = store.World.FindWorker(JobType.Stonecutting, "Work");
+                yield return new WaitForSeconds(0.1f);
+            }
+            yield return CloseUp("06l3_quarry_close", quarrier, new Vector3(-1.9f, 0.6f, 1.7f), 0.3f, 0.5f);
+            Villager sitter = null;
+            for (int i = 0; i < 100 && sitter == null; i++)
+            {
+                sitter = store.World.AnyVillager();
+                if (sitter != null && sitter.Clip != "Idle" && sitter.Clip != "Talk" && sitter.Clip != "Watch" && i < 99) sitter = null;
+                yield return new WaitForSeconds(0.1f);
+            }
+            yield return CloseUp("06l4_villager_portrait", sitter, new Vector3(0.3f, 0.02f, 1.55f), 0.93f, 0f);
 
             // 3d. The Middle Ages: the charter, stone houses, the market hall, the mill and the church.
             game.State.Chapter = Mathf.Max(game.State.Chapter, 5);

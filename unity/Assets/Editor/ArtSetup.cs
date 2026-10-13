@@ -99,7 +99,13 @@ namespace FoundersEditor
             mi.importCameras = false;
             mi.importLights = false;
             mi.isReadable = false;
-            mi.meshCompression = ModelImporterMeshCompression.Medium;
+            // People are seen up close: compressed normals and UVs show as facets and texture swim.
+            mi.meshCompression = modelName.StartsWith("Person_") ? ModelImporterMeshCompression.Off : ModelImporterMeshCompression.Medium;
+            if (modelName.StartsWith("Person_"))
+            {
+                mi.importNormals = ModelImporterNormals.Import;
+                mi.importTangents = ModelImporterTangents.CalculateMikk; // as the normal maps were baked (Blender, MikkTSpace)
+            }
             mi.addCollider = false;
         }
     }
@@ -133,6 +139,7 @@ namespace FoundersEditor
             GenerateTextures();
             GenerateColorMaterials();
             GenerateTexturedMaterials(manifest);
+            GeneratePeopleMaterials();
             GenerateTerrainLayers(manifest);
             GenerateSky(manifest);
             GenerateVolume();
@@ -364,6 +371,28 @@ namespace FoundersEditor
                     Finish(m);
                     Save(m, $"{Materials}/I_{name}_{view}.mat");
                 }
+            }
+        }
+
+        /// <summary>
+        /// P_&lt;Person_Name&gt;: one lit material per villager model from its baked texture set (albedo,
+        /// normal map, mask with occlusion and smoothness), listed in Art/Resources/people.json.
+        /// Villager.Spawn shares it across the model's zones and dyes each zone with a property block.
+        /// </summary>
+        static void GeneratePeopleMaterials()
+        {
+            var asset = AssetDatabase.LoadAssetAtPath<TextAsset>("Assets/Art/Resources/people.json");
+            if (asset == null) return;
+            foreach (var p in new JObj(Json.Parse(asset.text)).Objs("people"))
+            {
+                var t = p.OptObj("textures");
+                if (t == null) continue;
+                string key = "P_" + Path.GetFileName(p.Str("model"));
+                var m = TexturedLit(key, t.Str("albedo"), t.Str("normal"), t.Str("mask"), Vector2.one);
+                m.SetFloat("_EnvironmentReflections", 1f);
+                m.SetFloat("_SpecularHighlights", 1f);
+                Finish(m);
+                Save(m, $"{Materials}/{key}.mat");
             }
         }
 

@@ -19,6 +19,9 @@ textures) and the OFL Changa One font.
 | `render_buildings.py` | Driver for the above: `--models <building-models.zip>` (CI artifact of `export-models.yml`) or `--fbx` (local fallback, medieval_* only); adds the outline and contact shadow, writes 256 px `UI/Buildings/<key>.png` |
 | `build_art.py` | Runs the steps above |
 
+The villagers themselves (models, baked PBR textures, animations) are built by `tools/assets/build_characters.py`
+(see `tools/assets/PACKS.md` for sources and licences); `tools/assets/blender_people_preview.py` renders a review sheet.
+
 ## Re-running
 
     python3 tools/art/build_art.py                        # everything (~20 min on 4 CPU cores)

@@ -5,22 +5,30 @@
   the outfit pack (peasant shirt and trousers, ranger jerkin and hood, boots), the hair from the
   base pack's hairstyles. Every pack uses the same Unreal-style skeleton, so the parts are simply
   re-parented to one armature.
-- textures are not used by the game: each texture is turned into a few flat-colour material
-  zones (k-means over per-face texture samples, cleaned with a neighbour vote). The main garment
-  is called "Main" (the game tints it per person); skin "Skin", hair/beard/eyebrows "Hair".
-- women can get a long skirt (a skinned cone over the trousers, following pelvis and thighs);
-  elders get a slight stoop (applied to the rest pose, so every clip keeps it)
-- every mesh is welded, smooth shaded and decimated to fit about 7k triangles in all
+- the packs' painted PBR textures (skin and face, cloth weave, folds, stitching, leather) are kept:
+  the full-detail parts are baked onto the game mesh as one texture set per person (albedo,
+  tangent-space normal map, mask with ambient occlusion and smoothness). The garment zones are
+  still found by colour (k-means over per-face texture samples, cleaned with a neighbour vote):
+  the main garment ("Main") and the hair ("Hair") are baked as neutral grey detail so the game can
+  dye them per person; trousers, boots, hood and bodice are baked in the period colours of the
+  spec; skin ("Skin") keeps the painted skin and the game shifts its tone per person.
+- women can get a long skirt (a skinned cone over the trousers, following pelvis and thighs, with
+  a woven wool surface); elders get a slight stoop (applied to the rest pose, so every clip keeps it)
+- every mesh is welded, smooth shaded and decimated to fit the triangle budget (about 7.4k), and a
+  second, lighter mesh (Body_LOD1, same skeleton and textures) is exported for distant villagers
 - the animations of Villager.fbx (Universal Animation Library 1 + 2, same skeleton) are
   retargeted bone by bone: each bone takes the source bone's world rotation change from rest, the
-  pelvis follows the source pelvis scaled to the leg length
+  pelvis follows the source pelvis scaled to the leg length. Extra clips can come from other files
+  on the same skeleton (the sick lie down: the first moment of UAL2 "LayToIdle", held as "Lie").
 - hand tools (Prop_Axe, Prop_Pickaxe, Prop_Hammer, Prop_Spear) are parented to hand_r exactly as
   in Villager.fbx (blender_people.py)
 
-blender -b --factory-startup -P blender_characters.py -- <Villager.fbx> <spec.json> <out.fbx> [--preview <png prefix>]
+blender -b --factory-startup -P blender_characters.py -- <Villager.fbx> <spec.json> <out.fbx>
 spec.json: {"base": gltf, "parts": [[gltf, object name prefix], ...], "hair": [gltf, ...],
             "skirt": bool, "elder": bool, "hood": bool, "colors": {"Main": [r,g,b] (sRGB), ...},
-            "tris": target triangle count}
+            "tris": target triangle count, "lod_tris": LOD1 triangle count, "dye": bool (default true),
+            "textures": output path prefix (writes <prefix>_albedo/_normal/_mask.npy),
+            "tex_size": texture size, "extra_anims": [[file, source action, clip, end fraction], ...]}
 """
 import json
 import math
@@ -33,9 +41,12 @@ from mathutils import Matrix, Vector
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 SRC, SPEC, OUT = argv[0], argv[1], argv[2]
-PREVIEW = argv[argv.index("--preview") + 1] if "--preview" in argv else None
 spec = json.load(open(SPEC))
-TARGET_TRIS = spec.get("tris", 7000)
+TARGET_TRIS = spec.get("tris", 7400)
+LOD_TRIS = spec.get("lod_tris", 2400)
+TEX = spec.get("textures")
+TEX_SIZE = spec.get("tex_size", 1024)
+NEUTRAL = 0.5  # linear albedo of the dyed zones' grey detail (the game multiplies it by colour / NEUTRAL)
 
 bpy.ops.wm.read_factory_settings(use_empty=True)
 scene = bpy.context.scene
@@ -55,7 +66,12 @@ def srgb_to_linear(c):
     return np.where(c <= 0.04045, c / 12.92, ((c + 0.055) / 1.055) ** 2.4)
 
 
-# MARK: - Animation source
+def luminance(lin):
+    lin = np.asarray(lin, dtype=np.float64)
+    return lin[..., 0] * 0.2126 + lin[..., 1] * 0.7152 + lin[..., 2] * 0.0722
+
+
+# MARK: - Animation sources
 
 src_objs, src_actions = import_any(SRC)
 src = next(o for o in src_objs if o.type == "ARMATURE")
@@ -64,6 +80,27 @@ for o in src_objs:
         o.hide_render = o.hide_viewport = True
 if src.animation_data is None:
     src.animation_data_create()
+
+# Extra clips from other files on the same skeleton: (armature, action, clip name).
+extra_sources = []
+for path, action_name, clip, end in spec.get("extra_anims", []):
+    objs, acts = import_any(path)
+    arm = next(o for o in objs if o.type == "ARMATURE")
+    for o in objs:
+        if o.type == "MESH":
+            o.hide_render = o.hide_viewport = True
+    act = next((a for a in acts if a.name.split("|")[-1].split("_Armature")[0] == action_name), None)
+    for a in acts:
+        if a != act:
+            bpy.data.actions.remove(a)
+    if act is None:
+        print("CHARACTER_WARN missing extra clip", action_name)
+        continue
+    if arm.animation_data is None:
+        arm.animation_data_create()
+    f0, f1 = act.frame_range
+    act["clip_end"] = f0 + (f1 - f0) * end
+    extra_sources.append((arm, act, clip, objs))
 
 # MARK: - Parts
 
@@ -143,7 +180,8 @@ for path in spec.get("hair", []):
             o["drop"] = True
 for o in [o for o in bpy.data.objects if o.get("drop")]:
     bpy.data.objects.remove(o, do_unlink=True)
-for a in [a for a in bpy.data.actions if a not in src_actions]:
+keep_actions = set(src_actions) | {a for _, a, _, _ in extra_sources}
+for a in [a for a in bpy.data.actions if a not in keep_actions]:
     bpy.data.actions.remove(a)
 
 # Trousers under a skirt would only poke through it (the boots reach above the hem).
@@ -171,8 +209,6 @@ pixel_cache = {}
 
 def pixels(im):
     if im.name not in pixel_cache:
-        if im.size[0] > 1024:
-            im.scale(1024, 1024)
         w, h = im.size
         px = np.empty(w * h * 4, dtype=np.float32)
         im.pixels.foreach_get(px)
@@ -220,6 +256,15 @@ def kind_of_material(mat, kind):
 # Weld UV seams (so decimation and smooth shading see closed surfaces) and gather face data.
 records = []  # (object, face kinds array, colours array, areas array)
 for o, kind in parts:
+    # One UV map per part, under one name, so joining keeps every part's islands on the same map.
+    uvs = o.data.uv_layers
+    if uvs.active is not None:
+        keep_uv = uvs.active.name
+        for name in [l.name for l in uvs if l.name != keep_uv]:
+            uvs.remove(uvs[name])
+        uvs[keep_uv].name = "UVMap"
+    else:
+        uvs.new(name="UVMap")
     bm = bmesh.new()
     bm.from_mesh(o.data)
     bmesh.ops.remove_doubles(bm, verts=bm.verts, dist=0.0001)
@@ -255,7 +300,7 @@ def kmeans(x, wts, k, iters=30):
 cloth_x = np.concatenate([c[k == "cloth"] for _, k, c, _ in records])
 cloth_w = np.concatenate([a[k == "cloth"] for _, k, _, a in records])
 K = 7
-MAX_ZONES = 5  # cloth materials per person (draw calls)
+MAX_ZONES = 5
 centers, _ = kmeans(cloth_x, cloth_w + 1e-9, K)
 # Merge near-identical zones.
 merged = list(range(K))
@@ -352,34 +397,151 @@ def make_mat(name, srgb):
 
 
 colors = spec.get("colors", {})
-materials = {"Skin": make_mat("Skin", colors.get("Skin", (0.80, 0.60, 0.47))),
-             "Hair": make_mat("Hair", colors.get("Hair", (0.78, 0.77, 0.74) if spec.get("elder") else (0.22, 0.14, 0.08)))}
-for c, n in names.items():
-    materials[n] = make_mat(n, colors.get(n, np.clip(centers[c], 0, 1)))
+DEFAULT_HAIR = (0.78, 0.77, 0.74) if spec.get("elder") else (0.22, 0.14, 0.08)
 
-# Eyes: dark iris and pupil, white sclera.
-eye_rec = [r for r in records if (r[1] == "eyes").any()]
-if eye_rec:
-    ex = np.concatenate([c[k == "eyes"] for _, k, c, _ in eye_rec])
-    lum = ex.mean(1)
-    eye_split = (np.percentile(lum, 30) + np.percentile(lum, 85)) / 2
-    materials["Eyes"] = make_mat("Eyes", (0.16, 0.10, 0.07))
-    materials["EyeWhite"] = make_mat("EyeWhite", (0.86, 0.84, 0.80))
+# Face roles: Skin, Hair (with brows), Eyes, or a garment zone (Main, Top, Trousers, Boots, Hood, ClothN).
+roles = {}
+for o, kinds, cols, _ in records:
+    want = []
+    for i in range(len(kinds)):
+        k = kinds[i]
+        want.append("Skin" if k == "skin" else "Hair" if k == "hair" else "Eyes" if k == "eyes" else names[cloth_labels[o.name][i]])
+    roles[o.name] = want
 
-# Assign the final materials per face.
+# Mean linear luminance of each role's painted texture (to normalise the dyed and recoloured zones).
+role_lum, role_area = {}, {}
+for o, kinds, cols, areas in records:
+    lum = luminance(srgb_to_linear(np.clip(cols, 0, 1)))
+    for i, r in enumerate(roles[o.name]):
+        role_lum[r] = role_lum.get(r, 0.0) + lum[i] * areas[i]
+        role_area[r] = role_area.get(r, 0.0) + areas[i]
+role_mean = {r: max(0.02, role_lum[r] / max(1e-9, role_area[r])) for r in role_lum}
+skin_cols = np.concatenate([srgb_to_linear(np.clip(c[k == "skin"], 0, 1)) for _, k, c, _ in records if (k == "skin").any()])
+skin_area = np.concatenate([a[k == "skin"] for _, k, _, a in records if (k == "skin").any()])
+SKIN_MEAN = (skin_cols * skin_area[:, None]).sum(0) / max(1e-9, skin_area.sum()) if len(skin_cols) else np.array([0.5, 0.35, 0.25])
+
+
+DYE = spec.get("dye", True)
+
+
+def dyed(role):
+    """Zones the game colours per person: baked as neutral grey detail. Without "dye" (the ranger
+    leathers: straps and plates cross the garment, so per-face zones would show their jagged edges)
+    the clothes keep the pack's own colours and only the hair is dyed."""
+    return role == "Hair" or (DYE and role == "Main")
+
+
+def low_zone(role):
+    """Submesh (material) of a role on the game mesh."""
+    return role if role in ("Skin", "Hair", "Main") else "Rest"
+
+
+# MARK: - Full-detail copies for baking (original textures, zone colours applied)
+
+variants = {}
+
+
+def principled(mat):
+    return next((n for n in mat.node_tree.nodes if n.type == "BSDF_PRINCIPLED"), None)
+
+
+def variant(mat, role):
+    """The part's own material, with its base colour turned into grey detail (dyed zones) or
+    into the spec colour with the texture's light and shade (recoloured zones)."""
+    colour = colors.get(role) if DYE and not dyed(role) and role in colors else None
+    mode = "neutral" if dyed(role) else "recolour" if colour is not None else "as"
+    key = (mat.name if mat else "-", mode, role)
+    if key in variants:
+        return variants[key]
+    m = mat.copy() if mat else bpy.data.materials.new("Plain")
+    m.use_nodes = True
+    m.name = f"bake_{role}_{mode}"
+    nt = m.node_tree
+    bsdf = principled(m)
+    if mode == "as" and role.startswith("Cloth") and bsdf is not None and bsdf.inputs["Base Color"].is_linked:
+        # Undyed cloth: no bleached whites in the valley, linen and wool are greige.
+        inp = bsdf.inputs["Base Color"]
+        mix = nt.nodes.new("ShaderNodeMix")
+        mix.data_type = "RGBA"
+        mix.blend_type = "MULTIPLY"
+        mix.inputs[0].default_value = 1.0
+        nt.links.new(inp.links[0].from_socket, mix.inputs[6])
+        mix.inputs[7].default_value = (0.72, 0.66, 0.54, 1)
+        nt.links.new(mix.outputs[2], inp)
+    if mode != "as" and bsdf is not None:
+        inp = bsdf.inputs["Base Color"]
+        bw = nt.nodes.new("ShaderNodeRGBToBW")
+        if inp.is_linked:
+            nt.links.new(inp.links[0].from_socket, bw.inputs[0])
+        else:
+            bw.inputs[0].default_value = inp.default_value
+        mul = nt.nodes.new("ShaderNodeMath")
+        mul.operation = "MULTIPLY"
+        mul.inputs[1].default_value = (NEUTRAL if mode == "neutral" else 1.0) / role_mean.get(role, 0.3)
+        nt.links.new(bw.outputs[0], mul.inputs[0])
+        out = mul.outputs[0]
+        if mode == "recolour":
+            mix = nt.nodes.new("ShaderNodeMix")
+            mix.data_type = "RGBA"
+            mix.blend_type = "MULTIPLY"
+            mix.inputs[0].default_value = 1.0
+            nt.links.new(mul.outputs[0], mix.inputs[6])
+            mix.inputs[7].default_value = (*srgb_to_linear(colour), 1)
+            out = mix.outputs[2]
+        nt.links.new(out, inp)
+    variants[key] = m
+    return m
+
+
+high = []
+for o, _ in parts:
+    hi = o.copy()
+    hi.data = o.data.copy()
+    hi.name = o.name + "_high"
+    scene.collection.objects.link(hi)
+    me = hi.data
+    src_mats = list(me.materials)
+    want = roles[o.name]
+    mats, idx = [], []
+    for i, p in enumerate(me.polygons):
+        m = variant(src_mats[p.material_index] if src_mats else None, want[i])
+        if m not in mats:
+            mats.append(m)
+        idx.append(mats.index(m))
+    me.materials.clear()
+    for m in mats:
+        me.materials.append(m)
+    me.polygons.foreach_set("material_index", idx)
+    for p in me.polygons:
+        p.use_smooth = True
+    me.update()
+    # One copy per game zone: each zone of the game mesh is baked only from the same zone's
+    # detail (the buzzed hair lies a few millimetres over the scalp, the beard over the chin).
+    zones_here = sorted({low_zone(r) for r in want})
+    for z in zones_here:
+        zc = hi if z == zones_here[-1] else hi.copy()
+        if zc is not hi:
+            zc.data = hi.data.copy()
+            scene.collection.objects.link(zc)
+        zc.name = f"{o.name}_high_{z}"
+        zc["zone"] = z
+        bm = bmesh.new()
+        bm.from_mesh(zc.data)
+        bm.faces.ensure_lookup_table()
+        bmesh.ops.delete(bm, geom=[f for f in bm.faces if low_zone(want[f.index]) != z], context="FACES")
+        bm.to_mesh(zc.data)
+        bm.free()
+        high.append(zc)
+
+# MARK: - Game materials (one submesh per zone; all share the person's texture set)
+
+materials = {"Skin": make_mat("Skin", (0.80, 0.60, 0.47)),
+             "Hair": make_mat("Hair", colors.get("Hair", DEFAULT_HAIR)),
+             "Main": make_mat("Main", colors.get("Main", (0.45, 0.30, 0.2))),
+             "Rest": make_mat("Rest", (0.5, 0.45, 0.4))}
 for o, kinds, cols, _ in records:
     me = o.data
-    want = []
-    for i, p in enumerate(me.polygons):
-        k = kinds[i]
-        if k == "skin":
-            want.append("Skin")
-        elif k == "hair":
-            want.append("Hair")
-        elif k == "eyes":
-            want.append("Eyes" if cols[i].mean() < eye_split else "EyeWhite")
-        else:
-            want.append(names[cloth_labels[o.name][i]])
+    want = [low_zone(r) for r in roles[o.name]]
     me.materials.clear()
     slots = sorted(set(want))
     for s in slots:
@@ -395,10 +557,10 @@ def tri_count(o):
     return sum(len(p.vertices) - 2 for p in o.data.polygons)
 
 
-weight = {"head": 1.5, "eyes": 0.35, "brows": 0.35, "hair": 0.8, "cloth": 1.0}
+weight = {"head": 1.6, "eyes": 0.35, "brows": 0.35, "hair": 0.8, "cloth": 1.0}
 counts = {o.name: tri_count(o) for o, _ in parts}
 print("PARTS", [(o.name, k, counts[o.name], tuple(round(d, 2) for d in o.dimensions)) for o, k in parts])
-budget = TARGET_TRIS - (900 if spec.get("skirt") else 0)
+budget = TARGET_TRIS - (1100 if spec.get("skirt") else 0)
 wsum = sum(counts[o.name] * weight[k] for o, k in parts)
 scale = budget / max(1, wsum)
 for o, kind in parts:
@@ -442,6 +604,59 @@ def bone_world(name):
 # MARK: - Skirt
 
 
+def wool_material():
+    """Woven wool for the skirt's full-detail copy: grey (the skirt is dyed in the game), a fine
+    twill weave and soft vertical folds in the bump."""
+    m = bpy.data.materials.new("bake_Main_wool")
+    m.use_nodes = True
+    nt = m.node_tree
+    bsdf = principled(m)
+    coord = nt.nodes.new("ShaderNodeTexCoord")
+    weave = nt.nodes.new("ShaderNodeTexWave")
+    weave.wave_type = "BANDS"
+    weave.bands_direction = "DIAGONAL"
+    weave.inputs["Scale"].default_value = 260.0
+    weave.inputs["Distortion"].default_value = 1.5
+    folds = nt.nodes.new("ShaderNodeTexWave")
+    folds.wave_type = "BANDS"
+    folds.bands_direction = "X"
+    folds.inputs["Scale"].default_value = 3.5
+    folds.inputs["Distortion"].default_value = 4.0
+    folds.inputs["Detail"].default_value = 1.0
+    noise = nt.nodes.new("ShaderNodeTexNoise")
+    noise.inputs["Scale"].default_value = 40.0
+    for t in (weave, folds, noise):
+        nt.links.new(coord.outputs["Object"], t.inputs["Vector"])
+    # Albedo: grey around NEUTRAL with mottled fibres and faint weave.
+    mix = nt.nodes.new("ShaderNodeMath")
+    mix.operation = "MULTIPLY_ADD"
+    nt.links.new(noise.outputs["Fac"], mix.inputs[0])
+    mix.inputs[1].default_value = 0.22
+    mix.inputs[2].default_value = NEUTRAL - 0.11
+    wv = nt.nodes.new("ShaderNodeMath")
+    wv.operation = "MULTIPLY_ADD"
+    nt.links.new(weave.outputs["Fac"], wv.inputs[0])
+    wv.inputs[1].default_value = 0.08
+    nt.links.new(mix.outputs[0], wv.inputs[2])
+    sub = nt.nodes.new("ShaderNodeMath")
+    sub.operation = "SUBTRACT"
+    nt.links.new(wv.outputs[0], sub.inputs[0])
+    sub.inputs[1].default_value = 0.04
+    nt.links.new(sub.outputs[0], bsdf.inputs["Base Color"])
+    bsdf.inputs["Roughness"].default_value = 0.92
+    height = nt.nodes.new("ShaderNodeMath")
+    height.operation = "MULTIPLY_ADD"
+    nt.links.new(folds.outputs["Fac"], height.inputs[0])
+    height.inputs[1].default_value = 2.5
+    nt.links.new(weave.outputs["Fac"], height.inputs[2])
+    bump = nt.nodes.new("ShaderNodeBump")
+    bump.inputs["Strength"].default_value = 0.35
+    bump.inputs["Distance"].default_value = 0.002
+    nt.links.new(height.outputs[0], bump.inputs["Height"])
+    nt.links.new(bump.outputs["Normal"], bsdf.inputs["Normal"])
+    return m
+
+
 def add_skirt():
     """A long skirt from the waist to the shins: rings sized to the legs inside, flaring at the hem,
     skinned to the pelvis at the top and blending into the thighs below."""
@@ -449,7 +664,7 @@ def add_skirt():
     calf_z = bone_world("calf_l").translation.z
     z_top = pelvis.z + 0.08
     z_hem = 0.2 if spec.get("elder") else max(0.24, calf_z - 0.24)
-    rings, segs = 9, 28
+    rings, segs = 11, 32
     co = np.array([mw @ v.co for v in mesh.vertices])
     gidx = {g.index: g.name for g in body.vertex_groups}
     lower = np.array([any(gidx[g.group].startswith(("thigh", "calf", "pelvis", "spine_01")) and g.weight > 0.3 for g in v.groups) for v in mesh.vertices])
@@ -480,7 +695,7 @@ def add_skirt():
             rr = np.maximum(rr, radii[-1] + 0.004)  # keep widening toward the hem
         radii.append(rr)
     radii = np.array(radii)
-    # Ellipse fit per ring: smooth the outline (no dents between the legs).
+    # Ellipse fit per ring: smooth the outline (no dents between the legs), soft folds toward the hem.
     verts, faces = [], []
     for r in range(rings):
         t = r / (rings - 1)
@@ -492,11 +707,12 @@ def add_skirt():
             ry = ry_f if math.cos(a) > 0 else ry_b
             sx, sy = math.sin(a), -math.cos(a)
             rad = max(radii[r][s], 1.0 / math.sqrt((sx / rx) ** 2 + (sy / ry) ** 2))
+            rad *= 1.0 + 0.035 * t ** 1.5 * math.sin(a * 8 + 0.6)
             verts.append((sx * rad, cy + sy * rad, z))
     for r in range(rings - 1):
         for s in range(segs):
             a, b = r * segs + s, r * segs + (s + 1) % segs
-            faces.append((a, b, b + segs, a + segs))
+            faces.append((a, a + segs, b + segs, b))  # outward-facing
     # Inner layer (the inside of the hem is visible when legs swing).
     n = len(verts)
     for (x, y, z) in list(verts):
@@ -510,7 +726,17 @@ def add_skirt():
     so = bpy.data.objects.new("Skirt", sm)
     scene.collection.objects.link(so)
     so.parent = rig
-    sm.materials.append(materials.setdefault("Main", make_mat("Main", colors.get("Main", (0.45, 0.30, 0.2)))))
+    # Cylinder UVs (outer and inner layer side by side), on the body's UV map so they join it.
+    uv = sm.uv_layers.new(name=mesh.uv_layers.active.name if mesh.uv_layers.active else "UVMap")
+    for p in sm.polygons:
+        ss = [(vi % n) % segs for vi in p.vertices]
+        for li, vi in zip(p.loop_indices, p.vertices):
+            s_, r_ = (vi % n) % segs, (vi % n) // segs
+            if s_ == 0 and max(ss) == segs - 1:
+                s_ = segs
+            u = s_ / segs * 2 * math.pi * 0.3
+            uv.data[li].uv = (u + (2.2 if vi >= n else 0.0), 1.0 - r_ / (rings - 1) * (z_top - z_hem))
+    sm.materials.append(materials["Main"])
     for p in sm.polygons:
         p.use_smooth = True
     gp = so.vertex_groups.new(name="pelvis")
@@ -540,14 +766,226 @@ def add_skirt():
                 cr.add([i], calf * (1 - side), "REPLACE")
     mod = so.modifiers.new("Armature", "ARMATURE")
     mod.object = rig
+    # The full-detail copy for baking carries the woven wool.
+    hs = so.copy()
+    hs.data = so.data.copy()
+    hs.name = "Skirt_high"
+    scene.collection.objects.link(hs)
+    hs.data.materials.clear()
+    hs.data.materials.append(wool_material())
+    hs["zone"] = "Main"
+    high.append(hs)
     bpy.ops.object.select_all(action="DESELECT")
     so.select_set(True)
     body.select_set(True)
     bpy.context.view_layer.objects.active = body
     bpy.ops.object.join()
 
+
 if spec.get("skirt"):
     add_skirt()
+
+# MARK: - Texture bake (albedo, normal, ambient occlusion, smoothness)
+
+
+def uv_islands(bm, uv_layer):
+    """Face islands of the UV map (faces joined by edges whose UVs match on both sides)."""
+    parent = list(range(len(bm.faces)))
+
+    def find(a):
+        while parent[a] != a:
+            parent[a] = parent[parent[a]]
+            a = parent[a]
+        return a
+
+    for e in bm.edges:
+        lf = e.link_faces
+        if len(lf) != 2:
+            continue
+        f1, f2 = lf
+        def uv_of(f, v):
+            return next(l[uv_layer].uv for l in f.loops if l.vert == v)
+        if all((uv_of(f1, v) - uv_of(f2, v)).length < 1e-5 for v in e.verts):
+            parent[find(f1.index)] = find(f2.index)
+    groups = {}
+    for f in bm.faces:
+        groups.setdefault(find(f.index), []).append(f)
+    return list(groups.values())
+
+
+def atlas_uv():
+    """One UV map for the whole person: the artists' own UV islands of every part (and the skirt's
+    cylinder), scaled to an even texel density with the face and hair given more, packed together."""
+    me = body.data
+    keep = me.uv_layers.active.name
+    for name in [l.name for l in me.uv_layers if l.name != keep]:
+        me.uv_layers.remove(me.uv_layers[name])
+    me.uv_layers[keep].name = "Atlas"
+    bpy.ops.object.select_all(action="DESELECT")
+    body.select_set(True)
+    bpy.context.view_layer.objects.active = body
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.select_all(action="SELECT")
+    bpy.ops.uv.average_islands_scale()
+    bpy.ops.object.mode_set(mode="OBJECT")
+    bm = bmesh.new()
+    bm.from_mesh(me)
+    bm.faces.ensure_lookup_table()
+    uvl = bm.loops.layers.uv.active
+    head_z = (rig.matrix_world @ rig.data.bones["neck_01"].head_local).z
+    zone_of = [me.materials[p.material_index].name for p in me.polygons]
+    for isl in uv_islands(bm, uvl):
+        zs = [(mw @ f.calc_center_median()).z for f in isl]
+        is_head = np.mean(zs) > head_z - 0.03 and any(zone_of[f.index] in ("Skin", "Hair", "Rest") for f in isl)
+        k = 2.0 if is_head and any(zone_of[f.index] == "Skin" for f in isl) else 1.4 if is_head else 1.0
+        if k == 1.0:
+            continue
+        loops = [l for f in isl for l in f.loops]
+        c = sum((l[uvl].uv for l in loops), Vector((0, 0))) / len(loops)
+        for l in loops:
+            l[uvl].uv = c + (l[uvl].uv - c) * k
+    bm.to_mesh(me)
+    bm.free()
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.select_all(action="SELECT")
+    bpy.ops.uv.pack_islands(rotate=True, margin=0.004)
+    bpy.ops.object.mode_set(mode="OBJECT")
+
+
+def bake(kind, image, zone=None, **kw):
+    """Bakes into `image`: with a zone, only that zone's faces of the game mesh, from that zone's
+    full-detail copies; without one, the game mesh alone (ambient occlusion)."""
+    dummy = bpy.data.images.get("bake_dummy") or bpy.data.images.new("bake_dummy", 8, 8)
+    for m in body.data.materials:
+        node = m.node_tree.nodes.get("BakeTarget")
+        node.image = image if zone is None or m.name == zone else dummy
+        m.node_tree.nodes.active = node
+    bpy.ops.object.select_all(action="DESELECT")
+    for h in high:
+        on = zone is not None and h.get("zone") == zone
+        h.hide_render = not on
+        h.select_set(on)
+    body.select_set(True)
+    bpy.context.view_layer.objects.active = body
+    b = scene.render.bake
+    b.use_selected_to_active = zone is not None
+    b.cage_extrusion = 0.025
+    b.max_ray_distance = 0.1
+    b.margin = 0
+    b.use_clear = True
+    bpy.ops.object.bake(type=kind, **kw)
+
+
+def dilate(a, filled, steps):
+    """Grows the baked islands outwards (texture padding, so mipmaps do not bleed the background in)."""
+    a, filled = a.copy(), filled.copy()
+    for _ in range(steps):
+        acc = np.zeros_like(a)
+        cnt = np.zeros(filled.shape, dtype=np.float32)
+        for dy, dx in ((1, 0), (-1, 0), (0, 1), (0, -1)):
+            sh_f = np.roll(filled, (dy, dx), axis=(0, 1))
+            acc += np.roll(a, (dy, dx), axis=(0, 1)) * sh_f[..., None]
+            cnt += sh_f
+        grow = (~filled) & (cnt > 0)
+        a[grow] = acc[grow] / cnt[grow][:, None]
+        filled = filled | grow
+    return a
+
+
+def read(image):
+    w, h = image.size
+    px = np.empty(w * h * 4, dtype=np.float32)
+    image.pixels.foreach_get(px)
+    return px.reshape(h, w, 4)
+
+
+def shrink(a, f):
+    h, w, c = a.shape
+    return a.reshape(h // f, f, w // f, f, c).mean(axis=(1, 3))
+
+
+def write_map(path, a):
+    """Saves a baked map (rows bottom to top, values as stored) for build_characters.py to write as PNG."""
+    np.save(path, np.clip(a, 0, 1).astype(np.float32))
+
+
+def bake_textures():
+    atlas_uv()
+    size = TEX_SIZE * 2
+    scene.render.engine = "CYCLES"
+    scene.cycles.device = "CPU"
+    scene.cycles.use_denoising = False
+    world = bpy.data.worlds.new("bake")
+    scene.world = world
+    world.light_settings.distance = 0.12
+    imgs = {}
+    for name, nc in (("albedo", False), ("normal", True), ("rough", True), ("ao", True)):
+        im = bpy.data.images.new("bake_" + name, size, size, alpha=False)
+        if nc:
+            im.colorspace_settings.name = "Non-Color"
+        imgs[name] = im
+    for m in body.data.materials:
+        n = m.node_tree.nodes.new("ShaderNodeTexImage")
+        n.name = "BakeTarget"
+    # Which zone every texel belongs to: an emission bake of the game mesh with the zone's index.
+    zone_names = [m.name for m in body.data.materials]
+    for zi, m in enumerate(body.data.materials):
+        bsdf = principled(m)
+        bsdf.inputs["Emission Color"].default_value = ((zi + 1) / 8.0, 0, 0, 1)
+        bsdf.inputs["Emission Strength"].default_value = 1.0
+    idimg = bpy.data.images.new("bake_ids", size, size, alpha=False, float_buffer=True)
+    scene.cycles.samples = 1
+    for m in body.data.materials:
+        node = m.node_tree.nodes["BakeTarget"]
+        node.image = idimg
+        m.node_tree.nodes.active = node
+    bake("EMIT", idimg)
+    ids = np.round(read(idimg)[..., 0] * 8.0).astype(int) - 1  # -1: no face
+    for m in body.data.materials:
+        principled(m).inputs["Emission Strength"].default_value = 0.0
+    maps = {}
+    scene.cycles.samples = 4
+    for kind, name, kw in (("DIFFUSE", "albedo", {"pass_filter": {"COLOR"}}), ("NORMAL", "normal", {"normal_space": "TANGENT"}),
+                           ("ROUGHNESS", "rough", {})):
+        out = np.zeros((size, size, 4), dtype=np.float32)
+        for zi, z in enumerate(zone_names):
+            if not any(h.get("zone") == z for h in high):
+                continue
+            bake(kind, imgs[name], zone=z, **kw)
+            sel = ids == zi
+            out[sel] = read(imgs[name])[sel]
+        maps[name] = dilate(out, ids >= 0, 24)
+    scene.cycles.samples = 48
+    bake("AO", imgs["ao"])
+    maps["ao"] = dilate(read(imgs["ao"]), ids >= 0, 24)
+    albedo = shrink(maps["albedo"], 2)
+    normal = shrink(maps["normal"], 2)
+    rough = shrink(maps["rough"], 4)
+    ao = shrink(maps["ao"], 4)
+    albedo[..., 3] = 1
+    normal[..., 3] = 1
+    # Mask as URP Lit reads it: R metallic, G occlusion, B detail mask, A smoothness.
+    mask = np.zeros_like(rough)
+    mask[..., 1] = 0.35 + 0.65 * ao[..., 0]
+    mask[..., 3] = np.clip(1.0 - rough[..., 0], 0.0, 0.75)
+    write_map(TEX + "_albedo.npy", albedo[..., :3])
+    write_map(TEX + "_normal.npy", normal[..., :3])
+    write_map(TEX + "_mask.npy", mask)
+    for m in body.data.materials:
+        m.node_tree.nodes.remove(m.node_tree.nodes["BakeTarget"])
+    for h in high:
+        bpy.data.objects.remove(h, do_unlink=True)
+    high.clear()
+
+
+if TEX:
+    bake_textures()
+else:
+    for h in high:
+        bpy.data.objects.remove(h, do_unlink=True)
+    high.clear()
 
 # MARK: - Rest pose changes: elder stoop, finger grip
 
@@ -581,78 +1019,83 @@ def stoop():
 if spec.get("elder"):
     stoop()
 
-# MARK: - Retarget the clips of Villager.fbx
+# MARK: - Retarget the clips of Villager.fbx (and the extra clips)
 
 rig.animation_data_create()
 
 
-def leg_s(n):
-    return src.matrix_world @ src.data.bones[n].matrix_local
+class Source:
+    """One animation source armature and its per-bone rest rotation differences to the rig."""
+
+    def __init__(self, arm):
+        self.arm = arm
+        self.D = {}
+        self.order = []
+
+    def bone(self, n):
+        return self.arm.matrix_world @ self.arm.data.bones[n].matrix_local
+
+    def setup(self):
+        """Per bone: D = Ss^-1 St (rest world rotations), so target world rotation = source world rotation · D."""
+        self.D.clear()
+        self.order.clear()
+        for b in rig.data.bones:
+            if b.name in self.arm.data.bones:
+                Ss = self.bone(b.name).to_3x3().normalized()
+                St = (rig.matrix_world @ b.matrix_local).to_3x3().normalized()
+                self.D[b.name] = Ss.inverted() @ St
+
+        def visit(b):
+            self.order.append(b.name)
+            for c in b.children:
+                visit(c)
+
+        for b in rig.data.bones:
+            if b.parent is None:
+                visit(b)
+        src_leg = (self.bone("thigh_l").translation - self.bone("foot_l").translation).length
+        tgt_leg = (bone_world("thigh_l").translation - bone_world("foot_l").translation).length
+        self.leg_scale = tgt_leg / src_leg
+        self.pelvis_rest = self.bone("pelvis").translation
+        self.tgt_pelvis_rest = bone_world("pelvis").translation
+
+    def frame(self):
+        world, basis = {}, {}
+        for name in self.order:
+            bone = rig.data.bones[name]
+            parent_world = world[bone.parent.name] if bone.parent else rig.matrix_world
+            rest_local = (bone.parent.matrix_local.inverted() if bone.parent else Matrix()) @ bone.matrix_local
+            default_world = parent_world @ rest_local
+            if name not in self.D:
+                world[name] = default_world
+                basis[name] = Matrix()
+                continue
+            Ts = (self.arm.matrix_world @ self.arm.pose.bones[name].matrix).to_3x3().normalized()
+            rot = (Ts @ self.D[name]).to_4x4()
+            if name == "pelvis":
+                sp = (self.arm.matrix_world @ self.arm.pose.bones["pelvis"].matrix).translation
+                loc = self.tgt_pelvis_rest + (sp - self.pelvis_rest) * self.leg_scale
+            else:
+                loc = default_world.translation
+            w = Matrix.Translation(loc) @ rot
+            world[name] = w
+            basis[name] = rest_local.inverted() @ parent_world.inverted() @ w
+        return basis
 
 
-src_leg = (leg_s("thigh_l").translation - leg_s("foot_l").translation).length
-tgt_leg = (bone_world("thigh_l").translation - bone_world("foot_l").translation).length
-leg_scale = tgt_leg / src_leg
-src_pelvis_rest = leg_s("pelvis").translation
-tgt_pelvis_rest = bone_world("pelvis").translation
-D, order = {}, []
-
-
-def setup_retarget():
-    """Per bone: D = Ss^-1 St (rest world rotations), so target world rotation = source world rotation · D."""
-    D.clear()
-    order.clear()
-    for b in rig.data.bones:
-        if b.name in src.data.bones:
-            Ss = (src.matrix_world @ src.data.bones[b.name].matrix_local).to_3x3().normalized()
-            St = (rig.matrix_world @ b.matrix_local).to_3x3().normalized()
-            D[b.name] = Ss.inverted() @ St
-
-    def visit(b):
-        order.append(b.name)
-        for c in b.children:
-            visit(c)
-
-    for b in rig.data.bones:
-        if b.parent is None:
-            visit(b)
-
-
-def retarget_frame():
-    world, basis = {}, {}
-    for name in order:
-        bone = rig.data.bones[name]
-        parent_world = world[bone.parent.name] if bone.parent else rig.matrix_world
-        rest_local = (bone.parent.matrix_local.inverted() if bone.parent else Matrix()) @ bone.matrix_local
-        default_world = parent_world @ rest_local
-        if name not in D:
-            world[name] = default_world
-            basis[name] = Matrix()
-            continue
-        Ts = (src.matrix_world @ src.pose.bones[name].matrix).to_3x3().normalized()
-        rot = (Ts @ D[name]).to_4x4()
-        if name == "pelvis":
-            sp = (src.matrix_world @ src.pose.bones["pelvis"].matrix).translation
-            loc = tgt_pelvis_rest + (sp - src_pelvis_rest) * leg_scale
-        else:
-            loc = default_world.translation
-        w = Matrix.Translation(loc) @ rot
-        world[name] = w
-        basis[name] = rest_local.inverted() @ parent_world.inverted() @ w
-    return basis
-
+main_src = Source(src)
 
 # Fingers: every bone costs nine animation curves per clip in the FBX, so the 30 finger bones
 # would double the file. Instead the right hand keeps the grip of the chopping clip and the left
 # hand the relaxed curl of the idle clip, baked into the mesh, and the finger bones go.
 FINGERS = ("index_", "middle_", "ring_", "pinky_", "thumb_")
-setup_retarget()
+main_src.setup()
 grip = {}
 for clip, side in (("Chop", "_r"), ("Idle", "_l")):
     act = next(a for a in src_actions if a.name.split("|")[-1] == clip)
     src.animation_data.action = act
     scene.frame_set(int(sum(act.frame_range) / 2))
-    grip.update({n: m for n, m in retarget_frame().items() if n.startswith(FINGERS) and n.endswith(side)})
+    grip.update({n: m for n, m in main_src.frame().items() if n.startswith(FINGERS) and n.endswith(side)})
 bpy.context.view_layer.objects.active = rig
 bpy.ops.object.mode_set(mode="POSE")
 for n, m in grip.items():
@@ -676,35 +1119,50 @@ bpy.ops.object.mode_set(mode="EDIT")
 for eb in [eb for eb in rig.data.edit_bones if eb.name.startswith(FINGERS) or "leaf" in eb.name]:
     rig.data.edit_bones.remove(eb)
 bpy.ops.object.mode_set(mode="OBJECT")
-setup_retarget()
+main_src.setup()
+
+jobs = [(main_src, act, act.name.split("|")[-1], None) for act in src_actions]
+for arm, act, clip, _ in extra_sources:
+    s = Source(arm)
+    s.setup()
+    jobs.append((s, act, clip, act["clip_end"]))
 
 new_actions = []
-for act in src_actions:
-    clip = act.name.split("|")[-1]
-    src.animation_data.action = act
+for source, act, clip, end in jobs:
+    source.arm.animation_data.action = act
     f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
+    if end is not None:
+        f1 = max(f0 + 1, int(end))
     out = bpy.data.actions.new(clip)
     out.id_root = "OBJECT"
     out.use_fake_user = True
     rig.animation_data.action = out
-    for f in range(f0, f1 + 1):
+    # A held pose (end given): the first frame, keyed at both ends so the clip loops still.
+    frames = range(f0, f1 + 1) if end is None else [f0]
+    for f in frames:
         scene.frame_set(f)
-        for name, m in retarget_frame().items():
-            if name not in D:
+        for name, m in source.frame().items():
+            if name not in source.D:
                 continue
             pb = rig.pose.bones[name]
             pb.rotation_mode = "QUATERNION"
             loc, rot, _ = m.decompose()
             pb.rotation_quaternion = rot
-            pb.keyframe_insert("rotation_quaternion", frame=f, group=name)
-            if name == "pelvis":
-                pb.location = loc
-                pb.keyframe_insert("location", frame=f, group=name)
+            keys = [f] if end is None else [f0, f1]
+            for k in keys:
+                pb.keyframe_insert("rotation_quaternion", frame=k, group=name)
+                if name == "pelvis":
+                    pb.location = loc
+                    pb.keyframe_insert("location", frame=k, group=name)
     new_actions.append(out)
 
 for o in src_objs:
     bpy.data.objects.remove(o, do_unlink=True)
-for a in src_actions:
+for arm, _, _, objs in extra_sources:
+    for o in objs:
+        if o.name in bpy.data.objects:
+            bpy.data.objects.remove(o, do_unlink=True)
+for a in list(keep_actions):
     bpy.data.actions.remove(a)
 
 # MARK: - Tools in the right hand (as in blender_people.py)
@@ -748,17 +1206,45 @@ props = [
     prop("Prop_Spear", [("cyl", (0.013, 1.7), (0, 0, 0.35), wood), ("cube", (0.012, 0.035, 0.12), (0, 0, 1.25), stone)]),
 ]
 
+# MARK: - LOD1: the same person with about a third of the triangles, for the distant view
+
+lod = None
+if TEX and LOD_TRIS:
+    lod = body.copy()
+    lod.data = body.data.copy()
+    lod.name = lod.data.name = "Body_LOD1"
+    scene.collection.objects.link(lod)
+    bpy.ops.object.select_all(action="DESELECT")
+    bpy.context.view_layer.objects.active = lod
+    d = lod.modifiers.new("Decimate", "DECIMATE")
+    d.ratio = min(1.0, LOD_TRIS / max(1, tri_count(body)))
+    d.use_collapse_triangulate = True
+    while lod.modifiers[0].name != "Decimate":
+        bpy.ops.object.modifier_move_up(modifier="Decimate")
+    bpy.ops.object.modifier_apply(modifier="Decimate")
+
 # MARK: - Export
-# Only flat colours are used in the game: drop UVs and colour attributes.
-for o in [body] + props:
-    while o.data.uv_layers:
-        o.data.uv_layers.remove(o.data.uv_layers[0])
+# The person's texture set is mapped by the Atlas UVs; tools take tiled wood and stone surfaces.
+for o in props:
+    bpy.ops.object.select_all(action="DESELECT")
+    o.select_set(True)
+    bpy.context.view_layer.objects.active = o
+    bpy.ops.object.mode_set(mode="EDIT")
+    bpy.ops.mesh.select_all(action="SELECT")
+    bpy.ops.uv.cube_project(cube_size=0.5)
+    bpy.ops.object.mode_set(mode="OBJECT")
+for o in [body] + ([lod] if lod else []) + props:
+    if not TEX and o in (body, lod):
+        while o.data.uv_layers:
+            o.data.uv_layers.remove(o.data.uv_layers[0])
     while o.data.color_attributes:
         o.data.color_attributes.remove(o.data.color_attributes[0])
 
 bpy.ops.object.select_all(action="DESELECT")
 rig.select_set(True)
 body.select_set(True)
+if lod:
+    lod.select_set(True)
 for p in props:
     p.select_set(True)
 bpy.context.view_layer.objects.active = rig
@@ -768,51 +1254,13 @@ bpy.ops.export_scene.fbx(
     axis_forward="-Z", axis_up="Y", object_types={"ARMATURE", "MESH"}, add_leaf_bones=False,
     bake_anim=True, bake_anim_use_all_actions=True, bake_anim_use_nla_strips=False,
     bake_anim_force_startend_keying=True, bake_anim_simplify_factor=spec.get("simplify", 1.0),
-    mesh_smooth_type="FACE", use_armature_deform_only=True,
+    mesh_smooth_type="FACE", use_armature_deform_only=True, use_tspace=False,
 )
 mat_names = [m.name for m in body.data.materials]
-print("CHARACTER_OK", json.dumps({"out": OUT, "tris": tri_count(body), "materials": mat_names,
-                                  "clips": sorted(a.name for a in new_actions),
-                                  "height": round(body.dimensions.z, 3)}))
-
-# MARK: - Preview: Walk and Chop (two frames each, axe in hand), Throw with the spear, front Idle
-
-if PREVIEW:
-    shots = [("Idle", None, 0.3, "front"), ("Walk", None, 0.1, "side"), ("Walk", None, 0.6, "side"),
-             ("Chop", "Prop_Axe", 0.2, "side"), ("Chop", "Prop_Axe", 0.55, "side"), ("Throw", "Prop_Spear", 0.4, "side"),
-             ("Sit", None, 0.5, "side"), ("Work", "Prop_Hammer", 0.3, "side")]
-    cam = bpy.data.objects.new("cam", bpy.data.cameras.new("cam"))
-    scene.collection.objects.link(cam)
-    scene.camera = cam
-    cam.data.lens = 60
-    sun = bpy.data.objects.new("sun", bpy.data.lights.new("sun", "SUN"))
-    sun.data.energy = 3.2
-    sun.rotation_euler = (math.radians(45), 0, math.radians(-30))
-    scene.collection.objects.link(sun)
-    world = bpy.data.worlds.new("w")
-    world.use_nodes = True
-    world.node_tree.nodes["Background"].inputs[0].default_value = (0.55, 0.6, 0.65, 1)
-    world.node_tree.nodes["Background"].inputs[1].default_value = 0.9
-    scene.world = world
-    bpy.ops.mesh.primitive_plane_add(size=6)
-    ground = bpy.context.object
-    ground.data.materials.append(make_mat("Ground", (0.42, 0.45, 0.33)))
-    scene.render.engine = "CYCLES"
-    scene.cycles.samples = 24
-    scene.cycles.use_denoising = False
-    scene.render.resolution_x, scene.render.resolution_y = 360, 480
-    target = Vector((0, 0, 0.9))
-    for i, (clip, tool, t, view) in enumerate(shots):
-        act = bpy.data.actions.get(clip)
-        if act is None:
-            continue
-        for p in props:
-            p.hide_render = p.name != tool
-        rig.animation_data.action = act
-        f0, f1 = act.frame_range
-        scene.frame_set(int(f0 + (f1 - f0) * t))
-        off = Vector((0.6, -3.6, 0.9)) if view == "front" else Vector((2.6, -2.6, 1.0))
-        cam.location = target + off
-        cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
-        scene.render.filepath = f"{PREVIEW}_{i}_{clip}.png"
-        bpy.ops.render.render(write_still=True)
+print("CHARACTER_OK", json.dumps({"out": OUT, "tris": tri_count(body), "lod_tris": tri_count(lod) if lod else 0,
+                                  "materials": mat_names, "clips": sorted(a.name for a in new_actions),
+                                  "height": round(body.dimensions.z, 3),
+                                  "skin": [round(float(c), 4) for c in SKIN_MEAN],
+                                  "main": list(colors.get("Main", (0.45, 0.30, 0.2))),
+                                  "hair": list(colors.get("Hair", DEFAULT_HAIR)),
+                                  "neutral": NEUTRAL, "dye": DYE}))

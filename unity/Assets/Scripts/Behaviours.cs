@@ -347,7 +347,7 @@ namespace Founders
     public struct VillagerTask
     {
         public Vector3 Spot;
-        /// <summary>Clip played on arrival: Idle, Talk, Work, Gather, Sit, Chop, Plant, Harvest, Water, Throw, Lantern…</summary>
+        /// <summary>Clip played on arrival: Idle, Talk, Work, Gather, Sit, Lie, Chop, Plant, Harvest, Water, Throw, Lantern…</summary>
         public string Action;
         /// <summary>Tool shown in the right hand while working (Prop_Axe, Prop_Pickaxe, Prop_Hammer, Prop_Spear) or null.</summary>
         public string Tool;
@@ -360,14 +360,17 @@ namespace Founders
         public Vector3? Face;
         /// <summary>Model carried home on the way there (k_wood, k_stone, wicker_basket_01…) or null.</summary>
         public string Carry;
+        /// <summary>The open cell the path ends in before the last steps to the spot (beside a tree or rock).</summary>
+        public (int x, int y)? Approach;
     }
 
     /// <summary>
     /// A villager: walks (along the roads when there are any) to the place of their job and
     /// does the work there with the right tool: woodcutters chop, miners and quarriers strike,
     /// farmers sow, water and harvest, hunters and fishers throw spears, builders hammer.
-    /// Uses the animated CC0 characters (Models/Villager and VillagerF, legacy clips) with
-    /// per-person skin, clothing and hair tints; falls back to a simple figure if missing.
+    /// Uses the animated CC0 people (Models/Person_*, legacy clips) with their baked PBR texture
+    /// set, a lighter mesh for the distant view, and per-person skin tone, dyed clothes and hair;
+    /// falls back to a simple figure if missing.
     /// </summary>
     public class Villager : MonoBehaviour
     {
@@ -394,27 +397,30 @@ namespace Founders
         float wait;
         float speed;
         Transform body;
+        /// <summary>Height of the body model before scaling (metres), to size the seat.</summary>
+        float bodyHeight = 1.78f;
         Animation anim;
         string current;
         readonly Dictionary<string, GameObject> tools = new Dictionary<string, GameObject>();
         string shownTool;
 
+        // Skin tones of the valley's people (sRGB), from fair to dark.
         static readonly Color[] SkinTones =
         {
-            new Color(0.92f, 0.72f, 0.58f), new Color(0.84f, 0.62f, 0.48f), new Color(0.74f, 0.52f, 0.38f),
-            new Color(0.62f, 0.43f, 0.31f), new Color(0.52f, 0.36f, 0.26f),
+            new Color(0.87f, 0.68f, 0.56f), new Color(0.80f, 0.60f, 0.47f), new Color(0.70f, 0.50f, 0.37f),
+            new Color(0.56f, 0.39f, 0.28f), new Color(0.42f, 0.29f, 0.21f),
         };
-        // Clothing: clean, saturated colours that read well from the strategy camera.
+        // Clothing: plant and earth dyes on wool and linen (oat, weld green, woad, madder, ochre, walnut, lichen, moss).
         static readonly Color[] HideTints =
         {
-            new Color(0.27f, 0.47f, 0.78f), new Color(0.88f, 0.48f, 0.22f), new Color(0.38f, 0.64f, 0.32f),
-            new Color(0.78f, 0.30f, 0.26f), new Color(0.92f, 0.76f, 0.34f), new Color(0.56f, 0.42f, 0.72f),
-            new Color(0.62f, 0.44f, 0.30f), new Color(0.30f, 0.62f, 0.64f),
+            new Color(0.55f, 0.47f, 0.36f), new Color(0.42f, 0.45f, 0.30f), new Color(0.33f, 0.38f, 0.47f),
+            new Color(0.52f, 0.30f, 0.22f), new Color(0.62f, 0.55f, 0.40f), new Color(0.36f, 0.30f, 0.24f),
+            new Color(0.47f, 0.40f, 0.48f), new Color(0.30f, 0.36f, 0.33f),
         };
         static readonly Color[] HairColors =
         {
-            new Color(0.08f, 0.055f, 0.04f), new Color(0.16f, 0.10f, 0.06f), new Color(0.28f, 0.18f, 0.10f),
-            new Color(0.05f, 0.045f, 0.04f), new Color(0.38f, 0.27f, 0.16f),
+            new Color(0.09f, 0.065f, 0.05f), new Color(0.18f, 0.12f, 0.07f), new Color(0.30f, 0.20f, 0.11f),
+            new Color(0.05f, 0.045f, 0.04f), new Color(0.42f, 0.30f, 0.18f), new Color(0.55f, 0.36f, 0.20f),
         };
 
         static readonly Dictionary<string, GameObject> models = new Dictionary<string, GameObject>();
@@ -479,6 +485,25 @@ namespace Founders
             foreach (var r in carried.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
         }
 
+        GameObject seat;
+
+        /// <summary>A log to sit on (the sitting clip is made for a seat at knee height).</summary>
+        void ShowSeat(bool on)
+        {
+            if (!on)
+            {
+                if (seat != null) Destroy(seat);
+                seat = null;
+                return;
+            }
+            if (seat != null || !ModelLibrary.HasModel("k_log")) return;
+            // The clip's seat is 0.45 m high and 0.34 m behind the feet for a 1.78 m person.
+            float k = body != null ? body.localScale.y * bodyHeight / 1.78f : 1f;
+            float logHeight = Mathf.Max(0.01f, ModelLibrary.Size("k_log").y);
+            // A short log, across behind the feet.
+            seat = ModelLibrary.Place("k_log", transform, new Vector3(0f, 0f, -0.3f * k), 0.43f * k / logHeight, 90f, new Vector3(1f, 1f, 0.55f));
+        }
+
         void ShowTool(string tool)
         {
             if (tool == shownTool) return;
@@ -490,6 +515,7 @@ namespace Founders
         /// <summary>Drops the current task; the villager asks for a new one right away.</summary>
         public void Interrupt()
         {
+            ShowSeat(false);
             wait = 0f;
             hasTask = false;
             route.Clear();
@@ -507,7 +533,7 @@ namespace Founders
                     var look = face - transform.position;
                     look.y = 0;
                     if (look.sqrMagnitude > 0.01f)
-                        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(look), 5f * Time.deltaTime);
+                        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(look), 8f * Time.deltaTime);
                 }
                 return;
             }
@@ -525,6 +551,15 @@ namespace Founders
                     hasTask = false;
                     ShowCarry(null);
                     ShowTool(task.Tool);
+                    // Face the work before the first swing: the walk ends looking along the path.
+                    if (task.Face is Vector3 f)
+                    {
+                        var look = f - transform.position;
+                        look.y = 0;
+                        if (look.sqrMagnitude > 0.01f)
+                            transform.rotation = Quaternion.RotateTowards(transform.rotation, Quaternion.LookRotation(look), 120f);
+                    }
+                    ShowSeat(task.Action == "Sit");
                     Play(task.Action);
                     wait = task.Duration;
                     return;
@@ -532,6 +567,7 @@ namespace Founders
                 if (NextTask == null) { wait = 2f; return; }
                 task = NextTask(transform.position);
                 hasTask = true;
+                ShowSeat(false);
                 route.Clear();
                 if (task.Route != null) foreach (var p in task.Route) route.Enqueue(p);
                 target = route.Count > 0 ? route.Dequeue() : task.Spot;
@@ -552,8 +588,22 @@ namespace Founders
                 body.localPosition = new Vector3(0, Mathf.Abs(Mathf.Sin(Time.time * speed * 7f)) * 0.05f, 0);
         }
 
-        sealed class PersonModel { public string Model, Gender, Age; }
+        sealed class PersonModel
+        {
+            public string Model, Gender, Age;
+            /// <summary>Baked texture set (P_&lt;model&gt; material): skin, dye and hair are multiplied onto it.</summary>
+            public bool Textured;
+            /// <summary>Average painted skin colour (linear) and the default dye and hair colours (sRGB).</summary>
+            public Color Skin, Main, Hair;
+            /// <summary>Linear grey level of the dyed zones' detail.</summary>
+            public float Neutral = 0.5f;
+            /// <summary>False: the clothes keep the pack's own colours (only skin and hair vary).</summary>
+            public bool Dye = true;
+        }
         static List<PersonModel> personModels;
+
+        static Color ColorOf(List<object> a, Color fallback) =>
+            a != null && a.Count >= 3 ? new Color(Convert.ToSingle(a[0]), Convert.ToSingle(a[1]), Convert.ToSingle(a[2]), 1f) : fallback;
 
         static List<PersonModel> PersonModels()
         {
@@ -563,7 +613,16 @@ namespace Founders
             if (asset == null) return personModels;
             var root = new Core.JObj(Core.Json.Parse(asset.text));
             foreach (var p in root.Objs("people"))
-                personModels.Add(new PersonModel { Model = p.Str("model"), Gender = p.Str("gender"), Age = p.Str("age") });
+                personModels.Add(new PersonModel
+                {
+                    Model = p.Str("model"), Gender = p.Str("gender"), Age = p.Str("age"),
+                    Textured = p.Has("textures"),
+                    Skin = ColorOf(p.OptArr("skin"), new Color(0.5f, 0.32f, 0.24f)),
+                    Main = ColorOf(p.OptArr("main"), new Color(0.55f, 0.47f, 0.36f)),
+                    Hair = ColorOf(p.OptArr("hair"), new Color(0.18f, 0.12f, 0.07f)),
+                    Neutral = (float)(p.OptNum("neutral") ?? 0.5),
+                    Dye = p.OptBool("dye", true),
+                });
             return personModels;
         }
 
@@ -576,8 +635,27 @@ namespace Founders
         }
 
         /// <summary>
-        /// A villager: one of the stylized people (man, woman or elder), or a child (a smaller person
-        /// with a bigger head). Skin, hair and clothes are tinted per person so no two look alike.
+        /// The _BaseColor that turns a texture of linear colour <paramref name="baseLinear"/> into the
+        /// sRGB colour <paramref name="wanted"/> (Unity converts property colours from sRGB to linear).
+        /// </summary>
+        static Color Ratio(Color wanted, Color baseLinear)
+        {
+            var w = wanted.linear;
+            return new Color(w.r / Mathf.Max(0.004f, baseLinear.r), w.g / Mathf.Max(0.004f, baseLinear.g),
+                             w.b / Mathf.Max(0.004f, baseLinear.b), 1f).gamma;
+        }
+
+        static readonly Dictionary<string, Material> personMaterials = new Dictionary<string, Material>();
+
+        static Material PersonMaterial(string model)
+        {
+            if (personMaterials.TryGetValue(model, out var m)) return m;
+            return personMaterials[model] = Resources.Load<Material>(Palette.ResourceFolder + "/P_" + model);
+        }
+
+        /// <summary>
+        /// A villager: one of the people (man, woman or elder), or a child (a smaller person). Skin
+        /// tone, the dye of the main garment and the hair colour vary per person so no two look alike.
         /// </summary>
         public static Villager Spawn(Transform parent, Vector3 at, int seed, bool female, bool child = false)
         {
@@ -587,7 +665,9 @@ namespace Founders
             bool elder = !child && rng.Next(7) == 0;
             var pool = PersonModels().FindAll(p => p.Gender == (female ? "female" : "male") && p.Age == (elder ? "elder" : "adult"));
             if (pool.Count == 0) pool = PersonModels();
-            var model = pool.Count > 0 ? Model(pool[rng.Next(pool.Count)].Model.Replace("Models/", "")) : Model(female ? "VillagerF" : "Villager");
+            var person = pool.Count > 0 ? pool[rng.Next(pool.Count)] : null;
+            string modelName = person != null ? person.Model.Replace("Models/", "") : female ? "VillagerF" : "Villager";
+            var model = Model(modelName);
 
             if (model != null)
             {
@@ -598,18 +678,28 @@ namespace Founders
 
                 var skin = SkinTones[rng.Next(SkinTones.Length)];
                 var cloth = HideTints[rng.Next(HideTints.Length)];
-                var hair = elder ? new Color(0.78f, 0.77f, 0.74f) : HairColors[rng.Next(HairColors.Length)];
+                var hair = elder ? new Color(0.70f, 0.69f, 0.66f) : HairColors[rng.Next(HairColors.Length)];
                 bool recolourClothes = rng.Next(3) != 0;
+                var textured = person != null && person.Textured ? PersonMaterial(modelName) : null;
                 foreach (var r in body.GetComponentsInChildren<SkinnedMeshRenderer>())
                 {
-                    // Materials are matched by name: Skin and Hair vary per person, clothes keep their
-                    // design but often take a new main colour.
+                    // Materials are matched by name: Skin, Hair and the main garment vary per person.
                     var source = r.sharedMaterials;
                     var mats = new Material[source.Length];
                     var tints = new Color[source.Length];
                     for (int i = 0; i < source.Length; i++)
                     {
                         string n = source[i] != null ? source[i].name : "";
+                        if (textured != null)
+                        {
+                            // One texture set; the zone's tint dyes it (grey detail × colour) or shifts the skin tone.
+                            mats[i] = textured;
+                            if (n.StartsWith("Skin")) tints[i] = Ratio(skin, person.Skin);
+                            else if (n.StartsWith("Hair")) tints[i] = Ratio(elder ? person.Hair : hair, new Color(person.Neutral, person.Neutral, person.Neutral));
+                            else if (n.StartsWith("Main") && person.Dye) tints[i] = Ratio(recolourClothes ? cloth : person.Main, new Color(person.Neutral, person.Neutral, person.Neutral));
+                            else tints[i] = Color.white;
+                            continue;
+                        }
                         mats[i] = Palette.Get("Tunic");
                         if (n.StartsWith("Skin")) tints[i] = skin;
                         else if (n.StartsWith("Hair")) { mats[i] = Palette.Get("Hair"); tints[i] = hair; }
@@ -642,9 +732,11 @@ namespace Founders
                 float height = child ? 1.0f + (float)rng.NextDouble() * 0.15f : (female ? 1.6f : 1.7f) + (float)rng.NextDouble() * 0.12f;
                 if (elder) height -= 0.06f;
                 if (bounds.size.y > 0.01f) body.transform.localScale *= height / bounds.size.y;
+                SetUpLods(root.gameObject, body);
                 var v = root.gameObject.AddComponent<Villager>();
                 v.child = child;
                 v.elder = elder;
+                if (bounds.size.y > 0.01f) v.bodyHeight = bounds.size.y;
                 return v;
             }
 
@@ -655,6 +747,25 @@ namespace Founders
             Parts.Prim(PrimitiveType.Capsule, figure, new Vector3(-0.08f, 0.18f, 0), new Vector3(0.11f, 0.2f, 0.11f), "Skin");
             Parts.Prim(PrimitiveType.Capsule, figure, new Vector3(0.08f, 0.18f, 0), new Vector3(0.11f, 0.2f, 0.11f), "Skin");
             return root.gameObject.AddComponent<Villager>();
+        }
+
+        /// <summary>
+        /// Distant villagers draw the lighter mesh (Body_LOD1, a third of the triangles, same skeleton
+        /// and textures); people never disappear, they are small but always there.
+        /// </summary>
+        static void SetUpLods(GameObject root, GameObject body)
+        {
+            var near = new List<Renderer>();
+            Renderer far = null;
+            foreach (var r in body.GetComponentsInChildren<SkinnedMeshRenderer>())
+            {
+                if (r.name.StartsWith("Body_LOD1")) far = r;
+                else near.Add(r);
+            }
+            if (far == null || near.Count == 0) return;
+            var group = root.AddComponent<LODGroup>();
+            group.SetLODs(new[] { new LOD(0.09f, near.ToArray()), new LOD(0.0005f, new[] { far }) });
+            group.RecalculateBounds();
         }
     }
 

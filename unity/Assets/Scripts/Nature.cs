@@ -130,6 +130,9 @@ namespace Founders
             public int Index;
             public Vector3 Position;
             public float Height;
+            /// <summary>Half the width on the ground (a trunk for trees): how close people can stand.</summary>
+            public float Radius;
+            public string Id;
             public int Cx, Cy;
             public bool Tree;
             public bool NearCamera, Blocked;
@@ -157,9 +160,9 @@ namespace Founders
             return set;
         }
 
-        Item NewItem(Vector3 position, float height, int cx, int cy, bool tree)
+        Item NewItem(Vector3 position, float height, int cx, int cy, bool tree, string id = null, float radius = 0f)
         {
-            var item = new Item { Index = items.Count, Position = position, Height = height, Cx = cx, Cy = cy, Tree = tree };
+            var item = new Item { Index = items.Count, Position = position, Height = height, Cx = cx, Cy = cy, Tree = tree, Id = id, Radius = radius };
             items.Add(item);
             if (tree) trees.Add(item);
             if (!byCell.TryGetValue((cx, cy), out var list)) byCell[(cx, cy)] = list = new List<Item>();
@@ -179,7 +182,7 @@ namespace Founders
             if (!ModelLibrary.HasImpostor(kind)) return;
             var info = ModelLibrary.Manifest.Obj("impostors").Obj(kind);
             float w = (float)info.Num("width") * height / Mathf.Max(0.01f, (float)info.Num("height"));
-            var item = NewItem(position, height, cx, cy, true);
+            var item = NewItem(position, height, cx, cy, true, kind, TrunkRadius);
             var quad = ModelLibrary.Quad();
             var root = Matrix4x4.TRS(position, Quaternion.Euler(0, yaw, 0), Vector3.one);
             for (int i = 0; i < 3; i++)
@@ -198,7 +201,9 @@ namespace Founders
         {
             var parts = Parts(id);
             if (parts == null) return;
-            var item = NewItem(position, ModelLibrary.Size(id).y * scale, cx, cy, false);
+            var size = ModelLibrary.Size(id) * scale;
+            var axes = axisScale ?? Vector3.one;
+            var item = NewItem(position, size.y * axes.y, cx, cy, false, id, 0.5f * Mathf.Max(size.x * axes.x, size.z * axes.z));
             var root = Matrix4x4.TRS(position, Quaternion.Euler(0, yaw, 0), (axisScale ?? Vector3.one) * scale);
             foreach (var p in parts)
                 Add(item, Set(p.Mesh, p.SubMesh, material != null ? material : p.Material, castShadows && p.Shadows), root * p.Local);
@@ -224,6 +229,67 @@ namespace Founders
                     });
             }
             return models[id] = parts;
+        }
+
+        // MARK: - Work targets (where people cut, quarry and pick)
+
+        /// <summary>Trunk radius of the billboard trees (people stand at the trunk, not at the crown).</summary>
+        public const float TrunkRadius = 0.22f;
+
+        /// <summary>A tree, rock or bush standing in a cell that someone can work at.</summary>
+        public struct Target
+        {
+            public int Index;
+            public Vector3 Position;
+            public float Radius, Height;
+            public string Id;
+        }
+
+        static bool IsRock(string id) => id != null && (id.StartsWith("sn_rock") || id.Contains("boulder") || id.StartsWith("k_rock") || id.StartsWith("rock_"));
+        static bool IsBush(string id) => id == "sn_bush";
+
+        /// <summary>
+        /// What a job works at in a cell: "tree", "rock" or "bush". Returns the biggest one still
+        /// standing (hidden objects, cut down or built over, do not count).
+        /// </summary>
+        public bool TryTarget(int cx, int cy, string kind, out Target target)
+        {
+            target = default;
+            if (!byCell.TryGetValue((cx, cy), out var list)) return false;
+            Item best = null;
+            foreach (var item in list)
+            {
+                if (item.Blocked) continue;
+                bool match = kind == "tree" ? item.Tree : kind == "rock" ? IsRock(item.Id) : kind == "bush" && IsBush(item.Id);
+                if (!match) continue;
+                if (best == null || item.Height > best.Height) best = item;
+            }
+            if (best == null) return false;
+            target = new Target { Index = best.Index, Position = best.Position, Radius = best.Radius, Height = best.Height, Id = best.Id };
+            return true;
+        }
+
+        /// <summary>
+        /// True when a person can stand at <paramref name="p"/>: no trunk, rock or bush (other than
+        /// <paramref name="ignore"/>) closer than their own radius plus <paramref name="clearance"/>.
+        /// </summary>
+        public bool Clear(Vector3 p, float clearance, int ignore = -1)
+        {
+            var (cx, cy) = Grid.CellAt(p);
+            for (int dy = -1; dy <= 1; dy++)
+                for (int dx = -1; dx <= 1; dx++)
+                {
+                    if (!byCell.TryGetValue((cx + dx, cy + dy), out var list)) continue;
+                    foreach (var item in list)
+                    {
+                        if (item.Blocked || item.Index == ignore) continue;
+                        if (!item.Tree && !IsRock(item.Id) && !IsBush(item.Id)) continue;
+                        float r = (item.Tree ? TrunkRadius : item.Radius * 0.8f) + clearance;
+                        float ddx = item.Position.x - p.x, ddz = item.Position.z - p.z;
+                        if (ddx * ddx + ddz * ddz < r * r) return false;
+                    }
+                }
+            return true;
         }
 
         /// <summary>Sorts everything into culled batches. Call after adding all objects.</summary>
@@ -289,6 +355,9 @@ namespace Founders
             return false;
         }
 
+        /// <summary>Keeps trees near the camera (close-up captures look at people working under them).</summary>
+        public static bool KeepNearCamera;
+
         /// <summary>Hides trees whose crown would fill the screen when the camera flies low over them.</summary>
         void UpdateNearCamera()
         {
@@ -300,7 +369,7 @@ namespace Founders
             var fwd = cam.transform.forward;
             foreach (var tv in trees)
             {
-                bool hide = Occludes(c, fwd, tv.Position, tv.Height);
+                bool hide = !KeepNearCamera && Occludes(c, fwd, tv.Position, tv.Height);
                 if (hide == tv.NearCamera) continue;
                 tv.NearCamera = hide;
                 Apply(tv);
