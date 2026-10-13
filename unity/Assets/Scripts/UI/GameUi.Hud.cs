@@ -36,12 +36,35 @@ namespace Founders.UI
         const float BuildButton = 72;
         const float SmallButton = 44;
         const float CompassSize = 50;
-        /// <summary>Width of the docked card (selection, placement): the kit's popup width, at most half the screen.</summary>
-        float CardW => Mathf.Min(360, SafeWidth * 0.52f);
+        /// <summary>
+        /// Width of the card (selection, placement): landscape docks it on the left at the kit's popup width (at most
+        /// half the screen); portrait makes it a bottom sheet across the screen (at most 560 wide on an iPad).
+        /// </summary>
+        float CardW => Portrait ? SheetW : Mathf.Min(360, SafeWidth * 0.52f);
+        /// <summary>
+        /// Width of a portrait bottom sheet (cards, the build strip, windows, dialogs): the screen's width less a margin
+        /// that keeps the close button on the plank's corner inside the screen; at most 560 (iPad).
+        /// </summary>
+        float SheetW => Mathf.Min(560, SafeWidth - 28);
         /// <summary>Top of popups (below the compact top bar).</summary>
-        float PopupTop => SafeTop + 56;
+        float PopupTop => Portrait ? BarBottom + 8 : SafeTop + 56;
 
-        VisualElement topHost, leftHost, timersHost, tilesHost, bottomHost, toastLayer, contextPanel;
+        // MARK: Portrait metrics (the kit's phone screens)
+
+        /// <summary>Rows of counters in the top bar this tick (portrait stacks them; see <see cref="TopRows"/>).</summary>
+        int topRowCount = 2;
+        /// <summary>Lower edge of the resource rows in portrait.</summary>
+        float BarBottom => SafeTop + 4 + topRowCount * (CounterH + 6);
+        /// <summary>The player block's height (hexagon frame) under the bar in portrait.</summary>
+        const float PlayerBlockH = 72;
+        /// <summary>Room under the bottom sheets for the back arrow (portrait).</summary>
+        const float BackZone = 60;
+        /// <summary>Bottom edge of every bottom sheet in portrait: the back arrow sits under it.</summary>
+        float SheetBottom => BottomPad + BackZone;
+        /// <summary>Highest top edge of a card in portrait: it covers at most the lower ~60% of the screen.</summary>
+        float CardTopLimit => Mathf.Max(PopupTop, Mathf.Round(PanelH * 0.36f));
+
+        VisualElement topHost, leftHost, timersHost, tilesHost, bottomHost, toastLayer, contextPanel, cardBack;
 
         void BuildHud()
         {
@@ -65,9 +88,23 @@ namespace Founders.UI
             contextPanel.style.justifyContent = Justify.FlexEnd;
             AddRegion(contextPanel, ContextKey, BuildContext);
 
-            foreach (var e in new[] { leftHost, timersHost, tilesHost, bottomHost, toastLayer, contextPanel, topHost })
+            // Portrait: the back arrow under the card's bottom sheet (it closes the card, like the kit's).
+            cardBack = E.Icon("back", 54).Abs();
+            cardBack.name = "card-back";
+            Tap(cardBack, CloseContext);
+
+            foreach (var e in new[] { leftHost, timersHost, tilesHost, bottomHost, toastLayer, contextPanel, cardBack, topHost })
                 hudLayer.Add(e);
             lastSafe = default;
+        }
+
+        /// <summary>Closes whatever card is open (placement, decorating, a selection).</summary>
+        void CloseContext()
+        {
+            if (store.DecoratingId != null) store.EndDecorating();
+            else if (store.PlacingBuildingId != null) store.CancelPlacement();
+            store.SelectedBuildingId = null;
+            store.SelectedNode = null;
         }
 
         /// <summary>Places the HUD pieces inside the safe area and hides what a popup covers (every tick; cheap).</summary>
@@ -75,32 +112,110 @@ namespace Founders.UI
         {
             bool sheet = SheetOpen, card = ContextOpen;
             float l = SafeLeft + 8, r = SafeRight + 8, top = SafeTop;
+            topRowCount = Portrait ? TopRows().Count : 2;
             Place(topHost, l, top + 4, r, null);
-            Place(leftHost, l, top + RailY, null, null);
-            Place(timersHost, null, top + RailY, r + TileColW + 8, null);
-            Place(tilesHost, null, top + TilesY, r, null);
-            Place(bottomHost, l, null, SafeRight + 6, BottomPad + 4);
+            float shade = Portrait ? BarBottom + (TopCompact ? 14 : PlayerBlockH + 18) : 84;
+            if (!Mathf.Approximately(topShade.style.height.value.value, shade)) topShade.style.height = shade;
+            if (Portrait) LayoutHudPortrait(sheet, card, l, r);
+            else
+            {
+                Place(leftHost, l, top + RailY, null, null);
+                Place(timersHost, null, top + RailY, r + TileColW + 8, null);
+                Place(tilesHost, null, top + TilesY, r, null);
+                Place(bottomHost, l, null, SafeRight + 6, BottomPad + 4);
+                tilesHost.Hidden(sheet);
+                bottomHost.Hidden(sheet);
+                // Notices between whatever occupies the two sides.
+                float leftEdge = l + (card ? CardW : LeftRailW) + 10;
+                float rightEdge = r + TileColW + 8 + (card ? 0 : TimersW + 10);
+                Place(toastLayer, leftEdge, top + RailY, rightEdge, BottomPad + BuildButton + 10);
+                SetJustify(toastLayer, Justify.FlexStart);
+                SetAlign(timersHost, Align.FlexEnd);
+                contextPanel.style.width = CardW;
+                Place(contextPanel, l, PopupTop + 4, null, BottomPad + 8);
+                float maxCard = Mathf.Min(PanelH - PopupTop - 4 - BottomPad - 8, 470);
+                contextPanel.style.maxHeight = maxCard;
+                cardBack.Hidden(true);
+            }
             leftHost.Hidden(sheet || card);
             timersHost.Hidden(sheet || card);
-            tilesHost.Hidden(sheet);
-            bottomHost.Hidden(sheet);
-            // Notices between whatever occupies the two sides.
-            float leftEdge = l + (card ? CardW : LeftRailW) + 10;
-            float rightEdge = r + TileColW + 8 + (card ? 0 : TimersW + 10);
-            Place(toastLayer, leftEdge, top + RailY, rightEdge, BottomPad + BuildButton + 10);
-            contextPanel.style.width = CardW;
-            Place(contextPanel, l, PopupTop + 4, null, BottomPad + 8);
-            float maxCard = Mathf.Min(PanelH - PopupTop - 4 - BottomPad - 8, 470);
-            contextPanel.style.maxHeight = maxCard;
+            UpdateViewShift(card && !sheet);
         }
 
+        /// <summary>
+        /// Portrait, after the kit's phone screens: the resource bar on top (two rows when needed) with the player block
+        /// under it on the left, the goal and the running timers below that, the menu hexagons down the right edge,
+        /// the news over the small buttons bottom-left and Build bottom-right. A card is a bottom sheet across the
+        /// screen with the back arrow under it; notices rise from the bottom (or from the card's top edge).
+        /// </summary>
+        void LayoutHudPortrait(bool sheet, bool card, float l, float r)
+        {
+            float rail = BarBottom + 4 + (TopCompact ? 0 : PlayerBlockH + 8);
+            Place(leftHost, l, rail, null, null);
+            float leftH = leftHost.layout.height;
+            if (float.IsNaN(leftH) || leftHost.childCount == 0) leftH = 0;
+            Place(timersHost, l, rail + leftH, null, null);
+            SetAlign(timersHost, Align.FlexStart);
+            Place(tilesHost, null, BarBottom + 4, r, null);
+            Place(bottomHost, l, null, SafeRight + 6, BottomPad + 4);
+            tilesHost.Hidden(sheet || card);
+            bottomHost.Hidden(sheet || card);
+
+            // Above the bottom row: the small buttons and the news over them (or above the top edge of a sheet).
+            float toastBottom = card || sheet ? PanelH - CardTopLimit + 8 : BottomPad + 4 + SmallButton * 1.06f + 10 + 30 + 10;
+            float toastTop = card || sheet ? PopupTop : Mathf.Round(PanelH * 0.42f);
+            Place(toastLayer, l, toastTop, r, toastBottom);
+            SetJustify(toastLayer, Justify.FlexEnd);
+
+            float w = CardW;
+            if (!Mathf.Approximately(contextPanel.style.width.value.value, w)) contextPanel.style.width = w;
+            Place(contextPanel, SafeLeft + (SafeWidth - w) / 2, CardTopLimit, null, SheetBottom);
+            contextPanel.style.maxHeight = PanelH - CardTopLimit - SheetBottom;
+            cardBack.Hidden(!card || sheet);
+            Place(cardBack, SafeLeft + 6, null, null, BottomPad + 2);
+        }
+
+        /// <summary>
+        /// Keeps what a card is about (the selected building, the ghost being placed) in view above the portrait bottom
+        /// sheet: the camera's picture is shifted up so its focus sits in the middle of the world left uncovered.
+        /// </summary>
+        void UpdateViewShift(bool card)
+        {
+            var rig = store.Rig;
+            if (rig == null) return;
+            float shift = 0;
+            if (Portrait && card)
+            {
+                float cardTop = PanelH - SheetBottom;
+                if (contextPanel.childCount > 0)
+                {
+                    float y = contextPanel.ElementAt(0).worldBound.yMin;
+                    if (!float.IsNaN(y) && y > 0) cardTop = y;
+                }
+                float middle = (BarBottom + cardTop) / 2; // panel units from the top
+                shift = Mathf.Clamp(1f - 2f * middle / PanelH, 0f, 0.7f);
+            }
+            rig.ViewShift = new Vector2(0, shift);
+        }
+
+        static void SetJustify(VisualElement e, Justify j) { if (e.style.justifyContent != j) e.style.justifyContent = j; }
+        static void SetAlign(VisualElement e, Align a) { if (e.style.alignItems != a) e.style.alignItems = a; }
+
+        /// <summary>Places an absolute element; a side given as null is cleared (so a layout for one orientation never leaks into the other).</summary>
         static void Place(VisualElement e, float? left, float? top, float? right, float? bottom)
         {
-            if (left.HasValue && !Mathf.Approximately(e.style.left.value.value, left.Value)) e.style.left = left.Value;
-            if (top.HasValue && !Mathf.Approximately(e.style.top.value.value, top.Value)) e.style.top = top.Value;
-            if (right.HasValue && !Mathf.Approximately(e.style.right.value.value, right.Value)) e.style.right = right.Value;
-            if (bottom.HasValue && !Mathf.Approximately(e.style.bottom.value.value, bottom.Value)) e.style.bottom = bottom.Value;
+            var st = e.style;
+            if (Changed(st.left, left)) st.left = Side(left);
+            if (Changed(st.top, top)) st.top = Side(top);
+            if (Changed(st.right, right)) st.right = Side(right);
+            if (Changed(st.bottom, bottom)) st.bottom = Side(bottom);
         }
+
+        static bool Changed(StyleLength now, float? want) => want.HasValue
+            ? now.keyword != StyleKeyword.Undefined || !Mathf.Approximately(now.value.value, want.Value)
+            : now.keyword != StyleKeyword.Null;
+
+        static StyleLength Side(float? v) => v.HasValue ? new StyleLength(v.Value) : new StyleLength(StyleKeyword.Null);
 
         // MARK: - Shared look-ups
 
@@ -167,7 +282,9 @@ namespace Founders.UI
             public TopItem(string id, float width, int drop) { Id = id; Width = width; Drop = drop; }
         }
 
-        const float CounterH = 30, CounterGap = 10, ChipH = 28;
+        const float CounterH = 30, ChipH = 28;
+        /// <summary>Space between counters: tighter in portrait, where two rows must hold them all across the phone.</summary>
+        float CounterGap => Portrait ? 6 : 10;
 
         /// <summary>Width of a counter showing a text (one digit of slack so it does not jump on every change).</summary>
         static float CounterW(string text, bool plus) => 6 + E.CounterIconRoom + 4 + Theme.TextWidth(text + "0", Theme.Num) + (plus ? 6 + 24 - 3 : 12);
@@ -212,10 +329,13 @@ namespace Founders.UI
         /// </summary>
         List<List<TopItem>> TopRows()
         {
-            float avail = SafeWidth - 16 - (TopCompact ? 0 : PlayerW + 10) - HudSquareSize - 10;
-            int rows = TopCompact ? 1 : 2;
+            // Portrait: the bar has the whole width (the player block goes under it and the settings button tops the
+            // menu column on the right), in two rows; landscape: one row while a popup is open, else two beside the
+            // player block, the settings button at the end of the first.
+            float avail = Portrait ? SafeWidth - 16 : SafeWidth - 16 - (TopCompact ? 0 : PlayerW + 10) - HudSquareSize - 10;
+            int rows = Portrait || !TopCompact ? 2 : 1;
             // The second row ends where the menu hexagons begin (they start right under the settings button).
-            float Avail(int row) => row == 0 ? avail : SafeWidth - 16 - PlayerW - 10 - TileColW - 10;
+            float Avail(int row) => row == 0 || Portrait ? avail : SafeWidth - 16 - PlayerW - 10 - TileColW - 10;
             var items = TopCandidates();
             while (true)
             {
@@ -242,51 +362,18 @@ namespace Founders.UI
             }
         }
 
-        string TopKey() => $"{SafeWidth}|{TopCompact}|{G.State.EpochId}|{MilestoneReady() || G.PendingStory != null}|{G.State.SettlementName}|" +
+        string TopKey() => $"{SafeWidth}|{Portrait}|{TopCompact}|{G.State.EpochId}|{MilestoneReady() || G.PendingStory != null}|{G.State.SettlementName}|" +
                            string.Join("/", TopRows().Select(r => string.Join(",", r.Select(i => i.Id))));
 
         void BuildTop(VisualElement host)
         {
             var bar = E.Div().Row(0, Align.FlexStart).Ignore();
             bar.style.width = SafeWidth - 16;
+            if (!TopCompact && !Portrait) bar.Add(PlayerBlock());
 
-            if (!TopCompact)
-            {
-                // The player block: the founder in the hexagon frame (tap: Goals), the settlement's name, the
-                // heart's level on the rank pill and hope as the kit's energy bar.
-                var frame = E.HexFrame("face_m1", HexFrameW);
-                if (MilestoneReady() || G.PendingStory != null) frame.Add(CornerBadge("!", 20).Abs(null, 2, 0));
-                Tap(frame, () => store.ActivePanel = Panel.Objectives);
-                bar.Add(frame);
-                var col = E.Div().Col().Ignore().Size(PlayerNameW);
-                col.style.marginLeft = 8;
-                col.style.paddingTop = 2;
-                var name = E.T(G.State.SettlementName ?? "Founder", Theme.H2).Fit(PlayerNameW, Theme.Body);
-                name.style.whiteSpace = WhiteSpace.NoWrap;
-                col.Add(name);
-                var rank = E.RankPill(out var lv);
-                rank.style.alignSelf = Align.FlexStart;
-                rank.style.marginTop = 2;
-                Bind(() => { string s = $"Lv.{G.HeartLevel}"; if (lv.text != s) lv.text = s; });
-                Tap(rank, () => { if (G.Heart != null) store.FocusBuilding(G.Heart.Id); });
-                col.Add(rank);
-                var hope = E.HudBar("approval", out var fill, out var label, PlayerNameW);
-                hope.style.marginTop = 6;
-                Bind(() =>
-                {
-                    int a = ApprovalNow;
-                    E.SetFill(fill, a / 100.0);
-                    string s = $"{a}/100";
-                    if (label.text != s) label.text = s;
-                });
-                Tap(hope, () => { peopleTab = 2; store.ActivePanel = Panel.People; });
-                col.Add(hope);
-                bar.Add(col);
-            }
-
-            // The counters and chips, in one or two rows.
+            // The counters and chips, in rows.
             var rowsCol = E.Div().Col().Ignore();
-            rowsCol.style.marginLeft = TopCompact ? 0 : 10;
+            rowsCol.style.marginLeft = TopCompact || Portrait ? 0 : 10;
             foreach (var row in TopRows())
             {
                 var r = E.Div().Row().Ignore();
@@ -301,9 +388,56 @@ namespace Founders.UI
                 rowsCol.Add(r);
             }
             bar.Add(rowsCol);
-            bar.Add(E.Div().Grow().Ignore());
-            bar.Add(E.HudSquare("settings", Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
-            host.Add(bar);
+            if (!Portrait)
+            {
+                bar.Add(E.Div().Grow().Ignore());
+                bar.Add(E.HudSquare("settings", Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
+                host.Add(bar);
+                return;
+            }
+            // Portrait: the bar across the top, the player block under it on the left (like the kit's phone screens).
+            var col = E.Div().Col(Align.FlexStart).Ignore();
+            col.Add(bar);
+            if (!TopCompact) col.Add(PlayerBlock().Margin(4));
+            host.Add(col);
+        }
+
+        /// <summary>
+        /// The player block: the founder in the hexagon frame (tap: Goals), the settlement's name, the heart's level on
+        /// the rank pill and hope as the kit's energy bar.
+        /// </summary>
+        VisualElement PlayerBlock()
+        {
+            var block = E.Div().Row(0, Align.FlexStart).Ignore();
+            var frame = E.HexFrame("face_m1", HexFrameW);
+            if (MilestoneReady() || G.PendingStory != null) frame.Add(CornerBadge("!", 20).Abs(null, 2, 0));
+            Tap(frame, () => store.ActivePanel = Panel.Objectives);
+            block.Add(frame);
+            var col = E.Div().Col().Ignore().Size(PlayerNameW);
+            col.style.marginLeft = 8;
+            col.style.paddingTop = 2;
+            var name = E.T(G.State.SettlementName ?? "Founder", Theme.H2).Fit(PlayerNameW, Theme.Body);
+            name.style.whiteSpace = WhiteSpace.NoWrap;
+            col.Add(name);
+            var rank = E.RankPill(out var lv);
+            rank.style.alignSelf = Align.FlexStart;
+            rank.style.marginTop = 2;
+            Bind(() => { string s = $"Lv.{G.HeartLevel}"; if (lv.text != s) lv.text = s; });
+            Tap(rank, () => { if (G.Heart != null) store.FocusBuilding(G.Heart.Id); });
+            col.Add(rank);
+            var hope = E.HudBar("approval", out var fill, out var label, PlayerNameW);
+            hope.style.marginTop = 6;
+            Bind(() =>
+            {
+                int a = ApprovalNow;
+                E.SetFill(fill, a / 100.0);
+                string s = $"{a}/100";
+                if (label.text != s) label.text = s;
+            });
+            Tap(hope, () => { peopleTab = 2; store.ActivePanel = Panel.People; });
+            col.Add(hope);
+            block.Add(col);
+            return block;
         }
 
         const float HudSquareSize = 40;
@@ -459,7 +593,7 @@ namespace Founders.UI
 
         // MARK: - Timers (research, scouting, construction)
 
-        int MaxTimers() => Mathf.Clamp(Mathf.FloorToInt((PanelH - SafeTop - RailY - BottomPad - 12) / (TimerH + 6)), 0, 5);
+        int MaxTimers() => Portrait ? 3 : Mathf.Clamp(Mathf.FloorToInt((PanelH - SafeTop - RailY - BottomPad - 12) / (TimerH + 6)), 0, 5);
 
         string TimersKey()
         {
@@ -511,6 +645,7 @@ namespace Founders.UI
             c.style.minHeight = TimerH;
             c.style.width = TimersW;
             c.style.marginBottom = 6;
+            if (Portrait) c.style.marginLeft = 6; // its icon overhangs the left end, which is the screen's edge here
             c.Add(E.Icon(icon, 34).Abs(-8, 2));
             var col = E.Div().Col().Grow().Ignore();
             // The name on its own line (it wraps rather than being cut), the bar and the time left under it.
@@ -528,12 +663,20 @@ namespace Founders.UI
 
         // MARK: - Right column: menu tiles
 
-        string TilesKey() => $"{MilestoneReady()}|{G.IdleWorkers}|{ResearchReady()}|{HasCustoms}|{LawReady()}";
+        string TilesKey() => $"{Portrait}|{MilestoneReady()}|{G.IdleWorkers}|{ResearchReady()}|{HasCustoms}|{LawReady()}";
 
         bool ResearchReady() => G.State.ActiveResearch == null && G.Content.Technologies.Any(t => G.GetResearchStatus(t.Id).State == ResearchState.Available);
 
         void BuildTiles(VisualElement host)
         {
+            if (Portrait)
+            {
+                // Portrait: the settings button tops the column (the bar above has the whole width for the counters).
+                var cell = E.Div().Row().Center().Ignore().Size(TileColW);
+                cell.style.marginBottom = 8;
+                cell.Add(E.HudSquare("settings", Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
+                host.Add(cell);
+            }
             host.Add(MenuTile("goals", "Goals", MilestoneReady() ? "!" : null, () => { goalsTab = 0; store.ActivePanel = Panel.Objectives; }));
             host.Add(MenuTile("people", "People", G.IdleWorkers > 0 ? G.IdleWorkers.ToString(Inv) : null, () => { peopleTab = G.IdleWorkers > 0 ? 0 : 1; store.ActivePanel = Panel.People; }));
             host.Add(MenuTile("knowledge", "Research", ResearchReady() ? "!" : null, () => store.ActivePanel = Panel.Research));
@@ -553,37 +696,15 @@ namespace Founders.UI
 
         // MARK: - Bottom row: compass and small buttons, news, Build
 
-        string BottomKey() => $"{SafeWidth}|{ContextOpen}|{G.PendingEvent != null && store.EventMinimized}";
+        string BottomKey() => $"{SafeWidth}|{Portrait}|{ContextOpen}|{G.PendingEvent != null && store.EventMinimized}";
 
         void BuildBottom(VisualElement host)
         {
+            if (Portrait) { BuildBottomPortrait(host); return; }
             bool card = ContextOpen;
             if (!card)
             {
-                var left = E.Div().Row(0, Align.FlexEnd).Ignore().NoShrink();
-                // The compass needle follows the camera; tap it to face north-west again.
-                var compass = E.HudSquare("compass", null, CompassSize);
-                var needle = compass.ElementAt(0);
-                Bind(() => needle.style.rotate = new Rotate(new Angle(-(CameraRig.Yaw + 45f), AngleUnit.Degree)));
-                Tap(compass, () => store.Rig?.ResetView());
-                left.Add(compass);
-                void Small(VisualElement b) { b.style.marginLeft = 8; left.Add(b); }
-                if (G.PendingEvent != null && store.EventMinimized)
-                {
-                    var bell = E.Square("bell", Act(() => store.EventMinimized = false), E.Kind.Orange, SmallButton); // yellow: it wants an answer
-                    bell.Add(CornerBadge("1", 18));
-                    Small(bell);
-                }
-                Small(E.HudSquare("world", Act(() => { mapTab = 0; store.ActivePanel = Panel.Map; }), SmallButton));
-                Small(E.HudSquare("legacy", Act(() => store.ActivePanel = Panel.Profile), SmallButton));
-                Small(E.HudSquare("eye_off", Act(() =>
-                {
-                    store.CancelPlacement();
-                    store.SelectedBuildingId = null;
-                    store.SelectedNode = null;
-                    store.ActivePanel = Panel.None;
-                    store.HudHidden = true;
-                }), SmallButton));
+                var left = SmallButtons();
                 host.Add(left);
             }
 
@@ -594,28 +715,82 @@ namespace Founders.UI
             middle.style.marginRight = 10;
             if (!card)
             {
-                // A navy HUD capsule with the bell overlapping its left end.
-                var news = E.HudCapsule(30).Pad(3, 14, 3, E.CounterIconRoom + 4).Ignore();
-                news.style.height = StyleKeyword.Auto;
-                news.style.minHeight = 30;
-                news.style.marginBottom = 8;
-                news.style.marginLeft = 6;
-                news.style.maxWidth = 380;
-                news.Add(E.Icon("bell", 32).Abs(-8, -1));
                 int squares = G.PendingEvent != null && store.EventMinimized ? 4 : 3;
-                float room = Mathf.Min(380, SafeWidth - 16 - CompassSize - squares * (SmallButton + 8) - 20 - BuildButton - 6) - 6 - E.CounterIconRoom - 4 - 14 - 6;
-                var line = LiveFit(() =>
-                {
-                    if (store.Toasts.Count > 0) return store.Toasts[store.Toasts.Count - 1].Notice.Message;
-                    var last = G.State.Legacy.LastOrDefault();
-                    return last != null ? last.Title : $"{G.CurrentChapter?.Title ?? G.StageName}";
-                }, Theme.Small + 1, room, null, Theme.Small);
-                news.Add(line);
+                float room = Mathf.Min(380, SafeWidth - 16 - CompassSize - squares * (SmallButton + 8) - 20 - BuildButton - 6);
+                var news = NewsCapsule(room);
                 middle.Add(news);
             }
             host.Add(middle);
 
-            // The big primary: the kit's striped yellow button.
+            host.Add(BuildButtonElement());
+        }
+
+        /// <summary>Portrait: the news over the small buttons on the left, Build on the right (the bar is hidden under a card).</summary>
+        void BuildBottomPortrait(VisualElement host)
+        {
+            var left = E.Div().Col(Align.FlexStart).Grow().Ignore();
+            float room = SafeWidth - 16 - BuildButton - 10;
+            var news = NewsCapsule(room);
+            news.style.marginBottom = 10;
+            left.Add(news);
+            left.Add(SmallButtons());
+            host.Add(left);
+            host.Add(BuildButtonElement());
+        }
+
+        /// <summary>The compass (its needle follows the camera; tap: face north-west again) and the small blue squares.</summary>
+        VisualElement SmallButtons()
+        {
+            var left = E.Div().Row(0, Align.FlexEnd).Ignore().NoShrink();
+            var compass = E.HudSquare("compass", null, CompassSize);
+            var needle = compass.ElementAt(0);
+            Bind(() => needle.style.rotate = new Rotate(new Angle(-(CameraRig.Yaw + 45f), AngleUnit.Degree)));
+            Tap(compass, () => store.Rig?.ResetView());
+            left.Add(compass);
+            void Small(VisualElement b) { b.style.marginLeft = 8; left.Add(b); }
+            if (G.PendingEvent != null && store.EventMinimized)
+            {
+                var bell = E.Square("bell", Act(() => store.EventMinimized = false), E.Kind.Orange, SmallButton); // yellow: it wants an answer
+                bell.Add(CornerBadge("1", 18));
+                Small(bell);
+            }
+            Small(E.HudSquare("world", Act(() => { mapTab = 0; store.ActivePanel = Panel.Map; }), SmallButton));
+            Small(E.HudSquare("legacy", Act(() => store.ActivePanel = Panel.Profile), SmallButton));
+            Small(E.HudSquare("eye_off", Act(() =>
+            {
+                store.CancelPlacement();
+                store.SelectedBuildingId = null;
+                store.SelectedNode = null;
+                store.ActivePanel = Panel.None;
+                store.HudHidden = true;
+            }), SmallButton));
+            return left;
+        }
+
+        /// <summary>News: the latest thing that happened, one line (two at most) on a navy capsule with the bell overlapping its left end.</summary>
+        VisualElement NewsCapsule(float maxWidth)
+        {
+            var news = E.HudCapsule(30).Pad(3, 14, 3, E.CounterIconRoom + 4).Ignore();
+            news.style.height = StyleKeyword.Auto;
+            news.style.minHeight = 30;
+            news.style.marginBottom = 8;
+            news.style.marginLeft = 6;
+            news.style.maxWidth = maxWidth;
+            news.Add(E.Icon("bell", 32).Abs(-8, -1));
+            float room = maxWidth - 6 - E.CounterIconRoom - 4 - 14 - 6;
+            var line = LiveFit(() =>
+            {
+                if (store.Toasts.Count > 0) return store.Toasts[store.Toasts.Count - 1].Notice.Message;
+                var last = G.State.Legacy.LastOrDefault();
+                return last != null ? last.Title : $"{G.CurrentChapter?.Title ?? G.StageName}";
+            }, Theme.Small + 1, room, null, Theme.Small);
+            news.Add(line);
+            return news;
+        }
+
+        /// <summary>The big primary: the kit's striped yellow BUILD button.</summary>
+        VisualElement BuildButtonElement()
+        {
             var build = E.Div().Col().Center().Skin("btn_orange").Size(BuildButton, BuildButton).Pad(0, 0, 6, 0);
             build.Add(E.Icon("build", 42));
             build.Add(E.T("BUILD", Theme.Num).Margin(-4));
@@ -624,18 +799,18 @@ namespace Founders.UI
                 store.CancelPlacement();
                 store.ActivePanel = store.ActivePanel == Panel.Build ? Panel.None : Panel.Build;
             });
-            host.Add(build);
+            return build;
         }
 
         // MARK: - Toasts
 
-        string ToastKey() => string.Join(",", store.Toasts.Select(t => t.CreatedAt.ToString(CultureInfo.InvariantCulture))) + "|" +
+        string ToastKey() => (Portrait ? "p|" : "l|") + string.Join(",", store.Toasts.Select(t => t.CreatedAt.ToString(CultureInfo.InvariantCulture))) + "|" +
                              (G.PendingEvent != null && store.EventMinimized && store.PlacingBuildingId == null ? G.PendingEvent.Id : "");
 
         void BuildToasts(VisualElement host)
         {
-            float maxW = Mathf.Min(400, PanelW - SafeLeft - SafeRight - 2 * (LeftRailW + 24));
-            maxW = Mathf.Max(220, maxW);
+            float maxW = Portrait ? Mathf.Min(400, SafeWidth - 16 - 12)
+                : Mathf.Max(220, Mathf.Min(400, PanelW - SafeLeft - SafeRight - 2 * (LeftRailW + 24)));
             // A decision put off for later stays on top until it is answered.
             if (G.PendingEvent != null && store.EventMinimized && store.PlacingBuildingId == null)
             {
@@ -643,10 +818,12 @@ namespace Founders.UI
                 pill.style.marginBottom = 8;
                 host.Add(pill);
             }
-            // Newest first: if the column ever runs out of height, the oldest is the one cut.
-            for (int i = store.Toasts.Count - 1; i >= 0; i--)
+            // Landscape: newest first from the top; portrait: notices rise from the bottom, newest last. Either way,
+            // if the column ever runs out of height, the oldest is the one cut.
+            int n = store.Toasts.Count;
+            for (int k = 0; k < n; k++)
             {
-                var toast = store.Toasts[i];
+                var toast = store.Toasts[Portrait ? k : n - 1 - k];
                 string icon = toast.Notice.Kind switch
                 {
                     NoticeKind.Success => "check",

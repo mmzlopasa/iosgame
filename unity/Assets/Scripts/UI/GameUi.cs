@@ -57,7 +57,10 @@ namespace Founders.UI
     /// The game's UI, built with UI Toolkit from code (no editor-made assets), in the style of a casual
     /// mobile strategy kit (see <see cref="Theme"/>): a thin resource strip on top, menu tiles on the
     /// right, the Build button bottom-right; popups are parchment windows that never cover the whole
-    /// screen (a centred window, a docked card on the left or a strip along the bottom).
+    /// screen. Landscape: a centred window, a docked card on the left or a strip along the bottom.
+    /// Portrait (<see cref="Portrait"/>, the kit's phone screens): every card, strip, window and dialog is
+    /// a bottom sheet across the screen with the back arrow under it. The phone may turn at any time:
+    /// the panel is re-scaled and every region rebuilt for the new shape.
     ///
     /// Dynamic parts are <see cref="Region"/>s: a region is rebuilt only when its structural key changes
     /// (a building finished, a panel opened…); in between, bound labels and bars are refreshed in place,
@@ -67,7 +70,7 @@ namespace Founders.UI
     {
         GameStore store;
         UIDocument doc;
-        VisualElement root, hudLayer, sheetLayer, modalLayer, loadingLayer, showHud;
+        VisualElement root, hudLayer, sheetLayer, modalLayer, loadingLayer, showHud, topShade;
         float confirmDemolishUntil;
         public LoadingScreen Loading { get; private set; }
 
@@ -97,14 +100,27 @@ namespace Founders.UI
 
         // MARK: - Setup
 
-        /// <summary>Design canvas: a landscape phone, 844 × 390 points.</summary>
+        /// <summary>Design canvas: a landscape phone, 844 × 390 points (portrait: the same phone turned, 390 × 844).</summary>
         public static readonly Vector2Int ReferenceResolution = new Vector2Int(844, 390);
 
+        /// <summary>The design canvas for a screen: 844 × 390 in landscape, 390 × 844 in portrait.</summary>
+        public static Vector2Int ReferenceFor(int width, int height) =>
+            height > width ? new Vector2Int(ReferenceResolution.y, ReferenceResolution.x) : ReferenceResolution;
+
         /// <summary>
-        /// Phones in landscape (16:9 and wider) are matched on height, so the panel is always 390 units tall and
-        /// 690–850 wide. Squarer screens (iPad) are matched on width: 844 units across, taller than 390.
+        /// Phones (16:9 and longer) are matched on their short side, so the panel is always 390 units across it in
+        /// either orientation and text and buttons keep the same physical size when the phone turns (690–850 units
+        /// along the long side). Squarer screens (iPad) are matched on their long side: 844 units, so the short side
+        /// gets more than 390.
         /// </summary>
-        public static float MatchFor(int width, int height) => width / (float)Mathf.Max(1, height) >= 1.7f ? 1f : 0f;
+        public static float MatchFor(int width, int height)
+        {
+            bool portrait = height > width;
+            float ratio = Mathf.Max(width, height) / (float)Mathf.Max(1, Mathf.Min(width, height));
+            bool phone = ratio >= 1.7f;
+            // match 0 = width, 1 = height.
+            return portrait ? (phone ? 0f : 1f) : (phone ? 1f : 0f);
+        }
 
         public static GameUi Create(GameObject host)
         {
@@ -115,7 +131,7 @@ namespace Founders.UI
                 settings = ScriptableObject.CreateInstance<PanelSettings>();
             }
             settings.scaleMode = PanelScaleMode.ScaleWithScreenSize;
-            settings.referenceResolution = ReferenceResolution;
+            settings.referenceResolution = ReferenceFor(Screen.width, Screen.height);
             settings.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
             settings.match = MatchFor(Screen.width, Screen.height);
             settings.sortingOrder = 10;
@@ -138,7 +154,8 @@ namespace Founders.UI
 
             hudLayer = E.Div("hud").Fill().Ignore();
             // A soft shade behind the top strip only (the world stays bright everywhere else).
-            hudLayer.Add(E.Div().Abs(0, 0, 0).Size(null, 84).BgImage(Theme.TopShade).Ignore());
+            topShade = E.Div().Abs(0, 0, 0).Size(null, 84).BgImage(Theme.TopShade).Ignore();
+            hudLayer.Add(topShade);
 
             sheetLayer = E.Div("sheets").Fill().Ignore().Hidden(true);
             modalLayer = E.Div("modals").Fill().Ignore().Hidden(true);
@@ -276,6 +293,8 @@ namespace Founders.UI
             if (store?.Game == null) return;
             hudLayer.Hidden(Hidden || store.HudHidden);
             showHud?.Hidden(Hidden || !store.HudHidden);
+            // No card on screen to keep the camera's focus clear of.
+            if ((Hidden || store.HudHidden) && store.Rig != null) store.Rig.ViewShift = Vector2.zero;
             if (Hidden) { sheetLayer.Hidden(true); modalLayer.Hidden(true); return; }
             if (store.HudHidden) { sheetLayer.Hidden(true); return; }
 
@@ -307,20 +326,32 @@ namespace Founders.UI
             }
         }
 
-        /// <summary>Keeps the panel matched on height for phones and on width for iPads (e.g. after a resize).</summary>
+        /// <summary>
+        /// Keeps the panel's design canvas and match in step with the screen (the phone turned, a resize): phones are
+        /// matched on their short side in both orientations, iPads on their long side (see <see cref="MatchFor"/>).
+        /// </summary>
         void UpdateScale()
         {
             var settings = doc.panelSettings;
             if (settings == null) return;
+            var reference = ReferenceFor(Screen.width, Screen.height);
+            if (settings.referenceResolution != reference) settings.referenceResolution = reference;
             float m = MatchFor(Screen.width, Screen.height);
             if (!Mathf.Approximately(settings.match, m)) settings.match = m;
         }
 
-        // MARK: - Safe area
+        // MARK: - Safe area and orientation
 
-        /// <summary>Panel size and the safe-area insets (notch / Dynamic Island on the left or right, home indicator below), in panel units.</summary>
+        /// <summary>Panel size and the safe-area insets (notch / Dynamic Island on top in portrait or on a side in landscape, home indicator below), in panel units.</summary>
         float PanelW = 844, PanelH = 390, SafeTop, SafeBottom, SafeLeft, SafeRight;
         float lastHeight;
+
+        /// <summary>
+        /// True while the panel is taller than wide (read from its resolved size each frame). Portrait follows the
+        /// kit's phone layouts: the resource bar on top, the menu hexagons down the right edge, and every card, strip,
+        /// window and dialog as a bottom sheet the full width of the screen with the back arrow under it.
+        /// </summary>
+        public bool Portrait { get; private set; }
 
         /// <summary>Bottom margin of the HUD: the home indicator's inset, or a little air on phones without one.</summary>
         float BottomPad => Mathf.Max(10, SafeBottom);
@@ -340,13 +371,16 @@ namespace Founders.UI
             float k = w / Mathf.Max(1, Screen.width);
             PanelW = w;
             PanelH = h;
+            Portrait = h > w;
             SafeTop = Mathf.Max(0, (Screen.height - s.yMax) * k);
             SafeBottom = Mathf.Max(0, s.yMin * k);
             SafeLeft = Mathf.Max(0, s.xMin * k);
             SafeRight = Mathf.Max(0, (Screen.width - s.xMax) * k);
             showHud.style.top = SafeTop + 8;
             showHud.style.right = SafeRight + 10;
-            Loading?.SetInsets(SafeBottom);
+            Loading?.SetInsets(SafeTop, SafeBottom, Portrait);
+            // The phone turned (or the window changed): every region is built again for the new shape.
+            foreach (var r in regions) r.Last = null;
             dirty = true;
         }
     }

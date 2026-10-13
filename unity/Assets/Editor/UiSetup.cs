@@ -37,8 +37,8 @@ namespace FoundersEditor
             }
             panel.themeStyleSheet = theme;
             panel.scaleMode = PanelScaleMode.ScaleWithScreenSize;
-            // Landscape design canvas (844 × 390). Phones are matched on height; the game re-picks the match
-            // at runtime for squarer screens (iPad), see GameUi.MatchFor.
+            // Landscape design canvas (844 × 390). The game re-picks the canvas (390 × 844 in portrait) and the
+            // match at run time as the device turns, see GameUi.ReferenceFor and GameUi.MatchFor.
             panel.referenceResolution = Founders.UI.GameUi.ReferenceResolution;
             panel.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;
             panel.match = 1f;
@@ -74,9 +74,10 @@ namespace FoundersEditor
             if (launch != null)
             {
                 PlayerSettings.iOS.SetiPhoneLaunchScreenType(iOSLaunchScreenType.ImageAndBackgroundConstant);
-                // The game only runs in landscape: the landscape image is the one shown (portrait kept as a fallback).
-                PlayerSettings.iOS.SetLaunchScreenImage(launch, iOSLaunchScreenImageType.iPhoneLandscapeImage);
+                // The game launches in whichever way the phone is held: the emblem for both orientations (it is
+                // centred on the night colour, so the same square image works either way round).
                 PlayerSettings.iOS.SetLaunchScreenImage(launch, iOSLaunchScreenImageType.iPhonePortraitImage);
+                PlayerSettings.iOS.SetLaunchScreenImage(launch, iOSLaunchScreenImageType.iPhoneLandscapeImage);
                 PlayerSettings.iOS.SetiPadLaunchScreenType(iOSLaunchScreenType.ImageAndBackgroundConstant);
                 PlayerSettings.iOS.SetLaunchScreenImage(launch, iOSLaunchScreenImageType.iPadImage);
             }

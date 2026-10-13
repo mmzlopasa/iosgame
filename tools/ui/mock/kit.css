@@ -1,6 +1,6 @@
 @font-face{font-family:Changa;src:url(../../../unity/Assets/Art/UI/Resources/UI/Fonts/ChangaOne-Regular.ttf)}
 *{box-sizing:border-box}
-body{margin:0;width:844px;height:390px;position:relative;overflow:hidden;font-family:Changa;background:#333 url(bg.jpg) center/cover}
+body{margin:0;position:relative;overflow:hidden;font-family:Changa;background:#333 url(bg.jpg) center/cover}
 .a{position:absolute}.row{display:flex;flex-direction:row;align-items:center}.col{display:flex;flex-direction:column}
 .grow{flex:1 1 0;min-width:0}.c{justify-content:center;align-items:center}.nos>*{flex-shrink:0}
 .o{color:var(--c);paint-order:stroke fill;-webkit-text-stroke-color:#3A2314;line-height:1.12;white-space:nowrap;flex:none}

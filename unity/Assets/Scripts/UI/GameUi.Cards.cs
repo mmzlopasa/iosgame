@@ -593,11 +593,11 @@ namespace Founders.UI
             grid.style.paddingTop = 8;
             string id = job.Id();
             var onJob = G.State.People.Where(p => p.Job == id).Take(MaxShown).ToList();
-            foreach (var p in onJob) grid.Add(Portrait(FaceFor(p), p.Name, cellW, false, p.Sick));
+            foreach (var p in onJob) grid.Add(PortraitCell(FaceFor(p), p.Name, cellW, false, p.Sick));
             int vacant = unlimited ? 0 : Math.Max(0, capacity - workers);
-            for (int i = 0; i < vacant && grid.childCount < MaxShown; i++) grid.Add(Portrait("user", "Vacant", cellW, true, false));
+            for (int i = 0; i < vacant && grid.childCount < MaxShown; i++) grid.Add(PortraitCell("user", "Vacant", cellW, true, false));
             int more = showLocked ? (int)Math.Floor(def.Slots(job) * Game.LevelFactor(b.Level + 1) + 0.5) - G.SlotsOf(b, def, job) : 0;
-            if (more > 0 && grid.childCount < MaxShown) grid.Add(Portrait("lock", $"Lv.{b.Level + 1}", cellW, true, false));
+            if (more > 0 && grid.childCount < MaxShown) grid.Add(PortraitCell("lock", $"Lv.{b.Level + 1}", cellW, true, false));
             int hidden = workers - onJob.Count;
             if (hidden > 0 && grid.childCount == MaxShown) grid.Add(E.T($"+{hidden}", Theme.Small, Theme.Pale).Abs(null, null, 2, 30));
             if (grid.childCount > 0) { grid.style.position = Position.Relative; rows.Add(grid); }
@@ -620,7 +620,7 @@ namespace Founders.UI
         }
 
         /// <summary>A portrait slot with the name under it (vacant and locked places are dimmer).</summary>
-        static VisualElement Portrait(string face, string name, float width, bool dim, bool sick)
+        static VisualElement PortraitCell(string face, string name, float width, bool dim, bool sick)
         {
             var c = E.Div().Col(Align.Center).Ignore().Size(width);
             var slot = E.Slot(face, 48, E.Cell.Slot, face.StartsWith("face", StringComparison.Ordinal) ? 0.86f : 0.6f, dim && face == "lock");

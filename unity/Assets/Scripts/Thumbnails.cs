@@ -8,7 +8,9 @@ using UnityEngine.Rendering.Universal;
 namespace Founders
 {
     /// <summary>
-    /// Pictures of the real buildings and decorations for the UI (build menu, cards): each model is
+    /// Pictures of the real buildings and decorations for the UI (build menu, cards). The game ships
+    /// path-traced pictures in Resources/UI/Buildings (see tools/art/blender_buildings.py); any
+    /// building without one falls back to this runtime studio: the model is
     /// built as in the world, photographed from the usual three-quarter view under a fixed daylight
     /// and given the kit's dark outline. Rendered once while the game loads and kept on disk, so the
     /// next launch only reads the files.
@@ -20,8 +22,30 @@ namespace Founders
         static readonly Color32 OutlineColor = new Color32(0x3A, 0x23, 0x14, 255);
         static readonly Dictionary<string, Texture2D> cache = new Dictionary<string, Texture2D>();
 
-        /// <summary>The picture of a building sprite ("medieval_house") or decoration ("deco:well"), or null.</summary>
-        public static Texture2D Get(string key) => key != null && cache.TryGetValue(key, out var t) ? t : null;
+        /// <summary>Offline Blender renders shipped with the game (tools/art/blender_buildings.py), under Resources.</summary>
+        public const string BakedFolder = "UI/Buildings";
+        static readonly Dictionary<string, Texture2D> baked = new Dictionary<string, Texture2D>();
+
+        /// <summary>
+        /// The picture of a building sprite ("medieval_house") or decoration ("deco:well"), or null:
+        /// the pre-rendered picture when the game ships one, else the one rendered at load time.
+        /// </summary>
+        public static Texture2D Get(string key)
+        {
+            if (key == null) return null;
+            var b = Baked(key);
+            if (b != null) return b;
+            return cache.TryGetValue(key, out var t) ? t : null;
+        }
+
+        /// <summary>The pre-rendered picture (Resources/UI/Buildings/&lt;key with ':' as '_'&gt;.png), or null.</summary>
+        static Texture2D Baked(string key)
+        {
+            if (baked.TryGetValue(key, out var t)) return t;
+            t = Resources.Load<Texture2D>(BakedFolder + "/" + key.Replace(':', '_'));
+            baked[key] = t;
+            return t;
+        }
 
         static string Folder => Path.Combine(Application.persistentDataPath, "thumbs", Application.version + "_" + Application.buildGUID);
 
@@ -50,7 +74,7 @@ namespace Founders
             try { Directory.CreateDirectory(Folder); } catch { }
             foreach (var w in wanted)
             {
-                if (cache.ContainsKey(w.key)) continue;
+                if (cache.ContainsKey(w.key) || Baked(w.key) != null) continue; // shipped pictures need no studio
                 string file = Path.Combine(Folder, FileName(w.key));
                 Texture2D tex = null;
                 try

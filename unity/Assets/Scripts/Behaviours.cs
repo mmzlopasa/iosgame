@@ -59,13 +59,22 @@ namespace Founders
         float zoomTarget = -1f;
 
         /// <summary>
-        /// Vertical field of view. The game runs in landscape, where the screen is short: the portrait-era 34°
-        /// would show everything at under half its old size, so landscape narrows it. The same camera then sees
-        /// a wider, shorter window of the valley with buildings large enough to tap.
+        /// Vertical field of view, picked by the screen's orientation every frame (the phone may turn at any time).
+        /// Landscape screens are short: 26° keeps buildings large enough to tap while the valley spreads sideways.
+        /// Portrait screens are tall and narrow: a wider vertical angle (34°, as the game had when it was portrait)
+        /// keeps a useful width of the valley in view between the resource bar and the bottom sheets.
         /// </summary>
-        const float PortraitFov = 34f;
-        const float LandscapeFov = 26f;
-        static float Fov => Screen.width > Screen.height ? LandscapeFov : PortraitFov;
+        public const float PortraitFov = 34f;
+        public const float LandscapeFov = 26f;
+        static float Fov => Screen.width >= Screen.height ? LandscapeFov : PortraitFov;
+
+        /// <summary>
+        /// Where the focus point appears on screen, as a shift of the picture in normalised device units (0 = the
+        /// centre, +y = up). The UI lifts the focus above a portrait bottom sheet so the selected building or the
+        /// ghost being placed stays in view; the shift eases in and out and taps still hit what they show.
+        /// </summary>
+        public Vector2 ViewShift;
+        Vector2 shiftNow;
 
         const float MinDistance = 9f;
         const float MaxDistance = 80f;
@@ -135,12 +144,27 @@ namespace Founders
         void Apply()
         {
             if (!Mathf.Approximately(Cam.fieldOfView, Fov)) Cam.fieldOfView = Fov;
+            ApplyShift();
             var rotation = Quaternion.Euler(Pitch, Yaw, 0f);
             var position = focus + rotation * new Vector3(0, 0, -distance);
             // Never inside a mountain between the camera and the focus.
             if (HeightAt != null) position.y = Mathf.Max(position.y, HeightAt(position) + 2.5f);
             Cam.transform.position = position;
             Cam.transform.rotation = Quaternion.LookRotation(focus - position);
+        }
+
+        /// <summary>An off-centre projection (a lens shift) that moves the picture so the focus sits at <see cref="ViewShift"/>.</summary>
+        void ApplyShift()
+        {
+            shiftNow = Vector2.Lerp(shiftNow, ViewShift, 1f - Mathf.Exp(-8f * Time.unscaledDeltaTime));
+            if ((shiftNow - ViewShift).sqrMagnitude < 1e-6f) shiftNow = ViewShift;
+            Cam.ResetProjectionMatrix();
+            if (shiftNow.sqrMagnitude < 1e-8f) return;
+            var p = Cam.projectionMatrix;
+            // A point straight ahead lands at ndc = -m02 / -m12 (view space looks down -z).
+            p.m02 = -shiftNow.x;
+            p.m12 = -shiftNow.y;
+            Cam.projectionMatrix = p;
         }
 
         void Pan(Vector2 screenDelta)

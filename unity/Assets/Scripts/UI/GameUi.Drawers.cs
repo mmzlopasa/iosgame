@@ -32,7 +32,7 @@ namespace Founders.UI
             drawer.name = "build-strip";
             drawer.style.height = BuildStripH;
             drawer.Transition(220, "translate", "opacity");
-            AddRegion(drawer, () => store.ActivePanel == Panel.Build ? $"build|{DrawerKey()}|{SafeWidth}" : "", BuildDrawerBuild);
+            AddRegion(drawer, () => store.ActivePanel == Panel.Build ? $"build|{DrawerKey()}|{SafeWidth}|{Portrait}" : "", BuildDrawerBuild);
             sheetLayer.Add(drawer);
         }
 
@@ -45,7 +45,19 @@ namespace Founders.UI
             var c = d ? new Color(0, 0, 0, 0.08f) : Theme.Scrim;
             if (scrim.style.backgroundColor != c) scrim.style.backgroundColor = c;
             if (!d) return;
-            Place(drawer, SafeLeft + 8, null, SafeRight + 8, BottomPad + 4);
+            if (Portrait)
+            {
+                // A bottom sheet over the lower ~55%, the back arrow under it; its items wrap in rows and scroll.
+                float w = SheetW;
+                float left = SafeLeft + (SafeWidth - w) / 2;
+                Place(drawer, left, Mathf.Max(PopupTop, Mathf.Round(PanelH * 0.42f)), SafeLeft + SafeWidth + SafeRight - left - w, SheetBottom);
+                if (drawer.style.height.keyword != StyleKeyword.Auto) drawer.style.height = StyleKeyword.Auto;
+            }
+            else
+            {
+                Place(drawer, SafeLeft + 8, null, SafeRight + 8, BottomPad + 4);
+                if (!Mathf.Approximately(drawer.style.height.value.value, BuildStripH)) drawer.style.height = BuildStripH;
+            }
         }
 
         string DrawerKey()
@@ -72,6 +84,7 @@ namespace Founders.UI
         void BuildDrawerBuild(VisualElement host)
         {
             if (store.ActivePanel != Panel.Build) return;
+            if (Portrait) { BuildDrawerPortrait(host); return; }
             var head = E.Div().Row(0, Align.FlexEnd).Ignore();
             head.style.marginTop = -6;
             head.style.marginLeft = -14;
@@ -85,23 +98,8 @@ namespace Founders.UI
             head.Add(plank);
 
             // Category tabs: icons, the selected one raised with its name.
-            var tabs = E.Scroll(ScrollViewMode.Horizontal);
-            tabs.style.flexGrow = 1;
-            tabs.style.flexShrink = 1;
-            tabs.style.minWidth = 0;
-            tabs.style.marginLeft = 8;
-            tabs.contentContainer.style.alignItems = Align.FlexEnd;
             var decorCats = new HashSet<string>(G.Content.Decorations.Select(d => d.Category));
-            foreach (var (tab, icon) in BuildTabs)
-            {
-                if (tab != "All" && !decorCats.Contains(tab) && !G.Content.Buildings.Any(b => b.Buildable && Category(b) == tab)) continue;
-                bool on = tab == buildTab;
-                string name = tab;
-                var t = E.Tab(on ? tab : null, on, Act(() => buildTab = name), null, Theme.TabH, Theme.Num, icon);
-                t.style.minWidth = 48;
-                t.style.marginRight = 4;
-                tabs.Add(t);
-            }
+            var tabs = BuildTabStrip(decorCats);
             head.Add(tabs);
             var queue = E.Capsule(32).Pad(0, 10);
             queue.style.marginLeft = 8;
@@ -117,25 +115,107 @@ namespace Founders.UI
             strip.style.flexGrow = 1;
             strip.contentContainer.style.alignItems = Align.FlexStart;
             strip.contentContainer.style.paddingTop = 10;
+            foreach (var card in BuildItems(decorCats)) strip.Add(card);
+            host.Add(strip);
+        }
+
+        /// <summary>
+        /// Portrait: the kit's bottom sheet: the plank across the top with the close button, the category tabs and the
+        /// queue under it, then the items in rows of three (wrapping, scrolling), like the kit's furniture grid.
+        /// </summary>
+        void BuildDrawerPortrait(VisualElement host)
+        {
+            string title = buildTab == "All" ? "Build" : buildTab;
+            float w = SheetW;
+            var plank = E.Plank(title, null, Theme.H1, w + 8);
+            plank.style.marginTop = -6;
+            plank.style.marginLeft = -14;
+            plank.style.marginRight = -14;
+            host.Add(plank);
+            host.Add(E.Close(Act(() => store.ActivePanel = Panel.None)).Abs(null, -12, -12));
+
+            var head = E.Div().Row(0, Align.FlexEnd).Ignore();
+            head.style.marginTop = 6;
+            head.style.flexShrink = 0;
+            var decorCats = new HashSet<string>(G.Content.Decorations.Select(d => d.Category));
+            var tabs = BuildTabStrip(decorCats);
+            tabs.style.marginLeft = 0;
+            head.Add(tabs);
+            var queue = E.Capsule(32).Pad(0, 10);
+            queue.style.marginLeft = 6;
+            queue.style.marginBottom = 2;
+            queue.Add(E.Icon("build", 22));
+            queue.Add(Live(() => $"{G.ActiveConstructionCount()}/{G.Content.Balance.MaxConcurrentConstructions}", Theme.Num).Margin(0, 0, 0, 4));
+            head.Add(queue);
+            host.Add(head);
+
+            var scroll = E.Scroll(ScrollViewMode.Vertical);
+            scroll.style.flexGrow = 1;
+            scroll.style.flexShrink = 1;
+            scroll.style.minHeight = 0;
+            var grid = E.Div().Row(0, Align.FlexStart).Ignore();
+            grid.style.flexWrap = Wrap.Wrap;
+            grid.style.paddingTop = 10;
+            grid.style.paddingBottom = 4;
+            // As many items per row as fit; the spare width is shared out as equal margins so the columns line up.
+            float rowW = w - 20;
+            int perRow = Mathf.Max(1, Mathf.FloorToInt(rowW / ItemW));
+            float side = Mathf.Floor((rowW - perRow * ItemW) / (2 * perRow));
+            foreach (var card in BuildItems(decorCats))
+            {
+                card.style.marginLeft = side;
+                card.style.marginRight = side;
+                card.style.marginBottom = 10;
+                grid.Add(card);
+            }
+            scroll.Add(grid);
+            host.Add(scroll);
+        }
+
+        /// <summary>Category tabs: icons, the selected one raised with its name (scrolls sideways).</summary>
+        ScrollView BuildTabStrip(HashSet<string> decorCats)
+        {
+            var tabs = E.Scroll(ScrollViewMode.Horizontal);
+            tabs.style.flexGrow = 1;
+            tabs.style.flexShrink = 1;
+            tabs.style.minWidth = 0;
+            tabs.style.marginLeft = 8;
+            tabs.contentContainer.style.alignItems = Align.FlexEnd;
+            foreach (var (tab, icon) in BuildTabs)
+            {
+                if (tab != "All" && !decorCats.Contains(tab) && !G.Content.Buildings.Any(b => b.Buildable && Category(b) == tab)) continue;
+                bool on = tab == buildTab;
+                string name = tab;
+                var t = E.Tab(on ? tab : null, on, Act(() => buildTab = name), null, Theme.TabH, Theme.Num, icon);
+                t.style.minWidth = 48;
+                t.style.marginRight = 4;
+                tabs.Add(t);
+            }
+            return tabs;
+        }
+
+        /// <summary>The items of the current category: buildings (available first), decorations, and the remove tool.</summary>
+        List<VisualElement> BuildItems(HashSet<string> decorCats)
+        {
+            var list = new List<VisualElement>();
             bool decorTab = decorCats.Contains(buildTab);
             if (!decorTab)
             {
-                // Available first, then the ones still locked behind research.
                 var defs = G.Content.Buildings.Where(b => b.Buildable && (buildTab == "All" || Category(b) == buildTab))
                     .OrderBy(b => G.IsUnlocked(b) ? 0 : 1).ToList();
-                foreach (var def in defs) strip.Add(BuildCard(def));
+                foreach (var def in defs) list.Add(BuildCard(def));
             }
             if (decorTab || buildTab == "All")
                 foreach (var d in G.Content.Decorations.Where(x => buildTab == "All" ? x.IsRoad : x.Category == buildTab))
-                    strip.Add(DecorCard(d));
+                    list.Add(DecorCard(d));
             if (decorTab)
             {
                 var remove = ItemCard("trash", E.Cell.Common, "Remove", false, null);
                 remove.Add(E.T("Half back", Theme.Small, Theme.Pale).Margin(2));
                 Tap(remove, () => store.BeginDecorating(GameStore.RemoveTool));
-                strip.Add(remove);
+                list.Add(remove);
             }
-            host.Add(strip);
+            return list;
         }
 
         const float ItemW = 104, ItemCell = 78;
@@ -204,6 +284,7 @@ namespace Founders.UI
             var techs = G.Content.Technologies;
             if (selectedTech == null || G.Content.Technology(selectedTech) == null)
                 selectedTech = active?.TechId ?? techs.FirstOrDefault(t => G.GetResearchStatus(t.Id).State == ResearchState.Available)?.Id ?? techs.First().Id;
+            if (Portrait) { BuildResearchPortrait(host); return; }
 
             var body = E.Div().Row(0, Align.Stretch).Ignore();
             body.style.flexGrow = 1;
@@ -228,7 +309,7 @@ namespace Founders.UI
                 head.Add(E.Icon(reached ? "flame" : "lock", 22));
                 head.Add(E.T(group.Key >= 6 ? $"Level {from}+" : $"Level {from}–{to}", Theme.Num, reached ? Color.white : Theme.Pale).Margin(0, 0, 0, 5));
                 col.Add(head);
-                foreach (var t in group) col.Add(TechNode(t));
+                foreach (var t in group) col.Add(TechNode(t, TechColW));
                 tree.Add(col);
             }
             body.Add(tree);
@@ -238,30 +319,75 @@ namespace Founders.UI
             side.style.flexShrink = 0;
             side.style.marginLeft = 8;
             side.contentContainer.style.paddingBottom = 6;
-            if (active != null)
-            {
-                var tech = G.Content.Technology(active.TechId);
-                var bar = E.Capsule(46).Pad(4, 12, 4, 8).Margin(0, 0, 8);
-                bar.style.height = StyleKeyword.Auto;
-                bar.style.minHeight = 46;
-                bar.Add(E.Icon("clock", 28));
-                var col = E.Div().Col().Grow().Ignore();
-                col.style.marginLeft = 8;
-                col.Add(E.T(tech?.Name ?? active.TechId, Theme.Body).Fit(TechDetailW - 20 - 36 - 8));
-                var r = E.Div().Row().Ignore().Margin(2);
-                r.Add(LiveBar(() => G.GetResearchStatus(active.TechId).Progress, 10, E.FillKind.Blue).Grow());
-                r.Add(Live(() => Fmt.Clock(G.State.ActiveResearch?.RemainingSeconds ?? 0), Theme.Small).Margin(0, 0, 0, 6));
-                col.Add(r);
-                bar.Add(col);
-                string id = active.TechId;
-                Tap(bar, () => selectedTech = id);
-                side.Add(bar);
-            }
+            if (active != null) side.Add(ActiveResearchBar(active, TechDetailW));
             else if (econ.Production.Knowledge <= 0)
                 side.Add(Notice("people", "Nobody studies yet: put people on Research (People › Work).", true).Margin(0, 0, 6));
-            side.Add(TechDetail(G.Content.Technology(selectedTech)));
+            side.Add(TechDetail(G.Content.Technology(selectedTech), TechDetailW));
             body.Add(side);
             host.Add(body);
+        }
+
+        /// <summary>The running research: its name, a bar and the time left (tap: select it).</summary>
+        VisualElement ActiveResearchBar(ActiveResearch active, float width)
+        {
+            var tech = G.Content.Technology(active.TechId);
+            var bar = E.Capsule(46).Pad(4, 12, 4, 8).Margin(0, 0, 8);
+            bar.style.height = StyleKeyword.Auto;
+            bar.style.minHeight = 46;
+            bar.Add(E.Icon("clock", 28));
+            var col = E.Div().Col().Grow().Ignore();
+            col.style.marginLeft = 8;
+            col.Add(E.T(tech?.Name ?? active.TechId, Theme.Body).Fit(width - 20 - 36 - 8));
+            var r = E.Div().Row().Ignore().Margin(2);
+            r.Add(LiveBar(() => G.GetResearchStatus(active.TechId).Progress, 10, E.FillKind.Blue).Grow());
+            r.Add(Live(() => Fmt.Clock(G.State.ActiveResearch?.RemainingSeconds ?? 0), Theme.Small).Margin(0, 0, 0, 6));
+            col.Add(r);
+            bar.Add(col);
+            string id = active.TechId;
+            Tap(bar, () => selectedTech = id);
+            return bar;
+        }
+
+        /// <summary>
+        /// Portrait: one scrolling column: the running research and the chosen technology's card on top (a tap on a
+        /// technology below brings it up there), then the tree band by band, two technologies per row.
+        /// </summary>
+        void BuildResearchPortrait(VisualElement host)
+        {
+            var active = G.State.ActiveResearch;
+            var scroll = E.Scroll(ScrollViewMode.Vertical);
+            scroll.style.flexGrow = 1;
+            scroll.style.flexShrink = 1;
+            scroll.style.minHeight = 0;
+            scroll.contentContainer.style.paddingBottom = 6;
+            if (active != null) scroll.Add(ActiveResearchBar(active, InnerW));
+            else if (econ.Production.Knowledge <= 0)
+                scroll.Add(Notice("people", "Nobody studies yet: put people on Research (People › Work).", true).Margin(0, 0, 6));
+            scroll.Add(TechDetail(G.Content.Technology(selectedTech), InnerW).Margin(0, 0, 8));
+            int perRow = InnerW >= 2 * TechColW + 8 ? Mathf.FloorToInt((InnerW + 8) / (TechColW + 8)) : 2;
+            float nodeW = Mathf.Floor((InnerW - 8 * (perRow - 1)) / perRow);
+            foreach (var group in G.Content.Technologies.GroupBy(Tier).OrderBy(g => g.Key))
+            {
+                int from = group.Key * 5 + 1, to = from + 4;
+                bool reached = G.HeartLevel >= from;
+                var head = E.Div().Row().Center().Ignore();
+                head.style.height = 30;
+                head.Add(E.Icon(reached ? "flame" : "lock", 22));
+                head.Add(E.T(group.Key >= 6 ? $"Level {from}+" : $"Level {from}–{to}", Theme.Num, reached ? Color.white : Theme.Pale).Margin(0, 0, 0, 5));
+                scroll.Add(head);
+                var grid = E.Div().Row(0, Align.FlexStart).Ignore();
+                grid.style.flexWrap = Wrap.Wrap;
+                int i = 0;
+                foreach (var t in group)
+                {
+                    var node = TechNode(t, nodeW);
+                    node.style.width = nodeW;
+                    if (i++ % perRow != 0) node.style.marginLeft = 8;
+                    grid.Add(node);
+                }
+                scroll.Add(grid);
+            }
+            host.Add(scroll);
         }
 
         static (E.Cell cell, string icon) TechLook(ResearchState s) => s switch
@@ -272,7 +398,7 @@ namespace Founders.UI
             _ => (E.Cell.Common, "lock"),
         };
 
-        VisualElement TechNode(TechnologyDefinition t)
+        VisualElement TechNode(TechnologyDefinition t, float width)
         {
             var st = G.GetResearchStatus(t.Id);
             bool sel = t.Id == selectedTech;
@@ -280,7 +406,7 @@ namespace Founders.UI
             var n = E.Div().Row().Skin(sel ? "slot" : "section").Pad(0, 6, sel ? 3 : 0, 6).Margin(0, 0, 8);
             n.style.minHeight = 56;
             n.Add(E.Slot(icon, 40, cell, 0.62f));
-            var name = E.T(t.Name, Theme.Body, st.State == ResearchState.Blocked ? Theme.Pale : (Color?)null).TwoLines(TechColW - 12 - 40 - 6);
+            var name = E.T(t.Name, Theme.Body, st.State == ResearchState.Blocked ? Theme.Pale : (Color?)null).TwoLines(width - 12 - 40 - 6);
             name.style.unityTextAlign = TextAnchor.MiddleLeft;
             name.style.marginLeft = 6;
             n.Add(name);
@@ -318,7 +444,7 @@ namespace Founders.UI
             return parts.Count == 0 ? "" : char.ToUpperInvariant(parts[0][0]) + string.Join(" · ", parts).Substring(1);
         }
 
-        VisualElement TechDetail(TechnologyDefinition t)
+        VisualElement TechDetail(TechnologyDefinition t, float detailW)
         {
             var card = E.Inset().Col().Pad(10, 10);
             if (t == null) return card;
@@ -328,7 +454,7 @@ namespace Founders.UI
             head.Add(E.Slot(st.State == ResearchState.Blocked ? "lock" : "knowledge", 52, cell, 0.62f));
             var col = E.Div().Col().Grow().Ignore();
             col.style.marginLeft = 8;
-            col.Add(E.T(t.Name, Theme.H2).TwoLines(TechDetailW - 20 - 52 - 8, Theme.Body).Also(l => l.style.unityTextAlign = TextAnchor.MiddleLeft));
+            col.Add(E.T(t.Name, Theme.H2).TwoLines(detailW - 20 - 52 - 8, Theme.Body).Also(l => l.style.unityTextAlign = TextAnchor.MiddleLeft));
             var time = E.Div().Row().Ignore();
             time.Add(E.Icon("clock", 20));
             time.Add(E.T(Fmt.Clock(t.ResearchSeconds), Theme.Num).Margin(0, 0, 0, 4));
@@ -365,7 +491,7 @@ namespace Founders.UI
                     bool can = !busy && G.State.Resources.Covers(t.Cost);
                     string id = t.Id;
                     var b = E.Button(busy ? "One at a time" : "Research", can ? Act(() => store.StartResearch(id)) : null,
-                                     can ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 16, SubLine("clock", Fmt.Clock(t.ResearchSeconds)), TechDetailW - 20);
+                                     can ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 16, SubLine("clock", Fmt.Clock(t.ResearchSeconds)), detailW - 20);
                     b.style.marginTop = 8;
                     bottom.Add(b);
                     break;

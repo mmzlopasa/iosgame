@@ -10,11 +10,36 @@ namespace Founders.UI
     /// Dialogs over a dimmed world: the story as the kit's dialogue box (a wide parchment box along the
     /// bottom with a villager's portrait and a ▼ continue marker), and the milestone, welcome-back, event
     /// and petition popups as parchment windows with a plank title and a button row. A dialog is never
-    /// taller than the screen allows: its body scrolls while its buttons stay put.
+    /// taller than the screen allows: its body scrolls while its buttons stay put. In portrait every dialog
+    /// is a bottom sheet across the screen (the kit's popup frame with secondary + primary buttons), wide
+    /// two-column dialogs stack their columns, and the narrator stands on top of the story box.
     /// </summary>
     public partial class GameUi
     {
         string chosenOption;
+
+        /// <summary>The dialog's inner width (its panel padding is 12 + 12).</summary>
+        float DialogInnerW(float width) => (Portrait ? SheetW : Mathf.Min(width, SafeWidth - 40)) - 24;
+
+        /// <summary>
+        /// A two-column dialog body (the scene on the left, the choices on the right); portrait stacks them, the scene
+        /// on top as a short banner.
+        /// </summary>
+        VisualElement TwoColumns(VisualElement left, VisualElement right)
+        {
+            var row = E.Div().Row(0, Align.FlexStart).Ignore();
+            if (Portrait)
+            {
+                row.style.flexDirection = FlexDirection.Column;
+                row.style.alignItems = Align.Stretch;
+                left.style.width = StyleKeyword.Auto;
+                right.style.marginLeft = 0;
+                right.style.marginTop = 10;
+            }
+            row.Add(left);
+            row.Add(right);
+            return row;
+        }
 
         string ModalKey()
         {
@@ -42,7 +67,8 @@ namespace Founders.UI
             if (key.StartsWith("story|", System.StringComparison.Ordinal)) { StoryBox(host); return; }
 
             var frame = E.Div().Fill().Ignore().Col().Center()
-                .Pad(PopupTop + 4, 16 + SafeRight, BottomPad + 8, 16 + SafeLeft);
+                .Pad(PopupTop + 4, (Portrait ? 8 : 16) + SafeRight, BottomPad + 8, (Portrait ? 8 : 16) + SafeLeft);
+            if (Portrait) frame.style.justifyContent = Justify.FlexEnd;
             host.Add(frame);
             VisualElement card;
             if (key.StartsWith("ms|", System.StringComparison.Ordinal)) card = MilestoneCard();
@@ -66,7 +92,7 @@ namespace Founders.UI
         /// <summary>A dialog window: plank title, a body that scrolls when it must, a fixed button row.</summary>
         VisualElement DialogShell(string title, float width, out VisualElement body, out VisualElement foot)
         {
-            float w = Mathf.Min(width, SafeWidth - 40);
+            float w = Portrait ? SheetW : Mathf.Min(width, SafeWidth - 40);
             var c = E.Panel().Pad(0, 12, 12, 12);
             c.name = "dialog";
             c.style.width = w;
@@ -94,6 +120,7 @@ namespace Founders.UI
         void StoryBox(VisualElement host)
         {
             var ch = G.PendingStory;
+            if (Portrait) { StoryBoxPortrait(host, ch); return; }
             float left = SafeLeft + 12, right = SafeRight + 12;
             // The kit's dialogue box: a wide parchment box along the bottom, the narrator standing large at its
             // left end (over its edge), the text beside them and the ▼ marker in the corner.
@@ -127,6 +154,52 @@ namespace Founders.UI
             // The narrator stands at the left end of the box, larger than it.
             var face = E.Icon("face_f1", portrait).Abs(left, null, null, BottomPad + 6);
             host.Add(face);
+            Pop(box);
+        }
+
+        /// <summary>
+        /// Portrait: the dialogue box across the bottom, the narrator standing on its top-left edge with the chapter's
+        /// title beside their feet, the text and the goal under them, Continue bottom-right.
+        /// </summary>
+        void StoryBoxPortrait(VisualElement host, ChapterDefinition ch)
+        {
+            const float portrait = 170, overlap = 34;
+            float w = SheetW;
+            float left = SafeLeft + (SafeWidth - w) / 2;
+            var box = E.Panel().Abs(left, null, null, BottomPad + 6).Pad(14, 16, 14, 16);
+            box.style.width = w;
+            box.style.maxHeight = PanelH - PopupTop - BottomPad - 6 - (portrait - overlap);
+            float textW = w - 32;
+            // The heading sits beside the narrator's feet, to the right of where they overlap the box.
+            var heading = E.Div().Col().Ignore();
+            heading.style.flexShrink = 0;
+            heading.style.marginLeft = portrait - 30;
+            float headW = textW - (portrait - 30);
+            heading.Add(E.T($"Chapter {ch.Number} · {ch.Era}", Theme.Body, Theme.Pale).Fit(headW));
+            heading.Add(E.T(ch.Title, Theme.H1 + 2, Theme.Gold).Fit(headW, Theme.Body).Margin(2));
+            box.Add(heading);
+            var scroll = E.FitScroll();
+            scroll.contentContainer.style.paddingTop = 8;
+            foreach (var para in ch.Story.Split('\n'))
+            {
+                if (string.IsNullOrWhiteSpace(para)) continue;
+                scroll.Add(E.T(para.Trim(), Theme.Num).Wrap().Margin(0, 0, 8));
+            }
+            var goal = E.Inset().Row().Margin(2);
+            goal.Add(E.Icon(ch.Locked ? "lock" : "goals", 26));
+            goal.Add(E.T(ch.Goal, Theme.Body, Theme.Gold).Flex().Margin(0, 0, 0, 8));
+            scroll.Add(goal);
+            box.Add(scroll);
+            var foot = E.Div().Row().Ignore();
+            foot.style.flexShrink = 0;
+            foot.style.justifyContent = Justify.FlexEnd;
+            foot.style.paddingTop = 8;
+            foot.Add(E.Button(ch.Number == 1 ? "Begin" : "Continue", Act(() => store.DismissStory()), E.Kind.Green, Theme.ButtonH, null, 17, null, 180));
+            foot.Add(E.Icon("next", 26).Also(i => i.style.rotate = new Rotate(new Angle(90, AngleUnit.Degree))).Margin(0, 0, 0, 12));
+            box.Add(foot);
+            // The narrator stands on the box's top-left edge.
+            box.Add(E.Icon("face_f1", portrait).Abs(-6, overlap - portrait));
+            host.Add(box);
             Pop(box);
         }
 
@@ -204,11 +277,10 @@ namespace Founders.UI
         {
             var ev = G.PendingEvent;
             var c = DialogShell(ev.Title, DialogW, out var body, out var foot);
-            var row = E.Div().Row(0, Align.FlexStart).Ignore();
             // Left: the scene and the story.
             var left = E.Div().Col().Ignore().Size(DialogArtW);
             var art = E.Div().Row().Center().Radius(10).Border(Theme.Outline, 2.5f).Ignore();
-            art.style.height = 90;
+            art.style.height = Portrait ? 76 : 90;
             art.BgImage(Theme.Gradient("eventart", true, Theme.Hex("#8A5A32"), Theme.Hex("#4A2E1A")));
             art.Add(E.Icon("campfire", 68));
             left.Add(art);
@@ -217,11 +289,11 @@ namespace Founders.UI
             note.Add(E.Icon("legacy", 22));
             note.Add(E.Ink("Your choice is written into the Legacy Timeline.", Theme.Small, Theme.InkSoft).Grow().Margin(0, 0, 0, 6));
             left.Add(note);
-            row.Add(left);
 
             // Right: the options.
             var right = E.Div().Col().Grow().Ignore();
             right.style.marginLeft = 12;
+            float optionW = Portrait ? DialogInnerW(DialogW) : DialogInnerW(DialogW) - DialogArtW - 12;
             foreach (var option in ev.Options)
             {
                 var blocker = G.OptionBlocker(option);
@@ -233,7 +305,7 @@ namespace Founders.UI
                 var head = E.Div().Row().Ignore();
                 head.Add(on ? E.Icon("check", 26) : E.Icon("next", 22));
                 head.Add(E.T(option.Label, Theme.Num).Flex().Margin(0, 0, 0, 8));
-                if (option.Cost.HasValue && !option.Cost.Value.IsZero) head.Add(CostLine(option.Cost.Value).Also(r => { r.style.maxWidth = 150; r.style.flexShrink = 0; }));
+                if (option.Cost.HasValue && !option.Cost.Value.IsZero) head.Add(CostLine(option.Cost.Value).Also(r => { r.style.maxWidth = Mathf.Min(150, optionW * 0.4f); r.style.flexShrink = 0; }));
                 o.Add(head);
                 if (!string.IsNullOrEmpty(option.TradeOff)) o.Add(E.T(option.TradeOff, Theme.Small, Theme.Pale).Wrap().Margin(3, 0, 0, 34));
                 if (blocker != null) o.Add(E.T(blocker, Theme.Small, Theme.Bad).Wrap().Margin(3, 0, 0, 34));
@@ -244,14 +316,15 @@ namespace Founders.UI
                 }
                 right.Add(o);
             }
-            row.Add(right);
-            body.Add(row);
+            body.Add(TwoColumns(left, right));
 
-            // The kit's pair: secondary on the left, primary on the right, each a fixed comfortable width.
-            foot.Add(E.Button("Decide later", Act(() => store.EventMinimized = true), E.Kind.Blue, Theme.ButtonH, null, 17, null, 220));
+            // The kit's pair: secondary on the left, primary on the right, each a fixed comfortable width (portrait:
+            // an equal share of the sheet's width each).
+            float bw = Portrait ? Mathf.Floor((DialogInnerW(DialogW) - 12) / 2) : 220;
+            foot.Add(E.Button("Decide later", Act(() => store.EventMinimized = true), E.Kind.Blue, Theme.ButtonH, null, 17, null, bw));
             bool ready = chosenOption != null;
             foot.Add(E.Button("Confirm", ready ? Act(() => { store.ResolveEvent(chosenOption); chosenOption = null; }) : null,
-                              ready ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 17, null, 220).Margin(0, 0, 0, 16));
+                              ready ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 17, null, bw).Margin(0, 0, 0, Portrait ? 12 : 16));
             return c;
         }
     }

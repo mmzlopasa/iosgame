@@ -10,10 +10,11 @@ namespace Founders.UI
 {
     /// <summary>
     /// Windows opened from the HUD (People, Goals, Research, Customs, Weather, World, Profile, Settings),
-    /// after the kit's popup frame: a parchment window centred under the top strip (never the whole
-    /// screen: the world shows around it), a wooden plank with the title and the red close button,
-    /// a tab strip under it (or along the bottom for Goals, like the kit's task screens) and the golden
-    /// back arrow bottom-left, outside the window.
+    /// after the kit's popup frame: a parchment window centred under the top strip in landscape, a bottom
+    /// sheet across the screen in portrait (the lower ~60%, the world showing above; Goals, with its bottom
+    /// tabs, reaches up to the resource bar like the kit's task screen), a wooden plank with the title and
+    /// the red close button, a tab strip under it (or along the bottom for Goals) and the golden back arrow
+    /// bottom-left, outside the window.
     /// </summary>
     public partial class GameUi
     {
@@ -30,8 +31,14 @@ namespace Founders.UI
 
         bool WindowPanel => SheetOpen && store.ActivePanel != Panel.Build;
 
-        /// <summary>The centred window: as wide as the kit's popups allow next to the back arrow (620–680 on phones).</summary>
-        float WindowW => Mathf.Clamp(SafeWidth - 120, 560, 680);
+        /// <summary>
+        /// The window's width: landscape, as wide as the kit's popups allow next to the back arrow (620–680 on phones);
+        /// portrait, the whole width (at most 560 on an iPad).
+        /// </summary>
+        float WindowW => Portrait ? SheetW : Mathf.Clamp(SafeWidth - 120, 560, 680);
+
+        /// <summary>Top of a portrait window: the lower ~60% of the screen (Goals: right under the resource bar).</summary>
+        float WindowTopPortrait => store.ActivePanel == Panel.Objectives ? PopupTop : Mathf.Max(PopupTop, Mathf.Round(PanelH * 0.30f));
 
         /// <summary>Usable width inside a window's body (panel padding 10 + 10).</summary>
         float InnerW => WindowW - 20;
@@ -92,17 +99,29 @@ namespace Founders.UI
             sheetTabsBottom.Hidden(!window || store.ActivePanel != Panel.Objectives);
             float w = WindowW;
             float bottomTabs = store.ActivePanel == Panel.Objectives ? BottomTabsH - 6 : 0;
-            float top = PopupTop, bottom = BottomPad + 8 + bottomTabs;
-            float maxH = 470;
-            float h = PanelH - top - bottom;
-            if (h > maxH) { top += (h - maxH) / 2; bottom += (h - maxH) / 2; }
+            float top, bottom;
+            if (Portrait)
+            {
+                // A bottom sheet with the back arrow under it.
+                top = WindowTopPortrait;
+                bottom = SheetBottom + bottomTabs;
+            }
+            else
+            {
+                top = PopupTop;
+                bottom = BottomPad + 8 + bottomTabs;
+                float maxH = 470;
+                float h = PanelH - top - bottom;
+                if (h > maxH) { top += (h - maxH) / 2; bottom += (h - maxH) / 2; }
+            }
             float left = SafeLeft + (SafeWidth - w) / 2;
             Place(sheet, left, top, null, bottom);
             if (!Mathf.Approximately(sheet.style.width.value.value, w)) sheet.style.width = w;
-            Place(sheetTabsBottom, left + 16, null, null, bottom - bottomTabs - 4);
-            bool roomForBack = (SafeWidth - w) / 2 >= 56;
-            backArrow.Hidden(!window || !roomForBack);
-            Place(backArrow, SafeLeft + 4, null, null, BottomPad);
+            Place(sheetTabsBottom, left + (Portrait ? 10 : 16), null, null, bottom - bottomTabs - 4);
+            bool roomForBack = Portrait || (SafeWidth - w) / 2 >= 56;
+            bool drawerOpen = store.ActivePanel == Panel.Build;
+            backArrow.Hidden(!(window || (Portrait && drawerOpen)) || !roomForBack);
+            Place(backArrow, SafeLeft + (Portrait ? 6 : 4), null, null, Portrait ? BottomPad + 2 : BottomPad);
             sheetScroll.Hidden(!window || FixedPanel);
             sheetFixed.Hidden(!window || !FixedPanel);
         }
@@ -203,7 +222,10 @@ namespace Founders.UI
                     var know = E.Capsule(34);
                     know.Add(E.Icon("knowledge", 24));
                     know.Add(Live(() => $"{Fmt.Compact(G.State.Resources.Knowledge)}  {Fmt.PerMinute(econ.Net.Knowledge)}", Theme.Num).Margin(0, 0, 0, 5));
-                    row.Add(LiveFit(() => $"{G.State.Researched.Count}/{G.Content.Technologies.Count} discovered · {G.HeartName} Lv.{G.HeartLevel}", Theme.Body, InnerW - 190, Theme.Pale).Grow());
+                    // Portrait has no room for the heart's level beside the chip (it is on the rank pill anyway).
+                    row.Add(LiveFit(() => Portrait ? $"{G.State.Researched.Count}/{G.Content.Technologies.Count} discovered"
+                                                   : $"{G.State.Researched.Count}/{G.Content.Technologies.Count} discovered · {G.HeartName} Lv.{G.HeartLevel}",
+                                    Theme.Body, InnerW - 190, Theme.Pale).Grow());
                     row.Add(know);
                     break;
                 }
@@ -213,6 +235,17 @@ namespace Founders.UI
                     var icon = E.Icon("clock", 22);
                     chip.Add(icon);
                     chip.Add(Live(() => G.LawCooldownLeft > 0 ? $"Next law in {Fmt.Clock(G.LawCooldownLeft)}" : "A law can be signed", Theme.Body).Margin(0, 0, 0, 5));
+                    if (Portrait)
+                    {
+                        // Two lines: the count over the chip, which needs the width for "Next law in 0:00:00".
+                        row.style.flexWrap = Wrap.Wrap;
+                        row.Add(LiveFit(() => $"{G.State.Laws.Count}/{G.Content.Laws.Count} customs signed" +
+                                              (G.HasDiscontent ? $" · discontent {(int)Math.Round(G.State.Discontent)}" : ""), Theme.Body, InnerW, Theme.Pale)
+                                .Also(l => l.style.width = InnerW));
+                        chip.style.marginTop = 4;
+                        row.Add(chip);
+                        break;
+                    }
                     row.Add(LiveFit(() =>
                     {
                         string d = G.HasDiscontent ? $" · discontent {(int)Math.Round(G.State.Discontent)}" : "";
@@ -237,12 +270,14 @@ namespace Founders.UI
         void BuildBottomTabs(VisualElement host)
         {
             if (!WindowPanel || store.ActivePanel != Panel.Objectives) return;
+            // Portrait: three tabs share the window's width (less the corners' curve).
+            float tabW = Portrait ? Mathf.Min(150, Mathf.Floor((WindowW - 20 - 12) / 3)) : 150;
             foreach (var (label, i) in new[] { ("Chapter", 0), ("Milestones", 1), ("First Steps", 2) })
             {
                 int index = i;
                 var t = E.Tab(label, goalsTab == i, Act(() => { goalsTab = index; sheetScroll.scrollOffset = Vector2.zero; }),
-                              i == 1 && MilestoneReady() ? "!" : null, BottomTabsH).FitTab(150);
-                t.style.width = 150;
+                              i == 1 && MilestoneReady() ? "!" : null, BottomTabsH).FitTab(tabW);
+                t.style.width = tabW;
                 t.style.marginRight = 6;
                 host.Add(t);
             }
@@ -312,15 +347,19 @@ namespace Founders.UI
         /// <summary>A small stat box: value over a label.</summary>
         VisualElement StatBox(string icon, string label, Func<string> value, Func<Color> color = null)
         {
+            // Portrait boxes are a third of a phone's width: a smaller icon, and the label may wrap.
             var c = E.Inset().Row().Grow();
+            if (Portrait) c.Pad(7, 8);
             c.style.minHeight = 58;
-            c.Add(E.Icon(icon, 32));
+            c.Add(E.Icon(icon, Portrait ? 26 : 32));
             var col = E.Div().Col().Grow().Ignore();
-            col.style.marginLeft = 8;
+            col.style.marginLeft = Portrait ? 6 : 8;
             var v = Live(value, Theme.H2);
             if (color != null) Bind(() => E.Tint(v, color()));
             col.Add(v);
-            col.Add(E.T(label, Theme.Small, Theme.Pale));
+            var l = E.T(label, Theme.Small, Theme.Pale);
+            if (Portrait) l.Wrap();
+            col.Add(l);
             c.Add(col);
             return c;
         }
@@ -391,9 +430,12 @@ namespace Founders.UI
             var col = E.Div().Col().Grow().Ignore();
             col.style.marginLeft = 10;
             col.Add(E.T(config?.Name ?? job.Id(), Theme.Num));
-            // Stepper: 40 + 80 + 40 (overlapping by 3 on each side); the effect line gets the rest.
-            float stepper = 40 + 80 + 40 - 6 + 8;
-            var effect = LiveFit(() => EffectText(job, G.State.Assignments[job]), Theme.Small, InnerW - 20 - 44 - 10 - stepper, Theme.Pale);
+            // Stepper: 40 + count + 40 (overlapping by 3 on each side); the name and the effect line get the rest.
+            float countW = Portrait ? 64 : 80;
+            float stepper = 40 + countW + 40 - 6 + 8;
+            float textW = InnerW - 20 - 44 - 10 - stepper;
+            ((Label)col.ElementAt(0)).Fit(textW);
+            var effect = LiveFit(() => EffectText(job, G.State.Assignments[job]), Theme.Small, textW, Theme.Pale);
             col.Add(effect);
             row.Add(col);
             int workers = G.State.Assignments[job];
@@ -401,10 +443,10 @@ namespace Founders.UI
             bool unlimited = config?.UnlimitedSlots ?? false;
             row.Add(E.Square("minus", workers > 0 ? Act(() => store.SetWorkers(job, G.State.Assignments[job] - 1)) : null, workers > 0 ? E.Kind.Red : E.Kind.Grey, 40).Margin(0, 0, 0, 8));
             var count = E.Capsule(32).Pad(0, 6);
-            count.style.width = 80;
+            count.style.width = countW;
             count.style.justifyContent = Justify.Center;
             count.style.marginLeft = -3; count.style.marginRight = -3;
-            count.Add(E.T(unlimited ? $"{workers}" : $"{workers}/{capacity}", Theme.Num).Fit(68));
+            count.Add(E.T(unlimited ? $"{workers}" : $"{workers}/{capacity}", Theme.Num).Fit(countW - 12));
             row.Add(count);
             bool canAdd = G.IdleWorkers > 0 && workers < capacity;
             row.Add(E.Square("plus", canAdd ? Act(() => store.SetWorkers(job, G.State.Assignments[job] + 1)) : null, canAdd ? E.Kind.Green : E.Kind.Grey, 40));
@@ -421,7 +463,8 @@ namespace Founders.UI
             var grid = E.Div().Row(0, Align.FlexStart).Ignore();
             grid.style.flexWrap = Wrap.Wrap;
             grid.style.justifyContent = Justify.SpaceBetween;
-            float cellW = Mathf.Floor((InnerW - 8) / 2);
+            // Two per row in landscape, one per row on a portrait phone.
+            float cellW = Portrait && InnerW < 480 ? InnerW : Mathf.Floor((InnerW - 8) / 2);
             const float skillW = 112;
             int shown = 0;
             // The sick first (the gravest on top), then the most skilled.
@@ -607,16 +650,20 @@ namespace Founders.UI
             banner.BgImage(Theme.Gradient("banner", false, Theme.Hex("#4A2E1A"), Theme.Hex("#8A5A32")));
             banner.AddToClassList("surf-dark");
             banner.style.minHeight = 92;
-            banner.Add(E.Icon("campfire", 60));
+            float art = Portrait ? 48 : 60;
+            banner.Add(E.Icon("campfire", art));
             var col = E.Div().Col().Grow().Ignore();
             col.style.marginLeft = 12;
             const float storyW = 120;
-            float textW = InnerW - 24 - 4 - 60 - 12 - storyW - 10;
+            // Portrait: the story button goes under the text, which takes the banner's whole width.
+            float textW = InnerW - 24 - 4 - art - 12 - (Portrait ? 0 : storyW + 10);
             col.Add(E.T($"Chapter {current.Number} · {current.Era}", Theme.Body, Theme.Gold).Fit(textW));
             col.Add(E.T(current.Title, Theme.H1).Fit(textW, Theme.H2));
             col.Add(E.T(current.Goal, Theme.Small, Theme.Pale).Wrap().Margin(2));
             banner.Add(col);
-            banner.Add(E.Button("Story", Act(() => G.State.PendingStory = current.Id), E.Kind.Blue, Theme.ButtonH, "legacy", 16, null, storyW).Margin(0, 0, 0, 10));
+            var story = E.Button("Story", Act(() => G.State.PendingStory = current.Id), E.Kind.Blue, Portrait ? 40 : Theme.ButtonH, "legacy", 16, null, storyW);
+            if (Portrait) { story.style.alignSelf = Align.FlexStart; col.Add(story.Margin(8)); }
+            else banner.Add(story.Margin(0, 0, 0, 10));
             host.Add(banner);
 
             if (current.Locked) host.Add(Notice("lock", "The next era is still being built. Your settlement keeps growing until it arrives."));
@@ -702,10 +749,13 @@ namespace Founders.UI
                 head.style.minHeight = 50;
                 head.Add(E.Icon(done ? "check" : isCurrent ? "goals" : "lock", 28));
                 head.Add(E.T(obj.Title, Theme.Num, isCurrent ? Theme.Gold : (Color?)null).Flex().Margin(0, 0, 0, 8));
+                // The rewards beside the title; portrait puts them in a row under it (like the kit's task rows).
+                var rewards = Portrait ? E.Div().Row().Ignore().Margin(0, 0, 6, 36) : head;
                 if (obj.Reward.HasValue && !done)
                     foreach (var kv in obj.Reward.Value.Entries)
-                        head.Add(RewardCell(IconFor(kv.Key), CellFor(kv.Key), Fmt.Compact(kv.Value), 46).Margin(0, 0, 0, 8));
+                        rewards.Add(RewardCell(IconFor(kv.Key), CellFor(kv.Key), Fmt.Compact(kv.Value), 46).Margin(0, Portrait ? 8 : 0, 0, Portrait ? 0 : 8));
                 card.Add(head);
+                if (Portrait && rewards.childCount > 0) card.Add(rewards);
                 if (isCurrent)
                 {
                     if (!string.IsNullOrEmpty(obj.Hint)) card.Add(E.Ink(obj.Hint, Theme.Body).Margin(4));
@@ -810,14 +860,16 @@ namespace Founders.UI
             var col = E.Div().Col().Grow().Ignore();
             col.style.marginLeft = 12;
             float idW = Theme.TextWidth("ID " + FounderId(), Theme.Body) + 22;
-            float nameW = InnerW - 20 - 68 - 12 - idW - 10;
+            // Portrait: the ID capsule goes under the names, which take the whole width.
+            float nameW = InnerW - 20 - 68 - 12 - (Portrait ? 0 : idW + 10);
             col.Add(E.T(G.State.SettlementName, Theme.H1).Fit(nameW, Theme.H2));
             col.Add(E.T($"{G.StageName} · Era {Fmt.Roman(G.Content.Epoch(G.State.EpochId)?.Index ?? 1)}", Theme.Body, Theme.Pale).Fit(nameW));
             col.Add(E.Ink(G.EpochName, Theme.Small));
             hero.Add(col);
             var id = E.Capsule(32).Margin(0, 0, 0, 10);
             id.Add(E.T("ID " + FounderId(), Theme.Body));
-            hero.Add(id);
+            if (Portrait) { id.style.alignSelf = Align.FlexStart; id.style.marginLeft = 0; col.Add(id.Margin(4)); }
+            else hero.Add(id);
             host.Add(hero);
 
             var grid = E.Div().Row().Ignore();
@@ -833,7 +885,8 @@ namespace Founders.UI
                 ("Legacy", () => $"{G.State.Legacy.Count}", "legacy"),
                 ("Time", () => Fmt.Clock(G.State.SimTime), "clock"),
             };
-            float w = Mathf.Floor((InnerW - 16) / 3);
+            int perRow = Portrait && InnerW < 480 ? 2 : 3;
+            float w = Mathf.Floor((InnerW - 8 * (perRow - 1)) / perRow);
             foreach (var s in stats)
             {
                 var c = StatBox(s.icon, s.label, s.value);
@@ -847,13 +900,16 @@ namespace Founders.UI
             var ms = Block("Milestones", out var mrows);
             var cells = E.Div().Row().Ignore().Margin(8, 0, 6);
             cells.style.flexWrap = Wrap.Wrap;
+            // As many 112-wide cells as the section holds, sharing its width evenly.
+            float rowW = InnerW - 20;
+            float cellW = Mathf.Floor(rowW / Mathf.Max(1, Mathf.Floor(rowW / 112)));
             foreach (var m in G.Content.Milestones)
             {
                 bool got = G.State.ReachedMilestones.Contains(m.Id);
-                var c = E.Div().Col(Align.Center).Ignore().Size(112);
+                var c = E.Div().Col(Align.Center).Ignore().Size(cellW);
                 c.style.marginBottom = 6;
                 c.Add(E.Slot(got ? "trophy" : "lock", 56, got ? E.Cell.Legendary : E.Cell.Common, 0.62f, !got));
-                c.Add(E.T(m.Name, Theme.Body, got ? (Color?)null : Theme.Pale).TwoLines(108).Margin(3));
+                c.Add(E.T(m.Name, Theme.Body, got ? (Color?)null : Theme.Pale).TwoLines(cellW - 4).Margin(3));
                 cells.Add(c);
             }
             mrows.Add(cells);
@@ -900,13 +956,17 @@ namespace Founders.UI
             host.Add(acc);
 
             var dev = Block("Developer", out var drows);
+            // Four in a row; two rows of two on a portrait phone.
+            bool twoRows = Portrait && InnerW < 480;
+            float devW = twoRows ? (InnerW - 20 - 8) / 2 : (InnerW - 20 - 3 * 8) / 4;
             var r1 = E.Div().Row().Ignore().Margin(8);
-            float devW = (InnerW - 20 - 3 * 8) / 4;
+            var r2 = twoRows ? E.Div().Row().Ignore().Margin(8) : r1;
             r1.Add(Share(E.Button("Save now", Act(store.Save), E.Kind.Blue, 42, null, Theme.Num, null, devW), r1));
             r1.Add(Share(E.Button("+50 all", Act(store.DebugGrant), E.Kind.Blue, 42, null, Theme.Num, null, devW), r1));
-            r1.Add(Share(E.Button("+1 min", Act(() => store.DebugFastForward(1)), E.Kind.Blue, 42, null, Theme.Num, null, devW), r1));
-            r1.Add(Share(E.Button("+10 min", Act(() => store.DebugFastForward(10)), E.Kind.Blue, 42, null, Theme.Num, null, devW), r1));
+            r2.Add(Share(E.Button("+1 min", Act(() => store.DebugFastForward(1)), E.Kind.Blue, 42, null, Theme.Num, null, devW), r2));
+            r2.Add(Share(E.Button("+10 min", Act(() => store.DebugFastForward(10)), E.Kind.Blue, 42, null, Theme.Num, null, devW), r2));
             drows.Add(r1);
+            if (twoRows) drows.Add(r2);
             bool armed = Time.unscaledTime < confirmResetUntil;
             var reset = E.Button(armed ? "Tap again to erase this settlement" : "Reset settlement", Act(() =>
             {

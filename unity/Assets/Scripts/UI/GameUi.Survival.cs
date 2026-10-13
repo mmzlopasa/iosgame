@@ -542,7 +542,7 @@ namespace Founders.UI
                 string f = $"Feels {e.ToString().ToLowerInvariant()}";
                 if (feel.text != f) feel.text = f;
             });
-            // The forecast strip: one small cell per period.
+            // The forecast strip: one small cell per period (portrait: on its own line under "Outside now").
             var strip = E.Div().Row(0, Align.FlexStart).Grow().Ignore();
             foreach (var period in forecast)
             {
@@ -557,8 +557,17 @@ namespace Founders.UI
                 cell.Add(E.T(Deg(period.Temperature), Theme.Body, ExposureColor(exposure)).Margin(2));
                 strip.Add(cell);
             }
-            hero.Add(strip);
-            rows.Add(hero);
+            if (Portrait)
+            {
+                rows.Add(hero);
+                strip.style.marginBottom = 6;
+                rows.Add(strip);
+            }
+            else
+            {
+                hero.Add(strip);
+                rows.Add(hero);
+            }
             var snapNow = CurrentSnap();
             if (snapNow != null)
                 rows.Add(Notice("winter", $"{snapNow.Name}: {Num(snapNow.Drop)}° colder than usual. Keep the woodpile full and the fires burning.").Margin(0, 0, 6));
@@ -700,6 +709,7 @@ namespace Founders.UI
             if (statuses.Count == 0) return;
             if (selectedLaw == null || statuses.All(s => s.Law.Id != selectedLaw))
                 selectedLaw = (statuses.FirstOrDefault(s => s.State == LawState.Available) ?? statuses[0]).Law.Id;
+            if (Portrait) { BuildCustomsPortrait(host, statuses); return; }
 
             var body = E.Div().Row(0, Align.Stretch).Ignore();
             body.style.flexGrow = 1;
@@ -754,9 +764,53 @@ namespace Founders.UI
             side.style.flexShrink = 0;
             side.style.marginLeft = 8;
             side.contentContainer.style.paddingBottom = 6;
-            side.Add(LawDetail(statuses.First(s => s.Law.Id == selectedLaw)));
+            side.Add(LawDetail(statuses.First(s => s.Law.Id == selectedLaw), LawDetailW));
             body.Add(side);
             host.Add(body);
+        }
+
+        /// <summary>
+        /// Portrait: one scrolling column, the chosen custom's card on top (a tap on a custom below brings it up there),
+        /// then each branch under its own header, laws that rule each other out boxed together with "or".
+        /// </summary>
+        void BuildCustomsPortrait(VisualElement host, List<LawStatus> statuses)
+        {
+            var scroll = E.Scroll(ScrollViewMode.Vertical);
+            scroll.style.flexGrow = 1;
+            scroll.style.flexShrink = 1;
+            scroll.style.minHeight = 0;
+            scroll.contentContainer.style.paddingBottom = 6;
+            scroll.Add(LawDetail(statuses.First(s => s.Law.Id == selectedLaw), InnerW).Margin(0, 0, 8));
+            float colW = InnerW;
+            foreach (var branch in statuses.Select(s => s.Law.Branch).Distinct())
+            {
+                var laws = statuses.Where(s => s.Law.Branch == branch).ToList();
+                var head = E.Div().Row().Center().Ignore();
+                head.style.height = 30;
+                head.Add(E.Icon(branch == "Community" ? "people" : "flame", 22));
+                head.Add(E.T($"{branch} {laws.Count(s => s.State == LawState.Signed)}/{laws.Count}", Theme.Num).Margin(0, 0, 0, 5));
+                scroll.Add(head);
+                var done = new HashSet<string>();
+                foreach (var st in laws)
+                {
+                    if (!done.Add(st.Law.Id)) continue;
+                    var group = new List<LawStatus> { st };
+                    foreach (var o in laws)
+                        if (!done.Contains(o.Law.Id) && Excludes(st.Law, o.Law)) { group.Add(o); done.Add(o.Law.Id); }
+                    if (group.Count == 1) { scroll.Add(LawNode(st, colW)); continue; }
+                    var box = E.Div().Col().Ignore().Radius(12).Border(Theme.Wood4, 2f).Pad(4).Margin(0, 0, 8);
+                    box.style.backgroundColor = Theme.Alpha(Theme.Wood4, 0.18f);
+                    for (int i = 0; i < group.Count; i++)
+                    {
+                        if (i > 0) box.Add(OrConnector());
+                        var node = LawNode(group[i], colW - 12);
+                        node.style.marginBottom = 0;
+                        box.Add(node);
+                    }
+                    scroll.Add(box);
+                }
+            }
+            host.Add(scroll);
         }
 
         static VisualElement OrConnector()
@@ -834,7 +888,7 @@ namespace Founders.UI
             return list;
         }
 
-        VisualElement LawDetail(LawStatus st)
+        VisualElement LawDetail(LawStatus st, float detailW)
         {
             var law = st.Law;
             var (cell, icon) = LawLook(st.State);
@@ -844,7 +898,7 @@ namespace Founders.UI
             var names = E.Div().Col().Grow().Ignore();
             names.style.marginLeft = 8;
             names.Add(E.T(law.Branch, Theme.Small, Theme.Pale));
-            names.Add(E.T(law.Name, Theme.H2).TwoLines(LawDetailW - 20 - 52 - 8, Theme.Body).Also(l => l.style.unityTextAlign = TextAnchor.MiddleLeft));
+            names.Add(E.T(law.Name, Theme.H2).TwoLines(detailW - 20 - 52 - 8, Theme.Body).Also(l => l.style.unityTextAlign = TextAnchor.MiddleLeft));
             head.Add(names);
             card.Add(head);
             card.Add(E.Ink(law.Description, Theme.Body).Margin(6));
@@ -889,7 +943,7 @@ namespace Founders.UI
                     {
                         bottom.Add(Notice("alert", $"A custom is for good: once signed, {law.Name} can never be revoked.", true).Margin(0));
                         var buttons = E.Div().Row().Ignore().Margin(8);
-                        float half = (LawDetailW - 20 - 8) / 2;
+                        float half = (detailW - 20 - 8) / 2;
                         buttons.Add(Share(E.Button("Cancel", Act(() => confirmLaw = null), E.Kind.Red, Theme.ButtonH, null, 16, null, half), buttons));
                         buttons.Add(Share(E.Button("Sign", Act(() =>
                         {
@@ -907,7 +961,7 @@ namespace Founders.UI
                         bottom.Add(E.Ink("The people need time to get used to each new custom.", Theme.Small, Theme.InkSoft).Margin(6));
                     }
                     else
-                        bottom.Add(E.Button("Sign the custom", Act(() => confirmLaw = id), E.Kind.Green, Theme.ButtonH, "customs", 16, null, LawDetailW - 20));
+                        bottom.Add(E.Button("Sign the custom", Act(() => confirmLaw = id), E.Kind.Green, Theme.ButtonH, "customs", 16, null, detailW - 20));
                     break;
             }
             card.Add(bottom);
@@ -923,11 +977,10 @@ namespace Founders.UI
             var p = G.PendingPetition;
             var d = G.Content.Balance.Discontent;
             var c = DialogShell(p.Title, DialogW, out var body, out var foot);
-            var row = E.Div().Row(0, Align.FlexStart).Ignore();
-            // Left: the people's words and the mood.
+            // Left: the people's words and the mood (portrait: on top).
             var left = E.Div().Col().Ignore().Size(DialogArtW);
             var art = E.Div().Row().Center().Radius(10).Border(Theme.Outline, 2.5f).Ignore();
-            art.style.height = 90;
+            art.style.height = Portrait ? 76 : 90;
             art.BgImage(Theme.Gradient("petitionart", true, Theme.Hex("#8A5A32"), Theme.Hex("#4A2E1A")));
             art.Add(E.Icon("people", 60));
             art.Add(E.Icon("discontent", 38).Margin(0, 0, 0, -8));
@@ -939,7 +992,6 @@ namespace Founders.UI
             mood.Add(E.Icon("discontent", 22));
             mood.Add(Live(() => $"Discontent {(int)Math.Round(G.State.Discontent)} · {G.DiscontentMood}", Theme.Body, MoodColor(G.DiscontentMood)).Flex().Margin(0, 0, 0, 6));
             left.Add(mood);
-            row.Add(left);
             // Right: the ask, what it needs and what follows.
             var right = E.Div().Col().Grow().Ignore();
             right.style.marginLeft = 12;
@@ -952,8 +1004,7 @@ namespace Founders.UI
                 right.Add(Consequence("check", $"Promise: discontent −{Num(d.PromiseRelief)} now; kept, −{Num(d.KeptRelief)} more and +{Num(d.KeptApproval)} hope.", Theme.Up).Margin(8));
                 right.Add(Consequence("alert", $"A broken promise: +{Num(d.BrokenAnger)} discontent. Refusing: +{Num(d.RefusedAnger)} now.", Theme.Bad).Margin(6));
             }
-            row.Add(right);
-            body.Add(row);
+            body.Add(TwoColumns(left, right));
 
             foot.Add(Share(E.Button("Refuse", Act(() => store.AnswerPetition(false)), E.Kind.Red), foot));
             foot.Add(Share(E.Button("Promise", Act(() => store.AnswerPetition(true)), E.Kind.Green, Theme.ButtonH, "goals", 16,

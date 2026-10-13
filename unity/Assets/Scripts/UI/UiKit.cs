@@ -13,8 +13,9 @@ namespace Founders.UI
     /// blue secondary, orange premium, grey disabled, red cancel), rarity cells behind icons, painted icons
     /// and one typeface (Changa One), white with a dark outline and a hard drop.
     ///
-    /// Sizes are in panel units: the game runs in landscape and the panel is scaled so a phone screen is
-    /// 390 units tall (690–850 wide); see <see cref="GameUi.MatchFor"/>. The skins (9-slice textures) and
+    /// Sizes are in panel units: the panel is scaled so a phone screen is 390 units across its short side
+    /// in either orientation (690–850 along the long side), so text and buttons keep their physical size
+    /// when the phone turns; see <see cref="GameUi.MatchFor"/>. The skins (9-slice textures) and
     /// the font advances come from tools/ui/build_ui_assets.py through <see cref="UiGenerated"/>.
     /// </summary>
     public static class Theme
@@ -57,7 +58,7 @@ namespace Founders.UI
         public static readonly Color RowLine = Hex("#CFA878");
         public static readonly Color Scrim = new Color(0.10f, 0.06f, 0.03f, 0.45f);
 
-        // MARK: - Type scale and metrics (panel units; the phone is 390 tall in landscape)
+        // MARK: - Type scale and metrics (panel units; the phone is 390 across its short side)
 
         /// <summary>Window and card titles on the wooden plank.</summary>
         public const float H1 = 20;
@@ -982,8 +983,8 @@ namespace Founders.UI
 
         /// <summary>
         /// Vertical scroll view exactly as tall as its content, which flex-shrinks (and then scrolls) when its
-        /// column runs out of room: for cards and dialog panes that must never be taller than the short
-        /// landscape screen. The height is set from the content's measured size.
+        /// column runs out of room: for cards and dialog panes that must never be taller than the room the
+        /// screen leaves them. The height is set from the content's measured size.
         /// </summary>
         public static ScrollView FitScroll()
         {

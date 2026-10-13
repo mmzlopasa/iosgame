@@ -101,15 +101,21 @@ jobs:
           touch "$DATA/Documents/capture.flag"
           mkdir -p shots
           xcrun simctl launch --console-pty "$UDID" "$BUNDLE" > shots/player.log 2>&1 &
-          for i in $(seq 1 90); do
+          for i in $(seq 1 108); do
             sleep 10
             if [ -f "$DATA/Documents/captures/done.txt" ]; then echo "capture done"; break; fi
-            # Backup: the simulator's own view every 20 s (independent of the in-game capture).
-            if [ $((i % 2)) -eq 0 ]; then xcrun simctl io "$UDID" screenshot "shots/sim_$(printf %02d $i).png" || true; fi
+            # Backup: the simulator's own view every 20 s (independent of the in-game capture). The capture tour
+            # turns the screen (landscape first, then portrait) and says which way in captures/orientation.txt:
+            # portrait backups are named sim_p_*.png.
+            if [ $((i % 2)) -eq 0 ]; then
+              ORI=$(cat "$DATA/Documents/captures/orientation.txt" 2>/dev/null || echo landscape)
+              if [ "$ORI" = "portrait" ]; then NAME="sim_p_$(printf %02d $i).png"; else NAME="sim_$(printf %02d $i).png"; fi
+              xcrun simctl io "$UDID" screenshot "shots/$NAME" || true
+            fi
           done
-          # The game is landscape-only but the simulator device stays portrait, so its own screenshots
-          # come out sideways (the in-game captures are already landscape): turn those upright.
-          for f in shots/sim_*.png; do
+          # The simulator device itself stays upright, so its own screenshots of the landscape part come out
+          # sideways (the in-game captures are already the right way round): turn those. Portrait ones are upright.
+          for f in shots/sim_[0-9]*.png; do
             [ -f "$f" ] || continue
             W=$(sips -g pixelWidth "$f" | awk '/pixelWidth/{print $2}')
             H=$(sips -g pixelHeight "$f" | awk '/pixelHeight/{print $2}')

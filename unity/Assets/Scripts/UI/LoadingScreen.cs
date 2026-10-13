@@ -23,7 +23,7 @@ namespace Founders.UI
         };
 
         readonly VisualElement layer;
-        readonly VisualElement fill, card, video, tipRow, progressRow;
+        readonly VisualElement fill, card, video, tipRow, progressRow, brand;
         readonly Label version;
         VideoPlayer player;
         GameObject videoHost;
@@ -59,9 +59,9 @@ namespace Founders.UI
             bottomShade.style.height = Length.Percent(45);
             layer.Add(bottomShade);
 
-            // Landscape: the title in the upper half, then a one-line tip, the progress bar and the version
-            // along the bottom (kept clear of the home indicator by SetInsets).
-            var brand = E.Div().Col(Align.Center).Ignore();
+            // The title in the upper part, then the tip, the progress bar and the version along the bottom (kept
+            // clear of the notch and the home indicator by SetInsets; portrait lowers the title under the notch).
+            brand = E.Div().Col(Align.Center).Ignore();
             brand.style.position = Position.Absolute;
             brand.style.left = 0; brand.style.right = 0;
             brand.style.top = Length.Percent(9);
@@ -109,12 +109,20 @@ namespace Founders.UI
             layer.Add(version);
         }
 
-        /// <summary>Lifts the bottom rows above the home indicator (inset in panel units).</summary>
-        public void SetInsets(float bottom)
+        /// <summary>
+        /// Keeps the title under the notch and the bottom rows above the home indicator (insets in panel units). The
+        /// montage fills the screen either way round (cropped like aspect-fill); in portrait the title sits lower,
+        /// over the middle of the picture, and the tip and the bar get a wider share of the narrow screen.
+        /// </summary>
+        public void SetInsets(float top, float bottom, bool portrait)
         {
+            brand.style.top = portrait ? new Length(top + 96) : Length.Percent(9);
             tipRow.style.bottom = bottom + 76;
             progressRow.style.bottom = bottom + 34;
             version.style.bottom = bottom + 10;
+            float side = portrait ? 16 : 24;
+            tipRow.style.paddingLeft = side; tipRow.style.paddingRight = side;
+            progressRow.style.paddingLeft = side; progressRow.style.paddingRight = side;
         }
 
         /// <summary>Starts the loading montage (Resources/Video/loading) on a VideoPlayer owned by <paramref name="host"/>.</summary>

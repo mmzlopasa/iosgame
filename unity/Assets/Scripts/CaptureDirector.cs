@@ -13,6 +13,11 @@ namespace Founders
     /// <c>capture.flag</c> exists in the persistent data folder or with the <c>-capture</c>
     /// argument. Starts a fresh camp (the player's save is not touched), advances it with the
     /// real game rules, captures a series of views into <c>captures/</c>, then quits.
+    ///
+    /// The tour runs in landscape (the screen is turned with <see cref="Screen.orientation"/>, as the CI
+    /// simulator device stays upright), then turns the screen to portrait for a second set of the UI
+    /// screens, saved with a <c>p_</c> prefix. <c>captures/orientation.txt</c> says which way the screen
+    /// is turned, so the workflow can name and rotate its own simulator screenshots to match.
     /// </summary>
     public class CaptureDirector : MonoBehaviour
     {
@@ -30,7 +35,142 @@ namespace Founders
             this.ui = ui;
             outDir = Path.Combine(Application.persistentDataPath, "captures");
             Directory.CreateDirectory(outDir);
-            StartCoroutine(Run());
+            StartCoroutine(Tour());
+        }
+
+        IEnumerator Tour()
+        {
+            yield return Turn(false);
+            yield return Run();
+            yield return Turn(true);
+            yield return PortraitShots(store.Game);
+            File.WriteAllText(Path.Combine(outDir, "done.txt"), "ok");
+            Debug.Log("[FOUNDERS] capture finished");
+            yield return new WaitForSeconds(0.5f);
+            Application.Quit();
+        }
+
+        /// <summary>Turns the screen to portrait or landscape and waits until it has turned (or ten seconds have passed).</summary>
+        IEnumerator Turn(bool portrait)
+        {
+            File.WriteAllText(Path.Combine(outDir, "orientation.txt"), portrait ? "portrait" : "landscape");
+            Screen.orientation = portrait ? ScreenOrientation.Portrait : ScreenOrientation.LandscapeLeft;
+            float until = Time.realtimeSinceStartup + 10f;
+            while ((Screen.height > Screen.width) != portrait && Time.realtimeSinceStartup < until) yield return null;
+            // Let the panel re-scale and the HUD rebuild for the new shape.
+            for (int i = 0; i < 10; i++) yield return null;
+            yield return new WaitForSeconds(1f);
+            bool ok = (Screen.height > Screen.width) == portrait;
+            Debug.Log($"[FOUNDERS] capture: turned {(portrait ? "portrait" : "landscape")} {(ok ? "" : "(the screen did not turn) ")}{Screen.width}x{Screen.height}");
+        }
+
+        /// <summary>The UI screens again in portrait (names start with p_).</summary>
+        IEnumerator PortraitShots(Game game)
+        {
+            ResolvePending();
+            store.ActivePanel = Founders.Panel.None;
+            store.SelectedBuildingId = null;
+            store.SelectedNode = null;
+            store.EventMinimized = false;
+            SetTime(game, 1, 0.3f);
+            yield return new WaitForSeconds(1f);
+
+            // The loading screen (the montage fills the tall screen).
+            ui.Loading.Show();
+            ui.Loading.Set(0.64f, "Kindling the hearth…");
+            for (int i = 0; i < 100 && !ui.Loading.VideoPlaying; i++) yield return new WaitForSeconds(0.1f);
+            yield return new WaitForSeconds(1f);
+            yield return Shot("p_00_loading", true);
+            ui.Loading.Hide();
+            yield return new WaitForSeconds(0.6f);
+
+            // The HUD with a notice.
+            Focus(Camp(), 24f);
+            store.Toasts.Add(new Toast { Notice = new GameNotice(NoticeKind.Success, "A newcomer joined the camp"), CreatedAt = Time.unscaledTime });
+            yield return Shot("p_01_hud", true);
+            store.Toasts.Clear();
+
+            // Cards (bottom sheets): the heart, a building, a resource, placing and the road tool.
+            store.FocusBuilding(game.Heart.Id);
+            yield return Shot("p_02_heart_card", true);
+            var hut = game.State.Buildings.FirstOrDefault(b => game.Content.Building(b.DefinitionId)?.UpgradesTo != null) ?? game.State.Buildings.First();
+            store.FocusBuilding(hut.Id);
+            yield return Shot("p_03_building", true);
+            var camp = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "wood_camp");
+            if (camp != null)
+            {
+                store.FocusBuilding(camp.Id);
+                yield return Shot("p_03b_workplace", true);
+            }
+            store.SelectedBuildingId = null;
+            var stand = Enumerable.Range(0, 400).Select(i => (x: i % 20, y: i / 20))
+                .FirstOrDefault(c => game.NodeAt(c.x, c.y)?.Terrain == TerrainType.Forest && game.IsRevealed(c.x, c.y));
+            store.SelectedNode = (stand.x, stand.y);
+            Focus(Grid.CellCenter(stand.x, stand.y), 16f);
+            yield return Shot("p_04_node", true);
+            store.SelectedNode = null;
+            game.DebugGrant(new ResourceBundle(100, 100, 100, 0));
+            store.BeginPlacement("wood_camp");
+            yield return Shot("p_05_placing", true);
+            store.CancelPlacement();
+            store.BeginDecorating("dirt_path");
+            yield return Shot("p_06_road_tool", true);
+            store.EndDecorating();
+
+            // The build sheet and the windows.
+            Focus(Camp(), 24f);
+            yield return ShowPanel("p_07_build", Founders.Panel.Build);
+            ui.SelectTab("Roads");
+            yield return ShowPanel("p_07b_build_roads", Founders.Panel.Build);
+            yield return ShowPanel("p_08_people", Founders.Panel.People);
+            ui.ShowPeople();
+            yield return Shot("p_08b_people_wellbeing", true);
+            store.ActivePanel = Founders.Panel.None;
+            yield return ShowPanel("p_09_research", Founders.Panel.Research);
+            yield return ShowPanel("p_10_goals", Founders.Panel.Objectives);
+            yield return ShowPanel("p_11_world", Founders.Panel.Map);
+            yield return ShowPanel("p_12_profile", Founders.Panel.Profile);
+            yield return ShowPanel("p_13_settings", Founders.Panel.Settings);
+            ui.ShowWeather();
+            yield return Shot("p_14_weather", true);
+            store.ActivePanel = Founders.Panel.None;
+            game.State.LastLawSimTime = null;
+            ui.ShowCustoms("long_days");
+            yield return Shot("p_15_customs", true);
+            store.ActivePanel = Founders.Panel.None;
+
+            // Dialogs: an event, a petition, the story, a milestone and the welcome back.
+            var ev = game.Content.Events.FirstOrDefault();
+            if (ev != null)
+            {
+                game.State.PendingEventId = ev.Id;
+                store.EventMinimized = false;
+                store.Refresh();
+                yield return Shot("p_16_event", true);
+                game.State.PendingEventId = null;
+                store.Refresh();
+            }
+            ui.ShowPetition("warm_homes");
+            yield return Shot("p_17_petition", true);
+            game.State.PendingPetition = null;
+            var chapter = game.CurrentChapter;
+            if (chapter != null)
+            {
+                game.State.PendingStory = chapter.Id;
+                store.Refresh();
+                yield return Shot("p_18_story", true);
+                game.DismissStory();
+            }
+            store.Celebration = "The Stable Village: the camp has become a village.";
+            yield return Shot("p_19_milestone", true);
+            store.Celebration = null;
+            var report = new OfflineReport { Seconds = 5 * 3600 + 24 * 60, Gained = new ResourceBundle(226, 1944, 291, 1166) };
+            report.Events.Add("Hide Shelter finished");
+            report.Events.Add("2 newcomers joined the camp");
+            store.Offline = report;
+            yield return Shot("p_20_welcome_back", true);
+            store.Offline = null;
+            store.Refresh();
         }
 
         IEnumerator Shot(string name, bool ui)
@@ -665,10 +805,6 @@ namespace Founders
             yield return Shot("18_welcome_back", true);
             store.Offline = null;
 
-            File.WriteAllText(Path.Combine(outDir, "done.txt"), "ok");
-            Debug.Log("[FOUNDERS] capture finished");
-            yield return new WaitForSeconds(0.5f);
-            Application.Quit();
         }
     }
 }
