@@ -100,12 +100,10 @@ namespace FoundersEditor
             PlayerSettings.companyName = "Founders";
             PlayerSettings.productName = ProductName;
             PlayerSettings.bundleVersion = Version;
-            // Every orientation the device turns to: portrait and landscape either way round (the UI and the camera
-            // adapt at run time). Upside-down portrait is listed for the iPad; GameBootstrap turns it off on iPhones,
-            // whose notch and home indicator would end up on the wrong sides.
+            // Landscape only, either way round.
             PlayerSettings.defaultInterfaceOrientation = UIOrientation.AutoRotation;
-            PlayerSettings.allowedAutorotateToPortrait = true;
-            PlayerSettings.allowedAutorotateToPortraitUpsideDown = true;
+            PlayerSettings.allowedAutorotateToPortrait = false;
+            PlayerSettings.allowedAutorotateToPortraitUpsideDown = false;
             PlayerSettings.allowedAutorotateToLandscapeLeft = true;
             PlayerSettings.allowedAutorotateToLandscapeRight = true;
             PlayerSettings.useAnimatedAutorotation = true;

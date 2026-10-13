@@ -42,8 +42,6 @@ namespace Founders
         {
             yield return Turn(false);
             yield return Run();
-            yield return Turn(true);
-            yield return PortraitShots(store.Game);
             File.WriteAllText(Path.Combine(outDir, "done.txt"), "ok");
             Debug.Log("[FOUNDERS] capture finished");
             yield return new WaitForSeconds(0.5f);

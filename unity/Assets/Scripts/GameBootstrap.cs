@@ -15,12 +15,9 @@ namespace Founders
         {
             Prefs.Apply();
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
-            // Portrait and both landscapes, following the device (the UI and the camera adapt; see GameUi.Portrait).
-            // Upside-down portrait only on iPads: iPhones without a home button never use it, and on the others
-            // it would put the home indicator and the notch the wrong way round (the player settings allow it so
-            // the iPad's Info.plist lists it; this narrows it for iPhones at run time).
-            Screen.autorotateToPortrait = true;
-            Screen.autorotateToPortraitUpsideDown = IsTablet;
+            // Landscape only, either way round.
+            Screen.autorotateToPortrait = false;
+            Screen.autorotateToPortraitUpsideDown = false;
             Screen.autorotateToLandscapeLeft = true;
             Screen.autorotateToLandscapeRight = true;
             Screen.orientation = ScreenOrientation.AutoRotation;
@@ -28,17 +25,6 @@ namespace Founders
             ui.Loading.Show();
             ui.Loading.Set(0.08f, "Kindling the hearth…");
             StartCoroutine(Boot(ui));
-        }
-
-        /// <summary>True on an iPad (or an Android tablet: the shortest side is at least 600 dp).</summary>
-        static bool IsTablet
-        {
-            get
-            {
-                if (Application.platform == RuntimePlatform.IPhonePlayer) return SystemInfo.deviceModel.StartsWith("iPad", System.StringComparison.Ordinal);
-                float dpi = Screen.dpi > 0 ? Screen.dpi : 160f;
-                return Mathf.Min(Screen.width, Screen.height) / dpi * 160f >= 600f;
-            }
         }
 
         IEnumerator Boot(GameUi ui)
