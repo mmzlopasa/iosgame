@@ -75,6 +75,8 @@ def emission(name, color, strength):
     return L.glow(name, color, strength)
 
 
+MOON = (-2.4, 25.5, 9.8, 2.3)  # x, (card), z, radius
+
 # ---------------------------------------------------------------- sky (a big emissive backdrop card)
 def sky():
     bpy.ops.mesh.primitive_plane_add(size=80, location=(0, 26, 18), rotation=(math.radians(90), 0, 0))
@@ -103,9 +105,9 @@ def sky():
     o.data.materials.append(m)
     o.visible_shadow = False
     # moon and its halo
-    moon = L.cylinder(3.6, 0.1, (1.6, 25.5, 17.5), emission("Moon", "#FFF1CF", 2.2), rot=(90, 0, 0), bevel=0, verts=96)
+    moon = L.cylinder(MOON[3], 0.1, (MOON[0], 25.5, MOON[2]), emission("Moon", "#FFF1CF", 2.2), rot=(90, 0, 0), bevel=0, verts=96)
     moon.visible_shadow = False
-    halo = L.cylinder(6.5, 0.1, (1.6, 25.6, 17.5), None, rot=(90, 0, 0), bevel=0, verts=96)
+    halo = L.cylinder(MOON[3] * 1.8, 0.1, (MOON[0], 25.6, MOON[2]), None, rot=(90, 0, 0), bevel=0, verts=96)
     hm = bpy.data.materials.new("Halo")
     hm.use_nodes = True
     nt = hm.node_tree
@@ -115,7 +117,7 @@ def sky():
     grad.gradient_type = "SPHERICAL"
     mp = nt.nodes.new("ShaderNodeMapping")
     nt.links.new(tc.outputs["Object"], mp.inputs["Vector"])
-    mp.inputs["Scale"].default_value = (1 / 6.5, 1 / 6.5, 1 / 6.5)
+    mp.inputs["Scale"].default_value = (1 / (MOON[3] * 1.8),) * 3
     nt.links.new(mp.outputs["Vector"], grad.inputs["Vector"])
     em = nt.nodes.new("ShaderNodeEmission")
     em.inputs["Color"].default_value = (*L.lin("#FFD9A0"), 1)
@@ -136,8 +138,8 @@ def sky():
     # stars
     star = emission("Star", "#FFF6E0", 4.0)
     for _ in range(40):
-        x, z = rnd.uniform(-16, 16), rnd.uniform(12, 30)
-        if (x - 1.6) ** 2 + (z - 17.5) ** 2 < 50:
+        x, z = rnd.uniform(-9, 9), rnd.uniform(4, 14)
+        if (x - MOON[0]) ** 2 + (z - MOON[2]) ** 2 < (MOON[3] * 2) ** 2:
             continue
         L.sphere(rnd.uniform(0.04, 0.09), (x, 25.4, z), star, segs=8, rings=4)
 
@@ -254,13 +256,37 @@ def campfire(x, y):
     lo.location = (x, y - 0.1, 1.3)
 
 
+def grouped(fn, loc, scale, *args):
+    """Builds fn(*args) and moves/scales everything it made as one group."""
+    before = set(bpy.data.objects)
+    fn(*args)
+    made = [o for o in bpy.data.objects if o not in before and o.parent is None]
+    return L.parent(made, loc=loc, scale=scale)
+
+
+HERO = 2.15  # the founder's scale (the scene was laid out in "big" units)
+
+
 def founder(x, y, rot_z):
+    """The founder, 3/4 front, holding a torch at shoulder height whose flame lights his face."""
     objs = L.import_fbx(os.path.join(L.MODELS, "Person_Woodcutter_Male.fbx"))
     arm = next(o for o in objs if o.type == "ARMATURE")
     for o in objs:
-        if o.name.startswith("Prop_") and o.name != "Prop_Axe":
+        if o.name.startswith("Prop_"):
             o.hide_render = True
-    recolor = {"Main": "#3F7F3A", "Trousers": "#4A3020", "Boots": "#3A2414", "Hair": "#3A2010", "Skin": "#E8A27A"}
+    torch_pose = next(a for a in bpy.data.actions if a.name.endswith("|Torch"))
+    arm.animation_data.action = torch_pose
+    for fc in [f for f in torch_pose.fcurves if f.data_path in (
+            'pose.bones["Head"].rotation_quaternion', 'pose.bones["neck_01"].rotation_quaternion',
+            'pose.bones["Head"].scale')]:
+        torch_pose.fcurves.remove(fc)
+    scene.frame_set(1)
+    for b in ("Head", "neck_01"):  # level head turned to the camera (eyes at the viewer)
+        pb = arm.pose.bones[b]
+        pb.rotation_mode = "XYZ"
+        pb.rotation_euler = (math.radians(-13), math.radians(-8), 0)
+    arm.pose.bones["Head"].scale = (1.15, 1.15, 1.15)
+    recolor = {"Main": "#3F8A3A", "Trousers": "#4A3020", "Boots": "#3A2414", "Hair": "#3A2010", "Skin": "#E8A27A"}
     for o in objs:
         if o.type != "MESH":
             continue
@@ -275,50 +301,82 @@ def founder(x, y, rot_z):
                     p.inputs["Base Color"].default_value = (*L.lin(recolor[nm]), 1)
                 p.inputs["Roughness"].default_value = 0.55
                 if nm == "Skin":
-                    p.inputs["Subsurface Weight"].default_value = 0.2
+                    p.inputs["Subsurface Weight"].default_value = 0.25
                     p.inputs["Subsurface Radius"].default_value = (0.5, 0.25, 0.15)
                     p.inputs["Subsurface Scale"].default_value = 0.05
     roots = [o for o in objs if o.parent is None]
-    L.parent(roots, loc=(x, y, -0.3), rot=(0, 0, rot_z), scale=2.15)
+    L.parent(roots, loc=(x, y, -0.3), rot=(0, 0, rot_z), scale=HERO)
+    bpy.context.view_layer.update()
+    hand = arm.matrix_world @ arm.pose.bones["hand_l"].head
+    # torch: a wrapped stick through the fist, flame above the head height of the hand
+    wood = pm("TorchWood", "#5A3418", rough=0.7)
+    base = hand + Vector((-0.08, -0.02, -0.3))
+    top = hand + Vector((0.05, 0.45, 0.95))
+    L.tube([tuple(base), tuple(top)], 0.042, wood, smooth_path=False)
+    L.tube([tuple(top + Vector((0, 0, -0.12))), tuple(top + Vector((0, 0, 0.03)))], 0.065,
+           pm("Wrap", "#8A6A40", rough=0.9), smooth_path=False)
+    fm = L.flame_mat("TorchFire", outer="#E8300A", mid="#FF8A12", core="#FFE070", strength=2.6)
+    for i in range(12):
+        a = 2 * math.pi * i / 12
+        rr = 0.0 if i == 0 else 0.06
+        h = 0.5 if i == 0 else rnd.uniform(0.22, 0.4)
+        r = 0.1 if i == 0 else 0.055
+        prof = [(0.0, 0.0), (r * 0.9, 0.03), (r, 0.22 * h), (r * 0.7, 0.5 * h), (r * 0.28, 0.82 * h), (0.0, h)]
+        o = L.lathe(prof, (top.x + rr * math.cos(a), top.y + rr * math.sin(a), top.z - 0.02), fm, verts=12, sub=1)
+        o.rotation_euler = (rnd.uniform(-0.15, 0.15), rnd.uniform(-0.25, 0.1), 0)
+        o.visible_shadow = False
+    core = L.sphere(0.1, tuple(top + Vector((0, 0, 0.1))), L.glow("TorchCore", "#FFE27A", 6.0))
+    core.visible_shadow = False
+    tl = bpy.data.objects.new("TorchLight", bpy.data.lights.new("TorchLight", "POINT"))
+    tl.data.energy = 380
+    tl.data.color = (1.0, 0.6, 0.28)
+    tl.data.shadow_soft_size = 0.25
+    tl.location = top + Vector((0.05, -0.25, 0.35))
+    scene.collection.objects.link(tl)
+    spark = emission("TorchSpark", "#FFC860", 10.0)
+    for _ in range(8):
+        t = rnd.random()
+        L.sphere(rnd.uniform(0.01, 0.022), tuple(top + Vector((rnd.uniform(-0.4, 0.4) * (0.3 + t), rnd.uniform(-0.2, 0.2),
+                                                               0.5 + t * 0.9))), spark, segs=6, rings=4)
     return objs
 
 
 sky()
 ground()
-tower()
-campfire(-1.35, -0.6)
-founder(1.0, -3.0, -32)
+grouped(tower, (-1.3, 9.0, 0.0), 0.62)
+grouped(campfire, (-1.2, 2.6, 0.0), 0.75, 0.0, 0.0)
+founder(0.55, -2.4, 22)
 
 # ---------------------------------------------------------------- camera and lights
 cd = bpy.data.cameras.new("Cam")
-cd.lens = 26
+cd.lens = 38
 cam = bpy.data.objects.new("Cam", cd)
 scene.collection.objects.link(cam)
-cam.location = (0.0, -6.4, 1.7)
-target = Vector((0.0, 0.0, 3.6))
+cam.location = (0.95, -4.75, 3.55)
+target = Vector((0.9, 0.0, 3.3))
 cam.rotation_euler = (target - cam.location).to_track_quat("-Z", "Y").to_euler()
 scene.camera = cam
 
 world = bpy.data.worlds.new("Dusk")
 world.use_nodes = True
 world.node_tree.nodes["Background"].inputs[0].default_value = (*L.lin("#3A4A7A"), 1)
-world.node_tree.nodes["Background"].inputs[1].default_value = 0.35
+world.node_tree.nodes["Background"].inputs[1].default_value = 0.3
 scene.world = world
 moon_l = bpy.data.objects.new("MoonRim", bpy.data.lights.new("MoonRim", "SUN"))
-moon_l.data.energy = 3.2
+moon_l.data.energy = 2.2
 moon_l.data.color = (0.55, 0.75, 1.0)
 moon_l.data.angle = math.radians(4)
 moon_l.rotation_euler = (math.radians(-62), 0, math.radians(200))
 scene.collection.objects.link(moon_l)
 rim = bpy.data.objects.new("Rim", bpy.data.lights.new("Rim", "AREA"))
-rim.data.energy = 900
-rim.data.size = 3
-rim.data.color = (0.6, 0.8, 1.0)
-rim.location = (5.0, 2.5, 5.0)
-rim.rotation_euler = (Vector((1.25, -3.0, 3.0)) - rim.location).to_track_quat("-Z", "Y").to_euler()
+rim.data.energy = 700
+rim.data.size = 2.5
+rim.data.color = (0.55, 0.78, 1.0)
+rim.location = (4.0, 1.5, 5.0)
+rim.rotation_euler = (Vector((0.55, -2.4, 3.2)) - rim.location).to_track_quat("-Z", "Y").to_euler()
 scene.collection.objects.link(rim)
 warm = bpy.data.objects.new("Glow", bpy.data.lights.new("Glow", "AREA"))
-warm.data.energy = 120
+warm.data.energy = 35
 warm.data.size = 6
 warm.data.color = (1.0, 0.6, 0.35)
 warm.location = (0, -9, 3)

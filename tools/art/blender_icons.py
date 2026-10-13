@@ -1013,11 +1013,13 @@ FACES = {
     "face_m1": ("Person_Farmer_Male", {"Main": "#4F8FDB", "Hair": "#6A3A1A"}),
     "face_m2": ("Person_Woodcutter_Male", {"Main": "#6FB43A", "Hair": "#2B1A10"}),
     "face_m3": ("Person_Hooded_Male", {"Hair": "#B8642A"}),
-    "face_f1": ("Person_Hunter_Female", {"Hair": "#A8402A"}),
-    "face_f2": ("Person_Gatherer_Female", {"Top": "#F0A030", "Main": "#F0A030", "Hair": "#3A2214"}),
+    "face_f1": ("Person_Hunter_Female", {"Hair": "#B8482A", "Hood": "#4E9A3A", "Main": "#5FA844",
+                                         "Cloth1": "#8A5A32"}),
+    "face_f2": ("Person_Gatherer_Female", {"Top": "#F0A030", "Main": "#F0A030", "Hair": "#5A2E18"}),
     "face_f3": ("Person_Weaver_Female", {"Top": "#3FB3A6", "Main": "#3FB3A6", "Hair": "#E8B850"}),
 }
-PORTRAIT = dict(az=-24, el=17, fill=0.94, ink=0)
+HEAD_PITCH = float(os.environ.get("HEAD_PITCH", "-20"))
+PORTRAIT = dict(az=-20, el=7, fill=0.88, ink=0, key_color=(1.0, 0.85, 0.66))
 
 
 def portrait(model, recolor):
@@ -1045,11 +1047,11 @@ def portrait(model, recolor):
                 elif name == "EyeWhite":
                     m = paint("EyeWhite", "#F6F0E6", shade=0.8, light=0.1, spec=0.2, rim=0, edge=0, ao=0.2)
                 elif name == "Skin":
-                    m = paint("Skin", L.mix(base, L.lin("#F29A6C"), 0.55), hue_dark="#B02A4A", shade=0.66,
-                              light=0.32, light_col="#FFE6C8", spec=0.06, rough=0.5, grad=(0.9, 1.08), edge=0.2,
-                              rim=0.4)
+                    m = paint("Skin", L.mix(base, L.lin("#F29A6C"), 0.55), hue_dark="#B02A4A", shade=0.68,
+                              light=0.38, light_col="#FFE0B8", spec=0.08, rough=0.45, grad=(0.92, 1.08), edge=0.18,
+                              rim=0.45, rim_col="#FFD9B0")
                 elif name == "Hair":
-                    m = paint("Hair", base, hue_dark="#1A0A30", shade=0.55, light=0.35, spec=0.18, rough=0.3,
+                    m = paint("Hair", base, hue_dark="#1A0A30", shade=0.55, light=0.22, spec=0.07, rough=0.45,
                               grad=(0.85, 1.1))
                 else:
                     m = paint(name, base, hue_dark="#2A1A5A", shade=0.55, light=0.28, spec=0.04, rough=0.6,
@@ -1058,13 +1060,25 @@ def portrait(model, recolor):
             slot.material = cache[src.name]
     # friendlier cartoon proportions: a bigger head
     for arm in (o for o in objs if o.type == "ARMATURE"):
+        # the relaxed idle pose (level head, looking ahead) instead of the importer's default "Carry"
+        idle = next((a for a in bpy.data.actions if a.name.endswith("|Idle")), None)
+        if idle and arm.animation_data:
+            arm.animation_data.action = idle
+            bpy.context.scene.frame_set(1)
+        arm.rotation_euler.z += math.radians(-10)  # turn a little towards the camera: eyes at the viewer
         act = arm.animation_data.action if arm.animation_data else None
         if act:  # keep the pose, but let the head scale be ours
-            for fc in [f for f in act.fcurves if f.data_path == 'pose.bones["Head"].scale']:
+            for fc in [f for f in act.fcurves if f.data_path == 'pose.bones["Head"].scale' or
+                       f.data_path in ('pose.bones["Head"].rotation_quaternion',
+                                       'pose.bones["neck_01"].rotation_quaternion')]:
                 act.fcurves.remove(fc)
+        for b in ("Head", "neck_01"):  # neutral head, pitched up a touch so the eyes meet the camera
+            if b in arm.pose.bones:
+                arm.pose.bones[b].rotation_mode = "XYZ"
+                arm.pose.bones[b].rotation_euler = (math.radians(HEAD_PITCH / 2), 0, 0)
         pb = arm.pose.bones.get("Head")
         if pb:
-            pb.scale = (1.28, 1.28, 1.28)
+            pb.scale = (1.32, 1.32, 1.32)
     bpy.context.view_layer.update()
     pts = L.mesh_points([o for o in objs if o.type == "MESH" and not o.hide_render])
     top = max(p.z for p in pts)
@@ -1081,7 +1095,8 @@ def _face(name):
 
 
 for _n in FACES:
-    ICONS[_n] = (_face(_n), PORTRAIT)
+    # face_f1 is also the story advisor shown large: a more frontal view so she meets the reader's eye
+    ICONS[_n] = (_face(_n), dict(PORTRAIT, az=-8) if _n == "face_f1" else PORTRAIT)
 
 
 # ---------------------------------------------------------------- driver
