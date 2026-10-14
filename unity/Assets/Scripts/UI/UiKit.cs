@@ -957,14 +957,14 @@ namespace Founders.UI
         /// <summary>The kit's blue hexagon button: the icon on the hexagon, an outlined label on its lower edge.</summary>
         public static VisualElement HudHex(string icon, string label, float size = 48)
         {
-            var c = Div("hud-hex").Col(UnityEngine.UIElements.Align.Center).Size(size + 16, size + (string.IsNullOrEmpty(label) ? 8 : 18));
+            var c = Div("hud-hex").Col(UnityEngine.UIElements.Align.Center).Size(size + 16, size + 8);
             var hex = Div().Center().Skin("hud_hex").Pad(0, 0, 4, 0).Size(size, size * 1.01f).Ignore();
             hex.Add(Icon(icon, Mathf.Round(size * 0.66f)));
             c.Add(hex);
             if (!string.IsNullOrEmpty(label))
             {
-                // The label stands under the hexagon (not over its point) and may be a little wider than it.
-                var l = T(label, Theme.Small).Align(TextAnchor.MiddleCenter).Abs(-4, null, -4, -2);
+                // The label sits on the hexagon's lower point and may reach past its sides (like the kit's labels).
+                var l = T(label, Theme.Small).Align(TextAnchor.MiddleCenter).Abs(-4, null, -4, 0);
                 l.style.whiteSpace = WhiteSpace.NoWrap;
                 c.Add(l);
             }

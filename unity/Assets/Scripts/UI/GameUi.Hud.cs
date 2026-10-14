@@ -29,7 +29,7 @@ namespace Founders.UI
         const float TimerH = 40;
         /// <summary>The menu hexagons and the room each takes (its label hangs under the lower point).</summary>
         const float TileSize = 48;
-        const float TileH = 66; // the hexagon and its label under it
+        const float TileH = 58;
         const float TileGap = 2;
         /// <summary>Width of the right column (a hexagon and its label's overhang).</summary>
         const float TileColW = TileSize + 16;

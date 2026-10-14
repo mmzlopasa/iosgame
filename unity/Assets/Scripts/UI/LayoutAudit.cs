@@ -31,11 +31,12 @@ namespace Founders.UI
             var screen = root.worldBound;
             var texts = new List<Seen>();
             var pictures = new List<Seen>();
+            var frames = new List<Seen>();
             int layer = 0;
             order = 0;
             // Each child of the root is a layer drawn over the ones before it (HUD, windows, dialogs, loading):
             // only things on the same layer can collide; a higher layer covers a lower one on purpose.
-            foreach (var l in root.Children()) Walk(l, null, screen, screen, layer++, false, found, texts, pictures);
+            foreach (var l in root.Children()) Walk(l, null, screen, screen, layer++, false, found, texts, pictures, frames);
 
             for (int i = 0; i < texts.Count; i++)
             {
@@ -53,12 +54,22 @@ namespace Founders.UI
                     if (Overlap(a, p.Shown) > 0.35f)
                         found.Add($"picture over text: {Name(p.E)} on {Name(texts[i].E)}");
                 }
+                // A text running onto another control's frame (a menu label on the next button, a badge on a label).
+                foreach (var f in frames)
+                {
+                    var t = texts[i].E;
+                    if (f.Layer != texts[i].Layer || Related(t, f.E)) continue;
+                    var common = t.FindCommonAncestor(f.E);
+                    if (common == t.parent) continue; // a label on its own button's frame (the hexagons' names)
+                    if (Overlap(a, f.Shown) > 0.2f)
+                        found.Add($"text runs onto another frame: {Name(t)} / {Name(f.E)}");
+                }
             }
             return found;
         }
 
         static void Walk(VisualElement e, VisualElement frame, Rect clip, Rect screen, int layer, bool badge, List<string> found,
-                         List<Seen> texts, List<Seen> pictures)
+                         List<Seen> texts, List<Seen> pictures, List<Seen> frames)
         {
             var rs = e.resolvedStyle;
             if (rs.display == DisplayStyle.None || rs.visibility == Visibility.Hidden || rs.opacity < 0.05f) return;
@@ -93,6 +104,8 @@ namespace Founders.UI
             }
             else if (picture && e.childCount == 0 && r.width < 160 && r.height < 160 && visible && !badge)
                 pictures.Add(new Seen { E = e, Shown = shown, Layer = layer, Order = order++ });
+            else if (picture && e.childCount > 0 && visible && r.width < 200 && r.height < 200)
+                frames.Add(new Seen { E = e, Shown = shown, Layer = layer, Order = order++ });
 
             // Out of its frame: any text by more than a hair; a picture by more than a third of itself
             // (icons that overhang their counter a little are drawn that way).
@@ -112,7 +125,7 @@ namespace Founders.UI
             var nextClip = clip;
             if (e is ScrollView sv) { nextClip = Intersect(clip, sv.contentViewport.worldBound); nextFrame = null; }
             else if (e.style.overflow.value == Overflow.Hidden) { nextClip = Intersect(clip, r); nextFrame = null; }
-            foreach (var c in e.Children()) Walk(c, nextFrame, nextClip, screen, layer, badge, found, texts, pictures);
+            foreach (var c in e.Children()) Walk(c, nextFrame, nextClip, screen, layer, badge, found, texts, pictures, frames);
         }
 
         static int order;
