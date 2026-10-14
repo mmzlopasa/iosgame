@@ -130,7 +130,8 @@ namespace Founders.Core
             var t = TerrainNow(x, y);
             if (t.HasValue && !def.AllowedTerrain.Contains(t.Value)) issues.Add(PlacementIssue.InvalidTerrain(t.Value));
             if (BuildingIdAt(x, y) != null || DecorationAt(x, y) != null) issues.Add(PlacementIssue.Overlaps);
-            if (def.IsBridge && !BridgeAnchored(x, y)) issues.Add(PlacementIssue.NeedsAdjacent(TerrainType.Grass));
+            if (def.IsBridge && t != TerrainType.Water && !NextToWater(x, y)) issues.Add(PlacementIssue.NeedsAdjacent(TerrainType.Water));
+            else if (def.IsBridge && !BridgeAnchored(x, y)) issues.Add(PlacementIssue.NeedsAdjacent(TerrainType.Grass));
             if (!State.Resources.Covers(def.Cost)) issues.Add(PlacementIssue.Unaffordable(State.Resources.Shortfall(def.Cost)));
             return issues;
         }
@@ -146,6 +147,14 @@ namespace Founders.Core
                 var d = DecorationAt(nx, ny);
                 if (d != null && (Content.Decoration(d.DefinitionId)?.IsBridge ?? false)) return true;
             }
+            return false;
+        }
+
+        /// <summary>A bridge on the sandy bank must stand at the water's edge.</summary>
+        bool NextToWater(int x, int y)
+        {
+            foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) })
+                if (TerrainNow(x + dx, y + dy) == TerrainType.Water) return true;
             return false;
         }
 

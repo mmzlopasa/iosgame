@@ -503,6 +503,25 @@ namespace Founders
             yield return Shot("01_start_camp", true);
             Focus(Camp(), 12f);
             yield return Shot("02_campfire_close", false);
+            // Research is open at the first campfire level (the first two techs).
+            yield return ShowPanel("02b_research_first_fire", Founders.Panel.Research);
+            // A crossing over the river beside the camp, before the town grows around it:
+            // bank to bank, on the sand, over the water, on the sand again.
+            var map = game.Content.Map;
+            for (int by = 4; by < 12; by++)
+            {
+                int wx = Enumerable.Range(0, 20).FirstOrDefault(x => map.Terrain(x, by) == TerrainType.Water);
+                if (wx == 0 || map.Terrain(wx + 1, by) == TerrainType.Water) continue;
+                Decorate("wooden_bridge", wx - 1, by);
+                Decorate("wooden_bridge", wx, by);
+                Decorate("wooden_bridge", wx + 1, by);
+                store.Refresh();
+                SetTime(game, 1, 0.3f);  // summer, day
+                Focus(Grid.CellCenter(wx, by), 14f);
+                yield return new WaitForSeconds(1.5f);
+                yield return Shot("07f_bridge", false);
+                break;
+            }
 
             // 2. Grow the camp with the real rules.
             foreach (var id in new[] { "foraging_camp", "wood_camp", "stone_site", "storage_pit", "shelter", "toolmaker", "community_circle", "shelter" })
@@ -804,18 +823,7 @@ namespace Founders
             SetTime(game, 1, 0.3f);
             yield return new WaitForSeconds(1f);
 
-            // 4. Landscape views: the river and the forest edge, and a bridge over the river.
-            var map = game.Content.Map;
-            for (int by = 4; by < 12; by++)
-            {
-                int wx = Enumerable.Range(0, 20).FirstOrDefault(x => map.Terrain(x, by) == TerrainType.Water);
-                if (wx == 0 || map.Terrain(wx + 1, by) == TerrainType.Water) continue;
-                Decorate("wooden_bridge", wx, by);
-                store.Refresh();
-                Focus(Grid.CellCenter(wx, by), 11f);
-                yield return Shot("07f_bridge", false);
-                break;
-            }
+            // 4. Landscape views: the river and the forest edge.
             Focus(Grid.CellCenter(9.5f, 9f), 16f);
             yield return Shot("07_river", false);
             Focus(Grid.CellCenter(3f, 6f), 14f);
