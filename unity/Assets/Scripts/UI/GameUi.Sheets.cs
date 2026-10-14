@@ -141,6 +141,9 @@ namespace Founders.UI
                 pendingTab = null;
                 if (open) Pop(store.ActivePanel == Panel.Build ? drawer : sheet);
             }
+            // A dialog opened from a window (portrait, rename, bind account…) stands alone: the window's title and
+            // tabs would otherwise show around its edges.
+            if (ModalOpen) open = false;
             if (open != sheetShown)
             {
                 sheetShown = open;

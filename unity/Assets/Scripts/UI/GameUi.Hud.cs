@@ -110,21 +110,22 @@ namespace Founders.UI
         /// <summary>Places the HUD pieces inside the safe area and hides what a popup covers (every tick; cheap).</summary>
         void LayoutHud()
         {
-            bool sheet = SheetOpen, card = ContextOpen;
+            bool sheet = SheetOpen, card = ContextOpen, modal = ModalOpen;
+            toastLayer.Hidden(modal);
             float l = SafeLeft + 8, r = SafeRight + 8, top = SafeTop;
             topRowCount = Portrait ? TopRows().Count : 2;
             Place(topHost, l, top + 4, r, null);
             float shade = Portrait ? BarBottom + (TopCompact ? 14 : PlayerBlockH + 18) : 84;
             if (!Mathf.Approximately(topShade.style.height.value.value, shade)) topShade.style.height = shade;
-            if (Portrait) LayoutHudPortrait(sheet, card, l, r);
+            if (Portrait) LayoutHudPortrait(sheet || modal, card, l, r);
             else
             {
                 Place(leftHost, l, top + RailY, null, null);
                 Place(timersHost, null, top + RailY, r + TileColW + 8, null);
                 Place(tilesHost, null, top + TilesY, r, null);
                 Place(bottomHost, l, null, SafeRight + 6, BottomPad + 4);
-                tilesHost.Hidden(sheet);
-                bottomHost.Hidden(sheet);
+                tilesHost.Hidden(sheet || modal);
+                bottomHost.Hidden(sheet || modal);
                 // Notices between whatever occupies the two sides.
                 float leftEdge = l + (card ? CardW : LeftRailW) + 10;
                 float rightEdge = r + TileColW + 8 + (card ? 0 : TimersW + 10);
@@ -137,8 +138,8 @@ namespace Founders.UI
                 contextPanel.style.maxHeight = maxCard;
                 cardBack.Hidden(true);
             }
-            leftHost.Hidden(sheet || card);
-            timersHost.Hidden(sheet || card);
+            leftHost.Hidden(sheet || card || modal);
+            timersHost.Hidden(sheet || card || modal);
             UpdateViewShift(card && !sheet);
         }
 
@@ -292,7 +293,8 @@ namespace Founders.UI
         static float ChipW(string text) => 7 + (ChipH - 6) + 4 + Theme.TextWidth(text + "0", Theme.Body) + 10;
 
         /// <summary>Compact (one row, no player block) while a window, a card or the build strip is open: the popup needs the height.</summary>
-        bool TopCompact => SheetOpen || ContextOpen;
+        // A dialog (event, milestone, welcome back…) also gets the one-row bar: nothing of the HUD may peek out around it.
+        bool TopCompact => SheetOpen || ContextOpen || ModalOpen;
 
         /// <summary>Width of the player block: the hexagon frame, the name, the rank and the hope bar.</summary>
         const float PlayerNameW = 156;

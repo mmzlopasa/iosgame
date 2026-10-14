@@ -187,8 +187,8 @@ namespace Founders.UI
                 bool on = tab == buildTab;
                 string name = tab;
                 var t = E.Tab(on ? tab : null, on, Act(() => buildTab = name), null, Theme.TabH, Theme.Num, icon);
-                t.style.minWidth = 48;
-                t.style.marginRight = 4;
+                t.style.minWidth = 44;
+                t.style.marginRight = 3;
                 tabs.Add(t);
             }
             return tabs;
