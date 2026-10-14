@@ -30,7 +30,7 @@ namespace Founders.UI
         /// <summary>The menu hexagons and the room each takes (its label hangs under the lower point).</summary>
         const float TileSize = 48;
         const float TileH = 58;
-        const float TileGap = 2;
+        const float TileGap = 6;
         /// <summary>Width of the right column (a hexagon and its label's overhang).</summary>
         const float TileColW = TileSize + 16;
         const float BuildButton = 72;
@@ -89,7 +89,7 @@ namespace Founders.UI
             AddRegion(contextPanel, ContextKey, BuildContext);
 
             // Portrait: the back arrow under the card's bottom sheet (it closes the card, like the kit's).
-            cardBack = E.Icon("back", 54).Abs();
+            cardBack = E.Back().Abs();
             cardBack.name = "card-back";
             Tap(cardBack, CloseContext);
 
@@ -110,21 +110,22 @@ namespace Founders.UI
         /// <summary>Places the HUD pieces inside the safe area and hides what a popup covers (every tick; cheap).</summary>
         void LayoutHud()
         {
-            bool sheet = SheetOpen, card = ContextOpen;
+            bool sheet = SheetOpen, card = ContextOpen, modal = ModalOpen;
+            toastLayer.Hidden(modal);
             float l = SafeLeft + 8, r = SafeRight + 8, top = SafeTop;
             topRowCount = Portrait ? TopRows().Count : 2;
             Place(topHost, l, top + 4, r, null);
             float shade = Portrait ? BarBottom + (TopCompact ? 14 : PlayerBlockH + 18) : 84;
             if (!Mathf.Approximately(topShade.style.height.value.value, shade)) topShade.style.height = shade;
-            if (Portrait) LayoutHudPortrait(sheet, card, l, r);
+            if (Portrait) LayoutHudPortrait(sheet || modal, card, l, r);
             else
             {
                 Place(leftHost, l, top + RailY, null, null);
                 Place(timersHost, null, top + RailY, r + TileColW + 8, null);
                 Place(tilesHost, null, top + TilesY, r, null);
                 Place(bottomHost, l, null, SafeRight + 6, BottomPad + 4);
-                tilesHost.Hidden(sheet);
-                bottomHost.Hidden(sheet);
+                tilesHost.Hidden(sheet || modal);
+                bottomHost.Hidden(sheet || modal);
                 // Notices between whatever occupies the two sides.
                 float leftEdge = l + (card ? CardW : LeftRailW) + 10;
                 float rightEdge = r + TileColW + 8 + (card ? 0 : TimersW + 10);
@@ -137,8 +138,8 @@ namespace Founders.UI
                 contextPanel.style.maxHeight = maxCard;
                 cardBack.Hidden(true);
             }
-            leftHost.Hidden(sheet || card);
-            timersHost.Hidden(sheet || card);
+            leftHost.Hidden(sheet || card || modal);
+            timersHost.Hidden(sheet || card || modal);
             UpdateViewShift(card && !sheet);
         }
 
@@ -292,7 +293,8 @@ namespace Founders.UI
         static float ChipW(string text) => 7 + (ChipH - 6) + 4 + Theme.TextWidth(text + "0", Theme.Body) + 10;
 
         /// <summary>Compact (one row, no player block) while a window, a card or the build strip is open: the popup needs the height.</summary>
-        bool TopCompact => SheetOpen || ContextOpen;
+        // A dialog (event, milestone, welcome back…) also gets the one-row bar: nothing of the HUD may peek out around it.
+        bool TopCompact => SheetOpen || ContextOpen || ModalOpen;
 
         /// <summary>Width of the player block: the hexagon frame, the name, the rank and the hope bar.</summary>
         const float PlayerNameW = 156;
@@ -391,7 +393,7 @@ namespace Founders.UI
             if (!Portrait)
             {
                 bar.Add(E.Div().Grow().Ignore());
-                bar.Add(E.HudSquare("settings", Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
+                bar.Add(E.Settings(Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
                 host.Add(bar);
                 return;
             }
@@ -675,7 +677,7 @@ namespace Founders.UI
                 // Portrait: the settings button tops the column (the bar above has the whole width for the counters).
                 var cell = E.Div().Row().Center().Ignore().Size(TileColW);
                 cell.style.marginBottom = 8;
-                cell.Add(E.HudSquare("settings", Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
+                cell.Add(E.Settings(Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
                 host.Add(cell);
             }
             host.Add(MenuTile("goals", "Goals", MilestoneReady() ? "!" : null, () => { goalsTab = 0; store.ActivePanel = Panel.Objectives; }));
@@ -781,7 +783,7 @@ namespace Founders.UI
             float room = maxWidth - 6 - E.CounterIconRoom - 4 - 14 - 6;
             var line = LiveFit(() =>
             {
-                if (store.Toasts.Count > 0) return store.Toasts[store.Toasts.Count - 1].Notice.Message;
+                // The latest entry of the village's story (the news itself shows as a toast, never twice).
                 var last = G.State.Legacy.LastOrDefault();
                 return last != null ? last.Title : $"{G.CurrentChapter?.Title ?? G.StageName}";
             }, Theme.Small + 1, room, null, Theme.Small);
@@ -821,10 +823,11 @@ namespace Founders.UI
             }
             // Landscape: newest first from the top; portrait: notices rise from the bottom, newest last. Either way,
             // if the column ever runs out of height, the oldest is the one cut.
-            int n = store.Toasts.Count;
-            for (int k = 0; k < n; k++)
+            // At most the two newest at once, so the village stays in view.
+            int n = store.Toasts.Count, first = Mathf.Max(0, n - 2);
+            for (int k = 0; k < n - first; k++)
             {
-                var toast = store.Toasts[Portrait ? k : n - 1 - k];
+                var toast = store.Toasts[Portrait ? first + k : n - 1 - k];
                 string icon = toast.Notice.Kind switch
                 {
                     NoticeKind.Success => "check",

@@ -31,6 +31,22 @@ jobs:
 
       - uses: actions/checkout@v4
 
+      # The Asset Store "Adventure UI Kit" is licensed and may not sit in this public repository: it lives in
+      # the private repository mmzlopasa/iosgame-uikit (folder Kit/ = what goes into unity/Assets/) and is
+      # fetched with the KIT_TOKEN secret. Without the secret the game builds with its own interface look.
+      - name: Adventure UI Kit (private repository, optional)
+        env:
+          KIT_TOKEN: ${{ secrets.KIT_TOKEN }}
+        run: |
+          if [ -z "$KIT_TOKEN" ]; then echo "No KIT_TOKEN secret: the game's own interface look is used."; exit 0; fi
+          if ! git clone --depth 1 "https://x-access-token:${KIT_TOKEN}@github.com/mmzlopasa/iosgame-uikit.git" "$RUNNER_TEMP/kit"; then
+            echo "::warning::Could not fetch mmzlopasa/iosgame-uikit: the game's own interface look is used."; exit 0
+          fi
+          cp -R "$RUNNER_TEMP/kit/Kit/." unity/Assets/
+          if [ -f "$RUNNER_TEMP/kit/AdventureUiKit.txt" ]; then cp "$RUNNER_TEMP/kit/AdventureUiKit.txt" unity/Assets/Custom/; fi
+          rm -rf "$RUNNER_TEMP/kit"
+          echo "Adventure UI Kit added."
+
       - uses: actions/cache@v4
         with:
           path: unity/Library
@@ -122,6 +138,7 @@ jobs:
             if [ "$H" -gt "$W" ]; then sips -r 270 "$f" >/dev/null || true; fi
           done
           cp "$DATA"/Documents/captures/*.png shots/ 2>/dev/null || true
+          cp "$DATA"/Documents/captures/layout_audit.txt shots/ 2>/dev/null || true
           ls -la shots
           xcrun simctl spawn "$UDID" log show --last 15m --predicate 'process == "Founders"' --style compact > shots/os.log 2>/dev/null || true
           tail -n 80 shots/player.log || true
@@ -141,7 +158,9 @@ jobs:
           prerelease: true
           body: |
             Automatic screenshots from `${{ github.ref_name }}` @ ${{ github.sha }} (iOS Simulator, capture mode).
-          files: shots/*.png
+          files: |
+            shots/*.png
+            shots/layout_audit.txt
 
       # Branch runs (started by hand) go to their own pre-release, so main's screenshots stay as they are.
       - name: Publish to "screenshots-preview" pre-release
@@ -153,4 +172,6 @@ jobs:
           prerelease: true
           body: |
             Screenshots from branch `${{ github.ref_name }}` @ ${{ github.sha }} (iOS Simulator, capture mode).
-          files: shots/*.png
+          files: |
+            shots/*.png
+            shots/layout_audit.txt

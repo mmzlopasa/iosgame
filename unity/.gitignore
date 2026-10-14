@@ -44,3 +44,7 @@
 /Assets/Art/**/*.fbx.meta
 /Assets/Art/**/*.hdr.meta
 /CompileCheck/Modules.props
+
+# Licensed Asset Store kit: never in this public repository (CI fetches it from the private iosgame-uikit repo)
+/Assets/Adventure UI Kit/
+/Assets/Adventure UI Kit.meta
