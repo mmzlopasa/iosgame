@@ -687,7 +687,8 @@ namespace Founders.UI
             if (l.style.unityTextOutlineWidth.value > 0) Outline(l, fit);
             l.style.whiteSpace = WhiteSpace.Normal;
             l.style.width = width;
-            l.style.minHeight = fit * 2.3f;
+            // Two lines of the full size, whatever size it fitted at: neighbours' next rows line up.
+            l.style.minHeight = size * 2.3f;
             l.style.unityTextAlign = TextAnchor.MiddleCenter;
             return l;
         }
