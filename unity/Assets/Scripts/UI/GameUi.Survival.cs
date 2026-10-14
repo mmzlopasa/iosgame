@@ -612,10 +612,11 @@ namespace Founders.UI
             {
                 int k = (int)e;
                 var c = E.Div().Col(Align.Center).Grow().Ignore();
-                var cell = E.Slot("people", 52, ExposureCell(e), 0.55f);
+                var cell = E.Slot("people", 52, ExposureCell(e), 0.48f);
                 cell.style.justifyContent = Justify.FlexStart;
-                cell.ElementAt(0).style.marginTop = 3;
-                var n = Live(() => Warm.People[k].ToString(Inv), Theme.Body).Align(TextAnchor.MiddleCenter).Abs(-4, null, -4, 1);
+                cell.ElementAt(0).style.marginTop = 2;
+                // The count stands inside the cell, along its lower part (never over its edge).
+                var n = Live(() => Warm.People[k].ToString(Inv), Theme.Body).Align(TextAnchor.MiddleCenter).Abs(1, null, 1, 4);
                 cell.Add(n);
                 c.Add(cell);
                 c.Add(E.T(e.ToString(), Theme.Body, ExposureColor(e)).Margin(3));

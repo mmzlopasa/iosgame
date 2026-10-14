@@ -21,6 +21,7 @@ namespace Founders.UI
             public VisualElement E;
             public Rect Shown;
             public int Layer;
+            public int Order; // drawing order: later is on top
         }
 
         public static List<string> Check(VisualElement root)
@@ -31,6 +32,7 @@ namespace Founders.UI
             var texts = new List<Seen>();
             var pictures = new List<Seen>();
             int layer = 0;
+            order = 0;
             // Each child of the root is a layer drawn over the ones before it (HUD, windows, dialogs, loading):
             // only things on the same layer can collide; a higher layer covers a lower one on purpose.
             foreach (var l in root.Children()) Walk(l, null, screen, screen, layer++, false, found, texts, pictures);
@@ -46,7 +48,8 @@ namespace Founders.UI
                 }
                 foreach (var p in pictures)
                 {
-                    if (p.Layer != texts[i].Layer || Related(texts[i].E, p.E) || Covers(p.E, texts[i].E)) continue;
+                    // A picture drawn before the text lies under it (a bar behind its number): only one drawn after covers it.
+                    if (p.Layer != texts[i].Layer || p.Order < texts[i].Order || Related(texts[i].E, p.E) || Covers(p.E, texts[i].E)) continue;
                     if (Overlap(a, p.Shown) > 0.35f)
                         found.Add($"picture over text: {Name(p.E)} on {Name(texts[i].E)}");
                 }
@@ -67,7 +70,7 @@ namespace Founders.UI
 
             var bgi = e.style.backgroundImage.value;
             bool picture = bgi.texture != null || bgi.sprite != null || bgi.vectorImage != null;
-            if ((r.xMin < screen.xMin - Slack || r.xMax > screen.xMax + Slack ||
+            if (clip == screen && (r.xMin < screen.xMin - Slack || r.xMax > screen.xMax + Slack ||
                  r.yMin < screen.yMin - Slack || r.yMax > screen.yMax + Slack) &&
                 (e is TextElement || picture) && r.width < screen.width * 0.9f && shown.width > 0)
                 found.Add($"off screen: {Name(e)}");
@@ -86,10 +89,10 @@ namespace Founders.UI
                     if (multi.y > box.height + Slack + 1)
                         found.Add($"text too tall ({multi.y:0} > {box.height:0}): {Name(e)}");
                 }
-                if (visible && !badge) texts.Add(new Seen { E = e, Shown = shown, Layer = layer });
+                if (visible && !badge) texts.Add(new Seen { E = e, Shown = shown, Layer = layer, Order = order++ });
             }
             else if (picture && e.childCount == 0 && r.width < 160 && r.height < 160 && visible && !badge)
-                pictures.Add(new Seen { E = e, Shown = shown, Layer = layer });
+                pictures.Add(new Seen { E = e, Shown = shown, Layer = layer, Order = order++ });
 
             // Out of its frame: any text by more than a hair; a picture by more than a third of itself
             // (icons that overhang their counter a little are drawn that way).
@@ -111,6 +114,8 @@ namespace Founders.UI
             else if (e.style.overflow.value == Overflow.Hidden) { nextClip = Intersect(clip, r); nextFrame = null; }
             foreach (var c in e.Children()) Walk(c, nextFrame, nextClip, screen, layer, badge, found, texts, pictures);
         }
+
+        static int order;
 
         static Rect Intersect(Rect a, Rect b)
         {

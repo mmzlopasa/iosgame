@@ -381,13 +381,13 @@ namespace Founders.UI
         /// <summary>A reward/resource cell with the amount at the bottom (the kit's rarity cells).</summary>
         static VisualElement RewardCell(string icon, E.Cell kind, string amount, float size = 48)
         {
-            var c = E.Slot(icon, size, kind, 0.58f);
+            var c = E.Slot(icon, size, kind, amount != null ? 0.5f : 0.58f);
             c.style.justifyContent = Justify.FlexStart;
-            c.ElementAt(0).style.marginTop = 3;
+            c.ElementAt(0).style.marginTop = amount != null ? 2 : 3;
             if (amount != null)
             {
-                // The amount sits on the cell's lower edge and may reach past its sides a little (like the kit's "80,000").
-                var l = E.T(amount, Theme.Small).Align(TextAnchor.MiddleCenter).Abs(-6, null, -6, 1);
+                // The amount stands inside the cell, along its lower part (never over its edge).
+                var l = E.T(amount, Theme.Small).Align(TextAnchor.MiddleCenter).Abs(1, null, 1, 4);
                 l.style.whiteSpace = WhiteSpace.NoWrap;
                 c.Add(l);
             }
