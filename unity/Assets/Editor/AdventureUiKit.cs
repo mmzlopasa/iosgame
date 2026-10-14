@@ -103,6 +103,8 @@ namespace FoundersEditor
             R("close_btn", new[] { ButtonW, new[] { "close", "cross", "x" } }, square: true),
             R("back_btn", new[] { new[] { "back", "previous", "prev", "left", "return" } }, new[] { "button", "btn" }, square: true),
             R("settings_btn", new[] { ButtonW, new[] { "setting", "settings", "gear", "options" } }, square: true),
+            R("toggle_on", new[] { new[] { "toggle", "switch" }, new[] { "on" } }),
+            R("toggle_off", new[] { new[] { "toggle", "switch" }, new[] { "off" } }),
         };
 
         /// <summary>Interface glyphs the kit may draw (resource, building and villager pictures stay the game's painted ones).</summary>

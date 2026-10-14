@@ -287,7 +287,8 @@ FONT_BASE = "https://raw.githubusercontent.com/google/fonts/main/ofl/"
 FONTS = {"ChangaOne-Regular.ttf": "changaone/ChangaOne-Regular.ttf"}
 FONT_LICENSE = ("changaone/OFL.txt", "OFL-ChangaOne.txt")
 # The Adventure UI Kit's display face (Apache 2.0, Google Fonts), checked in with its vertical metrics
-# re-centred on the capitals (so a one-line label sits in the middle of its box): titles, buttons, labels.
+# re-centred on the capitals (so a one-line label sits in the middle of its box) and its tiny "%" removed (the
+# fallback face draws it): titles, buttons, labels.
 DISPLAY_FONT = "LuckiestGuy-Regular.ttf"
 
 
@@ -319,10 +320,16 @@ def write_generated():
     from fontTools.ttLib import TTFont
     font = TTFont(os.path.join(OUT, "Fonts", DISPLAY_FONT))
     cmap, hmtx, upm = font.getBestCmap(), font["hmtx"], font["head"].unitsPerEm
+    # Characters the display face leaves out (its "%" is tiny, so it was dropped) are drawn by Changa One.
+    back = TTFont(os.path.join(OUT, "Fonts", "ChangaOne-Regular.ttf"))
+    bcmap, bhmtx, bupm = back.getBestCmap(), back["hmtx"], back["head"].unitsPerEm
 
     def adv(ch):
         g = cmap.get(ord(ch))
-        return hmtx[g][0] / upm if g else 0.6
+        if g:
+            return hmtx[g][0] / upm
+        g = bcmap.get(ord(ch))
+        return bhmtx[g][0] / bupm if g else 0.6
 
     ascii_adv = ", ".join(f"{adv(chr(c)):.3f}f" for c in range(32, 127))
     extra = "\n".join(f'                case \'{c}\': return {adv(c):.3f}f;' for c in EXTRA_CHARS)

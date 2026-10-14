@@ -49,6 +49,9 @@ skin:hud_hex_frame = Assets/Adventure UI Kit/Sprites/GameUI/btn_uncheck.png
 skin:close_btn = Assets/Adventure UI Kit/Sprites/GameUI/btn_close.png
 skin:back_btn = Assets/Adventure UI Kit/Sprites/GameUI/Previous.png
 skin:settings_btn = Assets/Adventure UI Kit/Sprites/GameUI/btn_setting.png
+# the stone switch (ON / OFF are part of the picture)
+skin:toggle_on = Assets/Adventure UI Kit/Sprites/GameUI/btn_toggle_on.png
+skin:toggle_off = Assets/Adventure UI Kit/Sprites/GameUI/btn_toggle_off.png
 # not in the kit: red danger fill, notification badges (kept small, red and green)
 skin:fill_red = none
 skin:badge_green = none

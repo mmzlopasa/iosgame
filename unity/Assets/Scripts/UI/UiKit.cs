@@ -734,7 +734,8 @@ namespace Founders.UI
         {
             // The kit writes the title straight on the stone, in orange; the game's own look has a wooden strip.
             bool kit = Theme.KitLook;
-            var p = Div("plank").Row().Center().Pad(0, 40, kit ? 0 : 4, 40).Ignore();
+            // In the kit look the title keeps clear of the window's stone rim above it.
+            var p = Div("plank").Row().Center().Pad(kit ? 9 : 0, 40, kit ? 0 : 4, 40).Ignore();
             if (!kit) p.Skin("plank");
             p.style.height = Theme.PlankH;
             p.style.flexShrink = 0;
@@ -946,6 +947,31 @@ namespace Founders.UI
             if (icon != null) s.Add(dim ? IconDim(icon, Mathf.Round(size * iconShare)) : Icon(icon, Mathf.Round(size * iconShare)));
             return s;
         }
+
+        /// <summary>
+        /// Marks a cell's rarity where it means something (portrait frames): in the kit look all cells are the same
+        /// stone, so a coloured ring inside the frame tells copper, silver, amethyst and gold apart.
+        /// </summary>
+        public static VisualElement Rarity(this VisualElement slot, Cell kind)
+        {
+            if (!Theme.KitLook) return slot;
+            Color? c = kind switch
+            {
+                Cell.Uncommon => Theme.Hex("#E08A3C"),  // copper
+                Cell.Rare => Theme.Hex("#D9E4F2"),      // silver
+                Cell.Epic => Theme.Hex("#C77DFF"),      // amethyst
+                Cell.Legendary => Theme.Hex("#FFC531"), // gold
+                _ => null,
+            };
+            if (c == null) return slot;
+            float inset = Mathf.Round(slot.style.width.value.value * 0.09f);
+            var ring = Div("rarity").Ignore().Abs(inset, inset, inset, inset + 2).Border(c.Value, 3).Radius(8);
+            slot.Insert(0, ring);
+            return slot;
+        }
+
+        /// <summary>The kit's stone switch (ON/OFF are part of its picture), or null without the kit.</summary>
+        public static VisualElement KitSwitch(bool on, float height = 40) => Whole(on ? "toggle_on" : "toggle_off", null, height);
 
         /// <summary>A small badge: green level square or red notification dot, with a number or "!".</summary>
         public static VisualElement Badge(string text, bool red = true, float size = 20)

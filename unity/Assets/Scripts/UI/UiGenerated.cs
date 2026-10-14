@@ -58,7 +58,7 @@ namespace Founders.UI
         public static readonly HashSet<string> Tiled = new HashSet<string> { "panel", "plank", "section" };
 
         /// <summary>Advance widths (em) of the display face (Luckiest Guy) for ' '..'~'.</summary>
-        static readonly float[] Ascii = { 0.195f, 0.279f, 0.479f, 0.606f, 0.437f, 0.725f, 0.630f, 0.232f, 0.389f, 0.382f, 0.542f, 0.456f, 0.223f, 0.382f, 0.222f, 0.505f, 0.633f, 0.388f, 0.509f, 0.528f, 0.539f, 0.531f, 0.573f, 0.506f, 0.571f, 0.555f, 0.248f, 0.247f, 0.455f, 0.391f, 0.455f, 0.554f, 0.665f, 0.626f, 0.594f, 0.515f, 0.583f, 0.479f, 0.487f, 0.626f, 0.626f, 0.297f, 0.510f, 0.614f, 0.452f, 0.791f, 0.704f, 0.638f, 0.596f, 0.691f, 0.606f, 0.531f, 0.543f, 0.623f, 0.613f, 0.908f, 0.588f, 0.607f, 0.487f, 0.366f, 0.505f, 0.365f, 0.485f, 0.302f, 0.283f, 0.626f, 0.594f, 0.513f, 0.583f, 0.577f, 0.488f, 0.627f, 0.626f, 0.294f, 0.510f, 0.603f, 0.451f, 0.898f, 0.652f, 0.638f, 0.597f, 0.691f, 0.606f, 0.532f, 0.545f, 0.611f, 0.614f, 0.910f, 0.595f, 0.605f, 0.496f, 0.410f, 0.287f, 0.402f, 0.576f };
+        static readonly float[] Ascii = { 0.195f, 0.279f, 0.479f, 0.606f, 0.437f, 0.862f, 0.630f, 0.232f, 0.389f, 0.382f, 0.542f, 0.456f, 0.223f, 0.382f, 0.222f, 0.505f, 0.633f, 0.388f, 0.509f, 0.528f, 0.539f, 0.531f, 0.573f, 0.506f, 0.571f, 0.555f, 0.248f, 0.247f, 0.455f, 0.391f, 0.455f, 0.554f, 0.665f, 0.626f, 0.594f, 0.515f, 0.583f, 0.479f, 0.487f, 0.626f, 0.626f, 0.297f, 0.510f, 0.614f, 0.452f, 0.791f, 0.704f, 0.638f, 0.596f, 0.691f, 0.606f, 0.531f, 0.543f, 0.623f, 0.613f, 0.908f, 0.588f, 0.607f, 0.487f, 0.366f, 0.505f, 0.365f, 0.485f, 0.302f, 0.283f, 0.626f, 0.594f, 0.513f, 0.583f, 0.577f, 0.488f, 0.627f, 0.626f, 0.294f, 0.510f, 0.603f, 0.451f, 0.898f, 0.652f, 0.638f, 0.597f, 0.691f, 0.606f, 0.532f, 0.545f, 0.611f, 0.614f, 0.910f, 0.595f, 0.605f, 0.496f, 0.410f, 0.287f, 0.402f, 0.576f };
 
         /// <summary>Advance of a character in em (0.6 for anything not measured).</summary>
         public static float Advance(char c)
@@ -74,7 +74,7 @@ namespace Founders.UI
                 case '—': return 0.868f;
                 case '’': return 0.215f;
                 case '…': return 0.769f;
-                case '%': return 0.725f;
+                case '%': return 0.862f;
                 default: return 0.6f;
             }
         }
