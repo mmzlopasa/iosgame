@@ -516,8 +516,9 @@ namespace Founders
                 Decorate("wooden_bridge", wx, by);
                 Decorate("wooden_bridge", wx + 1, by);
                 store.Refresh();
+                SetTime(game, 1, 0.3f);  // summer, day
                 Focus(Grid.CellCenter(wx, by), 14f);
-                yield return new WaitForSeconds(1f);
+                yield return new WaitForSeconds(1.5f);
                 yield return Shot("07f_bridge", false);
                 break;
             }
