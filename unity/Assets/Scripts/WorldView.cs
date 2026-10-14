@@ -617,6 +617,27 @@ namespace Founders
             (0, -1, BuildingModels.North), (1, 0, BuildingModels.East), (0, 1, BuildingModels.South), (-1, 0, BuildingModels.West),
         };
 
+        /// <summary>The deck height of the crossing a bridge piece belongs to: the highest ground (or the
+        /// water) under any piece joined to it, so a crossing is level from bank to bank.</summary>
+        float CrossingHeight(Game game, Dictionary<(int, int), string> at, int x, int y, string id)
+        {
+            float top = WorldTerrain.WaterLevel;
+            var seen = new HashSet<(int, int)> { (x, y) };
+            var todo = new Stack<(int, int)>();
+            todo.Push((x, y));
+            while (todo.Count > 0 && seen.Count < 64)
+            {
+                var (cx, cy) = todo.Pop();
+                top = Mathf.Max(top, Ground.HeightAt(Grid.CellCenter(cx, cy)));
+                foreach (var (dx, dy, _) in Neighbours)
+                {
+                    var n = (cx + dx, cy + dy);
+                    if (!seen.Contains(n) && at.TryGetValue(n, out var other) && other == id) { seen.Add(n); todo.Push(n); }
+                }
+            }
+            return top;
+        }
+
         void SyncDecorations(Game game)
         {
             var at = new Dictionary<(int, int), string>();
@@ -637,12 +658,20 @@ namespace Founders
                     foreach (var (dx, dy, bit) in Neighbours)
                         if (game.TerrainNow(d.X + dx, d.Y + dy) is TerrainType t && (t == TerrainType.Water) == onBank) connect |= bit;
                 }
-                string key = $"{d.DefinitionId}|{d.Rotation}|{connect}";
+                var pos = Ground.OnGround(Grid.CellCenter(d.X, d.Y));
+                float drop = 0f;
+                if (def.IsBridge)
+                {
+                    // One deck height for the whole crossing (the highest bank or the water), so the
+                    // pieces on the sand and over the water meet as one bridge.
+                    float ground = Mathf.Max(pos.y, WorldTerrain.WaterLevel);
+                    pos.y = CrossingHeight(game, at, d.X, d.Y, d.DefinitionId);
+                    drop = pos.y - ground;
+                }
+                string key = $"{d.DefinitionId}|{d.Rotation}|{connect}|{Mathf.RoundToInt(pos.y * 100)}";
                 if (decorations.TryGetValue(d.Id, out var view) && view.key == key) continue;
                 if (view.go != null) Destroy(view.go);
-                var go = BuildingModels.Decoration(def.Sprite, objectRoot, null, d.Rotation, connect);
-                var pos = Ground.OnGround(Grid.CellCenter(d.X, d.Y));
-                if (def.IsBridge) pos.y = Mathf.Max(pos.y, WorldTerrain.WaterLevel);
+                var go = BuildingModels.Decoration(def.Sprite, objectRoot, null, d.Rotation, connect, drop);
                 go.transform.position = pos;
                 decorations[d.Id] = (key, go);
                 if (TallDecorations.TryGetValue(def.Sprite, out float h))
