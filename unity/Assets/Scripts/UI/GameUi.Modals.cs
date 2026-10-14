@@ -44,6 +44,9 @@ namespace Founders.UI
         string ModalKey()
         {
             if (store?.Game == null) return "";
+            // The cloud's choice and the profile's dialogs come first: they answer the player's own taps.
+            string profile = ProfileDialogKey();
+            if (profile != "") return profile;
             if (store.Celebration != null) return "ms|" + store.Celebration;
             if (store.Offline != null) return "wb";
             if (G.PendingStory != null) return "story|" + G.PendingStory.Id;
@@ -71,7 +74,8 @@ namespace Founders.UI
             if (Portrait) frame.style.justifyContent = Justify.FlexEnd;
             host.Add(frame);
             VisualElement card;
-            if (key.StartsWith("ms|", System.StringComparison.Ordinal)) card = MilestoneCard();
+            if (key.StartsWith("pd|", System.StringComparison.Ordinal) || key.StartsWith("cloud|", System.StringComparison.Ordinal)) card = ProfileDialogCard();
+            else if (key.StartsWith("ms|", System.StringComparison.Ordinal)) card = MilestoneCard();
             else if (key == "wb") card = WelcomeCard();
             else if (petitionShowing) card = PetitionCard();
             else card = EventCard();

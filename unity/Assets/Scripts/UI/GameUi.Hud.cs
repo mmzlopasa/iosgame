@@ -362,7 +362,7 @@ namespace Founders.UI
             }
         }
 
-        string TopKey() => $"{SafeWidth}|{Portrait}|{TopCompact}|{G.State.EpochId}|{MilestoneReady() || G.PendingStory != null}|{G.State.SettlementName}|" +
+        string TopKey() => $"{SafeWidth}|{Portrait}|{TopCompact}|{G.State.EpochId}|{MilestoneReady() || G.PendingStory != null}|{G.State.SettlementName}|{store.Profile.Avatar}|" +
                            string.Join("/", TopRows().Select(r => string.Join(",", r.Select(i => i.Id))));
 
         void BuildTop(VisualElement host)
@@ -403,15 +403,16 @@ namespace Founders.UI
         }
 
         /// <summary>
-        /// The player block: the founder in the hexagon frame (tap: Goals), the settlement's name, the heart's level on
+        /// The player block: the founder's portrait in the hexagon frame (tap: the profile, or Goals while one waits), the settlement's name, the heart's level on
         /// the rank pill and hope as the kit's energy bar.
         /// </summary>
         VisualElement PlayerBlock()
         {
             var block = E.Div().Row(0, Align.FlexStart).Ignore();
-            var frame = E.HexFrame("face_m1", HexFrameW);
-            if (MilestoneReady() || G.PendingStory != null) frame.Add(CornerBadge("!", 20).Abs(null, 2, 0));
-            Tap(frame, () => store.ActivePanel = Panel.Objectives);
+            var frame = E.HexFrame(store.Profile.Avatar, HexFrameW);
+            bool goalWaits = MilestoneReady() || G.PendingStory != null;
+            if (goalWaits) frame.Add(CornerBadge("!", 20).Abs(null, 2, 0));
+            Tap(frame, () => { if (MilestoneReady() || G.PendingStory != null) store.ActivePanel = Panel.Objectives; else ShowProfile(); });
             block.Add(frame);
             var col = E.Div().Col().Ignore().Size(PlayerNameW);
             col.style.marginLeft = 8;

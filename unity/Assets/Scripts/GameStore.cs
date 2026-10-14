@@ -31,6 +31,10 @@ namespace Founders
         public GameContent Content { get; private set; }
         public Game Game { get; private set; }
         public FileSaveStore SaveStore { get; private set; }
+        /// <summary>The founder (name, portrait, frame, play time); kept when the settlement is reset.</summary>
+        public PlayerProfile Profile { get; private set; }
+        FileProfileStore profileStore;
+        public CloudSave Cloud { get; private set; }
         public WorldView World { get; private set; }
         public CameraRig Rig { get; private set; }
 
@@ -74,6 +78,7 @@ namespace Founders
             if (asset == null) throw new InvalidOperationException("FOUNDERS content.json is missing from Resources.");
             Content = GameContent.Load(asset.text);
             SaveStore = new FileSaveStore(Application.persistentDataPath);
+            profileStore = new FileProfileStore(Application.persistentDataPath);
 
             string message = null;
             var outcome = ephemeral ? LoadOutcome.NoSave : SaveStore.Load(Content);
@@ -97,6 +102,10 @@ namespace Founders
                     break;
             }
 
+            Profile = (ephemeral ? null : profileStore.Load()) ?? PlayerProfile.New(Game.State.SettlementId, CloudSave.Now);
+            Profile.Sessions++;
+            Cloud = new CloudSave(this, ephemeral ? new Founders.Cloud.NoCloud() : Founders.Cloud.CloudBackends.Create());
+
             // Simulate the time spent away since the last save (capped, never duplicated).
             var before = Game.State.Clone();
             Game.Update();
@@ -109,6 +118,7 @@ namespace Founders
             Rig.HeightAt = p => World.Ground != null && World.Ground.Terrain != null ? World.Ground.HeightAt(p) : 0f;
             FocusOnSettlement(true);
             Save();
+            if (!ephemeral) Cloud.Start();
         }
 
         OfflineReport Report(GameState before, GameState after)
@@ -168,6 +178,7 @@ namespace Founders
             nextStep = Time.unscaledTime + 0.25f;
             Game.Update();
             Refresh();
+            if (Application.isFocused) Profile.PlaySeconds += 0.25;
             if (!Ephemeral && clock.Now() - lastSaveWallTime > 15) Save();
         }
 
@@ -179,6 +190,9 @@ namespace Founders
             Toasts.RemoveAll(t => now - t.CreatedAt > 4f);
             World.Sync();
         }
+
+        /// <summary>A short message at the top of the screen.</summary>
+        public void Notify(string message) => AddToast(new GameNotice(NoticeKind.Info, message));
 
         void AddToast(GameNotice notice)
         {
@@ -212,7 +226,7 @@ namespace Founders
         {
             if (Game == null) return;
             Game.Update();
-            if (paused) Save();
+            if (paused) { Save(); Cloud?.Tick(true); }
             else Refresh();
         }
 
@@ -231,8 +245,10 @@ namespace Founders
             try
             {
                 SaveStore.Save(Game.State, Content, clock.Now());
+                profileStore.Save(Profile);
                 lastSaveWallTime = clock.Now();
                 SaveStatus = $"Saved {DateTime.Now:HH:mm:ss}";
+                Cloud?.Tick();
             }
             catch (Exception e)
             {
@@ -257,6 +273,53 @@ namespace Founders
             FocusOnSettlement(false);
             Save();
             Refresh();
+        }
+
+        /// <summary>Replaces the settlement (and the profile, when given) with progress taken from the cloud.</summary>
+        public void Restore(GameState state, PlayerProfile profile)
+        {
+            if (profile != null)
+            {
+                profile.Sessions = Math.Max(profile.Sessions, Profile.Sessions);
+                Profile = profile;
+            }
+            Game = new Game(Content, state, clock);
+            Game.Update();
+            PlacingBuildingId = null;
+            GhostCell = null;
+            SelectedBuildingId = null;
+            SelectedNode = null;
+            DecoratingId = null;
+            Celebration = null;
+            Offline = null;
+            Toasts.Clear();
+            ActivePanel = Panel.None;
+            World.RebuildAll();
+            Rig.Bounds = MapBounds();
+            FocusOnSettlement(false);
+            Save();
+            AddToast(new GameNotice(NoticeKind.Info, $"Loaded {state.SettlementName} from the cloud."));
+            Refresh();
+        }
+
+        // MARK: - Profile
+
+        /// <summary>Renames the founder; returns the problem with the name, or null.</summary>
+        public string RenameFounder(string name)
+        {
+            var problem = Profile.Rename(name);
+            if (problem == null) Save();
+            return problem;
+        }
+
+        public void SetAvatar(string id)
+        {
+            if (Profile.SetAvatar(id)) Save();
+        }
+
+        public void SetFrame(string id)
+        {
+            if (Profile.SetFrame(id, Game.State.ReachedMilestones.Count)) Save();
         }
 
         // MARK: - Commands

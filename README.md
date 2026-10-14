@@ -21,6 +21,14 @@ Ista igra (FOUNDERS, Epoha 1) prelazi na **Unity 6.3 LTS (6000.3.26f1)** radi An
 
 Bez tih secreta Unity workflow samo javlja upozorenje i ništa ne gradi.
 
+### Profil i spremanje u cloud
+
+U igri: dodir na portret gore lijevo → **Founder Profile** (portret i okvir, ime, ID, Prosperity, statistika, postignuća). **Settings → Account**: spremanje u cloud, vezanje računa (korisničko ime + lozinka) i prijava na novom mobitelu. Kad cloud ima drugačiji napredak, igra pita koji zadržati.
+
+Cloud sprema na **tvoj server** (MariaDB/MySQL iza malog HTTPS API-ja u `server/cloud/`). Igra nikad ne spaja direktno na bazu. Postavljanje servera korak po korak: [`server/cloud/README.md`](server/cloud/README.md). Na kraju se adresa servera upiše u `CloudConfig.ServerUrl` (`unity/Assets/Scripts/Cloud/CloudBackend.cs`).
+
+Bez adrese servera igra radi kao i prije (sve na uređaju), a u postavkama piše da cloud još nije postavljen.
+
 Swift verzija (`Core/`, `App/`) ostaje kao referenca dok se pravila ne prenesu u C#.
 
 ## Struktura
