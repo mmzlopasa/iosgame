@@ -201,7 +201,7 @@ namespace Founders.UI
         {
             if (string.IsNullOrEmpty(s)) return 1;
             // Kept conservative (the display face's real breaks come a little earlier than its advances say).
-            float room = width * 0.86f - 2 * Mathf.Ceil(OutlineFor(size)) - 1;
+            float room = width * 0.78f - 2 * Mathf.Ceil(OutlineFor(size)) - 1;
             float space = UiGenerated.Advance(' ') * size;
             int lines = 1;
             float x = 0;
@@ -1129,7 +1129,10 @@ namespace Founders.UI
             // The fill lies in the track's groove (the kit's track has a thick stone rim round a thin channel).
             var area = Theme.KitLook ? Div().Ignore().Abs(26, Mathf.Round(height * 0.3f), Mathf.Round(height * 0.45f), Mathf.Round(height * 0.3f))
                                      : Div().Ignore().Abs(25, 5, 4, 5);
-            fill = Div().Skin("hud_bar_fill_blue").Ignore().Abs(0, 0, null, 0);
+            // The kit look: a crisp orange fill in the groove (the kit's fill pictures blur when squeezed this thin).
+            fill = Div().Ignore().Abs(0, 0, null, 0);
+            if (Theme.KitLook) fill.Bg(Theme.Hex("#FF9408")).Radius(3).Border(Theme.Hex("#B4520A"), 1);
+            else fill.Skin("hud_bar_fill_blue");
             fill.style.minWidth = height - 10;
             fill.style.width = Length.Percent(0);
             fill.style.display = DisplayStyle.None;
