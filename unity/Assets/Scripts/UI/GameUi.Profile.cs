@@ -546,8 +546,8 @@ namespace Founders.UI
             foreach (var a in PlayerProfile.Avatars)
             {
                 bool on = Founder.Avatar == a.Id;
-                var cell = E.Div().Col(Align.Center).Size(cellW).Margin(0, 0, 8);
-                var slot = E.Slot(a.Id, 76, on ? FrameCell(Founder.Frame) : E.Cell.Slot, 0.84f);
+                var cell = E.Div().Col(Align.Center).Size(cellW).Margin(0, 0, 4);
+                var slot = E.Slot(a.Id, 66, on ? FrameCell(Founder.Frame) : E.Cell.Slot, 0.84f);
                 if (on) slot.Add(E.Icon("check", 22).Abs(null, null, -4, 2)); // on the corner, clear of the name under it
                 cell.Add(slot);
                 cell.Add(E.T(a.Name, Theme.Body, on ? Theme.Gold : (Color?)null).Fit(cellW - 4).Margin(3));
