@@ -651,13 +651,26 @@ namespace Founders.UI
             hc.Add(E.T($"{device} · {when}", Theme.Small, Theme.Pale).Fit(width - 90));
             head.Add(hc);
             col.Add(head);
-            col.Add(E.StatRow("user", "Founder", founder ?? "—", null, false));
-            col.Add(E.StatRow("home", settlement ?? "Settlement", stage ?? "—"));
-            col.Add(E.StatRow("people", "People", $"{population}"));
-            col.Add(E.StatRow("build", "Buildings", $"{buildings}"));
-            col.Add(E.StatRow("sparkle", "Prosperity", prosperity.ToString("#,0", CultureInfo.InvariantCulture), null, true, Theme.Gold));
-            col.Add(E.StatRow("clock", "Age", Fmt.Clock(simTime)));
+            // Compact rows (two figures each) so both columns fit without scrolling.
+            col.Add(MiniRow(("user", founder ?? "—", null), ("home", settlement ?? "Settlement", null), false));
+            col.Add(MiniRow(("level_up", stage ?? "—", null), ("clock", Fmt.Clock(simTime), null), true));
+            col.Add(MiniRow(("people", $"{population} people", null), ("build", $"{buildings} buildings", null), true));
+            col.Add(MiniRow(("sparkle", prosperity.ToString("#,0", CultureInfo.InvariantCulture), Theme.Gold), (null, "Prosperity", Theme.Pale), true));
             return col;
+        }
+
+        /// <summary>A short row of two icon + text pairs.</summary>
+        static VisualElement MiniRow((string icon, string text, Color? color) a, (string icon, string text, Color? color) b, bool separator)
+        {
+            var r = E.Line(separator, 32);
+            foreach (var (icon, text, color) in new[] { a, b })
+            {
+                var cell = E.Div().Row().Grow().Ignore();
+                if (icon != null) cell.Add(E.Icon(icon, 20).Margin(0, 6));
+                cell.Add(E.T(text, Theme.Body, color).Flex());
+                r.Add(cell);
+            }
+            return r;
         }
 
         /// <summary>A text field in the kit's look: a parchment inset with dark ink.</summary>
