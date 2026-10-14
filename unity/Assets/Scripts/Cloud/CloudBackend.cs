@@ -154,7 +154,7 @@ namespace Founders.Cloud
         /// The HTTPS address of the FOUNDERS cloud API, e.g. "https://founders.example.duckdns.org". Empty: no cloud,
         /// saves stay on the device and Settings says the cloud is not set up.
         /// </summary>
-        public const string ServerUrl = "";
+        public const string ServerUrl = "https://founders.scyde.dev";
     }
 
     /// <summary>
