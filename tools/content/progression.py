@@ -239,7 +239,7 @@ def skills():
 # MARK: - Research pacing: (heart level, research minutes, knowledge cost)
 
 RESEARCH = {
-    "improved_stone_tools": (2, 4, 15), "food_preservation": (2, 4, 15),
+    "improved_stone_tools": (1, 4, 15), "food_preservation": (1, 4, 15),
     "structural_weaving": (3, 6, 25), "shared_labor": (4, 6, 30),
     "fishing": (4, 8, 35), "hide_working": (5, 8, 40), "permanent_settlement": (7, 12, 60),
     "oral_tradition": (8, 12, 70), "longhouses": (10, 16, 90), "agriculture": (12, 20, 110),
@@ -416,7 +416,9 @@ def main():
         c["decorations"].insert(2, {
             "id": "wooden_bridge", "name": "Wooden Bridge", "category": "Roads",
             "description": "Planks on stout piles: people cross the river here.",
-            "cost": {"wood": 12}, "road": True, "bridge": True, "allowedTerrain": ["water"]})
+            "cost": {"wood": 12}, "road": True, "bridge": True})
+    # Over the water, or on the sandy bank beside it (where the river looks wider than its cells).
+    next(d for d in c["decorations"] if d["id"] == "wooden_bridge")["allowedTerrain"] = ["water", "sand"]
 
     with open(CONTENT, "w") as f:
         json.dump(c, f, indent=1, ensure_ascii=False)

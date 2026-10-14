@@ -631,8 +631,12 @@ namespace Founders
                 foreach (var (dx, dy, bit) in Neighbours)
                     if (at.TryGetValue((d.X + dx, d.Y + dy), out var other) && other == d.DefinitionId) connect |= bit;
                 if (def.IsBridge && connect == 0)
+                {
+                    // Over the water it runs from bank to bank; on the sandy bank it runs out over the water.
+                    bool onBank = game.TerrainNow(d.X, d.Y) != TerrainType.Water;
                     foreach (var (dx, dy, bit) in Neighbours)
-                        if (game.TerrainNow(d.X + dx, d.Y + dy) is TerrainType t && t != TerrainType.Water) connect |= bit;
+                        if (game.TerrainNow(d.X + dx, d.Y + dy) is TerrainType t && (t == TerrainType.Water) == onBank) connect |= bit;
+                }
                 string key = $"{d.DefinitionId}|{d.Rotation}|{connect}";
                 if (decorations.TryGetValue(d.Id, out var view) && view.key == key) continue;
                 if (view.go != null) Destroy(view.go);

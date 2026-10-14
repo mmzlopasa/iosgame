@@ -164,5 +164,38 @@ namespace Founders.Tests
             Assert.That(game.IsBridge(bank.Value.x, bank.Value.y), Is.True);
             Assert.That(game.DecorationIssues("dirt_path", bank.Value.x, bank.Value.y).Count, Is.GreaterThan(0));
         }
+
+        [Test]
+        public void BridgesStandOnTheSandyBankAtTheWater()
+        {
+            var (game, _) = Fixtures.NewGame(full: true);
+            game.TestGrant(new ResourceBundle(wood: 100));
+            var map = game.Content.Map;
+            bool NextToWater(int x, int y) => new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }.Any(d => game.TerrainNow(x + d.Item1, y + d.Item2) == TerrainType.Water);
+            (int x, int y)? shore = null, dry = null;
+            for (int y = 0; y < map.Height; y++)
+                for (int x = 1; x < map.Width - 1; x++)
+                {
+                    if (map.Terrain(x, y) != TerrainType.Sand || !game.IsRevealed(x, y) || game.BuildingIdAt(x, y) != null || game.DecorationAt(x, y) != null) continue;
+                    if (NextToWater(x, y)) shore ??= (x, y); else dry ??= (x, y);
+                }
+            Assert.That(shore, Is.Not.Null, "the river has a sandy bank in the clearing");
+            Expect.Success(game.PlaceDecoration("wooden_bridge", shore.Value.x, shore.Value.y));
+            Assert.That(game.IsBridge(shore.Value.x, shore.Value.y), Is.True);
+            if (dry != null)
+                Assert.That(game.DecorationIssues("wooden_bridge", dry.Value.x, dry.Value.y),
+                    Does.Contain(PlacementIssue.NeedsAdjacent(TerrainType.Water)), "sand away from the water is no place for a bridge");
+        }
+
+        [Test]
+        public void TheFirstTechsOpenAtTheFirstCampfire()
+        {
+            var (game, _) = Fixtures.NewGame(full: true);
+            Assert.That(game.HeartLevel, Is.EqualTo(1));
+            var open = game.Content.Technologies.Where(t => game.MissingPrerequisites(t.Id).Count == 0).Select(t => t.Id).ToList();
+            Assert.That(open, Does.Contain("improved_stone_tools").And.Contain("food_preservation"));
+            game.TestGrant(new ResourceBundle(knowledge: 20));
+            Expect.Success(game.StartResearch("food_preservation"));
+        }
     }
 }
