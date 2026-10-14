@@ -165,13 +165,13 @@ namespace FoundersEditor
             foreach (var role in Roles)
             {
                 string key = "skin:" + role.Name;
-                var p = map.TryGetValue(key, out var forced) ? Lookup(forced, pics) : Best(role, pics);
+                var p = map.TryGetValue(key, out var forced) ? Lookup(forced, pics, sb) ?? (forced == "none" ? null : Best(role, pics)) : Best(role, pics);
                 if (p != null) chosen.Add((key, p));
             }
             foreach (var kv in IconWords)
             {
                 string key = "icon:" + kv.Key;
-                var p = map.TryGetValue(key, out var forced) ? Lookup(forced, pics) : BestIcon(kv.Value, pics);
+                var p = map.TryGetValue(key, out var forced) ? Lookup(forced, pics, sb) ?? (forced == "none" ? null : BestIcon(kv.Value, pics)) : BestIcon(kv.Value, pics);
                 if (p != null) chosen.Add((key, p));
             }
 
@@ -237,7 +237,14 @@ namespace FoundersEditor
             public string Id => Sprite == null ? Path : Path + "#" + Sprite;
         }
 
-        static Pic Lookup(string id, List<Pic> pics) => id == "none" ? null : pics.FirstOrDefault(p => p.Id == id);
+        /// <summary>The picture a line of AdventureUiKit.txt names (null for "none", or when it is not in the kit: then the automatic pick is used).</summary>
+        static Pic Lookup(string id, List<Pic> pics, StringBuilder report)
+        {
+            if (id == "none") return null;
+            var p = pics.FirstOrDefault(x => string.Equals(x.Id, id, StringComparison.OrdinalIgnoreCase));
+            if (p == null) report.Append("  not in the kit, picked automatically instead: ").Append(id).Append('\n');
+            return p;
+        }
 
         static List<Pic> FindPictures(List<string> folders)
         {
@@ -312,6 +319,7 @@ namespace FoundersEditor
             foreach (var p in pics)
             {
                 if (!words.Any(w => p.Words.Contains(w))) continue;
+                if (p.W > 256 || p.H > 256) continue; // a glyph, not a panel that happens to share a word
                 if (p.W > 0 && (p.W > p.H * 1.4f || p.H > p.W * 1.4f)) continue;
                 float score = (p.Words.Contains("icon") || p.FolderWords.Contains("icon") || p.FolderWords.Contains("icons")) ? 3 : 0;
                 if (Has(p, ButtonW)) score -= 2; // a bare glyph beats a whole button

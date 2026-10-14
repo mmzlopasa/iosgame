@@ -1,0 +1,38 @@
+# Adventure UI Kit (Smashy Tech) → game skins and icons. Only names of the kit's files are written here (no
+# pictures: the kit is licensed and is not in this repository). FOUNDERS → Adventure UI Kit → Apply (and every
+# build) reads this; a line overrides the automatic pick, "none" keeps the game's own, missing lines are picked
+# automatically. Chosen for kit 1.0.0 by its file list (2026-10-14).
+skin:panel = Assets/Adventure UI Kit/Sprites/GameUI/popup_bg.png
+skin:plank = Assets/Adventure UI Kit/Sprites/GameUI/btn_menu_bg.png
+skin:section = Assets/Adventure UI Kit/Sprites/GameUI/PopUp_Front.png
+skin:btn_green = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_leaf.png
+skin:btn_orange = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_crack.png
+skin:btn_blue = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_light.png
+skin:btn_grey = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_dark.png
+skin:btn_brown = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_box.png
+skin:capsule = Assets/Adventure UI Kit/Sprites/GameUI/coin_bg.png
+skin:hud_capsule = Assets/Adventure UI Kit/Sprites/GameUI/coin_bg.png
+skin:bar_track = Assets/Adventure UI Kit/Sprites/Slider/slider_bg.png
+skin:fill_green = Assets/Adventure UI Kit/Sprites/Slider/slider_fill_green.png
+skin:fill_gold = Assets/Adventure UI Kit/Sprites/Slider/slider_fill_orange.png
+skin:fill_blue = Assets/Adventure UI Kit/Sprites/Slider/slider_fill_blue.png
+skin:hud_bar_track = Assets/Adventure UI Kit/Sprites/GameUI/progressbar_bg_.png
+skin:hud_bar_fill_blue = Assets/Adventure UI Kit/Sprites/GameUI/ProgressBar_Fill.png
+skin:hud_plus = Assets/Adventure UI Kit/Sprites/GameUI/btn_add.png
+skin:hud_square_blue = Assets/Adventure UI Kit/Sprites/GameUI/btn_small.png
+# toggles carry baked ON/OFF text, the other kit buttons baked words: tabs and slots keep the game's own
+skin:tab_on = none
+skin:tab_off = none
+icon:close = Assets/Adventure UI Kit/Sprites/Icons/icon_close.png
+icon:back = Assets/Adventure UI Kit/Sprites/GameUI/Previous.png
+icon:next = Assets/Adventure UI Kit/Sprites/GameUI/Next.png
+icon:check = Assets/Adventure UI Kit/Sprites/GameUI/btn_check.png
+icon:plus = Assets/Adventure UI Kit/Sprites/Icons/icon_add.png
+icon:settings = Assets/Adventure UI Kit/Sprites/Icons/icon-setting.png
+icon:info = Assets/Adventure UI Kit/Sprites/Icons/icon_info.png
+icon:lock = Assets/Adventure UI Kit/Sprites/Icons/icon_lock.png
+icon:home = Assets/Adventure UI Kit/Sprites/Icons/icon_home.png
+icon:user = Assets/Adventure UI Kit/Sprites/Icons/icon_player.png
+icon:trophy = Assets/Adventure UI Kit/Sprites/Icons/icon_tropy.png
+icon:goals = Assets/Adventure UI Kit/Sprites/Icons/icon_fvt_star.png
+icon:world = Assets/Adventure UI Kit/Sprites/Icons/icon_poi.png

@@ -143,7 +143,7 @@ Igra sama stavlja **Adventure UI Kit** (Smashy Tech) na sučelje: okvire prozora
 3. Ono što kit nema ostaje u izgledu igre.
 4. Builds na GitHubu ovo rade same prije svakog builda – dovoljno je da je kit u repozitoriju.
 
-> ⚠️ Kit je pod licencom Asset Storea: **ne smije biti u javnom repozitoriju**. Prije commita prebaci repozitorij u privatni (*Settings → General → Danger Zone → Change repository visibility*).
+> ⚠️ Kit je pod licencom Asset Storea: **ne smije biti u ovom javnom repozitoriju** (mapa `unity/Assets/Adventure UI Kit/` je u `.gitignore`). Za buildove na GitHubu kit je u zasebnom **privatnom** repozitoriju `mmzlopasa/iosgame-uikit` (mapa `Kit/Adventure UI Kit/`), a workflowi ga preuzimaju sa secretom `KIT_TOKEN`. Bez tog secreta igra se gradi u svom izgledu.
 
 *English:* import the kit anywhere under `Assets` (folder name containing "Adventure"); `FoundersEditor.AdventureUiKit` (menu **FOUNDERS → Adventure UI Kit → Apply**, and automatically in `BuildScript.Generate`) maps its sprites to the game's skins and interface glyphs by file/sprite name, copies them to `Assets/Generated/Resources/Kit/UI/{Skin,Icons}` with the kit's own 9-slice borders (`slices.txt`), and writes the choices to `Assets/Custom/AdventureUiKit.txt` for correction. Lookup order at runtime: Custom → Kit → the game's own.
 
