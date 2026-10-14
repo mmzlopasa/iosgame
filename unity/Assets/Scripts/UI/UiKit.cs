@@ -92,7 +92,7 @@ namespace Founders.UI
         /// <summary>The small blue "Go" in rows.</summary>
         public const float GoH = 34;
         public const float TabH = 36;
-        public const float PlankH = 38;
+        public const float PlankH = 44;
         public const float SectionHeadH = 30;
         public const float CloseSize = 38;
         /// <summary>The smallest touch area of anything tappable (46 units = 40 pt at the smallest scale).</summary>
@@ -534,7 +534,8 @@ namespace Founders.UI
             var l = new Label(text);
             l.style.fontSize = size;
             l.style.color = color;
-            l.style.unityFontDefinition = Theme.Font;
+            // One face everywhere, as in the kit: Luckiest Guy (sentences too).
+            l.style.unityFontDefinition = Theme.Display;
             l.style.marginLeft = 0; l.style.marginRight = 0; l.style.marginTop = 0; l.style.marginBottom = 0;
             l.style.paddingLeft = 0; l.style.paddingRight = 0; l.style.paddingTop = 0; l.style.paddingBottom = 0;
             l.style.whiteSpace = WhiteSpace.NoWrap;
@@ -735,7 +736,7 @@ namespace Founders.UI
             // The kit writes the title straight on the stone, in orange; the game's own look has a wooden strip.
             bool kit = Theme.KitLook;
             // In the kit look the title keeps clear of the window's stone rim above it.
-            var p = Div("plank").Row().Center().Pad(kit ? 9 : 0, 40, kit ? 0 : 4, 40).Ignore();
+            var p = Div("plank").Row().Center().Pad(kit ? 14 : 0, 40, kit ? 0 : 4, 40).Ignore();
             if (!kit) p.Skin("plank");
             p.style.height = Theme.PlankH;
             p.style.flexShrink = 0;
@@ -827,7 +828,8 @@ namespace Founders.UI
         public static VisualElement Button(string label, Action onTap, Kind kind = Kind.Green, float height = Theme.ButtonH, string icon = null,
                                            float size = 16, VisualElement sub = null, float width = 0)
         {
-            var b = Div("button").Col().Center().Skin(SkinOf(kind)).Pad(0, 10, 4, 10);
+            // The kit look has one main button, the leafy one (the vine-wrapped stone is kept for BUILD only).
+            var b = Div("button").Col().Center().Skin(Theme.KitLook && kind == Kind.Orange ? "btn_green" : SkinOf(kind)).Pad(0, 10, 4, 10);
             b.style.height = height;
             b.style.flexShrink = 0;
             if (width > 0) b.style.width = width;
@@ -861,7 +863,9 @@ namespace Founders.UI
         /// <summary>A square button with an icon (close, −, +, rotate, trash…).</summary>
         public static VisualElement Square(string icon, Action onTap, Kind kind = Kind.Brown, float size = 40)
         {
-            var b = Div("square").Center().Skin(SkinOf(kind)).Pad(0, 0, 3, 0).Size(size, size);
+            // The kit look: square buttons are the plain stone (the lighter stone while switched on).
+            string skin = !Theme.KitLook || kind == Kind.Grey ? SkinOf(kind) : kind == Kind.Orange || kind == Kind.Green ? "tab_on" : "btn_blue";
+            var b = Div("square").Center().Skin(skin).Pad(0, 0, 3, 0).Size(size, size);
             b.Add(Icon(icon, Mathf.Round(size * 0.6f)));
             if (onTap != null && kind != Kind.Grey) b.OnTap(onTap);
             else b.pickingMode = PickingMode.Position;
@@ -965,8 +969,10 @@ namespace Founders.UI
             };
             if (c == null) return slot;
             float inset = Mathf.Round(slot.style.width.value.value * 0.09f);
+            // The stone takes on the metal's colour, and a ring of it runs round the picture (over its edge).
+            slot.style.unityBackgroundImageTintColor = Color.Lerp(Color.white, c.Value, 0.55f);
             var ring = Div("rarity").Ignore().Abs(inset, inset, inset, inset + 2).Border(c.Value, 3).Radius(8);
-            slot.Insert(0, ring);
+            slot.Add(ring);
             return slot;
         }
 
@@ -1072,7 +1078,8 @@ namespace Founders.UI
         public static VisualElement HudHex(string icon, string label, float size = 48)
         {
             var c = Div("hud-hex").Col(UnityEngine.UIElements.Align.Center).Size(size + 16, size + 8);
-            var hex = Div().Center().Skin("hud_hex").Pad(0, 0, 4, 0).Size(size, size * 1.01f).Ignore();
+            // The kit look: a stone square a little lower than wide, so its name sits fully under it.
+            var hex = Div().Center().Skin("hud_hex").Pad(0, 0, 4, 0).Size(size, Theme.KitLook ? Mathf.Round(size * 0.9f) : size * 1.01f).Ignore();
             hex.Add(Icon(icon, Mathf.Round(size * 0.66f)));
             c.Add(hex);
             if (!string.IsNullOrEmpty(label))

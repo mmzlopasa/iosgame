@@ -8,14 +8,15 @@ skin:panel = Assets/Adventure UI Kit/Sprites/GameUI/popup_bg.png
 skin:section = Assets/Adventure UI Kit/Sprites/GameUI/PopUp_Front.png
 # the title strip: the kit writes titles straight on the stone (E.Plank draws no strip in the kit look)
 skin:plank = Assets/Adventure UI Kit/Sprites/GameUI/btn_menu_bg.png
-# buttons: leafy stone = the main action (orange words), cracked stone with a vine = premium (level up),
-# lighter stone = secondary, dark stone = cancel / remove / locked
+# buttons: two kinds only, as in the kit's demo screens. The leafy stone is every main action (orange words);
+# the plain raised stone is every other button; a locked button is the flat dark stone, dimmed. The
+# vine-wrapped stone is the big BUILD button only (E.Button draws the leafy one for every main action)
 skin:btn_green = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_leaf.png
 skin:btn_orange = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_crack.png
-skin:btn_blue = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_dark.png
-skin:btn_red = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_light.png
+skin:btn_blue = Assets/Adventure UI Kit/Sprites/GameUI/btn_rec_large.png
+skin:btn_red = Assets/Adventure UI Kit/Sprites/GameUI/btn_rec_large.png
+skin:btn_brown = Assets/Adventure UI Kit/Sprites/GameUI/btn_rec_large.png
 skin:btn_grey = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_light.png
-skin:btn_brown = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_light.png
 # tabs: the chosen one is the lighter stone, the others the dark stone
 skin:tab_on = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_dark.png
 skin:tab_off = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_light.png
@@ -37,7 +38,7 @@ skin:hud_bar_track = Assets/Adventure UI Kit/Sprites/GameUI/progressbar_bg_.png
 skin:fill_green = Assets/Adventure UI Kit/Sprites/Slider/slider_fill_green.png
 skin:fill_gold = Assets/Adventure UI Kit/Sprites/Slider/slider_fill_orange.png
 skin:fill_blue = Assets/Adventure UI Kit/Sprites/Slider/slider_fill_blue.png
-skin:hud_bar_fill_blue = Assets/Adventure UI Kit/Sprites/GameUI/ProgressBar_Fill.png
+skin:hud_bar_fill_blue = Assets/Adventure UI Kit/Sprites/Slider/slider_fill_orange.png
 # HUD buttons: plain raised stone squares under the game's painted pictures; the portrait in the stone frame
 skin:hud_plus = Assets/Adventure UI Kit/Sprites/GameUI/btn_add.png
 skin:hud_square_blue = Assets/Adventure UI Kit/Sprites/GameUI/btn_small.png

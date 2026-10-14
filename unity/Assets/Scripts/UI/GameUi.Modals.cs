@@ -244,13 +244,17 @@ namespace Founders.UI
             // Gathered: the kit's reward cells with the amount at the bottom.
             var gathered = E.Section("Gathered", out var rows);
             gathered.style.marginTop = 8;
+            // Only what changed, centred in the section.
             var cells = E.Div().Row().Ignore().Margin(10, 0, 8);
             cells.style.flexWrap = Wrap.Wrap;
+            cells.style.justifyContent = Justify.Center;
             foreach (var type in ResourceTypes.All)
             {
                 double v = report.Gained[type];
-                var cell = RewardCell(IconFor(type), CellFor(type), Fmt.Signed(v) == "0" ? "0" : (v < 0 ? "−" : "+") + Fmt.Compact(System.Math.Abs(v)), 50);
-                cell.style.marginRight = 10;
+                if (Fmt.Signed(v) == "0") continue;
+                var cell = RewardCell(IconFor(type), CellFor(type), (v < 0 ? "−" : "+") + Fmt.Compact(System.Math.Abs(v)), 50);
+                cell.style.marginLeft = 6;
+                cell.style.marginRight = 6;
                 if (v < -0.5) cell.Add(E.Icon("alert", 22).Abs(null, -6, -6));
                 cells.Add(cell);
             }

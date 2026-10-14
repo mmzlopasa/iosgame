@@ -319,15 +319,12 @@ namespace Founders.UI
             }
             body.Add(tree);
 
-            var side = E.Scroll(ScrollViewMode.Vertical);
-            side.style.width = TechDetailW;
-            side.style.flexShrink = 0;
-            side.style.marginLeft = 8;
-            side.contentContainer.style.paddingBottom = 6;
-            if (active != null) side.Add(ActiveResearchBar(active, TechDetailW));
+            // The detail scrolls; its action (cost and the Research button) stays pinned under it, always whole.
+            var side = SidePane(TechDetailW, out var sideScroll, out var sideFoot);
+            if (active != null) sideScroll.Add(ActiveResearchBar(active, TechDetailW));
             else if (econ.Production.Knowledge <= 0)
-                side.Add(Notice("people", "Nobody studies yet: put people on Research (People › Work).", true).Margin(0, 0, 6));
-            side.Add(TechDetail(G.Content.Technology(selectedTech), TechDetailW));
+                sideScroll.Add(Notice("people", "Nobody studies yet: put people on Research (People › Work).", true).Margin(0, 0, 6));
+            sideScroll.Add(TechDetail(G.Content.Technology(selectedTech), TechDetailW, sideFoot));
             body.Add(side);
             host.Add(body);
         }
@@ -449,7 +446,30 @@ namespace Founders.UI
             return parts.Count == 0 ? "" : char.ToUpperInvariant(parts[0][0]) + string.Join(" · ", parts).Substring(1);
         }
 
-        VisualElement TechDetail(TechnologyDefinition t, float detailW)
+        /// <summary>
+        /// A detail column beside a list (landscape): a scrolling part over a pinned foot, so the action at the
+        /// bottom (a button, a cost) is never half-scrolled out of sight. The foot hides while empty.
+        /// </summary>
+        VisualElement SidePane(float width, out ScrollView scroll, out VisualElement foot)
+        {
+            var side = E.Div("side").Col().Ignore();
+            side.style.width = width;
+            side.style.flexShrink = 0;
+            side.style.marginLeft = 8;
+            scroll = E.Scroll(ScrollViewMode.Vertical);
+            scroll.style.flexGrow = 1;
+            scroll.style.flexShrink = 1;
+            scroll.style.minHeight = 0;
+            scroll.contentContainer.style.paddingBottom = 6;
+            side.Add(scroll);
+            var f = E.Inset().Pad(6, 10, 8, 10).Margin(6);
+            foot = f;
+            f.style.display = DisplayStyle.None; // shown by the detail when it has an action
+            side.Add(f);
+            return side;
+        }
+
+        VisualElement TechDetail(TechnologyDefinition t, float detailW, VisualElement foot = null)
         {
             var card = E.Inset().Col().Pad(10, 10);
             if (t == null) return card;
@@ -502,7 +522,8 @@ namespace Founders.UI
                     break;
                 }
             }
-            card.Add(bottom);
+            if (foot != null) { bottom.style.marginTop = 0; foot.Add(bottom); foot.Hidden(bottom.childCount == 0); }
+            else card.Add(bottom);
             return card;
         }
     }

@@ -792,7 +792,9 @@ namespace Founders.UI
             var head = E.Div().Row().Ignore();
             head.Add(E.Icon("world", 30));
             head.Add(E.T(G.State.SettlementName, Theme.H2).Flex().Margin(0, 0, 0, 8));
-            head.Add(E.T(G.Content.Map.Name ?? "", Theme.Body, Theme.Pale).NoShrink().Margin(0, 0, 0, 8));
+            // The map's name as words ("riverside_clearing" → "Riverside Clearing").
+            string mapName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase((G.Content.Map.Name ?? "").Replace('_', ' '));
+            head.Add(E.T(mapName, Theme.Body, Theme.Pale).NoShrink().Margin(0, 0, 0, 8));
             info.Add(head);
             var traits = E.Div().Row().Ignore().Margin(6);
             traits.style.flexWrap = Wrap.Wrap;

@@ -203,7 +203,7 @@ namespace Founders.UI
             root = doc.rootVisualElement;
             root.pickingMode = PickingMode.Ignore;
             root.style.flexGrow = 1;
-            root.style.unityFontDefinition = Theme.Font;
+            root.style.unityFontDefinition = Theme.Display;
 
             hudLayer = E.Div("hud").Fill().Ignore();
             // A soft shade behind the top strip only (the world stays bright everywhere else).

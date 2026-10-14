@@ -761,12 +761,8 @@ namespace Founders.UI
             }
             body.Add(board);
 
-            var side = E.Scroll(ScrollViewMode.Vertical);
-            side.style.width = LawDetailW;
-            side.style.flexShrink = 0;
-            side.style.marginLeft = 8;
-            side.contentContainer.style.paddingBottom = 6;
-            side.Add(LawDetail(statuses.First(s => s.Law.Id == selectedLaw), LawDetailW));
+            var side = SidePane(LawDetailW, out var sideScroll, out var sideFoot);
+            sideScroll.Add(LawDetail(statuses.First(s => s.Law.Id == selectedLaw), LawDetailW, sideFoot));
             body.Add(side);
             host.Add(body);
         }
@@ -910,7 +906,7 @@ namespace Founders.UI
             return list;
         }
 
-        VisualElement LawDetail(LawStatus st, float detailW)
+        VisualElement LawDetail(LawStatus st, float detailW, VisualElement foot = null)
         {
             var law = st.Law;
             var card = E.Inset().Col().Pad(10, 10);
@@ -985,7 +981,8 @@ namespace Founders.UI
                         bottom.Add(E.Button("Sign the custom", Act(() => confirmLaw = id), E.Kind.Green, Theme.ButtonH, "customs", 16, null, detailW - 20));
                     break;
             }
-            card.Add(bottom);
+            if (foot != null) { bottom.style.marginTop = 0; foot.Add(bottom); foot.Hidden(bottom.childCount == 0); }
+            else card.Add(bottom);
             return card;
         }
 

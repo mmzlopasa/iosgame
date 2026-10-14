@@ -30,7 +30,7 @@ namespace Founders.UI
         /// <summary>The menu hexagons and the room each takes (its label hangs under the lower point).</summary>
         const float TileSize = 48;
         const float TileH = 58;
-        const float TileGap = 2;
+        const float TileGap = 6;
         /// <summary>Width of the right column (a hexagon and its label's overhang).</summary>
         const float TileColW = TileSize + 16;
         const float BuildButton = 72;
@@ -783,7 +783,7 @@ namespace Founders.UI
             float room = maxWidth - 6 - E.CounterIconRoom - 4 - 14 - 6;
             var line = LiveFit(() =>
             {
-                if (store.Toasts.Count > 0) return store.Toasts[store.Toasts.Count - 1].Notice.Message;
+                // The latest entry of the village's story (the news itself shows as a toast, never twice).
                 var last = G.State.Legacy.LastOrDefault();
                 return last != null ? last.Title : $"{G.CurrentChapter?.Title ?? G.StageName}";
             }, Theme.Small + 1, room, null, Theme.Small);
