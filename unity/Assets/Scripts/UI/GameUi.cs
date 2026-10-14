@@ -74,6 +74,9 @@ namespace Founders.UI
         float confirmDemolishUntil;
         public LoadingScreen Loading { get; private set; }
 
+        /// <summary>The whole UI tree (the capture tour checks its layout, see LayoutAudit).</summary>
+        public VisualElement Root => root;
+
         /// <summary>Hides the game UI (used for clean screenshots).</summary>
         public bool Hidden;
 

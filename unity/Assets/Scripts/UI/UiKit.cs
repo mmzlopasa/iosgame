@@ -567,6 +567,13 @@ namespace Founders.UI
         {
             var l = Bare(text, size, color ?? Theme.InkText);
             l.style.whiteSpace = WhiteSpace.Normal;
+            // Dark ink only reads on parchment: on a dark surface (wood, the Adventure UI Kit's stone) it turns light.
+            l.RegisterCallback<AttachToPanelEvent>(_ =>
+            {
+                var c = l.style.color.value;
+                if (!OnParchment(l) && c.r * 0.3f + c.g * 0.59f + c.b * 0.11f < 0.45f)
+                    l.style.color = Color.Lerp(c, new Color(0.96f, 0.93f, 0.87f), 0.85f);
+            });
             return l;
         }
 

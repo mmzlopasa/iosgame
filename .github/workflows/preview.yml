@@ -138,6 +138,7 @@ jobs:
             if [ "$H" -gt "$W" ]; then sips -r 270 "$f" >/dev/null || true; fi
           done
           cp "$DATA"/Documents/captures/*.png shots/ 2>/dev/null || true
+          cp "$DATA"/Documents/captures/layout_audit.txt shots/ 2>/dev/null || true
           ls -la shots
           xcrun simctl spawn "$UDID" log show --last 15m --predicate 'process == "Founders"' --style compact > shots/os.log 2>/dev/null || true
           tail -n 80 shots/player.log || true
@@ -157,7 +158,9 @@ jobs:
           prerelease: true
           body: |
             Automatic screenshots from `${{ github.ref_name }}` @ ${{ github.sha }} (iOS Simulator, capture mode).
-          files: shots/*.png
+          files: |
+            shots/*.png
+            shots/layout_audit.txt
 
       # Branch runs (started by hand) go to their own pre-release, so main's screenshots stay as they are.
       - name: Publish to "screenshots-preview" pre-release
@@ -169,4 +172,6 @@ jobs:
           prerelease: true
           body: |
             Screenshots from branch `${{ github.ref_name }}` @ ${{ github.sha }} (iOS Simulator, capture mode).
-          files: shots/*.png
+          files: |
+            shots/*.png
+            shots/layout_audit.txt
