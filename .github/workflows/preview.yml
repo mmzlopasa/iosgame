@@ -133,7 +133,7 @@ jobs:
           path: shots
 
       - name: Publish to "screenshots" pre-release
-        if: github.event_name != 'pull_request'
+        if: github.event_name != 'pull_request' && github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: screenshots

@@ -25,6 +25,13 @@ namespace FoundersEditor
         public const string BundleId = "com.founders.longrise";
         public const string Version = "0.3.0";
 
+        /// <summary>
+        /// The Unity Cloud project the cloud save uses (Unity Gaming Services: Authentication + Cloud Save), from the
+        /// project's page on cloud.unity.com. Empty: the game keeps saves on the device only and Settings says the cloud
+        /// is not set up. The FOUNDERS_CLOUD_PROJECT_ID environment variable overrides it.
+        /// </summary>
+        public const string CloudProjectId = "";
+
         [MenuItem("FOUNDERS/Generate scene and materials")]
         public static void Generate()
         {
@@ -102,8 +109,31 @@ namespace FoundersEditor
             return null;
         }
 
+        /// <summary>Links the build to the cloud project (the setting the editor's Services window writes).</summary>
+        static void ConfigureCloud()
+        {
+            string id = Environment.GetEnvironmentVariable("FOUNDERS_CLOUD_PROJECT_ID");
+            if (string.IsNullOrEmpty(id)) id = CloudProjectId;
+            if (string.IsNullOrEmpty(id))
+            {
+                Debug.Log("[FOUNDERS] Cloud save: no cloud project id, saves stay on the device.");
+                return;
+            }
+            if (CloudProjectSettings.projectId == id) return;
+            var assets = AssetDatabase.LoadAllAssetsAtPath("ProjectSettings/ProjectSettings.asset");
+            if (assets == null || assets.Length == 0) { Debug.LogWarning("[FOUNDERS] Cloud save: ProjectSettings.asset not found."); return; }
+            var so = new SerializedObject(assets[0]);
+            var prop = so.FindProperty("cloudProjectId");
+            if (prop == null) { Debug.LogWarning("[FOUNDERS] Cloud save: cloudProjectId setting not found."); return; }
+            prop.stringValue = id;
+            so.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssets();
+            Debug.Log($"[FOUNDERS] Cloud save: linked to cloud project {id}.");
+        }
+
         static void ConfigurePlayer()
         {
+            ConfigureCloud();
             PlayerSettings.companyName = "Founders";
             PlayerSettings.productName = ProductName;
             PlayerSettings.bundleVersion = Version;
