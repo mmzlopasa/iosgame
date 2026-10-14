@@ -1,0 +1,20 @@
+# systemd service: sudo cp founders-cloud.service /etc/systemd/system/ && sudo systemctl enable --now founders-cloud
+[Unit]
+Description=FOUNDERS cloud save API
+After=network.target mariadb.service mysql.service
+
+[Service]
+Type=simple
+User=founders
+WorkingDirectory=/opt/founders-cloud
+EnvironmentFile=/etc/founders-cloud.env
+ExecStart=/usr/bin/node /opt/founders-cloud/server.js
+Restart=always
+RestartSec=3
+NoNewPrivileges=true
+ProtectSystem=strict
+ProtectHome=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target

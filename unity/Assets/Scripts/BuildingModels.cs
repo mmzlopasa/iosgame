@@ -746,14 +746,17 @@ namespace Founders
         /// A plank bridge on stout piles across one water cell. It runs along the neighbours it
         /// connects to (other bridge pieces or the bank), with a rail on each side.
         /// </summary>
-        static void Bridge(Builder b, int connect)
+        static void Bridge(Builder b, int connect, float drop)
         {
-            // connect: neighbours to join (other bridge pieces first, else the banks).
+            // connect: neighbours to join (other bridge pieces first, else the banks). drop: how far the
+            // ground or water lies below this piece's origin (pieces of one crossing share one deck height).
             bool ew = (connect & (East | West)) != 0, ns = (connect & (North | South)) != 0;
             bool alongX = ew && (!ns || (connect & (East | West)) == (East | West));
+            // Local +z runs East when turned along x, else North.
+            bool joinFront = (connect & (alongX ? East : North)) != 0, joinBack = (connect & (alongX ? West : South)) != 0;
             var g = Parts.Group("Bridge", b.T, Vector3.zero, alongX ? 90f : 0f).transform;
             var bb = new Builder(g, null, b.Effects);
-            float half = Grid.CellSize * 0.52f, w = 0.75f, deck = 0.55f;
+            float half = Grid.CellSize * 0.5f, w = 0.75f, deck = 0.55f;
             for (int i = 0; i < 9; i++)
             {
                 float z = -half + (i + 0.5f) * (2 * half / 9f);
@@ -761,15 +764,17 @@ namespace Founders
             }
             foreach (float x in new[] { -w + 0.08f, w - 0.08f })
             {
+                // Beams and rails run edge to edge, so joined pieces read as one bridge.
                 bb.Pole(new Vector3(x, deck - 0.1f, -half), new Vector3(x, deck - 0.1f, half), 0.16f);
-                bb.Pole(new Vector3(x, -0.8f, 0f), new Vector3(x, deck, 0f), 0.16f);
-                bb.Pole(new Vector3(x, deck, -half * 0.9f), new Vector3(x, deck + 0.75f, -half * 0.9f), 0.07f);
-                bb.Pole(new Vector3(x, deck, half * 0.9f), new Vector3(x, deck + 0.75f, half * 0.9f), 0.07f);
+                bb.Pole(new Vector3(x, -0.8f - drop, 0f), new Vector3(x, deck, 0f), 0.16f);
                 bb.Pole(new Vector3(x, deck + 0.72f, -half), new Vector3(x, deck + 0.72f, half), 0.07f);
+                bb.Pole(new Vector3(x, deck, 0f), new Vector3(x, deck + 0.75f, 0f), 0.07f);
+                if (!joinBack) bb.Pole(new Vector3(x, deck, -half * 0.9f), new Vector3(x, deck + 0.75f, -half * 0.9f), 0.07f);
+                if (!joinFront) bb.Pole(new Vector3(x, deck, half * 0.9f), new Vector3(x, deck + 0.75f, half * 0.9f), 0.07f);
             }
         }
 
-        public static GameObject Decoration(string sprite, Transform parent, Material tint, int rotation, int connect)
+        public static GameObject Decoration(string sprite, Transform parent, Material tint, int rotation, int connect, float drop = 0f)
         {
             if (CustomAssets.HasDecoration(sprite))
             {
@@ -792,7 +797,7 @@ namespace Founders
                     Fence(b, sprite, rotation, connect);
                     break;
                 case "wooden_bridge":
-                    Bridge(b, connect);
+                    Bridge(b, connect, drop);
                     break;
                 case "torch_post":
                     b.Pole(Vector3.zero, new Vector3(0f, 1.7f, 0f), 0.08f);

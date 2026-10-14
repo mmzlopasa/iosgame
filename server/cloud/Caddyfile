@@ -1,0 +1,9 @@
+# Caddy gets and renews the HTTPS certificate by itself. Replace the address with your domain
+# (for example founders.duckdns.org), copy to /etc/caddy/Caddyfile and run: sudo systemctl reload caddy
+founders.example.duckdns.org {
+	encode gzip
+	request_body {
+		max_size 8MB
+	}
+	reverse_proxy 127.0.0.1:8787
+}

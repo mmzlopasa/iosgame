@@ -7512,7 +7512,7 @@
      "value": 1.25
     }
    ],
-   "heartLevel": 2
+   "heartLevel": 1
   },
   {
    "id": "food_preservation",
@@ -7534,7 +7534,7 @@
      "value": 1.5
     }
    ],
-   "heartLevel": 2
+   "heartLevel": 1
   },
   {
    "id": "herbal_healing",
@@ -8958,7 +8958,8 @@
    "road": true,
    "bridge": true,
    "allowedTerrain": [
-    "water"
+    "water",
+    "sand"
    ]
   },
   {

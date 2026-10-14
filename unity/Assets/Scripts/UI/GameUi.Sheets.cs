@@ -59,7 +59,7 @@ namespace Founders.UI
             sheet.Transition(220, "translate", "opacity", "scale");
             sheetHead = E.Div("window-head").Col().Ignore();
             sheetHead.style.flexShrink = 0;
-            AddRegion(sheetHead, () => WindowPanel ? $"{store.ActivePanel}|{peopleTab}|{mapTab}|{HeaderKey()}" : "", BuildSheetHeader);
+            AddRegion(sheetHead, () => WindowPanel ? $"{store.ActivePanel}|{peopleTab}|{mapTab}|{profileTab}|{settingsTab}|{HeaderKey()}" : "", BuildSheetHeader);
             sheet.Add(sheetHead);
 
             sheetScroll = E.Scroll(ScrollViewMode.Vertical);
@@ -69,7 +69,7 @@ namespace Founders.UI
             sheetScroll.contentContainer.style.paddingTop = 8;
             sheetScroll.contentContainer.style.paddingBottom = 8;
             sheet.Add(sheetScroll);
-            AddRegion(sheetScroll.contentContainer, () => WindowPanel && !FixedPanel ? $"{store.ActivePanel}|{peopleTab}|{goalsTab}|{mapTab}|{PanelKey()}" : "", BuildPanelContent);
+            AddRegion(sheetScroll.contentContainer, () => WindowPanel && !FixedPanel ? $"{store.ActivePanel}|{peopleTab}|{goalsTab}|{mapTab}|{profileTab}|{settingsTab}|{PanelKey()}" : "", BuildPanelContent);
 
             sheetFixed = E.Div("window-fixed").Col().Ignore();
             sheetFixed.style.flexGrow = 1;
@@ -169,6 +169,8 @@ namespace Founders.UI
         {
             Panel.People => $"{G.State.People.Count}|{G.IdleWorkers}",
             Panel.Customs => $"{G.State.Laws.Count}",
+            Panel.Profile => $"{G.State.ReachedMilestones.Count}",
+            Panel.Settings => $"{store.Cloud.State}",
             _ => "",
         };
 
@@ -185,7 +187,7 @@ namespace Founders.UI
                 Panel.Weather => "Weather & Warmth",
                 Panel.Customs => "Book of Customs",
                 Panel.Map => "World & Legacy",
-                Panel.Profile => "Founder",
+                Panel.Profile => "Founder Profile",
                 _ => "Settings",
             };
             var plank = E.Plank(title, null, Theme.H1, WindowW);
@@ -200,12 +202,12 @@ namespace Founders.UI
             row.style.marginTop = 6;
             void TabRow(params (string label, int index, string count)[] tabs)
             {
-                int current = store.ActivePanel == Panel.People ? peopleTab : mapTab;
+                int current = CurrentTab();
                 float tabW = (InnerW - 6 * (tabs.Length - 1)) / tabs.Length;
                 foreach (var (label, index, count) in tabs)
                 {
                     int i = index;
-                    var t = E.Tab(label, i == current, Act(() => { if (store.ActivePanel == Panel.People) peopleTab = i; else mapTab = i; sheetScroll.scrollOffset = Vector2.zero; }), count).FitTab(tabW);
+                    var t = E.Tab(label, i == current, Act(() => { SetTab(i); sheetScroll.scrollOffset = Vector2.zero; }), count).FitTab(tabW);
                     t.style.flexGrow = 1;
                     t.style.flexBasis = 0;
                     if (row.childCount > 0) t.style.marginLeft = 6;
@@ -219,6 +221,12 @@ namespace Founders.UI
                     break;
                 case Panel.Map:
                     TabRow(("Explore", 0, null), ("Legacy", 1, G.State.Legacy.Count.ToString(Inv)));
+                    break;
+                case Panel.Profile:
+                    TabRow(("Profile", 0, null), ("Stats", 1, null), ("Achievements", 2, $"{G.State.ReachedMilestones.Count}/{G.Content.Milestones.Count}"));
+                    break;
+                case Panel.Settings:
+                    TabRow(("Game", 0, null), ("Account", 1, CloudNeedsPlayer ? "!" : null), ("About", 2, null));
                     break;
                 case Panel.Research:
                 {
@@ -308,9 +316,9 @@ namespace Founders.UI
                     return $"{G.State.ActiveExpedition?.RegionId}|{string.Join(",", G.State.ExploredRegions)}|{G.State.Legacy.Count}|" +
                            string.Join("", G.Content.Regions.Select(r => G.State.Resources.Covers(r.Cost) ? "1" : "0"));
                 case Panel.Profile:
-                    return $"{G.State.Legacy.Count}|{G.State.Researched.Count}|{G.State.Buildings.Count}|{G.State.StageId}";
+                    return ProfileKey();
                 default:
-                    return $"{Prefs.Quality}|{Prefs.BatterySaver}|{Prefs.Haptics}|{AudioDirector.MusicOn}|{AudioDirector.SoundOn}|{Time.unscaledTime < confirmResetUntil}|{store.SaveStatus}";
+                    return SettingsKey();
             }
         }
 
@@ -851,159 +859,6 @@ namespace Founders.UI
             body.Add(head);
             if (!string.IsNullOrEmpty(entry.Detail)) body.Add(E.Ink(entry.Detail, Theme.Body).Margin(3));
             row.Add(body);
-            return row;
-        }
-
-        // MARK: - Founder (profile)
-
-        void BuildProfilePanel(VisualElement host)
-        {
-            var hero = E.Inset().Row().Margin(0, 0, 8);
-            hero.Add(E.Slot(G.State.EpochId == "epoch_medieval_kingdoms" ? "landmark" : "home", 68, E.Cell.Tile, 0.7f));
-            var col = E.Div().Col().Grow().Ignore();
-            col.style.marginLeft = 12;
-            float idW = Theme.TextWidth("ID " + FounderId(), Theme.Body) + 22;
-            // Portrait: the ID capsule goes under the names, which take the whole width.
-            float nameW = InnerW - 20 - 68 - 12 - (Portrait ? 0 : idW + 10);
-            col.Add(E.T(G.State.SettlementName, Theme.H1).Fit(nameW, Theme.H2));
-            col.Add(E.T($"{G.StageName} · Era {Fmt.Roman(G.Content.Epoch(G.State.EpochId)?.Index ?? 1)}", Theme.Body, Theme.Pale).Fit(nameW));
-            col.Add(E.Ink(G.EpochName, Theme.Small));
-            hero.Add(col);
-            var id = E.Capsule(32).Margin(0, 0, 0, 10);
-            id.Add(E.T("ID " + FounderId(), Theme.Body));
-            if (Portrait) { id.style.alignSelf = Align.FlexStart; id.style.marginLeft = 0; col.Add(id.Margin(4)); }
-            else hero.Add(id);
-            host.Add(hero);
-
-            var grid = E.Div().Row().Ignore();
-            grid.style.flexWrap = Wrap.Wrap;
-            grid.style.justifyContent = Justify.SpaceBetween;
-            int techs = G.Content.Technologies.Count;
-            var stats = new (string label, Func<string> value, string icon)[]
-            {
-                ("People", () => $"{G.State.Population}", "people"),
-                ("Buildings", () => $"{G.State.Buildings.Count(b => b.Status == BuildingStatus.Complete)}", "home"),
-                ("Research", () => $"{G.State.Researched.Count}/{techs}", "knowledge"),
-                ("Regions", () => $"{G.State.ExploredRegions.Count}", "compass"),
-                ("Legacy", () => $"{G.State.Legacy.Count}", "legacy"),
-                ("Time", () => Fmt.Clock(G.State.SimTime), "clock"),
-            };
-            int perRow = Portrait && InnerW < 480 ? 2 : 3;
-            float w = Mathf.Floor((InnerW - 8 * (perRow - 1)) / perRow);
-            foreach (var s in stats)
-            {
-                var c = StatBox(s.icon, s.label, s.value);
-                c.style.flexGrow = 0;
-                c.style.width = w;
-                c.style.marginBottom = 8;
-                grid.Add(c);
-            }
-            host.Add(grid);
-
-            var ms = Block("Milestones", out var mrows);
-            var cells = E.Div().Row().Ignore().Margin(8, 0, 6);
-            cells.style.flexWrap = Wrap.Wrap;
-            // As many 112-wide cells as the section holds, sharing its width evenly.
-            float rowW = InnerW - 20;
-            float cellW = Mathf.Floor(rowW / Mathf.Max(1, Mathf.Floor(rowW / 112)));
-            foreach (var m in G.Content.Milestones)
-            {
-                bool got = G.State.ReachedMilestones.Contains(m.Id);
-                var c = E.Div().Col(Align.Center).Ignore().Size(cellW);
-                c.style.marginBottom = 6;
-                c.Add(E.Slot(got ? "trophy" : "lock", 56, got ? E.Cell.Legendary : E.Cell.Common, 0.62f, !got));
-                c.Add(E.T(m.Name, Theme.Body, got ? (Color?)null : Theme.Pale).TwoLines(cellW - 4).Margin(3));
-                cells.Add(c);
-            }
-            mrows.Add(cells);
-            host.Add(ms);
-        }
-
-        string FounderId()
-        {
-            string raw = (G.State.SettlementId ?? "").Replace("-", "").ToUpperInvariant();
-            if (raw.Length < 8) raw = raw.PadRight(8, '0');
-            return raw.Substring(0, 4) + "-" + raw.Substring(4, 4);
-        }
-
-        // MARK: - Settings
-
-        void BuildSettingsPanel(VisualElement host)
-        {
-            var gfx = Block("Graphics", out var grows);
-            var seg = E.Div().Row(0, Align.FlexEnd).Ignore().Margin(8, 0, 8);
-            string[] names = { "Smooth", "Balanced", "Cinematic" };
-            for (int i = 0; i < names.Length; i++)
-            {
-                int q = i;
-                var t = E.Tab(names[i], Prefs.Quality == i, Act(() => { Prefs.Quality = q; Prefs.Apply(); }));
-                t.style.flexGrow = 1;
-                t.style.flexBasis = 0;
-                if (i > 0) t.style.marginLeft = 6;
-                seg.Add(t);
-            }
-            grows.Add(seg);
-            host.Add(gfx);
-
-            var game = Block("Game", out var rows);
-            rows.Add(ToggleRow("Battery saver", "30 fps, lighter on the battery", Prefs.BatterySaver, v => { Prefs.BatterySaver = v; Prefs.Apply(); }, false));
-            rows.Add(ToggleRow("Haptics", "A tap of vibration on milestones", Prefs.Haptics, v => Prefs.Haptics = v, true));
-            rows.Add(ToggleRow("Music", "Calm themes between the seasons", AudioDirector.MusicOn, v => AudioDirector.MusicOn = v, true));
-            rows.Add(ToggleRow("Sound", "Fire, river, birds, wind and taps", AudioDirector.SoundOn, v => AudioDirector.SoundOn = v, true));
-            host.Add(game);
-
-            var acc = Block("Account", out var arows);
-            arows.Add(E.StatRow("user", "Founder ID", FounderId(), null, false));
-            arows.Add(E.StatRow("storage", "Save", store.SaveStatus, null, true, Theme.Pale));
-            arows.Add(E.StatRow("world", "Language", "English", null, true));
-            host.Add(acc);
-
-            var dev = Block("Developer", out var drows);
-            // Four in a row; two rows of two on a portrait phone.
-            bool twoRows = Portrait && InnerW < 480;
-            float devW = twoRows ? (InnerW - 20 - 8) / 2 : (InnerW - 20 - 3 * 8) / 4;
-            var r1 = E.Div().Row().Ignore().Margin(8);
-            var r2 = twoRows ? E.Div().Row().Ignore().Margin(8) : r1;
-            r1.Add(Share(E.Button("Save now", Act(store.Save), E.Kind.Blue, 42, null, Theme.Num, null, devW), r1));
-            r1.Add(Share(E.Button("+50 all", Act(store.DebugGrant), E.Kind.Blue, 42, null, Theme.Num, null, devW), r1));
-            r2.Add(Share(E.Button("+1 min", Act(() => store.DebugFastForward(1)), E.Kind.Blue, 42, null, Theme.Num, null, devW), r2));
-            r2.Add(Share(E.Button("+10 min", Act(() => store.DebugFastForward(10)), E.Kind.Blue, 42, null, Theme.Num, null, devW), r2));
-            drows.Add(r1);
-            if (twoRows) drows.Add(r2);
-            bool armed = Time.unscaledTime < confirmResetUntil;
-            var reset = E.Button(armed ? "Tap again to erase this settlement" : "Reset settlement", Act(() =>
-            {
-                if (Time.unscaledTime < confirmResetUntil) { confirmResetUntil = 0; store.ResetPrototype(); store.ActivePanel = Panel.None; }
-                else
-                {
-                    confirmResetUntil = Time.unscaledTime + 4f;
-                    sheet.schedule.Execute(() => dirty = true).StartingIn(4100);
-                }
-            }), E.Kind.Red, 42, "trash", Theme.Num, null, InnerW - 20);
-            reset.style.marginTop = 8;
-            reset.style.marginBottom = 8;
-            drows.Add(reset);
-            host.Add(dev);
-
-            host.Add(E.Ink($"{G.Content.Branding.Title} · {G.Content.Branding.Subtitle} · v{Application.version}\nContent {G.Content.ContentVersion} · Save format {SaveCodec.CurrentVersion} · Unity {Application.unityVersion}",
-                           Theme.Small, Theme.InkSoft).Align(TextAnchor.MiddleCenter).Margin(4));
-        }
-
-        /// <summary>A setting with the kit's ON/OFF switch.</summary>
-        VisualElement ToggleRow(string label, string hint, bool value, Action<bool> set, bool separator)
-        {
-            var row = E.Line(separator, 56);
-            var col = E.Div().Col().Grow().Ignore();
-            col.Add(E.T(label, Theme.Num));
-            col.Add(E.T(hint, Theme.Small, Theme.Pale).Fit(InnerW - 20 - 90));
-            row.Add(col);
-            var sw = E.Div().Row().Skin(value ? "btn_green" : "btn_grey").Pad(0, 5, 4, 7).Size(80, 36).Ignore();
-            var knob = E.Div().Skin("slot").Size(24, 24).Ignore();
-            var text = E.T(value ? "ON" : "OFF", Theme.Body).Grow().Align(TextAnchor.MiddleCenter);
-            if (value) { sw.Add(text); sw.Add(knob); }
-            else { sw.Add(knob); sw.Add(text); }
-            row.Add(sw);
-            Tap(row, () => set(!value));
             return row;
         }
     }
