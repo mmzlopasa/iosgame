@@ -25,12 +25,9 @@ Bez tih secreta Unity workflow samo javlja upozorenje i ništa ne gradi.
 
 U igri: dodir na portret gore lijevo → **Founder Profile** (portret i okvir, ime, ID, Prosperity, statistika, postignuća). **Settings → Account**: spremanje u cloud, vezanje računa (korisničko ime + lozinka) i prijava na novom mobitelu. Kad cloud ima drugačiji napredak, igra pita koji zadržati.
 
-Cloud koristi **Unity Gaming Services** (Authentication + Cloud Save, besplatno za male igre, radi na iPhoneu i Androidu, i s nepotpisanom .ipa). Jednokratno:
-1. Na **cloud.unity.com** napravi projekt (ili koristi postojeći) i kopiraj njegov **Project ID**.
-2. U tom projektu: *Products → Authentication → Identity providers → Add → Username & Password* (gost/anonimna prijava je već uključena), te otvori *Cloud Save* jednom da se aktivira.
-3. Project ID upiši u `CloudProjectId` u `unity/Assets/Editor/BuildScript.cs` (ili kao varijablu `FOUNDERS_CLOUD_PROJECT_ID` u GitHub Actions).
+Cloud sprema na **tvoj server** (MariaDB/MySQL iza malog HTTPS API-ja u `server/cloud/`). Igra nikad ne spaja direktno na bazu. Postavljanje servera korak po korak: [`server/cloud/README.md`](server/cloud/README.md). Na kraju se adresa servera upiše u `CloudConfig.ServerUrl` (`unity/Assets/Scripts/Cloud/CloudBackend.cs`).
 
-Bez Project ID-a igra radi kao i prije (sve na uređaju), a u postavkama piše da cloud još nije postavljen.
+Bez adrese servera igra radi kao i prije (sve na uređaju), a u postavkama piše da cloud još nije postavljen.
 
 Swift verzija (`Core/`, `App/`) ostaje kao referenca dok se pravila ne prenesu u C#.
 
