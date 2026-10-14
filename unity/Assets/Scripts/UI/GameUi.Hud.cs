@@ -89,7 +89,7 @@ namespace Founders.UI
             AddRegion(contextPanel, ContextKey, BuildContext);
 
             // Portrait: the back arrow under the card's bottom sheet (it closes the card, like the kit's).
-            cardBack = E.Icon("back", 54).Abs();
+            cardBack = E.Back().Abs();
             cardBack.name = "card-back";
             Tap(cardBack, CloseContext);
 
@@ -393,7 +393,7 @@ namespace Founders.UI
             if (!Portrait)
             {
                 bar.Add(E.Div().Grow().Ignore());
-                bar.Add(E.HudSquare("settings", Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
+                bar.Add(E.Settings(Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
                 host.Add(bar);
                 return;
             }
@@ -677,7 +677,7 @@ namespace Founders.UI
                 // Portrait: the settings button tops the column (the bar above has the whole width for the counters).
                 var cell = E.Div().Row().Center().Ignore().Size(TileColW);
                 cell.style.marginBottom = 8;
-                cell.Add(E.HudSquare("settings", Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
+                cell.Add(E.Settings(Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
                 host.Add(cell);
             }
             host.Add(MenuTile("goals", "Goals", MilestoneReady() ? "!" : null, () => { goalsTab = 0; store.ActivePanel = Panel.Objectives; }));

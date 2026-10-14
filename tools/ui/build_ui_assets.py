@@ -286,6 +286,9 @@ def build_images():
 FONT_BASE = "https://raw.githubusercontent.com/google/fonts/main/ofl/"
 FONTS = {"ChangaOne-Regular.ttf": "changaone/ChangaOne-Regular.ttf"}
 FONT_LICENSE = ("changaone/OFL.txt", "OFL-ChangaOne.txt")
+# The Adventure UI Kit's display face (Apache 2.0, Google Fonts), checked in with its vertical metrics
+# re-centred on the capitals (so a one-line label sits in the middle of its box): titles, buttons, labels.
+DISPLAY_FONT = "LuckiestGuy-Regular.ttf"
 
 
 def build_fonts():
@@ -294,10 +297,10 @@ def build_fonts():
     os.makedirs(LICENSES, exist_ok=True)
     # Only the kit's font ships now: earlier faces are removed with their licences.
     for old in glob.glob(os.path.join(out, "*")):
-        if os.path.basename(old) not in FONTS and not old.endswith(".txt"):
+        if os.path.basename(old) not in FONTS and os.path.basename(old) != DISPLAY_FONT and not old.endswith(".txt"):
             os.remove(old)
     for old in glob.glob(os.path.join(LICENSES, "OFL-*.txt")):
-        if os.path.basename(old) != FONT_LICENSE[1]:
+        if os.path.basename(old) not in (FONT_LICENSE[1], "Apache-LuckiestGuy.txt"):
             os.remove(old)
     for name, path in FONTS.items():
         urllib.request.urlretrieve(FONT_BASE + path, os.path.join(out, name))
@@ -314,7 +317,7 @@ EXTRA_CHARS = "·−×°–—’…%"
 
 def write_generated():
     from fontTools.ttLib import TTFont
-    font = TTFont(os.path.join(OUT, "Fonts", "ChangaOne-Regular.ttf"))
+    font = TTFont(os.path.join(OUT, "Fonts", DISPLAY_FONT))
     cmap, hmtx, upm = font.getBestCmap(), font["hmtx"], font["head"].unitsPerEm
 
     def adv(ch):
@@ -349,7 +352,7 @@ namespace Founders.UI
         /// <summary>Skins whose middle and edges repeat (tiled) instead of stretching: real wood and parchment.</summary>
         public static readonly HashSet<string> Tiled = new HashSet<string> {{ {tiled} }};
 
-        /// <summary>Advance widths (em) of Changa One for ' '..'~'.</summary>
+        /// <summary>Advance widths (em) of the display face (Luckiest Guy) for ' '..'~'.</summary>
         static readonly float[] Ascii = {{ {ascii_adv} }};
 
         /// <summary>Advance of a character in em (0.6 for anything not measured).</summary>

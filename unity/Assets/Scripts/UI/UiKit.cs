@@ -8,10 +8,11 @@ using UnityEngine.UIElements;
 namespace Founders.UI
 {
     /// <summary>
-    /// Design tokens of the Founders UI, after a casual mobile strategy kit: warm parchment popups under a
-    /// wooden title plank, inset sections with a tan header band, chunky outlined buttons (green primary,
-    /// blue secondary, orange premium, grey disabled, red cancel), rarity cells behind icons, painted icons
-    /// and one typeface (Changa One), white with a dark outline and a hard drop.
+    /// Design tokens of the Founders UI, after the Adventure UI Kit (Smashy Tech): purple stone popups with
+    /// vines, the title in orange on the stone (no band), dark inset sections and rows, stone buttons (the
+    /// leafy one is the main action), stone squares behind icons, and the kit's display face (Luckiest Guy)
+    /// in white with a dark plum outline for every label, title, button and number; sentences use Changa One.
+    /// Without the kit in the project the game's own skins stand in, with the same layout.
     ///
     /// Sizes are in panel units: a phone screen is <see cref="GameUi.PhoneShortSide"/> (446) units across its short
     /// side in either orientation (fewer on a small phone, so nothing drops under <see cref="GameUi.MinPointsPerUnit"/>
@@ -24,14 +25,23 @@ namespace Founders.UI
     {
         // MARK: - Palette
 
-        /// <summary>The dark brown of every outline (panels, buttons, text).</summary>
-        public static readonly Color Outline = Hex("#3A2314");
+        /// <summary>The dark plum of every text outline (the kit's white labels).</summary>
+        public static readonly Color Outline = Hex("#231936");
+        /// <summary>The kit's title orange (its gradient runs #FCB101 → #FB7400) and the deep red outline around it.</summary>
+        public static readonly Color Title = Hex("#FF9E0B");
+        public static readonly Color TitleOutline = Hex("#5E1442");
+        /// <summary>Plain sentences on the dark stone.</summary>
+        public static readonly Color Prose = Hex("#EFE8F6");
+        /// <summary>Quieter sentences on the stone (hints, notes).</summary>
+        public static readonly Color ProseSoft = Hex("#BFB2D6");
+        /// <summary>The light lilac rim of the kit's stone (lines between rows, borders of groups).</summary>
+        public static readonly Color Rim = Hex("#7E6E98");
         /// <summary>Plain text on parchment (paragraphs).</summary>
         public static readonly Color InkText = Hex("#5A3A1E");
         public static readonly Color InkDark = Hex("#3F2612");
-        public static readonly Color InkSoft = Hex("#8A6038");
+        public static readonly Color InkSoft = Hex("#BFB2D6");
         /// <summary>Secondary outlined text (sub-lines, inactive tabs).</summary>
-        public static readonly Color Pale = Hex("#F3E6D2");
+        public static readonly Color Pale = Hex("#E6DEF2");
         /// <summary>"Lv.3" in titles.</summary>
         public static readonly Color Lv = Hex("#D7F25A");
         /// <summary>Next values, gains, met requirements.</summary>
@@ -57,8 +67,8 @@ namespace Founders.UI
 
         public static readonly Color SectionHead = Hex("#D9A266");
         public static readonly Color SectionLine = Hex("#BF884E");
-        public static readonly Color RowLine = Hex("#CFA878");
-        public static readonly Color Scrim = new Color(0.10f, 0.06f, 0.03f, 0.45f);
+        public static readonly Color RowLine = new Color(0.50f, 0.43f, 0.60f, 0.45f);
+        public static readonly Color Scrim = new Color(0.06f, 0.03f, 0.10f, 0.50f);
 
         // MARK: - Type scale and metrics (panel units; a phone is 446 across its short side, ~0.88 pt per unit)
 
@@ -106,8 +116,34 @@ namespace Founders.UI
 
         // MARK: - Font
 
-        static FontDefinition font;
-        static bool fontLoaded;
+        static FontDefinition font, display;
+        static bool fontLoaded, displayLoaded;
+
+        /// <summary>
+        /// The kit's display face, Luckiest Guy (its vertical metrics re-centred on the capitals), as an SDF font asset
+        /// with the same wide padding: every outlined label, title, button and number. Falls back to <see cref="Font"/>.
+        /// </summary>
+        public static FontDefinition Display
+        {
+            get
+            {
+                if (displayLoaded) return display;
+                displayLoaded = true;
+                var f = UnityEngine.Resources.Load<UnityEngine.Font>("UI/Fonts/LuckiestGuy-Regular");
+                if (f == null) { Debug.LogWarning("[FOUNDERS] UI display font missing"); return display = Font; }
+                FontAsset asset = null;
+                try { asset = FontAsset.CreateFontAsset(f, 90, 15, GlyphRenderMode.SDFAA, 1024, 1024); }
+                catch (Exception e) { Debug.LogWarning("[FOUNDERS] UI display font asset: " + e.Message); }
+                // Glyphs it lacks (arrows, ticks) come from the sentence face.
+                if (asset != null && Font.fontAsset != null)
+                {
+                    asset.fallbackFontAssetTable ??= new List<FontAsset>();
+                    asset.fallbackFontAssetTable.Add(Font.fontAsset);
+                }
+                display = asset != null ? FontDefinition.FromSDFFont(asset) : FontDefinition.FromFont(f);
+                return display;
+            }
+        }
 
         /// <summary>
         /// Changa One as an SDF font asset with a wide padding (15 at 90 pt), so the outline can reach
@@ -135,7 +171,7 @@ namespace Founders.UI
         // and thin strokes (the "/" in 46/105) survive; the hard drop below carries the weight instead.
         public static float OutlineFor(float size) => Mathf.Clamp(size * 0.085f, 0.8f, 1.7f);
 
-        /// <summary>Width of a string in Changa One (plus its outline), from the measured advances.</summary>
+        /// <summary>Width of a string in the display face (plus its outline), from the measured advances.</summary>
         public static float TextWidth(string s, float size, bool outlined = true)
         {
             if (string.IsNullOrEmpty(s)) return 0;
@@ -232,6 +268,16 @@ namespace Founders.UI
             skins[name] = t;
             return t;
         }
+
+        /// <summary>True when the Adventure UI Kit draws the windows (the game is in the kit's look).</summary>
+        public static bool KitLook => IsKitSkin("panel");
+
+        /// <summary>
+        /// A whole kit button drawn as it is, symbol included (the round stone ✕, the stone ‹ and the gear), from
+        /// Kit/UI/Skin/&lt;name&gt;; null without the kit.
+        /// </summary>
+        public static Texture2D KitWhole(string name) =>
+            CustomAssets.Texture("UI/Skin/" + name) ?? Kit.Texture("UI/Skin/" + name);
 
         /// <summary>True when a skin is drawn from the Adventure UI Kit (no own Custom picture overrides it).</summary>
         public static bool IsKitSkin(string name) =>
@@ -504,9 +550,19 @@ namespace Founders.UI
         public static Label T(string text, float size = Theme.Body, Color? color = null)
         {
             var l = Bare(text, size, color ?? Color.white);
+            l.style.unityFontDefinition = Theme.Display;
             Outline(l, size);
             l.AddToClassList("kit-text");
             l.RegisterCallback<AttachToPanelEvent>(_ => ApplySurface(l));
+            return l;
+        }
+
+        /// <summary>The kit's title: orange with a deep red outline (window titles, section heads, the main buttons).</summary>
+        public static Label Title(string text, float size = Theme.H1)
+        {
+            var l = T(text, size, Theme.Title);
+            l.AddToClassList("title-text");
+            Outline(l, size);
             return l;
         }
 
@@ -553,9 +609,11 @@ namespace Founders.UI
         public static void Outline(Label l, float size)
         {
             float w = Theme.OutlineFor(size);
+            // The kit's orange titles have a deep red rim; everything else a dark plum one.
+            var rim = l.ClassListContains("title-text") ? Theme.TitleOutline : Theme.Outline;
             l.style.unityTextOutlineWidth = w;
-            l.style.unityTextOutlineColor = Theme.Outline;
-            l.style.textShadow = new TextShadow { offset = new Vector2(0, w + 1f), blurRadius = 0, color = Theme.Outline };
+            l.style.unityTextOutlineColor = rim;
+            l.style.textShadow = new TextShadow { offset = new Vector2(0, w + 1f), blurRadius = 0, color = rim };
             // Room for the outline at both ends, so a clipped (overflow: hidden) label never cuts it.
             float pad = Mathf.Ceil(w);
             l.style.paddingLeft = pad;
@@ -572,7 +630,7 @@ namespace Founders.UI
             {
                 var c = l.style.color.value;
                 if (!OnParchment(l) && c.r * 0.3f + c.g * 0.59f + c.b * 0.11f < 0.45f)
-                    l.style.color = Color.Lerp(c, new Color(0.96f, 0.93f, 0.87f), 0.85f);
+                    l.style.color = c == Theme.InkText || c == Theme.InkDark ? Theme.Prose : Color.Lerp(c, Theme.Prose, 0.85f);
             });
             return l;
         }
@@ -674,11 +732,14 @@ namespace Founders.UI
         /// <summary>The wooden title strip: name and an optional "Lv.N" in yellow-green.</summary>
         public static VisualElement Plank(string title, int? level = null, float size = Theme.H1, float width = 0)
         {
-            var p = Div("plank").Row().Center().Skin("plank").Pad(0, 40, 4, 40).Ignore();
+            // The kit writes the title straight on the stone, in orange; the game's own look has a wooden strip.
+            bool kit = Theme.KitLook;
+            var p = Div("plank").Row().Center().Pad(0, 40, kit ? 0 : 4, 40).Ignore();
+            if (!kit) p.Skin("plank");
             p.style.height = Theme.PlankH;
             p.style.flexShrink = 0;
-            string text = level.HasValue ? $"{title} <color=#D7F25A>Lv.{level.Value}</color>" : title;
-            var l = T(text, size);
+            string text = level.HasValue ? $"{title} <color=#{(kit ? "FFFFFF" : "D7F25A")}>Lv.{level.Value}</color>" : title;
+            var l = kit ? Title(text, size + 2) : T(text, size);
             // Room for the close button on the right and the same on the left: the title stays centred.
             if (width > 0) l.Fit(width - 2 * (Theme.CloseSize + 10), Theme.Body);
             l.style.whiteSpace = WhiteSpace.NoWrap;
@@ -691,14 +752,16 @@ namespace Founders.UI
         {
             var s = Div("section").Col().Skin("section");
             s.style.flexShrink = 0;
-            // The tan band is wood, not parchment: its title is the kit's white outlined text.
-            var head = Div().Row().Ignore().Bg(Theme.SectionHead).Radius(8, 0).Pad(0, 10);
+            bool kit = Theme.KitLook;
+            // The kit: the head is an orange title on the dark inset over a thin lilac line. The game's own: a tan band.
+            var head = Div().Row().Ignore().Pad(0, 10);
             head.AddToClassList("surf-dark");
             head.style.minHeight = Theme.SectionHeadH;
-            head.style.borderBottomWidth = 1.5f;
-            head.style.borderBottomColor = Theme.SectionLine;
-            head.style.marginLeft = 1.5f; head.style.marginRight = 1.5f; head.style.marginTop = 1.5f;
-            head.Add(T(title, Theme.H2).Flex());
+            head.style.borderBottomWidth = kit ? 1 : 1.5f;
+            head.style.borderBottomColor = kit ? Theme.RowLine : Theme.SectionLine;
+            if (kit) { head.style.marginLeft = 8; head.style.marginRight = 8; head.style.marginTop = 4; head.style.paddingLeft = 2; head.style.paddingRight = 2; }
+            else { head.Bg(Theme.SectionHead).Radius(8, 0); head.style.marginLeft = 1.5f; head.style.marginRight = 1.5f; head.style.marginTop = 1.5f; }
+            head.Add((kit ? Title(title, Theme.H2) : T(title, Theme.H2)).Flex());
             if (extra != null) head.Add(extra.NoShrink().Margin(0, 0, 0, 8));
             s.Add(head);
             body = Div().Col().Pad(0, 10, 4, 10);
@@ -770,7 +833,9 @@ namespace Founders.UI
             var top = Div().Row().Center().Ignore();
             if (icon != null) top.Add(Icon(icon, size + 6).Margin(0, 5));
             // The kit's buttons speak in capitals.
-            var l = T(label?.ToUpperInvariant(), size);
+            var l = Theme.KitLook && (kind == Kind.Green || kind == Kind.Orange) ? Title(label?.ToUpperInvariant(), size) : T(label?.ToUpperInvariant(), size);
+            // A locked button is the dark stone, dimmed.
+            if (kind == Kind.Grey && Theme.KitLook) { l.style.color = Theme.ProseSoft; b.style.unityBackgroundImageTintColor = new Color(0.75f, 0.72f, 0.8f, 1f); }
             // Shrinks to the width given; a label still too long at the minimum size wraps onto two lines.
             if (width > 0) l.Fit(width - 22 - (icon != null ? size + 11 : 0), Theme.Small).Align(TextAnchor.MiddleCenter);
             top.Add(l);
@@ -804,7 +869,28 @@ namespace Founders.UI
         }
 
         /// <summary>The red close button that sits on a popup's top-right corner.</summary>
-        public static VisualElement Close(Action onTap) => Square("close", onTap, Kind.Red, Theme.CloseSize);
+        public static VisualElement Close(Action onTap) => Whole("close_btn", onTap, Theme.CloseSize + 2) ?? Square("close", onTap, Kind.Red, Theme.CloseSize);
+
+        /// <summary>
+        /// A whole kit button (its symbol is part of the picture): <paramref name="size"/> tall, as wide as the picture's
+        /// shape. Null without the kit, so callers fall back to the game's own button.
+        /// </summary>
+        public static VisualElement Whole(string name, Action onTap, float size)
+        {
+            var tex = Theme.KitWhole(name);
+            if (tex == null) return null;
+            float w = Mathf.Round(size * tex.width / Mathf.Max(1f, tex.height));
+            var b = Div(name).Size(w, size).BgImage(tex);
+            if (onTap != null) b.OnTap(onTap).HitSlop(w, size);
+            else b.pickingMode = PickingMode.Position;
+            return b;
+        }
+
+        /// <summary>The back button at a window's lower left: the kit's stone ‹ square, or the game's arrow.</summary>
+        public static VisualElement Back(float size = 54) => Whole("back_btn", null, Mathf.Round(size * 0.85f)) ?? Icon("back", size);
+
+        /// <summary>The settings button: the kit's stone gear, or the game's square with a gear.</summary>
+        public static VisualElement Settings(Action onTap, float size) => Whole("settings_btn", onTap, Mathf.Round(size * 1.06f)) ?? HudSquare("settings", onTap, size);
 
         /// <summary>A tab: raised gold when selected, flat brown otherwise; text may carry a counter.</summary>
         public static VisualElement Tab(string label, bool on, Action onTap, string count = null, float height = Theme.TabH, float size = Theme.Num, string icon = null)
@@ -816,8 +902,10 @@ namespace Founders.UI
             if (icon != null) t.Add(Icon(icon, 24));
             if (!string.IsNullOrEmpty(label))
             {
-                string text = count != null ? $"{label} <color=#D7F25A>{count}</color>" : label;
-                var l = T(text, size, on ? Color.white : Theme.Pale);
+                bool kit = Theme.KitLook;
+                string text = count != null ? $"{label} <color=#{(kit ? (on ? "FFFFFF" : "FFB547") : "D7F25A")}>{count}</color>" : label;
+                // The kit: the chosen tab is the lighter stone with its word in the title orange.
+                var l = kit && on ? Title(text, size) : T(text, size, on ? Color.white : Theme.Pale);
                 if (icon != null) l.style.marginLeft = 4;
                 t.Add(l);
             }

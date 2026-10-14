@@ -85,7 +85,7 @@ namespace Founders.UI
             AddRegion(sheetTabsBottom, () => WindowPanel && store.ActivePanel == Panel.Objectives ? $"g{goalsTab}" : "", BuildBottomTabs);
             sheetLayer.Add(sheetTabsBottom);
 
-            backArrow = E.Icon("back", 54).Abs();
+            backArrow = E.Back().Abs();
             backArrow.name = "back";
             Tap(backArrow, () => store.ActivePanel = Panel.None);
             sheetLayer.Add(backArrow);
@@ -659,9 +659,14 @@ namespace Founders.UI
             if (current == null) { host.Add(E.Ink("The story has not begun yet.")); return; }
             // Banner: the chapter on dark wood, with the story button.
             // The kit's chapter banner: dark wood, "Chapter N" big, the title under it, the story button on the right.
-            var banner = E.Div().Row().Radius(10).Border(Theme.Outline, 2.5f).Pad(10, 12).Margin(0, 0, 8);
-            banner.BgImage(Theme.Gradient("banner", false, Theme.Hex("#4A2E1A"), Theme.Hex("#8A5A32")));
-            banner.AddToClassList("surf-dark");
+            var banner = E.Div().Row().Pad(10, 12).Margin(0, 0, 8);
+            if (Theme.KitLook) banner.Skin("section");
+            else
+            {
+                banner.Radius(10).Border(Theme.Outline, 2.5f);
+                banner.BgImage(Theme.Gradient("banner", false, Theme.Hex("#4A2E1A"), Theme.Hex("#8A5A32")));
+                banner.AddToClassList("surf-dark");
+            }
             banner.style.minHeight = 92;
             float art = Portrait ? 48 : 60;
             banner.Add(E.Icon("campfire", art));
@@ -845,7 +850,7 @@ namespace Founders.UI
             rail.Add(E.Icon("sparkle", 24).Margin(4));
             if (!last)
             {
-                var l = E.Div().Ignore().Bg(Theme.Wood4);
+                var l = E.Div().Ignore().Bg(Theme.KitLook ? Theme.Rim : Theme.Wood4);
                 l.style.width = 3;
                 l.style.flexGrow = 1;
                 l.style.marginTop = 2;

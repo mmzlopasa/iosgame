@@ -57,8 +57,8 @@ namespace Founders.UI
         /// <summary>Skins whose middle and edges repeat (tiled) instead of stretching: real wood and parchment.</summary>
         public static readonly HashSet<string> Tiled = new HashSet<string> { "panel", "plank", "section" };
 
-        /// <summary>Advance widths (em) of Changa One for ' '..'~'.</summary>
-        static readonly float[] Ascii = { 0.150f, 0.330f, 0.500f, 0.746f, 0.551f, 0.862f, 0.664f, 0.250f, 0.314f, 0.314f, 0.536f, 0.600f, 0.277f, 0.350f, 0.267f, 0.503f, 0.600f, 0.600f, 0.600f, 0.600f, 0.600f, 0.600f, 0.600f, 0.600f, 0.600f, 0.600f, 0.277f, 0.277f, 0.600f, 0.600f, 0.600f, 0.528f, 0.867f, 0.609f, 0.592f, 0.500f, 0.645f, 0.530f, 0.470f, 0.600f, 0.650f, 0.300f, 0.366f, 0.593f, 0.455f, 0.811f, 0.655f, 0.630f, 0.590f, 0.630f, 0.615f, 0.577f, 0.500f, 0.607f, 0.602f, 0.821f, 0.592f, 0.560f, 0.589f, 0.339f, 0.503f, 0.339f, 0.600f, 0.595f, 0.429f, 0.567f, 0.595f, 0.459f, 0.595f, 0.565f, 0.358f, 0.536f, 0.595f, 0.300f, 0.300f, 0.560f, 0.309f, 0.854f, 0.595f, 0.590f, 0.595f, 0.595f, 0.375f, 0.526f, 0.364f, 0.590f, 0.520f, 0.800f, 0.540f, 0.520f, 0.530f, 0.339f, 0.420f, 0.339f, 0.600f };
+        /// <summary>Advance widths (em) of the display face (Luckiest Guy) for ' '..'~'.</summary>
+        static readonly float[] Ascii = { 0.195f, 0.279f, 0.479f, 0.606f, 0.437f, 0.725f, 0.630f, 0.232f, 0.389f, 0.382f, 0.542f, 0.456f, 0.223f, 0.382f, 0.222f, 0.505f, 0.633f, 0.388f, 0.509f, 0.528f, 0.539f, 0.531f, 0.573f, 0.506f, 0.571f, 0.555f, 0.248f, 0.247f, 0.455f, 0.391f, 0.455f, 0.554f, 0.665f, 0.626f, 0.594f, 0.515f, 0.583f, 0.479f, 0.487f, 0.626f, 0.626f, 0.297f, 0.510f, 0.614f, 0.452f, 0.791f, 0.704f, 0.638f, 0.596f, 0.691f, 0.606f, 0.531f, 0.543f, 0.623f, 0.613f, 0.908f, 0.588f, 0.607f, 0.487f, 0.366f, 0.505f, 0.365f, 0.485f, 0.302f, 0.283f, 0.626f, 0.594f, 0.513f, 0.583f, 0.577f, 0.488f, 0.627f, 0.626f, 0.294f, 0.510f, 0.603f, 0.451f, 0.898f, 0.652f, 0.638f, 0.597f, 0.691f, 0.606f, 0.532f, 0.545f, 0.611f, 0.614f, 0.910f, 0.595f, 0.605f, 0.496f, 0.410f, 0.287f, 0.402f, 0.576f };
 
         /// <summary>Advance of a character in em (0.6 for anything not measured).</summary>
         public static float Advance(char c)
@@ -66,15 +66,15 @@ namespace Founders.UI
             if (c >= 32 && c < 127) return Ascii[c - 32];
             switch (c)
             {
-                case '·': return 0.277f;
-                case '−': return 0.600f;
-                case '×': return 0.600f;
-                case '°': return 0.407f;
-                case '–': return 0.595f;
-                case '—': return 0.854f;
-                case '’': return 0.275f;
-                case '…': return 0.877f;
-                case '%': return 0.862f;
+                case '·': return 0.226f;
+                case '−': return 0.382f;
+                case '×': return 0.446f;
+                case '°': return 0.310f;
+                case '–': return 0.468f;
+                case '—': return 0.868f;
+                case '’': return 0.215f;
+                case '…': return 0.769f;
+                case '%': return 0.725f;
                 default: return 0.6f;
             }
         }

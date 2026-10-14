@@ -99,6 +99,10 @@ namespace FoundersEditor
             R("hud_rank", new[] { new[] { "rank", "level", "lvl", "label", "tag" } }, new[] { "small", "bg" }, new[] { "button", "btn", "bar" }),
             R("hud_hex", new[] { new[] { "avatar", "portrait", "profile", "hex", "hexagon" } }, new[] { "frame", "bg" }, square: true),
             R("hud_hex_frame", new[] { new[] { "avatar", "portrait", "profile", "hex", "hexagon" }, new[] { "frame", "border", "ring" } }, square: true),
+            // Whole buttons drawn as they are, symbol included (see E.Whole): the close, back and settings buttons.
+            R("close_btn", new[] { ButtonW, new[] { "close", "cross", "x" } }, square: true),
+            R("back_btn", new[] { new[] { "back", "previous", "prev", "left", "return" } }, new[] { "button", "btn" }, square: true),
+            R("settings_btn", new[] { ButtonW, new[] { "setting", "settings", "gear", "options" } }, square: true),
         };
 
         /// <summary>Interface glyphs the kit may draw (resource, building and villager pictures stay the game's painted ones).</summary>

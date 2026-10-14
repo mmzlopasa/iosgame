@@ -746,8 +746,8 @@ namespace Founders.UI
                     foreach (var o in laws)
                         if (!done.Contains(o.Law.Id) && Excludes(s.Law, o.Law)) { group.Add(o); done.Add(o.Law.Id); }
                     if (group.Count == 1) { col.Add(LawNode(s, colW)); continue; }
-                    var box = E.Div().Col().Ignore().Radius(12).Border(Theme.Wood4, 2f).Pad(4).Margin(0, 0, 8);
-                    box.style.backgroundColor = Theme.Alpha(Theme.Wood4, 0.18f);
+                    var box = E.Div().Col().Ignore().Radius(12).Border(Theme.KitLook ? Theme.Rim : Theme.Wood4, 2f).Pad(4).Margin(0, 0, 8);
+                    box.style.backgroundColor = Theme.KitLook ? new Color(0.06f, 0.03f, 0.11f, 0.35f) : Theme.Alpha(Theme.Wood4, 0.18f);
                     for (int i = 0; i < group.Count; i++)
                     {
                         if (i > 0) box.Add(OrConnector());
@@ -800,8 +800,8 @@ namespace Founders.UI
                     foreach (var o in laws)
                         if (!done.Contains(o.Law.Id) && Excludes(st.Law, o.Law)) { group.Add(o); done.Add(o.Law.Id); }
                     if (group.Count == 1) { scroll.Add(LawNode(st, colW)); continue; }
-                    var box = E.Div().Col().Ignore().Radius(12).Border(Theme.Wood4, 2f).Pad(4).Margin(0, 0, 8);
-                    box.style.backgroundColor = Theme.Alpha(Theme.Wood4, 0.18f);
+                    var box = E.Div().Col().Ignore().Radius(12).Border(Theme.KitLook ? Theme.Rim : Theme.Wood4, 2f).Pad(4).Margin(0, 0, 8);
+                    box.style.backgroundColor = Theme.KitLook ? new Color(0.06f, 0.03f, 0.11f, 0.35f) : Theme.Alpha(Theme.Wood4, 0.18f);
                     for (int i = 0; i < group.Count; i++)
                     {
                         if (i > 0) box.Add(OrConnector());
@@ -1000,9 +1000,11 @@ namespace Founders.UI
             var c = DialogShell(p.Title, DialogW, out var body, out var foot);
             // Left: the people's words and the mood (portrait: on top).
             var left = E.Div().Col().Ignore().Size(DialogArtW);
-            var art = E.Div().Row().Center().Radius(10).Border(Theme.Outline, 2.5f).Ignore();
+            var art = E.Div().Row().Center().Ignore();
             art.style.height = Portrait ? 76 : 90;
-            art.BgImage(Theme.Gradient("petitionart", true, Theme.Hex("#8A5A32"), Theme.Hex("#4A2E1A")));
+            // The kit look: the scene in the dark inset; the game's own: a wooden frame.
+            if (Theme.KitLook) art.Skin("section");
+            else art.Radius(10).Border(Theme.Outline, 2.5f).BgImage(Theme.Gradient("petitionart", true, Theme.Hex("#8A5A32"), Theme.Hex("#4A2E1A")));
             art.Add(E.Icon("people", 60));
             art.Add(E.Icon("discontent", 38).Margin(0, 0, 0, -8));
             left.Add(art);

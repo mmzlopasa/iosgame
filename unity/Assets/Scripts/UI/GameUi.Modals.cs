@@ -283,9 +283,11 @@ namespace Founders.UI
             var c = DialogShell(ev.Title, DialogW, out var body, out var foot);
             // Left: the scene and the story.
             var left = E.Div().Col().Ignore().Size(DialogArtW);
-            var art = E.Div().Row().Center().Radius(10).Border(Theme.Outline, 2.5f).Ignore();
+            var art = E.Div().Row().Center().Ignore();
             art.style.height = Portrait ? 76 : 90;
-            art.BgImage(Theme.Gradient("eventart", true, Theme.Hex("#8A5A32"), Theme.Hex("#4A2E1A")));
+            // The kit look: the scene in the dark inset; the game's own: a wooden frame.
+            if (Theme.KitLook) art.Skin("section");
+            else art.Radius(10).Border(Theme.Outline, 2.5f).BgImage(Theme.Gradient("eventart", true, Theme.Hex("#8A5A32"), Theme.Hex("#4A2E1A")));
             art.Add(E.Icon("campfire", 68));
             left.Add(art);
             left.Add(E.Ink(ev.Text, Theme.Body).Margin(8));
