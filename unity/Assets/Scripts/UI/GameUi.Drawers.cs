@@ -218,7 +218,7 @@ namespace Founders.UI
             return list;
         }
 
-        const float ItemW = 104, ItemCell = 78;
+        const float ItemW = 118, ItemCell = 78;
 
         /// <summary>An item of the strip: rarity cell with the icon (badge: how many stand), the name in two lines.</summary>
         static VisualElement ItemCard(string icon, E.Cell cell, string name, bool locked, string count)
