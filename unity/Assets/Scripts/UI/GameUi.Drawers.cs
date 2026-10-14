@@ -298,18 +298,23 @@ namespace Founders.UI
             tree.contentContainer.style.flexDirection = FlexDirection.Row;
             tree.contentContainer.style.alignItems = Align.FlexStart;
             tree.contentContainer.style.paddingBottom = 6;
+            // Whole columns only: the tree's width is shared out so the last one in view ends at its edge (the rest
+            // scroll in from the right) instead of a column cut in half under the detail card.
+            float treeW = InnerW - TechDetailW - 8;
+            int cols = Mathf.Max(1, Mathf.FloorToInt((treeW + 8) / (TechColW + 8)));
+            float colW = Mathf.Floor((treeW + 8) / cols) - 8;
             foreach (var group in techs.GroupBy(Tier).OrderBy(g => g.Key))
             {
                 int from = group.Key * 5 + 1, to = from + 4;
                 bool reached = G.HeartLevel >= from;
-                var col = E.Div().Col().Ignore().Size(TechColW);
+                var col = E.Div().Col().Ignore().Size(colW);
                 col.style.marginRight = 8;
                 var head = E.Div().Row().Center().Ignore();
                 head.style.height = 28;
                 head.Add(E.Icon(reached ? "flame" : "lock", 22));
                 head.Add(E.T(group.Key >= 6 ? $"Level {from}+" : $"Level {from}–{to}", Theme.Num, reached ? Color.white : Theme.Pale).Margin(0, 0, 0, 5));
                 col.Add(head);
-                foreach (var t in group) col.Add(TechNode(t, TechColW));
+                foreach (var t in group) col.Add(TechNode(t, colW));
                 tree.Add(col);
             }
             body.Add(tree);

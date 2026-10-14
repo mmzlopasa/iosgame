@@ -1090,7 +1090,49 @@ namespace Founders.UI
             s.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
             s.touchScrollBehavior = ScrollView.TouchScrollBehavior.Elastic;
             if (mode == ScrollViewMode.Horizontal) s.contentContainer.style.flexDirection = FlexDirection.Row;
+            else AddFade(s);
             return s;
+        }
+
+        static Texture2D fadeTexture;
+
+        /// <summary>
+        /// A soft edge along the bottom of a vertical list while more of it lies below: the last row fades into the
+        /// window instead of being cut straight through.
+        /// </summary>
+        static void AddFade(ScrollView s)
+        {
+            if (fadeTexture == null)
+            {
+                fadeTexture = new Texture2D(1, 32, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp, name = "scroll_fade" };
+                for (int y = 0; y < 32; y++)
+                {
+                    float t = 1f - y / 31f; // row 0 is the bottom
+                    fadeTexture.SetPixel(0, y, new Color(1, 1, 1, t * t * (3 - 2 * t)));
+                }
+                fadeTexture.Apply();
+            }
+            var fade = new VisualElement { name = "scroll-fade", pickingMode = PickingMode.Ignore };
+            fade.style.position = Position.Absolute;
+            fade.style.left = 0;
+            fade.style.right = 0;
+            fade.style.bottom = 0;
+            fade.style.height = 24;
+            fade.style.backgroundImage = new StyleBackground(fadeTexture);
+            fade.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100));
+            // The window's own colour near its bottom (the Adventure UI Kit's stone, or the game's parchment).
+            fade.style.unityBackgroundImageTintColor = Theme.IsKitSkin("panel") ? new Color(0.29f, 0.247f, 0.373f) : Theme.Hex("#E6D2AC");
+            fade.style.display = DisplayStyle.None;
+            s.hierarchy.Add(fade);
+            void Refresh()
+            {
+                float more = s.contentContainer.layout.height - s.contentViewport.layout.height - s.scrollOffset.y;
+                var d = !float.IsNaN(more) && more > 4 ? DisplayStyle.Flex : DisplayStyle.None;
+                if (fade.style.display != d) fade.style.display = d;
+            }
+            s.verticalScroller.valueChanged += _ => Refresh();
+            s.RegisterCallback<GeometryChangedEvent>(_ => Refresh());
+            s.contentContainer.RegisterCallback<GeometryChangedEvent>(_ => Refresh());
         }
     }
 }
