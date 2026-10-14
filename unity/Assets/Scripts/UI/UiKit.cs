@@ -1126,9 +1126,15 @@ namespace Founders.UI
             s.hierarchy.Add(fade);
             void Refresh()
             {
-                float more = s.contentContainer.layout.height - s.contentViewport.layout.height - s.scrollOffset.y;
-                var d = !float.IsNaN(more) && more > 4 ? DisplayStyle.Flex : DisplayStyle.None;
+                // What is still hidden below (the list's own bottom padding is only air, not content).
+                float more = s.contentContainer.layout.height - s.contentViewport.layout.height - s.scrollOffset.y
+                             - s.contentContainer.resolvedStyle.paddingBottom;
+                bool show = !float.IsNaN(more) && more > 6;
+                var d = show ? DisplayStyle.Flex : DisplayStyle.None;
                 if (fade.style.display != d) fade.style.display = d;
+                // Just a little more below: a shallow fade, so a row that nearly fits is not washed out.
+                float h = show ? Mathf.Clamp(more, 8, 24) : 0;
+                if (show && !Mathf.Approximately(fade.style.height.value.value, h)) fade.style.height = h;
             }
             s.verticalScroller.valueChanged += _ => Refresh();
             s.RegisterCallback<GeometryChangedEvent>(_ => Refresh());

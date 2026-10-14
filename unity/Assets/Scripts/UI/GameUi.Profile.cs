@@ -313,7 +313,7 @@ namespace Founders.UI
                 bool on = Founder.Frame == f.Id;
                 var c = E.Div().Col(Align.Center).Size(cellW);
                 var slot = E.Slot(open ? Founder.Avatar : "lock", 60, FrameCell(f.Id), open ? 0.84f : 0.5f, !open);
-                if (on) slot.Add(E.Icon("check", 24).Abs(null, null, -6, -6));
+                if (on) slot.Add(E.Icon("check", 22).Abs(null, null, -4, 2)); // on the corner, clear of the name under it
                 c.Add(slot);
                 c.Add(E.T(f.Name, Theme.Body, open ? (Color?)null : Theme.Pale).Fit(cellW - 4).Margin(3));
                 if (!open) c.Add(E.T(f.Milestones == 1 ? "1 milestone" : $"{f.Milestones} milestones", Theme.Small, Theme.Pale).Fit(cellW - 4));
@@ -548,7 +548,7 @@ namespace Founders.UI
                 bool on = Founder.Avatar == a.Id;
                 var cell = E.Div().Col(Align.Center).Size(cellW).Margin(0, 0, 8);
                 var slot = E.Slot(a.Id, 76, on ? FrameCell(Founder.Frame) : E.Cell.Slot, 0.84f);
-                if (on) slot.Add(E.Icon("check", 26).Abs(null, null, -6, -6));
+                if (on) slot.Add(E.Icon("check", 22).Abs(null, null, -4, 2)); // on the corner, clear of the name under it
                 cell.Add(slot);
                 cell.Add(E.T(a.Name, Theme.Body, on ? Theme.Gold : (Color?)null).Fit(cellW - 4).Margin(3));
                 string id = a.Id;

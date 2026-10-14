@@ -249,7 +249,7 @@ namespace Founders.UI
             foreach (var type in ResourceTypes.All)
             {
                 double v = report.Gained[type];
-                var cell = RewardCell(IconFor(type), CellFor(type), Fmt.Signed(v) == "0" ? "0" : (v < 0 ? "−" : "+") + Fmt.Compact(System.Math.Abs(v)), 58);
+                var cell = RewardCell(IconFor(type), CellFor(type), Fmt.Signed(v) == "0" ? "0" : (v < 0 ? "−" : "+") + Fmt.Compact(System.Math.Abs(v)), 50);
                 cell.style.marginRight = 10;
                 if (v < -0.5) cell.Add(E.Icon("alert", 22).Abs(null, -6, -6));
                 cells.Add(cell);
