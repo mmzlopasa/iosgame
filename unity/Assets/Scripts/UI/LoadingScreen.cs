@@ -103,7 +103,7 @@ namespace Founders.UI
             percent = E.T("0%", Theme.Num, Theme.Gold);
             labels.Add(percent);
             progress.Add(labels);
-            var bar = E.Bar(out fill, 12);
+            var bar = E.Bar(out fill, 12, E.FillKind.Gold);
             bar.style.marginTop = 4;
             progress.Add(bar);
             progressRow.Add(progress);

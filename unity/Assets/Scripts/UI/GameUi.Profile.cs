@@ -304,7 +304,7 @@ namespace Founders.UI
         /// <summary>The frames: unlocked ones are picked with a tap, locked ones say how many milestones they need.</summary>
         VisualElement FrameRow(float rowW)
         {
-            var row = E.Div().Row(0, Align.FlexStart).Ignore().Margin(8, 0, 6);
+            var row = E.Div().Row(0, Align.FlexStart).Ignore().Margin(8, 0, 12);
             int reached = G.State.ReachedMilestones.Count;
             float cellW = Mathf.Floor(rowW / PlayerProfile.Frames.Length);
             foreach (var f in PlayerProfile.Frames)

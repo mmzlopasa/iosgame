@@ -958,15 +958,17 @@ namespace Founders.UI
                 default:
                     if (confirmLaw == id)
                     {
-                        bottom.Add(Notice("alert", $"A custom is for good: once signed, {law.Name} can never be revoked.", true).Margin(0));
-                        var buttons = E.Div().Row().Ignore().Margin(8);
+                        // The warning goes with the description (it scrolls); only the two buttons stay pinned.
+                        var warn = Notice("alert", $"A custom is for good: once signed, {law.Name} can never be revoked.", true).Margin(foot != null ? 8 : 0);
+                        if (foot != null) card.Add(warn); else bottom.Add(warn);
+                        var buttons = E.Div().Row().Ignore().Margin(foot != null ? 0 : 8);
                         float half = (detailW - 20 - 8) / 2;
                         buttons.Add(Share(E.Button("Cancel", Act(() => confirmLaw = null), E.Kind.Red, Theme.ButtonH, null, 16, null, half), buttons));
                         buttons.Add(Share(E.Button("Sign", Act(() =>
                         {
                             confirmLaw = null;
                             store.SignLaw(id);
-                        }), E.Kind.Green, Theme.ButtonH, "customs", 16, null, half), buttons));
+                        }), E.Kind.Green, Theme.ButtonH, null, 16, null, half), buttons));
                         bottom.Add(buttons);
                     }
                     else if (G.LawCooldownLeft > 0)

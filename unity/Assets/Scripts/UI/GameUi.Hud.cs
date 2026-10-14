@@ -823,10 +823,11 @@ namespace Founders.UI
             }
             // Landscape: newest first from the top; portrait: notices rise from the bottom, newest last. Either way,
             // if the column ever runs out of height, the oldest is the one cut.
-            int n = store.Toasts.Count;
-            for (int k = 0; k < n; k++)
+            // At most the two newest at once, so the village stays in view.
+            int n = store.Toasts.Count, first = Mathf.Max(0, n - 2);
+            for (int k = 0; k < n - first; k++)
             {
-                var toast = store.Toasts[Portrait ? k : n - 1 - k];
+                var toast = store.Toasts[Portrait ? first + k : n - 1 - k];
                 string icon = toast.Notice.Kind switch
                 {
                     NoticeKind.Success => "check",

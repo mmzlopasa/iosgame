@@ -200,7 +200,8 @@ namespace Founders.UI
         public static int WrappedLines(string s, float size, float width)
         {
             if (string.IsNullOrEmpty(s)) return 1;
-            float room = width * 0.95f - 2 * Mathf.Ceil(OutlineFor(size)) - 1;
+            // Kept conservative (the display face's real breaks come a little earlier than its advances say).
+            float room = width * 0.86f - 2 * Mathf.Ceil(OutlineFor(size)) - 1;
             float space = UiGenerated.Advance(' ') * size;
             int lines = 1;
             float x = 0;
@@ -834,6 +835,8 @@ namespace Founders.UI
             b.style.flexShrink = 0;
             if (width > 0) b.style.width = width;
             var top = Div().Row().Center().Ignore();
+            // A locked button says so with a padlock (unless it carries its own symbol).
+            if (icon == null && sub == null && kind == Kind.Grey && Theme.KitLook) icon = "lock";
             if (icon != null) top.Add(Icon(icon, size + 6).Margin(0, 5));
             // The kit's buttons speak in capitals.
             var l = Theme.KitLook && (kind == Kind.Green || kind == Kind.Orange) ? Title(label?.ToUpperInvariant(), size) : T(label?.ToUpperInvariant(), size);
@@ -1123,7 +1126,9 @@ namespace Founders.UI
             track.style.width = width;
             track.style.height = height;
             track.style.flexShrink = 0;
-            var area = Div().Ignore().Abs(25, 5, 4, 5);
+            // The fill lies in the track's groove (the kit's track has a thick stone rim round a thin channel).
+            var area = Theme.KitLook ? Div().Ignore().Abs(26, Mathf.Round(height * 0.3f), Mathf.Round(height * 0.45f), Mathf.Round(height * 0.3f))
+                                     : Div().Ignore().Abs(25, 5, 4, 5);
             fill = Div().Skin("hud_bar_fill_blue").Ignore().Abs(0, 0, null, 0);
             fill.style.minWidth = height - 10;
             fill.style.width = Length.Percent(0);
@@ -1250,7 +1255,7 @@ namespace Founders.UI
                 // What is still hidden below (the list's own bottom padding is only air, not content).
                 float more = s.contentContainer.layout.height - s.contentViewport.layout.height - s.scrollOffset.y
                              - s.contentContainer.resolvedStyle.paddingBottom;
-                bool show = !float.IsNaN(more) && more > 6;
+                bool show = !float.IsNaN(more) && more > 12;
                 var d = show ? DisplayStyle.Flex : DisplayStyle.None;
                 if (fade.style.display != d) fade.style.display = d;
                 // Just a little more below: a shallow fade, so a row that nearly fits is not washed out.
