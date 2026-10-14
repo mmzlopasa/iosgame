@@ -142,3 +142,15 @@ jobs:
           body: |
             Automatic screenshots from `${{ github.ref_name }}` @ ${{ github.sha }} (iOS Simulator, capture mode).
           files: shots/*.png
+
+      # Branch runs (started by hand) go to their own pre-release, so main's screenshots stay as they are.
+      - name: Publish to "screenshots-preview" pre-release
+        if: github.event_name != 'pull_request' && github.ref != 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: screenshots-preview
+          name: Screenshots preview (branch)
+          prerelease: true
+          body: |
+            Screenshots from branch `${{ github.ref_name }}` @ ${{ github.sha }} (iOS Simulator, capture mode).
+          files: shots/*.png
