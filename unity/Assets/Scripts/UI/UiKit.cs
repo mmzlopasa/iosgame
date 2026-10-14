@@ -199,14 +199,16 @@ namespace Founders.UI
             if (name.StartsWith("thumb:")) return Thumbnails.Get(name.Substring(6)) ?? Icon("build");
             if (icons.TryGetValue(name, out var t)) return t;
             // The player's own icon (Assets/Custom/Resources/Custom/UI/Icons) wins over the game's.
-            t = CustomAssets.Texture("UI/Icons/" + name) ?? UnityEngine.Resources.Load<Texture2D>("UI/Icons/" + name);
+            t = CustomAssets.Texture("UI/Icons/" + name) ?? Kit.Texture("UI/Icons/" + name) ??
+                UnityEngine.Resources.Load<Texture2D>("UI/Icons/" + name);
             if (t == null) Debug.LogWarning($"[FOUNDERS] UI icon missing: {name}");
             icons[name] = t;
             return t;
         }
 
         public static bool HasIcon(string name) =>
-            CustomAssets.Texture("UI/Icons/" + name) != null || UnityEngine.Resources.Load<Texture2D>("UI/Icons/" + name) != null;
+            CustomAssets.Texture("UI/Icons/" + name) != null || Kit.Texture("UI/Icons/" + name) != null ||
+            UnityEngine.Resources.Load<Texture2D>("UI/Icons/" + name) != null;
 
         static readonly Dictionary<string, float> skinPixels = new Dictionary<string, float>();
 
@@ -217,11 +219,23 @@ namespace Founders.UI
             // The player's own skin (Custom/UI/Skin) may be drawn at another resolution: its slices scale with it.
             t = CustomAssets.Texture("UI/Skin/" + name);
             if (t != null && own != null && own.width > 0) skinPixels[name] = UiGenerated.SkinScale * t.width / (float)own.width;
+            // Then the Adventure UI Kit, when it is in the project (see Kit): its own slices.
+            if (t == null && (t = Kit.Texture("UI/Skin/" + name)) != null && Kit.Slice(name) is Kit.SkinSlice ks &&
+                UiGenerated.Skins.TryGetValue(name, out var ours))
+            {
+                // Its borders keep about the size ours have on screen.
+                float pt = ours.Left + ours.Top + ours.Right + ours.Bottom, px = ks.Left + ks.Top + ks.Right + ks.Bottom;
+                skinPixels[name] = Mathf.Clamp(px / Mathf.Max(1f, pt), 0.5f, 16f);
+            }
             if (t == null) t = own;
             if (t == null) Debug.LogWarning($"[FOUNDERS] UI skin missing: {name}");
             skins[name] = t;
             return t;
         }
+
+        /// <summary>True when a skin is drawn from the Adventure UI Kit (no own Custom picture overrides it).</summary>
+        public static bool IsKitSkin(string name) =>
+            CustomAssets.Texture("UI/Skin/" + name) == null && Kit.Texture("UI/Skin/" + name) != null;
 
         /// <summary>Pixels per point of a skin texture (3 for the game's own).</summary>
         public static float SkinPixelsPerPoint(string name) => skinPixels.TryGetValue(name, out var k) ? k : UiGenerated.SkinScale;
@@ -355,9 +369,25 @@ namespace Founders.UI
             e.style.backgroundImage = new StyleBackground(tex);
             e.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100));
             // Real wood and parchment repeat (tiled) rather than stretch, so their grain keeps its size.
-            var slice = UiGenerated.Tiled.Contains(name) ? SliceType.Tiled : SliceType.Sliced;
+            var kit = Theme.IsKitSkin(name) ? Kit.Slice(name) : null;
+            var slice = kit == null && UiGenerated.Tiled.Contains(name) ? SliceType.Tiled : SliceType.Sliced;
             if (e.style.unitySliceType != slice) e.style.unitySliceType = slice;
-            if (UiGenerated.Skins.TryGetValue(name, out var s))
+            if (kit is Kit.SkinSlice ks)
+            {
+                // The kit's picture with the kit's own 9-slice borders (pixels).
+                float k = Theme.SkinPixelsPerPoint(name);
+                e.style.unitySliceLeft = ks.Left;
+                e.style.unitySliceTop = ks.Top;
+                e.style.unitySliceRight = ks.Right;
+                e.style.unitySliceBottom = ks.Bottom;
+                e.style.unitySliceScale = 1f / k;
+                if (ks.Light != null)
+                {
+                    e.EnableInClassList("surf-light", ks.Light.Value);
+                    e.EnableInClassList("surf-dark", !ks.Light.Value);
+                }
+            }
+            else if (UiGenerated.Skins.TryGetValue(name, out var s))
             {
                 float k = Theme.SkinPixelsPerPoint(name);
                 e.style.unitySliceLeft = Mathf.RoundToInt(s.Left * k);
