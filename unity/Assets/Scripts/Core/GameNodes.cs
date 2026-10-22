@@ -299,8 +299,8 @@ namespace Founders.Core
                         if (!seen.Add(key)) continue;
                         var n = NodeAt(x, y, job);
                         if (n == null || n.Depleted) continue;
-                        // A building or a road on top of a bush: nothing to pick there.
-                        if (t == TerrainType.Grass && (BuildingIdAt(x, y) != null || DecorationAt(x, y) != null)) continue;
+                        // A building or a road on top of a bush, a tree or a rock: nothing to gather there.
+                        if (BuildingIdAt(x, y) != null || DecorationAt(x, y) != null) continue;
                         int dx = Math.Max(0, Math.Max(site.X - x, x - (site.X + fp.Width - 1)));
                         int dy = Math.Max(0, Math.Max(site.Y - y, y - (site.Y + fp.Height - 1)));
                         near.Add((dx * dx + dy * dy, x, y));

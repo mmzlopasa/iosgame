@@ -186,6 +186,7 @@ namespace Founders.Core
         ObjectiveCompleted,     // id
         MilestoneReached,       // id
         RegionExplored,         // id
+        RegionsExploredAtLeast, // amount (lands explored beyond the home clearing)
         DistinctJobsAtLeast,    // amount (jobs with at least one worker)
         FoodBalancePositive,    // net food rate > 0
         YearAtLeast,            // amount (game years since founding; one year = four seasons)
@@ -601,6 +602,8 @@ namespace Founders.Core
         public string Id, Name, Description;
         public int X, Y, Width, Height;
         public bool RevealedAtStart;
+        /// <summary>The land around the campfire: it moves to wherever the player founds the settlement.</summary>
+        public bool Home;
         public ResourceBundle Cost;
         public double ExpeditionSeconds;
         public string LegacyText;
@@ -620,6 +623,7 @@ namespace Founders.Core
             Description = o.Str("description"),
             X = o.Int("x"), Y = o.Int("y"), Width = o.Int("width"), Height = o.Int("height"),
             RevealedAtStart = o.Bool("revealedAtStart"),
+            Home = o.OptBool("home", false),
             Cost = ResourceBundle.FromJson(o.OptObj("cost")),
             ExpeditionSeconds = o.Num("expeditionSeconds"),
             LegacyText = o.Str("legacyText"),

@@ -253,6 +253,8 @@ namespace Founders.Core
             foreach (var r in c.Regions)
                 if (r.X < 0 || r.Y < 0 || r.X + r.Width > map.Width || r.Y + r.Height > map.Height)
                     problems.Add($"region '{r.Id}' lies outside the map");
+            if (c.Regions.Count(r => r.Home) > 1) problems.Add("only one region can be the home clearing");
+            if (!c.Map.StartBuildings.Any(b => b.BuildingId == "campfire")) problems.Add("the map must suggest where the campfire goes");
             if (!c.Regions.Any(r => r.RevealedAtStart)) problems.Add("at least one region must be revealed at start");
 
             return problems;

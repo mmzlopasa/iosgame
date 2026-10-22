@@ -42,6 +42,7 @@ namespace Founders.Core
                 case ConditionKind.ObjectiveCompleted: return State.CompletedObjectives.Contains(id);
                 case ConditionKind.MilestoneReached: return State.ReachedMilestones.Contains(id);
                 case ConditionKind.RegionExplored: return State.ExploredRegions.Contains(id);
+                case ConditionKind.RegionsExploredAtLeast: return LandsExplored >= amount;
                 case ConditionKind.DistinctJobsAtLeast: return Enums.Jobs.Count(j => State.Assignments[j] > 0) >= amount;
                 case ConditionKind.FoodBalancePositive: return Economy().Net.Food > 0;
                 case ConditionKind.YearAtLeast: return Year >= amount;
@@ -79,6 +80,7 @@ namespace Founders.Core
                 case ConditionKind.ObjectiveCompleted: return $"Complete {Content.Objective(id)?.Title ?? "?"}";
                 case ConditionKind.MilestoneReached: return $"Reach {Content.Milestone(id)?.Name ?? "?"}";
                 case ConditionKind.RegionExplored: return $"Explore {Content.Region(id)?.Name ?? "?"}";
+                case ConditionKind.RegionsExploredAtLeast: return $"Lands explored {LandsExplored}/{amount}";
                 case ConditionKind.DistinctJobsAtLeast:
                     return $"Jobs in use {Enums.Jobs.Count(j => State.Assignments[j] > 0)}/{amount}";
                 case ConditionKind.FoodBalancePositive:
@@ -314,11 +316,14 @@ namespace Founders.Core
             if (region == null) return GameError.UnknownContent(regionId);
             if (State.ExploredRegions.Contains(regionId)) return GameError.RegionAlreadyExplored;
             if (State.ActiveExpedition != null) return GameError.ExpeditionInProgress;
-            if (!State.Resources.Covers(region.Cost)) return GameError.Unaffordable(State.Resources.Shortfall(region.Cost));
-            State.Resources = State.Resources - region.Cost;
+            if (!IsFrontier(region)) return GameError.RegionNotAdjacent;
+            var cost = ExpeditionCost(region);
+            if (!State.Resources.Covers(cost)) return GameError.Unaffordable(State.Resources.Shortfall(cost));
+            State.Resources = State.Resources - cost;
+            double seconds = ExpeditionSeconds(region);
             State.ActiveExpedition = new ActiveExpedition
             {
-                RegionId = regionId, RemainingSeconds = region.ExpeditionSeconds, TotalSeconds = region.ExpeditionSeconds,
+                RegionId = regionId, RemainingSeconds = seconds, TotalSeconds = seconds,
             };
             Notice(NoticeKind.Info, $"Scouts set out for {region.Name}.");
             return GameResult.Success;

@@ -314,7 +314,7 @@ namespace Founders.UI
                            string.Join("", G.Content.Milestones.SelectMany(m => G.MilestoneRequirements(m.Id)).Select(s => s.Met ? "1" : "0"));
                 case Panel.Map:
                     return $"{G.State.ActiveExpedition?.RegionId}|{string.Join(",", G.State.ExploredRegions)}|{G.State.Legacy.Count}|" +
-                           string.Join("", G.Content.Regions.Select(r => G.State.Resources.Covers(r.Cost) ? "1" : "0"));
+                           string.Join("", G.Content.Regions.Select(r => G.State.Resources.Covers(G.ExpeditionCost(r)) ? "1" : "0"));
                 case Panel.Profile:
                     return ProfileKey();
                 default:
@@ -799,7 +799,12 @@ namespace Founders.UI
             host.Add(info);
 
             var active = G.State.ActiveExpedition;
-            foreach (var region in G.Content.Regions.Where(r => !r.RevealedAtStart))
+            // The lands next to what is known, nearest first; then the lands already explored.
+            var lands = G.Content.Regions.Where(r => !r.Home && (G.IsFrontier(r) || G.State.ExploredRegions.Contains(r.Id) || active?.RegionId == r.Id))
+                                 .OrderBy(r => G.State.ExploredRegions.Contains(r.Id) ? 1 : 0).ThenBy(r => G.RegionDistance(r)).ThenBy(r => r.Y).ThenBy(r => r.X);
+            int unknown = G.Content.Regions.Count(r => !r.Home && !G.State.ExploredRegions.Contains(r.Id) && !G.IsFrontier(r));
+            if (unknown > 0) host.Add(E.Ink($"{unknown} more lands lie beyond, out of the scouts' reach for now.", Theme.Body, Theme.Pale).Margin(4, 0, 8));
+            foreach (var region in lands)
             {
                 bool explored = G.State.ExploredRegions.Contains(region.Id);
                 var card = Block(region.Name, out var rows, explored ? E.T("Explored", Theme.Num, Theme.Up) : null);
@@ -818,11 +823,12 @@ namespace Founders.UI
                 else if (!explored)
                 {
                     var bottom = E.Line(true, 58);
-                    bottom.Add(CostLine(region.Cost).Grow());
-                    bool can = active == null && G.State.Resources.Covers(region.Cost);
+                    var cost = G.ExpeditionCost(region);
+                    bottom.Add(CostLine(cost).Grow());
+                    bool can = active == null && G.State.Resources.Covers(cost);
                     string id = region.Id;
                     bottom.Add(E.Button(active != null ? "Scouts busy" : "Send scouts", can ? Act(() => store.Explore(id)) : null,
-                                        can ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 16, SubLine("clock", Fmt.Clock(region.ExpeditionSeconds)), 170));
+                                        can ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 16, SubLine("clock", Fmt.Clock(G.ExpeditionSeconds(region))), 170));
                     rows.Add(bottom);
                 }
                 host.Add(card);

@@ -211,6 +211,10 @@ namespace Founders.Core
 
         public List<string> ExploredRegions = new List<string>();
         public ActiveExpedition ActiveExpedition;
+        /// <summary>False until the player has chosen where the campfire and the first shelters stand.</summary>
+        public bool Founded = true;
+        /// <summary>Top-left cell of the home clearing (the land around the campfire); -1 = where the map suggests.</summary>
+        public int HomeX = -1, HomeY = -1;
 
         public string PendingEventId;
         /// <summary>eventId → optionId</summary>
@@ -286,6 +290,9 @@ namespace Founders.Core
                 ["nextBuildingId"] = NextBuildingId,
                 ["researched"] = Strings(Researched),
                 ["exploredRegions"] = Strings(ExploredRegions),
+                ["founded"] = Founded,
+                ["homeX"] = HomeX,
+                ["homeY"] = HomeY,
                 ["resolvedEvents"] = ResolvedEvents.ToDictionary(kv => kv.Key, kv => (object)kv.Value),
                 ["modifiers"] = Modifiers.Select(m =>
                 {
@@ -374,6 +381,9 @@ namespace Founders.Core
                 NextBuildingId = o.Int("nextBuildingId"),
                 Researched = o.Strs("researched"),
                 ExploredRegions = o.Strs("exploredRegions"),
+                Founded = o.OptBool("founded", true),
+                HomeX = o.OptInt("homeX") ?? -1,
+                HomeY = o.OptInt("homeY") ?? -1,
                 PendingEventId = o.OptStr("pendingEventId"),
                 CompletedObjectives = o.Strs("completedObjectives"),
                 ReachedMilestones = o.Strs("reachedMilestones"),

@@ -44,7 +44,7 @@ namespace Founders.Core
         UnknownContent, Placement, Unaffordable, ConstructionQueueFull, NotUpgradeable, BuildingBusy, LockedByTech,
         TooManyWorkers, NoJobSlots, NothingLeft, ResearchAlreadyDone, ResearchInProgress, MissingPrerequisites, NoPendingEvent,
         OptionUnavailable, ExpeditionInProgress, RegionAlreadyExplored, RegionNotAdjacent, MilestoneAlreadyReached,
-        RequirementsNotMet, NotReady,
+        RequirementsNotMet, NotReady, Founding,
     }
 
     /// <summary>Why a command was refused. Messages are player facing.</summary>
@@ -87,6 +87,8 @@ namespace Founders.Core
             new GameError(GameErrorKind.RequirementsNotMet, $"Not ready yet: {string.Join(", ", list)}.");
 
         public static GameError NotReady(string reason) => new GameError(GameErrorKind.NotReady, reason);
+        public static GameError Founding(string reason) => new GameError(GameErrorKind.Founding, reason);
+        public static readonly GameError RegionNotAdjacent = new GameError(GameErrorKind.RegionNotAdjacent, "Scouts can only reach land next to what you have already explored.");
 
         public bool Equals(GameError o) => o != null && Kind == o.Kind && Message == o.Message;
         public override bool Equals(object obj) => Equals(obj as GameError);
