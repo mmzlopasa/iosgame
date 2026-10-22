@@ -1,0 +1,366 @@
+<!doctype html>
+<html lang="hr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Founders Admin</title>
+<style>
+  :root {
+    --bg: #f4efe6; --panel: #fffaf2; --ink: #2b2219; --muted: #7a6a58; --line: #e2d6c4;
+    --accent: #a8551f; --accent-ink: #fff; --ok: #2f7a3d; --bad: #b3261e; --soft: #f0e6d6;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #1b1713; --panel: #26201a; --ink: #f1e8db; --muted: #a8977f; --line: #3b3229;
+            --accent: #e08a4a; --accent-ink: #1b1713; --ok: #7cc48a; --bad: #f2867e; --soft: #312921; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 15px/1.45 system-ui, -apple-system, "Segoe UI", sans-serif; }
+  header { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); position: sticky; top: 0; z-index: 2; }
+  header h1 { font-size: 17px; margin: 0; flex: 1; }
+  button, .btn { font: inherit; border: 1px solid var(--line); background: var(--panel); color: var(--ink); border-radius: 8px; padding: 7px 12px; cursor: pointer; text-decoration: none; display: inline-block; }
+  button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); font-weight: 600; }
+  button.danger { color: var(--bad); border-color: var(--bad); }
+  button:disabled { opacity: .5; cursor: default; }
+  input, select, textarea { font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 7px 10px; width: 100%; }
+  textarea { font: 13px/1.4 ui-monospace, Menlo, Consolas, monospace; min-height: 420px; resize: vertical; }
+  label { display: block; font-size: 13px; color: var(--muted); margin-bottom: 4px; }
+  .wrap { display: grid; grid-template-columns: minmax(320px, 440px) 1fr; gap: 16px; padding: 16px; max-width: 1400px; margin: 0 auto; }
+  @media (max-width: 860px) { .wrap { grid-template-columns: 1fr; } }
+  .card { background: var(--panel); border: 1px solid var(--line); border-radius: 12px; padding: 16px; min-width: 0; }
+  .login { max-width: 360px; margin: 12vh auto; }
+  .list { padding: 0; overflow: hidden; }
+  .list .search { padding: 12px; border-bottom: 1px solid var(--line); display: flex; gap: 8px; }
+  .rows { max-height: calc(100vh - 170px); overflow: auto; }
+  .row { padding: 10px 12px; border-bottom: 1px solid var(--line); cursor: pointer; }
+  .row:hover { background: var(--soft); }
+  .row.sel { background: var(--soft); box-shadow: inset 3px 0 0 var(--accent); }
+  .row b { display: block; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .tag { display: inline-block; font-size: 12px; padding: 1px 7px; border-radius: 99px; background: var(--soft); color: var(--muted); margin-right: 4px; }
+  .tabs { display: flex; gap: 6px; flex-wrap: wrap; margin: 12px 0 16px; }
+  .tabs button.on { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .section { margin-top: 20px; }
+  .section h3 { font-size: 14px; margin: 0 0 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .04em; }
+  .stats { display: grid; grid-template-columns: repeat(auto-fill, minmax(120px, 1fr)); gap: 8px; }
+  .stat { background: var(--soft); border-radius: 8px; padding: 8px 10px; }
+  .stat span { display: block; font-size: 12px; color: var(--muted); }
+  .stat b { font-size: 17px; }
+  .actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 16px; align-items: center; }
+  .msg { padding: 10px 12px; border-radius: 8px; margin-top: 12px; white-space: pre-line; }
+  .msg.ok { background: color-mix(in srgb, var(--ok) 15%, transparent); color: var(--ok); }
+  .msg.bad { background: color-mix(in srgb, var(--bad) 15%, transparent); color: var(--bad); }
+  .note { color: var(--muted); font-size: 13px; }
+  table { width: 100%; border-collapse: collapse; }
+  td, th { text-align: left; padding: 7px 6px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  .empty { color: var(--muted); padding: 40px 16px; text-align: center; }
+  .hidden { display: none !important; }
+  .mono { font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px; word-break: break-all; }
+</style>
+</head>
+<body>
+<div id="login" class="card login hidden">
+  <h2 style="margin-top:0">Founders Admin</h2>
+  <form id="loginForm">
+    <label for="pw">Lozinka</label>
+    <input id="pw" type="password" autocomplete="current-password" autofocus>
+    <div class="actions"><button class="primary" type="submit">Prijava</button></div>
+    <div id="loginMsg"></div>
+  </form>
+</div>
+
+<div id="app" class="hidden">
+  <header>
+    <h1>Founders Admin</h1>
+    <span id="count" class="meta"></span>
+    <button id="logout">Odjava</button>
+  </header>
+  <div class="wrap">
+    <div class="card list">
+      <div class="search">
+        <input id="q" placeholder="Traži: ime, naselje, korisničko ime, ID">
+        <button id="reload" title="Osvježi">↻</button>
+      </div>
+      <div id="rows" class="rows"></div>
+    </div>
+    <div class="card" id="detail"><div class="empty">Odaberi igrača s popisa.</div></div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const RES = { food: 'Hrana', wood: 'Drvo', stone: 'Kamen', knowledge: 'Znanje', ore: 'Ruda', hides: 'Koža' };
+const AVATARS = { face_m1: 'Starješina', face_f1: 'Čuvarica', face_m2: 'Lovac', face_f2: 'Iscjeliteljica', face_m3: 'Graditelj', face_f3: 'Tkalja' };
+const FRAMES = { wood: 'Drvo', copper: 'Bakar', silver: 'Srebro', amethyst: 'Ametist', gold: 'Zlato' };
+const EPOCHS = { epoch_first_communities: 'Prve zajednice', epoch_first_civilizations: 'Prve civilizacije', epoch_classical_worlds: 'Antika',
+  epoch_medieval_kingdoms: 'Srednji vijek', epoch_exploration: 'Doba otkrića', epoch_industrial: 'Industrija', epoch_modern: 'Moderno doba', epoch_near_future: 'Bliska budućnost' };
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const when = (d) => d ? new Date(d).toLocaleString('hr-HR', { dateStyle: 'short', timeStyle: 'short' }) : '-';
+const ago = (d) => {
+  if (!d) return '-';
+  const m = Math.round((Date.now() - new Date(d)) / 60000);
+  if (m < 2) return 'upravo';
+  if (m < 60) return `prije ${m} min`;
+  if (m < 48 * 60) return `prije ${Math.round(m / 60)} h`;
+  return `prije ${Math.round(m / 1440)} dana`;
+};
+const num = (n) => n == null ? '-' : Number(n).toLocaleString('hr-HR', { maximumFractionDigits: 1 });
+
+let players = [], current = null, tab = 'game';
+
+async function api(path, opts = {}) {
+  const r = await fetch('/admin/api' + path, {
+    ...opts,
+    headers: { 'X-Founders-Admin': '1', ...(opts.body ? { 'Content-Type': 'application/json' } : {}) },
+    credentials: 'same-origin',
+  });
+  const data = await r.json().catch(() => ({}));
+  if (r.status === 401 && path !== '/login') { show(false); throw new Error('Prijavi se ponovno.'); }
+  if (!r.ok) { const e = new Error(data.error || 'Greška ' + r.status); e.problems = data.problems; throw e; }
+  return data;
+}
+
+function show(signedIn) {
+  $('login').classList.toggle('hidden', signedIn);
+  $('app').classList.toggle('hidden', !signedIn);
+  if (!signedIn) $('pw').focus();
+}
+
+$('loginForm').onsubmit = async (e) => {
+  e.preventDefault();
+  try {
+    await api('/login', { method: 'POST', body: JSON.stringify({ password: $('pw').value }) });
+    $('pw').value = '';
+    $('loginMsg').innerHTML = '';
+    show(true);
+    loadList();
+  } catch (err) { $('loginMsg').innerHTML = `<div class="msg bad">${esc(err.message)}</div>`; }
+};
+$('logout').onclick = async () => { await api('/logout', { method: 'POST' }).catch(() => {}); show(false); };
+$('reload').onclick = () => loadList();
+let timer;
+$('q').oninput = () => { clearTimeout(timer); timer = setTimeout(renderList, 150); };
+
+async function loadList() {
+  try {
+    players = (await api('/players')).players;
+    renderList();
+  } catch (e) { $('rows').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+function renderList() {
+  const q = $('q').value.trim().toLowerCase();
+  const list = players.filter((p) => !q || [p.id, p.username, p.save?.founderName, p.save?.settlementName].some((v) => v && v.toLowerCase().includes(q)));
+  $('count').textContent = `${players.length} igrača`;
+  $('rows').innerHTML = list.length ? list.map((p) => `
+    <div class="row ${current?.player.id === p.id ? 'sel' : ''}" data-id="${p.id}">
+      <b>${esc(p.save?.founderName || p.username || 'Bez imena')}${p.save?.settlementName ? ' · ' + esc(p.save.settlementName) : ''}</b>
+      <div class="meta">
+        ${p.username ? `<span class="tag">@${esc(p.username)}</span>` : '<span class="tag">gost</span>'}
+        ${p.save ? (p.save.broken ? '<span class="tag">save oštećen</span>' : `${esc(EPOCHS[p.save.epochId] || p.save.epochId || '')} · ${num(p.save.population)} ljudi`) : 'nema savea'}
+        · ${ago(p.lastSeen)}
+      </div>
+    </div>`).join('') : '<div class="empty">Nema igrača.</div>';
+  for (const row of $('rows').querySelectorAll('.row')) row.onclick = () => open(row.dataset.id);
+}
+
+async function open(id) {
+  $('detail').innerHTML = '<div class="empty">Učitavam…</div>';
+  try {
+    current = await api('/players/' + id);
+    renderList();
+    renderDetail();
+  } catch (e) { $('detail').innerHTML = `<div class="empty">${esc(e.message)}</div>`; }
+}
+
+function message(text, ok, problems) {
+  const box = $('result');
+  if (!box) return;
+  box.innerHTML = `<div class="msg ${ok ? 'ok' : 'bad'}">${esc(text)}${problems?.length ? '\n• ' + problems.map(esc).join('\n• ') : ''}</div>`;
+}
+
+function renderDetail() {
+  const { player: p, snapshot: s } = current;
+  const st = s?.save?.state;
+  const title = s?.founderName || p.username || 'Bez imena';
+  $('detail').innerHTML = `
+    <div style="display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap">
+      <div style="flex:1;min-width:200px">
+        <h2 style="margin:0">${esc(title)}</h2>
+        <div class="meta">${p.username ? '@' + esc(p.username) : 'gost (bez računa)'} · ID <span class="mono">${esc(p.id)}</span></div>
+        <div class="meta">Napravljen ${when(p.created_at)} · zadnje viđen ${ago(p.last_seen)} · save spremljen ${when(current.savedAt)}</div>
+      </div>
+    </div>
+    ${current.error ? `<div class="msg bad">${esc(current.error)}</div>` : ''}
+    <div class="tabs">
+      ${[['game', 'Igra'], ['account', 'Račun'], ['json', 'Napredno'], ['backups', `Kopije (${current.backups.length})`]]
+        .map(([k, n]) => `<button data-tab="${k}" class="${tab === k ? 'on' : ''}">${n}</button>`).join('')}
+    </div>
+    <div id="pane"></div>
+    <div id="result"></div>`;
+  for (const b of $('detail').querySelectorAll('[data-tab]')) b.onclick = () => { tab = b.dataset.tab; renderDetail(); };
+  ({ game: paneGame, account: paneAccount, json: paneJson, backups: paneBackups })[tab](st);
+}
+
+function paneGame(st) {
+  const s = current.snapshot;
+  if (!st) { $('pane').innerHTML = '<div class="empty">Ovaj igrač još nema save u oblaku.</div>'; return; }
+  const prof = s.profile || {};
+  const res = { food: 0, wood: 0, stone: 0, knowledge: 0, ...st.resources };
+  const workers = Object.values(st.assignments?.counts || {}).reduce((a, b) => a + b, 0);
+  const built = (st.buildings || []).filter((b) => b.status !== 'constructing').length;
+  $('pane').innerHTML = `
+    <div class="stats">
+      <div class="stat"><span>Epoha</span><b>${esc(EPOCHS[st.epochId] || st.epochId)}</b></div>
+      <div class="stat"><span>Zgrade</span><b>${built}</b></div>
+      <div class="stat"><span>Zaposleni</span><b>${workers} / ${st.population}</b></div>
+      <div class="stat"><span>Istraženo</span><b>${(st.researched || []).length}</b></div>
+      <div class="stat"><span>Regije</span><b>${(st.exploredRegions || []).length}</b></div>
+      <div class="stat"><span>Prosperitet</span><b>${num(s.prosperity)}</b></div>
+      <div class="stat"><span>Dani u igri</span><b>${num((st.simTime || 0) / 86400)}</b></div>
+      <div class="stat"><span>Uređaj</span><b style="font-size:14px">${esc(s.deviceName || '-')}</b></div>
+    </div>
+    <div class="section"><h3>Osnivač</h3>
+      <div class="grid">
+        <div><label>Ime osnivača</label><input id="f_name" value="${esc(prof.name)}" maxlength="16"></div>
+        <div><label>Portret</label><select id="f_avatar">${Object.entries(AVATARS).map(([k, n]) => `<option value="${k}" ${prof.avatar === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+        <div><label>Okvir</label><select id="f_frame">${Object.entries(FRAMES).map(([k, n]) => `<option value="${k}" ${prof.frame === k ? 'selected' : ''}>${n}</option>`).join('')}</select></div>
+      </div>
+    </div>
+    <div class="section"><h3>Naselje</h3>
+      <div class="grid">
+        <div><label>Ime naselja</label><input id="f_settlement" value="${esc(st.settlementName)}"></div>
+        <div><label>Broj ljudi</label><input id="f_population" type="number" min="${workers}" step="1" value="${st.population}"></div>
+      </div>
+      <p class="note">Broj ljudi ne može biti manji od broja zaposlenih (${workers}). Nove ljude igra sama napravi.</p>
+    </div>
+    <div class="section"><h3>Resursi</h3>
+      <div class="grid">${Object.entries(res).map(([k, v]) => `<div><label>${esc(RES[k] || k)}</label><input data-res="${esc(k)}" type="number" min="0" step="any" value="${v}"></div>`).join('')}</div>
+    </div>
+    <div class="actions">
+      <button class="primary" id="saveGame">Spremi promjene</button>
+      <span class="note">Prije spremanja se automatski napravi kopija. U igri: Settings → Cloud Save → Load from cloud.</span>
+    </div>`;
+  $('saveGame').onclick = async () => {
+    const save = structuredClone(s.save), profile = s.profile ? structuredClone(s.profile) : null;
+    save.state.settlementName = $('f_settlement').value.trim() || save.state.settlementName;
+    save.state.population = Number($('f_population').value);
+    for (const input of $('pane').querySelectorAll('[data-res]')) save.state.resources[input.dataset.res] = Number(input.value);
+    if (profile) Object.assign(profile, { name: $('f_name').value, avatar: $('f_avatar').value, frame: $('f_frame').value });
+    await saveSnapshot(save, profile);
+  };
+}
+
+async function saveSnapshot(save, profile) {
+  try {
+    await api(`/players/${current.player.id}/save`, { method: 'PUT', body: JSON.stringify({ save, profile }) });
+    const id = current.player.id;
+    await open(id);
+    loadList();
+    message('Spremljeno. Igrač u igri treba otvoriti Settings → Cloud Save → Load from cloud.', true);
+  } catch (e) { message(e.message, false, e.problems); }
+}
+
+function paneAccount() {
+  const p = current.player;
+  $('pane').innerHTML = `
+    <div class="section" style="margin-top:0"><h3>Korisničko ime</h3>
+      ${p.username ? `
+        <div class="grid"><div><label>Novo korisničko ime</label><input id="a_user" value="${esc(p.username)}"></div></div>
+        <div class="actions"><button id="a_rename">Promijeni ime</button></div>` :
+        '<p class="note">Igrač je gost (račun nije vezan). Ispod mu možeš postaviti korisničko ime i lozinku.</p>'}
+    </div>
+    <div class="section"><h3>Nova lozinka</h3>
+      <div class="grid">
+        ${p.username ? '' : '<div><label>Korisničko ime</label><input id="a_newuser" autocomplete="off"></div>'}
+        <div><label>Lozinka</label><input id="a_pass" type="text" autocomplete="off"></div>
+      </div>
+      <p class="note">8 do 30 znakova: veliko slovo, malo slovo, broj i znak (npr. Kamen#2026).</p>
+      <div class="actions"><button id="a_password">Postavi lozinku</button></div>
+    </div>
+    <div class="section"><h3>Uređaji (${current.devices.length})</h3>
+      ${current.devices.length ? `<table><tr><th>Prijavljen</th><th>Zadnje korišten</th></tr>${current.devices.map((d) => `<tr><td>${when(d.created_at)}</td><td>${when(d.last_used)}</td></tr>`).join('')}</table>` : '<p class="note">Nije prijavljen ni na jednom uređaju.</p>'}
+      <div class="actions"><button id="a_signout">Odjavi sa svih uređaja</button></div>
+    </div>
+    <div class="section"><h3>Opasno</h3>
+      <div class="actions">
+        ${p.username ? '<button class="danger" id="a_unbind">Odveži račun (postaje gost)</button>' : ''}
+        <button class="danger" id="a_delete">Obriši igrača</button>
+      </div>
+      <p class="note">Brisanje briše igrača i njegov save iz baze. Kopija savea ostaje u tablici kopija.</p>
+    </div>`;
+  const act = async (body, confirmText, done) => {
+    if (confirmText && !confirm(confirmText)) return;
+    try {
+      await api(`/players/${p.id}/account`, { method: 'POST', body: JSON.stringify(body) });
+      await open(p.id); loadList(); message(done, true);
+    } catch (e) { message(e.message, false); }
+  };
+  if ($('a_rename')) $('a_rename').onclick = () => act({ action: 'rename', username: $('a_user').value.trim() }, null, 'Korisničko ime promijenjeno.');
+  $('a_password').onclick = () => act({ action: 'password', password: $('a_pass').value, username: $('a_newuser')?.value.trim() }, null, 'Lozinka postavljena. Javi je igraču.');
+  $('a_signout').onclick = () => act({ action: 'signout' }, 'Odjaviti igrača sa svih uređaja? Gost bez računa time gubi pristup svom saveu.', 'Odjavljen sa svih uređaja.');
+  if ($('a_unbind')) $('a_unbind').onclick = () => act({ action: 'unbind' }, 'Odvezati korisničko ime i lozinku?', 'Račun odvezan.');
+  $('a_delete').onclick = async () => {
+    const name = current.snapshot?.founderName || p.username || p.id;
+    if (prompt(`Za brisanje upiši: OBRIŠI\n\nIgrač: ${name}`) !== 'OBRIŠI') return;
+    try {
+      await api(`/players/${p.id}`, { method: 'DELETE' });
+      current = null;
+      $('detail').innerHTML = '<div class="empty">Igrač obrisan.</div>';
+      loadList();
+    } catch (e) { message(e.message, false); }
+  };
+}
+
+function paneJson() {
+  const s = current.snapshot;
+  if (!s) { $('pane').innerHTML = '<div class="empty">Ovaj igrač još nema save u oblaku.</div>'; return; }
+  $('pane').innerHTML = `
+    <p class="note">Cijeli save i profil. Mijenjaj pažljivo: prije spremanja provjerim je li ispravno, a stara verzija ide u kopije.</p>
+    <textarea id="j" spellcheck="false">${esc(JSON.stringify({ save: s.save, profile: s.profile }, null, 2))}</textarea>
+    <div class="actions">
+      <button class="primary" id="j_save">Spremi</button>
+      <a class="btn" href="/admin/api/players/${current.player.id}/raw" id="j_raw">Preuzmi save (datoteka)</a>
+    </div>`;
+  // The download link needs the page's header too, so fetch it instead of following the link.
+  $('j_raw').onclick = async (e) => {
+    e.preventDefault();
+    const r = await fetch(e.currentTarget.href, { headers: { 'X-Founders-Admin': '1' } });
+    if (!r.ok) return message('Preuzimanje nije uspjelo.', false);
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(await r.blob());
+    a.download = (r.headers.get('Content-Disposition') || '').match(/filename="(.+)"/)?.[1] || 'save.txt';
+    a.click();
+  };
+  $('j_save').onclick = async () => {
+    let data;
+    try { data = JSON.parse($('j').value); }
+    catch (e) { return message('Tekst nije ispravan JSON (najčešće fali ili višak zarez): ' + e.message, false); }
+    await saveSnapshot(data.save, data.profile ?? null);
+  };
+}
+
+function paneBackups() {
+  const list = current.backups;
+  $('pane').innerHTML = list.length ? `
+    <p class="note">Čuva se zadnjih 30 kopija po igraču. Vraćanje kopije također prvo spremi trenutni save.</p>
+    <table><tr><th>Kada</th><th>Zašto</th><th></th></tr>
+    ${list.map((b) => `<tr><td>${when(b.created_at)}</td><td>${esc(b.note)}</td><td style="text-align:right"><button data-b="${b.id}">Vrati</button></td></tr>`).join('')}
+    </table>` : '<div class="empty">Još nema kopija. Nastaju automatski kad nešto promijeniš.</div>';
+  for (const b of $('pane').querySelectorAll('[data-b]')) b.onclick = async () => {
+    if (!confirm('Vratiti ovu kopiju? Igrač će u igri trebati učitati save iz oblaka.')) return;
+    try {
+      await api(`/players/${current.player.id}/restore`, { method: 'POST', body: JSON.stringify({ backupId: Number(b.dataset.b) }) });
+      await open(current.player.id); loadList(); message('Kopija vraćena.', true);
+    } catch (e) { message(e.message, false); }
+  };
+}
+
+// Signed in already? (The cookie is HttpOnly, so ask the server.)
+api('/players').then((d) => { players = d.players; show(true); renderList(); }).catch(() => show(false));
+</script>
+</body>
+</html>
