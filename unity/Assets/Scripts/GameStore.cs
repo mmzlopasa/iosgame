@@ -345,6 +345,8 @@ namespace Founders
         }
         public void ResolveEvent(string optionId) => Perform(Game.ResolveEvent(optionId).Error);
         public void Explore(string regionId) => Perform(Game.StartExpedition(regionId).Error);
+        public void UseSpeedup(SpeedupTask task, SpeedupKind kind, int minutes) => Perform(Game.UseSpeedup(task, kind, minutes).Error);
+        public void FinishWithSpeedups(SpeedupTask task) => Perform(Game.UseSpeedupsToFinish(task).Error);
         public void ClaimMilestone(string id) => Perform(Game.ClaimMilestone(id).Error);
         public void ToggleHarvest(int x, int y) => Perform(Game.ToggleHarvestOrder(x, y).Error);
 

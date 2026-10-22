@@ -422,6 +422,7 @@ namespace Founders.UI
                 tr.Add(E.T("Time left", Theme.Body).Flex());
                 tr.Add(Live(() => Fmt.Clock(G.EstimatedSeconds(G.State.Building(id)?.RemainingWork ?? 0)), Theme.Num));
                 rows.Add(tr);
+                rows.Add(SpeedupRow(SpeedupTask.Building(id)));
                 body.Add(sec);
             }
 

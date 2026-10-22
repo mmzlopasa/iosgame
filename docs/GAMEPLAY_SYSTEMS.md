@@ -44,6 +44,15 @@ Sources: [Manor Lords wiki](https://wiki.hoodedhorse.com/Manor_Lords/Beginner%27
 | Eras | Milestones can open a new epoch. "The Bronze Dawn" opens First Civilizations: farming, herding, pottery, copper and bronze. | `newEpoch` |
 | Sound | Hearth, river, birds and wind mixed by what the camera sees; calm music. | `AudioDirector.cs` |
 
+## Speed-ups (earned, never bought)
+
+Like the speed-ups in Whiteout Survival, but only ever earned in play. Rules: `unity/Assets/Scripts/Core/GameSpeedups.cs`; window: `UI/GameUi.Speedups.cs`; tests: `unity/CoreTests/SpeedupTests.cs`.
+
+- **Kinds:** Building (construction, upgrades, levels), Research, Scouting (expeditions) and General (any of them). **Sizes:** 1 min, 5 min, 15 min, 1 h, 3 h.
+- **Earned:** starter pack (3× 5 min General, 2× 5 min Building, 1× 5 min Research; older saves get it once on load), every finished building (2× 1 min Building), level 2 / 3 / 4+ (15 min Building / 2× 15 min Building + 5 min General / 1 h Building + 15 min General), hut → house improvements (15 min Building + 5 min General), every discovery (15 min Research + 2× 1 min General), every explored region (15 min Scouting + 5 min General), every goal (5 min General), every milestone (1 h of each kind), every chapter (2× 15 min General + 3 h Building).
+- **Used:** the clock button on a timer (HUD), on a building under construction, on the running research and on the scouts opens the speed-up window: use one at a time, or *Finish now* (picks the job's own kind first, large ones while they fit, then the smallest that covers the rest). A building minute is a minute at today's building pace (never less than the base pace). A job a speed-up covers finishes at once, with its normal rewards.
+- **Saved** as `speedups` (key `kind_minutes` → count) in the settlement state; a tampered key or negative count is rejected on load. Profile › Stats lists everything owned.
+
 ## Next refinements (to discuss)
 
 1. **Families instead of single people**: housing gives family slots and one family

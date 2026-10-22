@@ -599,7 +599,7 @@ namespace Founders.UI
         string TimersKey()
         {
             var builds = string.Join(",", G.State.Buildings.Where(b => b.Status != BuildingStatus.Complete).Select(b => b.Id));
-            return $"{G.State.ActiveResearch?.TechId}|{G.State.ActiveExpedition?.RegionId}|{builds}|{MaxTimers()}|{G.IsStoked}";
+            return $"{G.State.ActiveResearch?.TechId}|{G.State.ActiveExpedition?.RegionId}|{builds}|{MaxTimers()}|{G.IsStoked}|{G.State.Speedups.Count}";
         }
 
         void BuildTimers(VisualElement host)
@@ -610,14 +610,14 @@ namespace Founders.UI
             {
                 var tech = G.Content.Technology(r.TechId);
                 cards.Add(TimerCard("knowledge", tech?.Name ?? r.TechId, () => 1 - r.RemainingSeconds / Math.Max(1, r.TotalSeconds),
-                    () => Fmt.Clock(r.RemainingSeconds), E.FillKind.Blue, () => store.ActivePanel = Panel.Research));
+                    () => Fmt.Clock(r.RemainingSeconds), E.FillKind.Blue, () => store.ActivePanel = Panel.Research, SpeedupTask.Research));
             }
             var e = G.State.ActiveExpedition;
             if (e != null)
             {
                 var region = G.Content.Regions.FirstOrDefault(x => x.Id == e.RegionId);
                 cards.Add(TimerCard("compass", region?.Name ?? e.RegionId, () => 1 - e.RemainingSeconds / Math.Max(1, e.TotalSeconds),
-                    () => Fmt.Clock(e.RemainingSeconds), E.FillKind.Green, () => { mapTab = 0; store.ActivePanel = Panel.Map; }));
+                    () => Fmt.Clock(e.RemainingSeconds), E.FillKind.Green, () => { mapTab = 0; store.ActivePanel = Panel.Map; }, SpeedupTask.Expedition));
             }
             if (G.IsStoked && G.Heart != null)
             {
@@ -632,13 +632,14 @@ namespace Founders.UI
                 int id = b.Id;
                 cards.Add(TimerCard(b.Status == BuildingStatus.Upgrading ? "level_up" : "build", def?.Name ?? b.DefinitionId,
                     () => G.State.Building(id)?.Progress ?? 1, () => Fmt.Clock(G.EstimatedSeconds(G.State.Building(id)?.RemainingWork ?? 0)),
-                    E.FillKind.Gold, () => store.FocusBuilding(id)));
+                    E.FillKind.Gold, () => store.FocusBuilding(id), SpeedupTask.Building(id)));
             }
             foreach (var c in cards.Take(MaxTimers())) host.Add(c);
         }
 
         /// <summary>A running job: icon, name and time left over a thin bar.</summary>
-        VisualElement TimerCard(string icon, string name, Func<double> progress, Func<string> left, E.FillKind fill, Action onTap)
+        VisualElement TimerCard(string icon, string name, Func<double> progress, Func<string> left, E.FillKind fill, Action onTap,
+                                SpeedupTask? speedup = null)
         {
             // A navy HUD capsule with the job's icon overlapping its left end (like the counters).
             var c = E.HudCapsule(TimerH).Pad(4, 12, 5, E.CounterIconRoom + 6);
@@ -650,7 +651,7 @@ namespace Founders.UI
             c.Add(E.Icon(icon, 34).Abs(-8, 2));
             var col = E.Div().Col().Grow().Ignore();
             // The name on its own line (it wraps rather than being cut), the bar and the time left under it.
-            col.Add(E.T(name, Theme.Small).Fit(TimersW - 12 - E.CounterIconRoom - 6));
+            col.Add(E.T(name, Theme.Small).Fit(TimersW - 12 - E.CounterIconRoom - 6 - (speedup != null ? 30 : 0)));
             var line = E.Div().Row().Ignore();
             line.style.marginTop = 1;
             var bar = LiveBar(progress, 9, fill == E.FillKind.Blue ? E.FillKind.Hud : fill).Grow();
@@ -658,6 +659,8 @@ namespace Founders.UI
             line.Add(Live(left, Theme.Small).NoShrink().Margin(0, 0, 0, 5));
             col.Add(line);
             c.Add(col);
+            // A speed-up button at the right end (a tap on it opens the speed-ups, elsewhere goes to the job).
+            if (speedup != null) c.Add(SpeedupButton(speedup.Value, 26).NoShrink().Margin(0, 0, 0, 4));
             Tap(c, onTap);
             return c;
         }

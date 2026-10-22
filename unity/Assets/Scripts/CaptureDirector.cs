@@ -900,6 +900,24 @@ namespace Founders
             yield return Shot("18_welcome_back", true);
             store.Offline = null;
 
+            // Speed-ups: a running job and the window that uses them on it.
+            if (game.State.ActiveResearch == null)
+            {
+                var tech = game.Content.Technologies.FirstOrDefault(t => game.GetResearchStatus(t.Id).State == ResearchState.Available);
+                if (tech != null)
+                {
+                    game.DebugGrant(tech.Cost);
+                    store.StartResearch(tech.Id);
+                }
+            }
+            var job = game.State.ActiveResearch != null ? SpeedupTask.Research : game.SpeedupTasks().FirstOrDefault();
+            if (game.IsRunning(job))
+            {
+                ui.ShowSpeedups(job);
+                yield return Shot("19_speedup", true);
+                ui.HideSpeedups();
+            }
+
         }
     }
 }

@@ -343,6 +343,7 @@ namespace Founders.UI
             r.Add(Live(() => Fmt.Clock(G.State.ActiveResearch?.RemainingSeconds ?? 0), Theme.Small).Margin(0, 0, 0, 6));
             col.Add(r);
             bar.Add(col);
+            bar.Add(SpeedupButton(SpeedupTask.Research, 32).NoShrink().Margin(0, 0, 0, 8));
             string id = active.TechId;
             Tap(bar, () => selectedTech = id);
             return bar;

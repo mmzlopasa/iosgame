@@ -47,6 +47,8 @@ namespace Founders.UI
             // The cloud's choice and the profile's dialogs come first: they answer the player's own taps.
             string profile = ProfileDialogKey();
             if (profile != "") return profile;
+            string speed = SpeedupDialogKey();
+            if (speed != "") return speed;
             if (store.Celebration != null) return "ms|" + store.Celebration;
             if (store.Offline != null) return "wb";
             if (G.PendingStory != null) return "story|" + G.PendingStory.Id;
@@ -75,6 +77,7 @@ namespace Founders.UI
             host.Add(frame);
             VisualElement card;
             if (key.StartsWith("pd|", System.StringComparison.Ordinal) || key.StartsWith("cloud|", System.StringComparison.Ordinal)) card = ProfileDialogCard();
+            else if (key.StartsWith("sp|", System.StringComparison.Ordinal)) card = SpeedupCard();
             else if (key.StartsWith("ms|", System.StringComparison.Ordinal)) card = MilestoneCard();
             else if (key == "wb") card = WelcomeCard();
             else if (petitionShowing) card = PetitionCard();
