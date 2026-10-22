@@ -25,6 +25,9 @@ namespace Founders.Core
     {
         // MARK: - Conditions
 
+        /// <summary>How much of a good the recipes have made since the founding.</summary>
+        public double Made(ResourceType r) => State.Made.TryGetValue(r.Id(), out var v) ? v : 0;
+
         public bool IsMet(Condition c)
         {
             double amount = c.Amount ?? 1;
@@ -54,6 +57,7 @@ namespace Founders.Core
                 case ConditionKind.SickAtMost: return SickCount <= amount;
                 case ConditionKind.LawEnacted: return State.Laws.Contains(id);
                 case ConditionKind.DiscontentAtMost: return State.Discontent <= amount + 1e-9;
+                case ConditionKind.MadeAtLeast: return c.Resource.HasValue && Made(c.Resource.Value) + 1e-9 >= amount;
                 default: return false;
             }
         }
@@ -68,6 +72,11 @@ namespace Founders.Core
                 {
                     var r = c.Resource ?? ResourceType.Food;
                     return $"{r.DisplayName()} {(int)Math.Floor(State.Resources[r])}/{amount}";
+                }
+                case ConditionKind.MadeAtLeast:
+                {
+                    var r = c.Resource ?? ResourceType.Bronze;
+                    return $"Make {r.DisplayName()} {(int)Math.Floor(Made(r) + 1e-9)}/{amount}";
                 }
                 case ConditionKind.BuildingCount:
                     return $"{Content.Building(id)?.Name ?? (c.Id ?? "?")} {Count(id)}/{amount}";

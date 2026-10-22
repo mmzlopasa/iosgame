@@ -226,6 +226,7 @@ namespace Founders.UI
             ResourceType.Stone => "stone",
             ResourceType.Ore => "ore",
             ResourceType.Hides => "hides",
+            ResourceType.Bronze => "bronze",
             _ => "knowledge",
         };
 
@@ -237,6 +238,7 @@ namespace Founders.UI
             ResourceType.Stone => E.Cell.Common,
             ResourceType.Ore => E.Cell.Rare,
             ResourceType.Hides => E.Cell.Legendary,
+            ResourceType.Bronze => E.Cell.Rare,
             _ => E.Cell.Epic,
         };
 
@@ -269,7 +271,7 @@ namespace Founders.UI
         /// <summary>A red notification badge in the top-right corner of a parent.</summary>
         static VisualElement CornerBadge(string text, float size = 20) => E.Badge(text, true, size).Abs(null, -6, -6);
 
-        static readonly ResourceType[] StripOrder = { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Knowledge, ResourceType.Ore, ResourceType.Hides };
+        static readonly ResourceType[] StripOrder = { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Knowledge, ResourceType.Ore, ResourceType.Hides, ResourceType.Bronze };
 
         // MARK: - Top: the player block and the resource counters (the blue kit)
 
@@ -312,7 +314,8 @@ namespace Founders.UI
             {
                 if (t == ResourceType.Hides && G.State.Resources.Hides < 1) continue;
                 if (t == ResourceType.Ore && G.State.Resources.Ore < 1) continue;
-                int drop = t == ResourceType.Hides ? 9 : t == ResourceType.Ore ? 8 : t == ResourceType.Knowledge ? 3 : t == ResourceType.Stone ? 2 : 0;
+                if (t == ResourceType.Bronze && G.State.Resources.Bronze < 1) continue;
+                int drop = t == ResourceType.Bronze ? 10 : t == ResourceType.Hides ? 9 : t == ResourceType.Ore ? 8 : t == ResourceType.Knowledge ? 3 : t == ResourceType.Stone ? 2 : 0;
                 list.Add(new TopItem(t.ToString(), CounterW(Fmt.Compact(G.State.Resources[t]), PlusFor(t)), drop));
             }
             list.Add(new TopItem("clock", ChipW("00:00"), 7));

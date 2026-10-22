@@ -640,6 +640,7 @@ namespace Founders.UI
                 if (workers == 0) return sick > 0 ? $"{sick} ill and nobody tends them" : "Tends the sick: they get well quickly";
                 return sick == 0 ? $"Nobody is ill · room for {care}" : $"Tending {Math.Min(sick, care)} of {sick} ill · room for {care}";
             }
+            if (config.IsRecipe && config.Output.HasValue) return RecipeText(config, workers);
             if (config.Output.HasValue)
             {
                 double each = G.RatePerWorker(job) * 60;
@@ -657,6 +658,24 @@ namespace Founders.UI
                         : "Needs wood and stone to work";
                 default:
                     return config.Description;
+            }
+        }
+
+        /// <summary>A recipe job: what it takes and makes, and why it stands still (no ore, store full…).</summary>
+        string RecipeText(JobConfig config, int workers)
+        {
+            var output = config.Output.Value;
+            string recipe = string.Join(" + ", config.Inputs.Entries.Select(e => $"{e.Value:0.#} {e.Key.DisplayName()}")) + $" → 1 {output.DisplayName()}";
+            if (workers == 0 || econ == null || !econ.Processing.TryGetValue(config.Job, out var st)) return recipe;
+            switch (st.State)
+            {
+                case ProcessingState.OutputFull:
+                    return $"Stopped: the {output.DisplayName()} store is full";
+                case ProcessingState.MissingInput:
+                    return st.Missing.HasValue ? $"Stopped: no {st.Missing.Value.DisplayName()} · {recipe}" : $"Stopped · {recipe}";
+                default:
+                    string made = string.Format(CultureInfo.InvariantCulture, "{0} {1:0.0}/m", output.DisplayName(), st.Rate * 60);
+                    return st.Rate + 1e-9 < st.Capacity && st.Missing.HasValue ? $"{made} · short of {st.Missing.Value.DisplayName()}" : $"{made} · {recipe}";
             }
         }
     }

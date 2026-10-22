@@ -224,6 +224,18 @@
     "unlimitedSlots": false
    },
    {
+    "job": "smelting",
+    "name": "Smelting",
+    "description": "Melt ore in the furnace with charcoal: 2 Ore and 1 Wood cast 1 Bronze.",
+    "output": "bronze",
+    "inputs": {
+     "ore": 2,
+     "wood": 1
+    },
+    "ratePerWorkerPerSecond": 0.02,
+    "unlimitedSlots": false
+   },
+   {
     "job": "healing",
     "name": "Healing",
     "description": "Healers look after the sick: each cares for three, who get well quickly and never worse.",
@@ -5295,7 +5307,7 @@
   {
    "id": "copper_smelter",
    "name": "Copper Smelter",
-   "description": "A stone furnace and bellows. +2 Stone Gathering and +1 Crafting job.",
+   "description": "A stone furnace and bellows. 2 Smelting jobs turn Ore and Wood into Bronze, +1 Crafting job.",
    "epoch": "epoch_first_civilizations",
    "footprint": {
     "width": 1,
@@ -5315,7 +5327,7 @@
    "requiresTech": "copper_smelting",
    "jobSlots": [
     {
-     "job": "stonecutting",
+     "job": "smelting",
      "count": 2
     },
     {
@@ -5492,7 +5504,8 @@
    },
    "cost": {
     "wood": 50,
-    "stone": 40
+    "stone": 40,
+    "bronze": 10
    },
    "buildSeconds": 50,
    "sprite": "bronze_workshop",
@@ -7746,7 +7759,7 @@
   {
    "id": "copper_smelting",
    "name": "Copper Smelting",
-   "description": "Green stones melt into copper in hot kilns. Unlocks the Copper Smelter. +15% stone gathering.",
+   "description": "Green stones melt into copper in hot kilns. Unlocks the Copper Smelter, where smelters cast bronze from ore and wood. +15% stone gathering.",
    "cost": {
     "knowledge": 170
    },
@@ -8433,7 +8446,7 @@
   {
    "id": "first_civilization",
    "name": "The Bronze Dawn",
-   "description": "Fields, granaries and bronze: a new era begins.",
+   "description": "Fields, granaries and the first cast bronze: a new era begins.",
    "requirements": [
     {
      "kind": "heartLevelAtLeast",
@@ -8450,6 +8463,11 @@
     {
      "kind": "techResearched",
      "id": "bronze_working"
+    },
+    {
+     "kind": "madeAtLeast",
+     "resource": "bronze",
+     "amount": 20
     },
     {
      "kind": "buildingCount",
@@ -9639,6 +9657,49 @@
      "level": 10,
      "name": "Master Miner",
      "description": "The mountain gives up its treasure.",
+     "bonus": 0.25
+    }
+   ]
+  },
+  {
+   "job": "smelting",
+   "title": "Smelter",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Steady Bellows",
+     "description": "Keeps the fire at an even heat.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Clean Pour",
+     "description": "Less metal lost in the mould.",
+     "bonus": 0.1
+    },
+    {
+     "level": 6,
+     "name": "Charcoal Craft",
+     "description": "Knows which wood burns hottest.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "Tin Sense",
+     "description": "Mixes copper and tin by eye.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "smelting",
+       "value": 1.05
+      }
+     ]
+    },
+    {
+     "level": 10,
+     "name": "Master Smelter",
+     "description": "Bronze bright as the sun.",
      "bonus": 0.25
     }
    ]

@@ -231,7 +231,7 @@ namespace Founders.Tests
             more?.Invoke(c);
         }, full: true);
 
-        static readonly ResourceBundle Plenty = new ResourceBundle(20_000, 20_000, 20_000, 20_000, 20_000, 20_000);
+        static readonly ResourceBundle Plenty = new ResourceBundle(20_000, 20_000, 20_000, 20_000, 20_000, 20_000, 20_000);
 
         static IEnumerable<(int x, int y)> CellsByDistance(Game g, int cx, int cy)
         {

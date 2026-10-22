@@ -149,7 +149,7 @@ namespace Founders.Core
         void Step(double dt)
         {
             simulating = true;
-            var snapshot = Economy();
+            var snapshot = Economy(dt);
             simulating = false;
 
             // Resources
@@ -159,6 +159,7 @@ namespace Founders.Core
             foreach (var t in ResourceTypes.All)
                 res[t] = Math.Min(caps[t], Math.Max(0, res[t] + net[t] * dt));
             State.Resources = res;
+            RecordMade(snapshot, dt);
             AdvanceNodes(dt);
 
             // Food shortage: warning + productivity penalty, never deaths.

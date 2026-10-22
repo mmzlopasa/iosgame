@@ -256,6 +256,8 @@ namespace Founders.Core
         public ActivePetition ActivePetition;
         /// <summary>When the people last petitioned (null = never).</summary>
         public double? LastPetitionSimTime;
+        /// <summary>Goods made by recipes since the founding, by resource id (e.g. bronze cast).</summary>
+        public Dictionary<string, double> Made = new Dictionary<string, double>();
 
         public PlacedBuilding Building(int id) => Buildings.FirstOrDefault(b => b.Id == id);
 
@@ -352,6 +354,7 @@ namespace Founders.Core
                     ["petitionId"] = ActivePetition.PetitionId, ["deadlineSimTime"] = ActivePetition.DeadlineSimTime,
                 };
             if (LastPetitionSimTime.HasValue) d["lastPetitionSimTime"] = LastPetitionSimTime.Value;
+            if (Made.Count > 0) d["made"] = Made.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             return d;
         }
 
@@ -425,6 +428,11 @@ namespace Founders.Core
                 s.ActivePetition = new ActivePetition { PetitionId = ap.Str("petitionId"), DeadlineSimTime = ap.Num("deadlineSimTime") };
             }
             s.LastPetitionSimTime = o.OptNum("lastPetitionSimTime");
+            if (o.Has("made"))
+            {
+                var made = o.Obj("made");
+                foreach (var key in made.Keys) s.Made[key] = made.Num(key);
+            }
             s.Legacy = o.Objs("legacy").Select(l => new LegacyEntry
             {
                 Id = l.Int("id"), SimTime = l.Num("simTime"), EpochId = l.Str("epochId"),
