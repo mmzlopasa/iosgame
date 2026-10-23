@@ -28,7 +28,11 @@ namespace Founders
     /// </summary>
     public class GameStore : MonoBehaviour
     {
-        public GameContent Content { get; private set; }
+        /// <summary>The running settlement's content (its own map and lands on a generated valley).</summary>
+        public GameContent Content => Game?.Content ?? baseContent;
+        GameContent baseContent;
+        /// <summary>The content as shipped (the hand-drawn valley).</summary>
+        public GameContent BaseContent => baseContent;
         public Game Game { get; private set; }
         public FileSaveStore SaveStore { get; private set; }
         /// <summary>The founder (name, portrait, frame, play time); kept when the settlement is reset.</summary>
@@ -76,16 +80,16 @@ namespace Founders
 
             var asset = Resources.Load<TextAsset>("content");
             if (asset == null) throw new InvalidOperationException("FOUNDERS content.json is missing from Resources.");
-            Content = GameContent.Load(asset.text);
+            baseContent = GameContent.Load(asset.text);
             SaveStore = new FileSaveStore(Application.persistentDataPath);
             profileStore = new FileProfileStore(Application.persistentDataPath);
 
             string message = null;
-            var outcome = ephemeral ? LoadOutcome.NoSave : SaveStore.Load(Content);
+            var outcome = ephemeral ? LoadOutcome.NoSave : SaveStore.Load(baseContent);
             switch (outcome.Result)
             {
                 case LoadResult.Loaded:
-                    Game = new Game(Content, outcome.State, clock);
+                    Game = new Game(baseContent, outcome.State, clock);
                     break;
                 case LoadResult.Corrupt:
                     Debug.LogWarning($"[FOUNDERS] Corrupt save moved aside: {outcome.Reason}");
@@ -102,6 +106,8 @@ namespace Founders
                     break;
             }
 
+            // A settlement still waiting for its campfire first chooses its valley (Foundation's map generator).
+            if (!ephemeral && Founding) OpenMapChoice();
             Profile = (ephemeral ? null : profileStore.Load()) ?? PlayerProfile.New(Game.State.SettlementId, CloudSave.Now);
             Profile.Sessions++;
             Cloud = new CloudSave(this, ephemeral ? new Founders.Cloud.NoCloud() : Founders.Cloud.CloudBackends.Create());
@@ -181,7 +187,7 @@ namespace Founders
         // MARK: - Founding (the player chooses where the campfire and the first shelters go)
 
         /// <summary>A new settlement: in capture mode it stands where the map suggests, otherwise the player chooses.</summary>
-        Game NewSettlement() => Ephemeral ? Game.NewGame(Content, clock) : Game.NewUnfoundedGame(Content, clock);
+        Game NewSettlement() => Ephemeral ? Game.NewGame(baseContent, clock) : Game.NewUnfoundedGame(baseContent, clock);
 
         /// <summary>True until the campfire is lit and the first shelters stand.</summary>
         public bool Founding => Game != null && !Game.State.Founded;
@@ -253,6 +259,104 @@ namespace Founders
                         if (Game.SettlementIssue(fx, fy, fx + dx, fy + dy) == null) return (fx + dx, fy + dy);
                     }
             return (fx + 1, fy + 1);
+        }
+
+        // MARK: - Choosing the valley (before the campfire is lit)
+
+        /// <summary>True while the map generator is on screen.</summary>
+        public bool ChoosingMap { get; private set; }
+        /// <summary>The valley being shaped: a preset's id (<see cref="MapPreset"/>), or null for the player's own settings.</summary>
+        public string MapPresetId { get; private set; }
+        /// <summary>The generator's settings (also shown for a preset, so the sliders start from it).</summary>
+        public MapSettings MapDraft { get; private set; }
+
+        /// <summary>The map the draft would give: the hand-drawn valley or a generated one.</summary>
+        public string DraftMapName => MapPresetId == MapPreset.ClassicId ? baseContent.Map.Name : MapDraft.MapName;
+
+        /// <summary>Settings that look like the hand-drawn valley, for sliders moved away from it.</summary>
+        static MapSettings ClassicLike(int seed) => MapSettings.Of(seed, 3, 2, 0, 3, 3, 3, 2);
+
+        /// <summary>Opens the map generator on the valley the settlement has now.</summary>
+        public void OpenMapChoice()
+        {
+            if (!Founding || Ephemeral) return;
+            string current = Game.Content.Map.Name;
+            if (MapSettings.IsGeneratedName(current) && MapSettings.TryParse(current, out var s))
+            {
+                MapDraft = s;
+                MapPresetId = MapPreset.All.FirstOrDefault(p => p.Settings != null && p.Settings.Code == s.Code)?.Id;
+            }
+            else
+            {
+                MapDraft = ClassicLike(NewSeed());
+                MapPresetId = MapPreset.ClassicId;
+            }
+            FoundingFire = null;
+            ChoosingMap = true;
+        }
+
+        static int NewSeed() => new System.Random().Next(0, MapSettings.SeedRange);
+
+        public void ChooseMapPreset(string id)
+        {
+            var p = MapPreset.Get(id);
+            if (p == null) return;
+            MapPresetId = p.Id;
+            MapDraft = p.Settings?.Clone() ?? ClassicLike(MapDraft?.Seed ?? NewSeed());
+        }
+
+        /// <summary>One step more or less of a feature; the valley becomes the player's own.</summary>
+        public void StepMapFeature(MapSettings.Feature f, int delta)
+        {
+            var d = MapDraft.Clone();
+            d[f] = d[f] + delta;
+            if (d.Code == MapDraft.Code && MapPresetId != MapPreset.ClassicId) return;
+            MapDraft = d;
+            MapPresetId = null;
+        }
+
+        /// <summary>The same settings, another valley.</summary>
+        public void RerollMap()
+        {
+            var d = MapDraft.Clone();
+            d.Seed = NewSeed();
+            MapDraft = d;
+            MapPresetId = null;
+        }
+
+        /// <summary>Uses a map code (shared by another player); returns false when it is not one.</summary>
+        public bool UseMapCode(string code)
+        {
+            if (!MapSettings.TryParse(code, out var s)) return false;
+            MapDraft = s;
+            MapPresetId = MapPreset.All.FirstOrDefault(p => p.Settings != null && p.Settings.Code == s.Code)?.Id;
+            return true;
+        }
+
+        /// <summary>Closes the generator without changing the valley.</summary>
+        public void CancelMapChoice() => ChoosingMap = false;
+
+        /// <summary>
+        /// Settles on the drafted valley: a new (still unfounded) settlement on it, the terrain, water and nature
+        /// built again from its map, and the player chooses where the campfire burns.
+        /// </summary>
+        public void ConfirmMapChoice()
+        {
+            if (!ChoosingMap) return;
+            ChoosingMap = false;
+            string name = DraftMapName;
+            if (!Founding || name == Game.Content.Map.Name) { FocusOnSettlement(false); Refresh(); return; }
+            var old = Game.State;
+            var game = Game.NewUnfoundedGame(baseContent.ForMap(name), clock, old.SettlementName);
+            game.State.SettlementId = old.SettlementId;
+            Game = game;
+            FoundingFire = null;
+            FoundingCell = null;
+            World.RebuildAll();
+            Rig.Bounds = MapBounds();
+            FocusOnSettlement(true);
+            Save();
+            Refresh();
         }
 
         // MARK: - Clock
@@ -348,6 +452,7 @@ namespace Founders
             catch (Exception e) { Debug.LogError($"[FOUNDERS] Reset failed: {e}"); }
             Game = NewSettlement();
             FoundingFire = null;
+            FoundingCell = null;
             PlacingBuildingId = null;
             GhostCell = null;
             SelectedBuildingId = null;
@@ -356,7 +461,9 @@ namespace Founders
             Toasts.Clear();
             ActivePanel = Panel.None;
             World.RebuildAll();
+            Rig.Bounds = MapBounds();
             FocusOnSettlement(false);
+            OpenMapChoice();
             Save();
             Refresh();
         }
@@ -369,8 +476,11 @@ namespace Founders
                 profile.Sessions = Math.Max(profile.Sessions, Profile.Sessions);
                 Profile = profile;
             }
-            Game = new Game(Content, state, clock);
+            Game = new Game(baseContent, state, clock);
             Game.Update();
+            ChoosingMap = false;
+            FoundingFire = null;
+            FoundingCell = null;
             PlacingBuildingId = null;
             GhostCell = null;
             SelectedBuildingId = null;

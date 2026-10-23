@@ -644,6 +644,8 @@ namespace Founders.Core
     public sealed class MapDefinition
     {
         public string Name;
+        /// <summary>The name players see (generated valleys); null = made from <see cref="Name"/>.</summary>
+        public string Title;
         public int Width, Height;
         public List<string> Rows = new List<string>();
         public List<StartBuilding> StartBuildings = new List<StartBuilding>();
@@ -1044,6 +1046,33 @@ namespace Founders.Core
         public List<LawDefinition> Laws = new List<LawDefinition>();
         public List<PetitionDefinition> Petitions = new List<PetitionDefinition>();
         public MapDefinition Map;
+        /// <summary>The content as loaded, when this copy carries a generated valley instead (see <see cref="ForMap"/>).</summary>
+        public GameContent Base { get; private set; }
+
+        /// <summary>
+        /// The content for a settlement's map: the hand-drawn valley as loaded, or a valley drawn by
+        /// <see cref="MapGenerator"/> from the settings in its name. An unknown name gives the loaded content
+        /// (a save from an unknown map then fails validation as before).
+        /// </summary>
+        public GameContent ForMap(string mapName)
+        {
+            var root = Base ?? this;
+            if (string.IsNullOrEmpty(mapName) || mapName == Map.Name) return this;
+            if (mapName == root.Map.Name) return root;
+            return MapSettings.IsGeneratedName(mapName) && MapSettings.TryParse(mapName, out var settings)
+                ? MapGenerator.ContentFor(root, settings) : root;
+        }
+
+        /// <summary>A copy of this content on another map, with that map's lands to explore.</summary>
+        internal GameContent WithMap(MapDefinition map, List<RegionDefinition> regions)
+        {
+            var c = (GameContent)MemberwiseClone();
+            c.Base = Base ?? this;
+            c.Map = map;
+            c.Regions = regions;
+            return c;
+        }
+
         public LawDefinition Law(string id) => Laws.FirstOrDefault(l => l.Id == id);
         public PetitionDefinition Petition(string id) => Petitions.FirstOrDefault(p => p.Id == id);
         public SkillDefinition Skill(JobType job) => Skills.FirstOrDefault(s => s.Job == job);

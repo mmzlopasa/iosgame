@@ -282,6 +282,8 @@ Za ukras / For a decoration: `deco_dirt_path`, `deco_stone_road`, `deco_wooden_b
 
 Neobavezne (igra ih koristi samo ako ih dodaš) / Optional (used only when you add them): `speedup_general`, `speedup_construction`, `speedup_research`, `speedup_exploration` – ikone ubrzanja / speed-up item icons (bez njih / without them: `sparkle`, `build`, `knowledge`, `compass`).
 
+`map_lake`, `map_river`, `map_island`, `map_mountain`, `map_hill`, `map_forest`, `map_ore` – sličice uz klizače generatora mape / swatches beside the map generator's sliders (bez njih / without them: naslikane kružne sličice iz igre / the game's painted round swatches).
+
 ### Okviri i gumbi / UI skins (9-slice) – `UI/Skin/<ime>.png`
 
 Rubovi (lijevo, gore, desno, dolje) se ne rastežu; sredina se rasteže (kod `panel`, `plank`, `section` se ponavlja). Druga veličina slike je u redu ako su proporcije iste – rubovi se skaliraju s njom. Borders (left, top, right, bottom) never stretch; the middle does (tiles for panel/plank/section). Another resolution is fine with the same proportions – the borders scale with it.
