@@ -116,11 +116,11 @@ namespace Founders.Tests
         {
             var (game, _) = Fixtures.NewGame();
             Clear(game);
-            Expect.Success(game.StartExpedition("east_ridge"));
+            Expect.Success(game.StartExpedition("land_1_0"));
             Give(game, SpeedupKind.Exploration, 180, 1);
             Expect.Success(game.UseSpeedup(SpeedupTask.Expedition, SpeedupKind.Exploration, 180));
             Assert.That(game.State.ActiveExpedition, Is.Null);
-            Assert.That(game.State.ExploredRegions, Does.Contain("east_ridge"));
+            Assert.That(game.State.ExploredRegions, Does.Contain("land_1_0"));
             Assert.That(game.SpeedupCount(SpeedupKind.Exploration, 15), Is.EqualTo(1));
         }
 
@@ -156,7 +156,7 @@ namespace Founders.Tests
         {
             var (game, _) = Fixtures.NewGame();
             Clear(game);
-            Expect.Success(game.StartExpedition("east_ridge"));
+            Expect.Success(game.StartExpedition("land_1_0"));
             Give(game, SpeedupKind.General, 1, 2);
             Expect.Success(game.UseSpeedupsToFinish(SpeedupTask.Expedition));
             Assert.That(game.State.ActiveExpedition, Is.Not.Null);
