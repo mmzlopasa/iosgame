@@ -49,7 +49,7 @@ namespace Founders.UI
                 var lv = G.NextLevel(b);
                 string level = $"{b.Level}|{(lv == null ? "" : CoverKey(lv.Cost))}|{G.HasRoadAccess(b)}|{Time.unscaledTime < confirmDemolishUntil}|" +
                                string.Join("", G.LevelRequirements(b).Select(r => r.Met ? "1" : "0"));
-                return $"sel|{b.Id}|{b.DefinitionId}|{b.Status}|{up}|{jobs}|{G.IdleWorkers > 0}|{level}|{(def?.Heart == true ? StokeKey() : "")}|{HomeNeedsKey(b)}";
+                return $"sel|{b.Id}|{b.DefinitionId}|{b.Status}|{up}|{jobs}|{G.IdleWorkers > 0}|{level}|{(def?.Heart == true ? StokeKey() : "")}|{HomeNeedsKey(b)}|{MonumentKey(b, def)}";
             }
             return "none";
         }
@@ -208,6 +208,54 @@ namespace Founders.UI
             box.style.marginLeft = 8;
             box.Add(content);
             return box;
+        }
+
+        string MonumentKey(PlacedBuilding b, BuildingDefinition def)
+        {
+            if (def == null || !def.IsMonument) return "";
+            return $"{string.Join(",", b.Parts)}|{b.PendingPart}|{G.ActiveConstructionCount()}|" +
+                   string.Join("", def.Parts.Select(p => G.State.Resources.Covers(p.Cost) ? "1" : "0"));
+        }
+
+        /// <summary>
+        /// The monument's plan (its node tool): every part in stages by what it joins onto, with what it brings,
+        /// its cost and a Build button for the parts that can go up now.
+        /// </summary>
+        void MonumentSection(VisualElement body, PlacedBuilding b, BuildingDefinition def)
+        {
+            var sec = E.Section("Plan", out var rows, E.T($"{b.Parts.Count}/{def.Parts.Count} parts", Theme.Num, Theme.Gold));
+            sec.style.marginTop = 8;
+            var depth = new Dictionary<string, int>();
+            foreach (var p in def.Parts) depth[p.Id] = p.Requires.Count == 0 ? 0 : p.Requires.Max(r => depth.TryGetValue(r, out var d) ? d : 0) + 1;
+            bool sep = false;
+            int id = b.Id;
+            foreach (var p in def.Parts)
+            {
+                var status = G.PartStatus(b, p);
+                var line = E.Line(sep, 64);
+                sep = true;
+                line.style.paddingLeft = depth[p.Id] * 16;
+                if (depth[p.Id] > 0) line.Add(E.T("└", Theme.Body, Theme.Pale).Margin(0, 4));
+                line.Add(E.RowIcon(status == Game.PartState.Built ? "check" : status == Game.PartState.Building ? "build" : status == Game.PartState.Locked ? "lock" : "landmark"));
+                var text = E.Div().Col().Grow().Ignore();
+                text.Add(E.T(p.Name, Theme.Body, status == Game.PartState.Locked ? Theme.Pale : (Color?)null));
+                string info = status == Game.PartState.Locked
+                    ? "After: " + string.Join(", ", p.Requires.Where(r => !b.Parts.Contains(r)).Select(r => def.Part(r)?.Name ?? r))
+                    : p.Description;
+                text.Add(E.Ink(info, Theme.Small, Theme.InkSoft));
+                if (status == Game.PartState.Available) text.Add(CostLine(p.Cost, 13, true).Margin(2));
+                line.Add(text);
+                if (status == Game.PartState.Available)
+                {
+                    bool can = b.Status == BuildingStatus.Complete && G.State.Resources.Covers(p.Cost)
+                               && G.ActiveConstructionCount() < G.Content.Balance.MaxConcurrentConstructions;
+                    string partId = p.Id;
+                    line.Add(E.Button("Build", can ? Act(() => G.AddPart(id, partId)) : null, can ? E.Kind.Orange : E.Kind.Grey, 40, null, 15,
+                                      SubLine("clock", Fmt.Clock(G.EstimatedSeconds(p.BuildSeconds))), 96).Margin(0, 0, 0, 6));
+                }
+                rows.Add(line);
+            }
+            body.Add(sec);
         }
 
         HomeNeeds? NeedsOf(PlacedBuilding b)
@@ -487,7 +535,8 @@ namespace Founders.UI
             head.Add(E.Slot(BuildingIcon(def, b.Level), 60, CellFor(def)));
             var col = E.Div().Col().Grow().Ignore();
             col.style.marginLeft = 10;
-            string state = complete ? Category(def) : b.Status == BuildingStatus.Upgrading ? "Upgrading" : "Under construction";
+            string state = complete ? Category(def) : b.PendingPart != null ? $"Building the {def.Part(b.PendingPart)?.Name}"
+                : b.Status == BuildingStatus.Upgrading ? "Upgrading" : "Under construction";
             col.Add(E.T(state, Theme.Num, complete ? (Color?)null : Theme.Gold));
             col.Add(E.Ink(def.Description, Theme.Small).Margin(2));
             var next = def.SuccessorId == null ? null : G.Content.Building(def.SuccessorId);
@@ -513,6 +562,7 @@ namespace Founders.UI
                 body.Add(sec);
             }
 
+            if (def.IsMonument && b.IsOperational) MonumentSection(body, b, def);
             StatsSection(body, b, def, canLevel);
             foreach (var slot in def.JobSlots ?? new List<JobSlot>())
                 if (body.Children().All(c => c.name != "workers-" + slot.Job)) body.Add(WorkersSection(slot.Job, b, def, canLevel));

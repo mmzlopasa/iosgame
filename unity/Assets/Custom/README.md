@@ -211,6 +211,7 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 
 | Ključ (ime datoteke) / Key (file name) | Koristi se za / Used for | Parcela / Plot (cells, metres) |
 |---|---|---|
+| `abbey` | Abbey (`abbey`) | 4×4 (8×8 m) |
 | `ancestor_shrine` | Ancestor Stones (`ancestor_shrine`) | 2×2 (4×4 m) |
 | `animal_pen` | Animal Pen (`animal_pen`) | 1×1 (2×2 m) |
 | `apiary` | Apiary (`apiary`) | 1×1 (2×2 m) |
@@ -233,6 +234,7 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 | `hunters_lodge` | Hunter's Lodge (`hunters_lodge`) | 1×1 (2×2 m) |
 | `longhouse` | Longhouse (`longhouse`) | 2×2 (4×4 m) |
 | `lookout_tower` | Lookout Tower (`lookout_tower`) | 1×1 (2×2 m) |
+| `lords_manor` | Lord's Manor (`lords_manor`) | 4×4 (8×8 m) |
 | `market_stall` | Market Stall (`market_stall`) | 1×1 (2×2 m) |
 | `medieval_bakery` | Bakery (`medieval_bakery`) | 2×2 (4×4 m) |
 | `medieval_barn` | Barn and Paddock (`medieval_barn`) | 3×3 (6×6 m) |
@@ -254,6 +256,7 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 | `sawpit` | Sawpit (`sawpit`) | 1×1 (2×2 m) |
 | `shelter` | Shelter (`shelter`) | 1×1 (2×2 m) |
 | `smokehouse` | Smokehouse (`smokehouse`) | 1×1 (2×2 m) |
+| `stone_keep` | Stone Keep (`stone_keep`) | 4×4 (8×8 m) |
 | `stone_site` | Stone Gathering Site (`stone_site`) | 1×1 (2×2 m) |
 | `storage_pit` | Storage Pit (`storage_pit`) | 1×1 (2×2 m) |
 | `toolmaker` | Toolmaker's Shelter (`toolmaker`) | 1×1 (2×2 m) |

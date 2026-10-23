@@ -208,7 +208,7 @@ namespace Founders.UI
                 return list;
             }
             bool decorTab = decorCats.Contains(buildTab);
-            if (!decorTab)
+            if (!decorTab || G.Content.Buildings.Any(b => b.Buildable && Category(b) == buildTab))
             {
                 var defs = G.Content.Buildings.Where(b => b.Buildable && (buildTab == "All" || Category(b) == buildTab))
                     .OrderBy(b => G.IsUnlocked(b) ? 0 : 1).ToList();

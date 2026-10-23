@@ -131,7 +131,7 @@ namespace Founders.Core
             double estates = EstatesApproval(list);
 
             // Gathering places
-            int community = OperationalBuildings().Sum(x => x.def.Community ?? 0);
+            int community = OperationalBuildings().Sum(x => x.def.Community ?? 0) + PartCommunity();
             if (community > 0) list.Add(new ApprovalFactor("Gathering places", Math.Min(15, community)));
 
             // Beauty and order: fences, lanterns, flowers, monuments (Foundation's splendor).

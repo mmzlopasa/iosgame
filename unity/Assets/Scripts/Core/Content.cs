@@ -283,6 +283,10 @@ namespace Founders.Core
         public bool Water;
         /// <summary>Trade routes to the neighbours this building keeps running (a trading post, a market hall).</summary>
         public int TradeRoutes;
+        /// <summary>A monument's parts, added one by one once the plot is laid out (empty for ordinary buildings).</summary>
+        public List<MonumentPart> Parts = new List<MonumentPart>();
+        public bool IsMonument => Parts.Count > 0;
+        public MonumentPart Part(string id) => Parts.FirstOrDefault(p => p.Id == id);
 
         /// <summary>The model shown at a level: the last look whose level has been reached.</summary>
         public string SpriteAt(int level)
@@ -336,8 +340,37 @@ namespace Founders.Core
                 Market = o.OptBool("market", false),
                 Water = o.OptBool("water", false),
                 TradeRoutes = o.OptInt("tradeRoutes") ?? 0,
+                Parts = o.Has("parts") ? o.Objs("parts").Select(MonumentPart.FromJson).ToList() : new List<MonumentPart>(),
             };
         }
+    }
+
+    /// <summary>
+    /// One part of a monument (a manor's hall, an abbey's cloister): built on the monument's plot after the parts it
+    /// needs, each with its own cost, building time and lasting effects.
+    /// </summary>
+    public sealed class MonumentPart
+    {
+        public string Id, Name, Description;
+        public ResourceBundle Cost;
+        public double BuildSeconds;
+        /// <summary>Parts that must stand first (the joins of the monument's plan).</summary>
+        public List<string> Requires = new List<string>();
+        public List<Effect> Effects = new List<Effect>();
+        /// <summary>Gathering-place points (approval), like a building's community.</summary>
+        public int Community;
+        /// <summary>The estate the part pleases, and the favour per hour it brings.</summary>
+        public string Estate;
+        public double Favour;
+
+        internal static MonumentPart FromJson(JObj o) => new MonumentPart
+        {
+            Id = o.Str("id"), Name = o.Str("name"), Description = o.OptStr("description") ?? "",
+            Cost = ResourceBundle.FromJson(o.OptObj("cost")), BuildSeconds = o.Num("buildSeconds"),
+            Requires = o.Has("requires") ? o.Strs("requires") : new List<string>(),
+            Effects = o.Has("effects") ? o.Objs("effects").Select(Effect.FromJson).ToList() : new List<Effect>(),
+            Community = o.OptInt("community") ?? 0, Estate = o.OptStr("estate"), Favour = o.OptNum("favour") ?? 0,
+        };
     }
 
     /// <summary>A fire that warms the cells around it and burns firewood while it does.</summary>

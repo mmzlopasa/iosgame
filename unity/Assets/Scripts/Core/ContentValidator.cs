@@ -101,6 +101,21 @@ namespace Founders.Core
                 foreach (var look in bld.Looks)
                     if (look.Level < 1 || string.IsNullOrEmpty(look.Sprite)) problems.Add($"building '{bld.Id}' has a broken look");
                 problems.AddRange(ValidateEffects(bld.Effects, $"building '{bld.Id}'", buildingIds));
+                var parts = new HashSet<string>();
+                foreach (var part in bld.Parts)
+                {
+                    string owner = $"building '{bld.Id}' part '{part.Id}'";
+                    // A part may only join parts listed before it, so the plan has no loops.
+                    foreach (var r in part.Requires)
+                        if (!parts.Contains(r)) problems.Add($"{owner} needs '{r}', which is not an earlier part");
+                    if (!parts.Add(part.Id)) problems.Add($"{owner} is listed twice");
+                    if (part.BuildSeconds <= 0 || !part.Cost.IsValid) problems.Add($"{owner} needs buildSeconds > 0 and a valid cost");
+                    if (part.Effects.Any(e => e.Kind == EffectKind.GrantResources || e.Kind == EffectKind.UnlockBuilding || e.DurationSeconds.HasValue))
+                        problems.Add($"{owner} effects must be lasting");
+                    if (part.Estate != null && b.Estates != null && b.Estates.Estates.All(e => e.Id != part.Estate))
+                        problems.Add($"{owner} pleases unknown estate '{part.Estate}'");
+                    problems.AddRange(ValidateEffects(part.Effects, owner, buildingIds));
+                }
                 foreach (var e in bld.Effects)
                     // A building's effects last while it stands: one-off grants, unlocks and timers do not fit.
                     if (e.Kind == EffectKind.GrantResources || e.Kind == EffectKind.UnlockBuilding || e.DurationSeconds.HasValue)

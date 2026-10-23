@@ -87,6 +87,7 @@ namespace Founders.Core
         /// <summary>Building kinds with lasting effects (content does not change while playing).</summary>
         Dictionary<string, List<Effect>> effectsByBuilding;
         List<Effect> buildingEffects;
+        bool hasMonuments;
         int buildingEffectsKey = -1;
         object buildingEffectsOwner;
 
@@ -95,15 +96,21 @@ namespace Founders.Core
         List<Effect> BuildingEffects()
         {
             if (effectsByBuilding == null)
+            {
                 effectsByBuilding = Content.Buildings.Where(d => d.Effects.Count > 0).ToDictionary(d => d.Id, d => d.Effects);
-            if (effectsByBuilding.Count == 0) return new List<Effect>();
+                hasMonuments = Content.Buildings.Any(d => d.IsMonument);
+            }
+            if (effectsByBuilding.Count == 0 && !hasMonuments) return new List<Effect>();
             int operational = 0;
             foreach (var b in State.Buildings) if (b.IsOperational) operational++;
-            int key = State.Buildings.Count * 4096 + operational;
+            int parts = 0;
+            foreach (var b in State.Buildings) parts += b.Parts.Count;
+            int key = (State.Buildings.Count * 4096 + operational) * 64 + parts;
             if (buildingEffects != null && key == buildingEffectsKey && ReferenceEquals(buildingEffectsOwner, State.Buildings)) return buildingEffects;
             var list = new List<Effect>();
             foreach (var b in State.Buildings)
                 if (b.IsOperational && effectsByBuilding.TryGetValue(b.DefinitionId, out var effects)) list.AddRange(effects);
+            if (hasMonuments) list.AddRange(PartEffects());
             buildingEffects = list;
             buildingEffectsKey = key;
             buildingEffectsOwner = State.Buildings;

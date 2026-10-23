@@ -20,6 +20,8 @@ namespace Founders
             var root = new GameObject("Model_" + sprite);
             root.transform.SetParent(parent, false);
             var b = new Builder(root.transform, tint, tint == null);
+            // A monument: its plot and the parts that stand ("lords_manor+great_hall+manor_kitchen").
+            if (Monument(b, sprite)) return root;
             switch (sprite)
             {
                 case "campfire": Campfire(b); break;
@@ -742,6 +744,133 @@ namespace Founders
             float k = Mathf.Min(1f, footprintMetres / native);
             b.Model(id, Vector3.zero, 0.94f * k, 180f);
             if (id == "medieval_smithy") b.Fire(new Vector3(-0.55f, 0.95f, 1.75f), 0.35f);
+        }
+
+        // MARK: - Monuments (built part by part, on a 4×4 plot of 8 m)
+
+        static readonly string[] MonumentPlots = { "lords_manor", "abbey", "stone_keep" };
+
+        static bool Monument(Builder b, string sprite)
+        {
+            var bits = sprite.Split('+');
+            if (System.Array.IndexOf(MonumentPlots, bits[0]) < 0) return false;
+            if (bits.Length == 1) Plot(b);
+            else b.Prim(PrimitiveType.Cube, new Vector3(0f, 0.02f, 0f), new Vector3(7.4f, 0.04f, 7.4f), "RockGround");
+            for (int i = 1; i < bits.Length; i++) MonumentPart(b, bits[i]);
+            return true;
+        }
+
+        /// <summary>The plot laid out: corner stakes, a cord between them, stone and timber waiting.</summary>
+        static void Plot(Builder b)
+        {
+            var corners = new[] { new Vector3(-3.6f, 0, -3.6f), new Vector3(3.6f, 0, -3.6f), new Vector3(3.6f, 0, 3.6f), new Vector3(-3.6f, 0, 3.6f) };
+            for (int i = 0; i < 4; i++)
+            {
+                b.Pole(corners[i], corners[i] + new Vector3(0, 0.7f, 0), 0.06f);
+                b.Pole(corners[i] + new Vector3(0, 0.6f, 0), corners[(i + 1) % 4] + new Vector3(0, 0.6f, 0), 0.015f);
+            }
+            b.Model("k_planks", new Vector3(-1.5f, 0f, -1.2f), 2.4f, 10f);
+            b.Model("k_stone_large", new Vector3(1.4f, 0f, 1.0f), 1.6f, 40f);
+            b.Model("k_stone", new Vector3(2.2f, 0f, -0.6f), 1.8f, 0f);
+            b.Model("k_signpost", new Vector3(-3.0f, 0f, -3.0f), 2.4f, 45f);
+        }
+
+        static void StoneTower(Builder b, Vector3 at, float radius, float height)
+        {
+            b.Prim(PrimitiveType.Cylinder, at + new Vector3(0, height / 2f, 0), new Vector3(radius * 2f, height / 2f, radius * 2f), "DarkRock");
+            b.Shape(Meshes.Cone(), at + new Vector3(0, height, 0), new Vector3(radius * 2.5f, radius * 2.2f, radius * 2.5f), "Thatch");
+        }
+
+        static void Wall(Builder b, Vector3 a, Vector3 c, float height = 1.6f)
+        {
+            var mid = (a + c) / 2f;
+            var d = c - a;
+            float yaw = Mathf.Atan2(d.x, d.z) * Mathf.Rad2Deg;
+            b.Prim(PrimitiveType.Cube, mid + new Vector3(0, height / 2f, 0), new Vector3(0.45f, height, d.magnitude), "DarkRock", new Vector3(0, yaw, 0));
+            int teeth = Mathf.FloorToInt(d.magnitude / 0.8f);
+            for (int i = 0; i < teeth; i += 2)
+            {
+                var p = Vector3.Lerp(a, c, (i + 0.5f) / teeth);
+                b.Prim(PrimitiveType.Cube, p + new Vector3(0, height + 0.15f, 0), new Vector3(0.5f, 0.3f, 0.4f), "DarkRock", new Vector3(0, yaw, 0));
+            }
+        }
+
+        static void MonumentPart(Builder b, string part)
+        {
+            switch (part)
+            {
+                // Lord's Manor
+                case "great_hall": b.Model("medieval_townhouse", new Vector3(0f, 0f, 1.6f), 0.94f, 180f); break;
+                case "manor_kitchen":
+                    b.Model("medieval_cottage", new Vector3(-2.5f, 0f, 1.9f), 0.62f, 180f);
+                    b.Model("k_barrel", new Vector3(-1.6f, 0f, 0.2f), 2.4f, 0f);
+                    break;
+                case "solar_tower": StoneTower(b, new Vector3(2.7f, 0f, 2.6f), 0.95f, 5.2f); break;
+                case "manor_garden":
+                    Wall(b, new Vector3(-3.6f, 0, -0.6f), new Vector3(-0.6f, 0, -0.6f), 0.6f);
+                    Wall(b, new Vector3(-3.6f, 0, -3.6f), new Vector3(-3.6f, 0, -0.6f), 0.6f);
+                    b.Prim(PrimitiveType.Cylinder, new Vector3(-2.1f, 0.2f, -2.1f), new Vector3(1.1f, 0.2f, 1.1f), "DarkRock");
+                    b.PrimColor(PrimitiveType.Cylinder, new Vector3(-2.1f, 0.38f, -2.1f), new Vector3(0.95f, 0.02f, 0.95f), "Water");
+                    b.Model("sn_bush_flowers", new Vector3(-3.0f, 0f, -3.0f), 0.7f, 20f);
+                    b.Model("sn_flowers", new Vector3(-1.1f, 0f, -3.1f), 0.8f, 120f);
+                    b.Model("sn_flowers", new Vector3(-3.1f, 0f, -1.2f), 0.8f, 220f);
+                    break;
+                case "stewards_office": b.Model("medieval_house", new Vector3(2.3f, 0f, -2.1f), 0.6f, 270f); break;
+
+                // Abbey
+                case "abbey_church": b.Model("medieval_church", new Vector3(0f, 0f, 1.7f), 0.72f, 180f); break;
+                case "cloister":
+                {
+                    var a = new[] { new Vector3(-3.6f, 0, -3.6f), new Vector3(-0.6f, 0, -3.6f), new Vector3(-0.6f, 0, -0.6f), new Vector3(-3.6f, 0, -0.6f) };
+                    for (int i = 0; i < 4; i++)
+                    {
+                        Wall(b, a[i], a[(i + 1) % 4], 0.5f);
+                        for (int k = 1; k < 4; k++)
+                        {
+                            var p = Vector3.Lerp(a[i], a[(i + 1) % 4], k / 4f);
+                            b.Pole(p + new Vector3(0, 0.5f, 0), p + new Vector3(0, 1.3f, 0), 0.08f);
+                        }
+                    }
+                    b.Model("sn_bush_flowers", new Vector3(-2.1f, 0f, -2.1f), 0.8f, 0f);
+                    break;
+                }
+                case "infirmary": b.Model("medieval_house", new Vector3(2.3f, 0f, -2.2f), 0.6f, 270f); break;
+                case "abbey_brewery":
+                    b.Model("medieval_cottage", new Vector3(-3.0f, 0f, 2.8f), 0.45f, 90f);
+                    b.Model("k_barrel", new Vector3(-2.2f, 0f, 1.6f), 2.4f, 0f);
+                    b.Model("k_barrel", new Vector3(-2.6f, 0f, 1.3f), 2.4f, 40f);
+                    break;
+                case "abbey_library": b.Model("medieval_townhouse", new Vector3(3.0f, 0f, 2.8f), 0.45f, 270f); break;
+
+                // Stone Keep
+                case "keep_tower":
+                    b.Prim(PrimitiveType.Cube, new Vector3(0f, 3.0f, 1.2f), new Vector3(3.0f, 6.0f, 3.0f), "DarkRock");
+                    for (int i = 0; i < 4; i++)
+                    {
+                        float t = -1.2f + i * 0.8f;
+                        b.Prim(PrimitiveType.Cube, new Vector3(t, 6.2f, -0.3f), new Vector3(0.4f, 0.4f, 0.3f), "DarkRock");
+                        b.Prim(PrimitiveType.Cube, new Vector3(t, 6.2f, 2.7f), new Vector3(0.4f, 0.4f, 0.3f), "DarkRock");
+                        b.Prim(PrimitiveType.Cube, new Vector3(-1.35f, 6.2f, t + 1.2f), new Vector3(0.3f, 0.4f, 0.4f), "DarkRock");
+                        b.Prim(PrimitiveType.Cube, new Vector3(1.35f, 6.2f, t + 1.2f), new Vector3(0.3f, 0.4f, 0.4f), "DarkRock");
+                    }
+                    b.Pole(new Vector3(0f, 6f, 1.2f), new Vector3(0f, 7.8f, 1.2f), 0.04f);
+                    b.PrimColor(PrimitiveType.Cube, new Vector3(0f, 7.4f, 1.55f), new Vector3(0.03f, 0.6f, 0.6f), "Banner");
+                    break;
+                case "curtain_wall":
+                    Wall(b, new Vector3(-3.7f, 0, 3.7f), new Vector3(3.7f, 0, 3.7f));
+                    Wall(b, new Vector3(-3.7f, 0, -3.7f), new Vector3(-3.7f, 0, 3.7f));
+                    Wall(b, new Vector3(3.7f, 0, -3.7f), new Vector3(3.7f, 0, 3.7f));
+                    Wall(b, new Vector3(-3.7f, 0, -3.7f), new Vector3(-1.0f, 0, -3.7f));
+                    Wall(b, new Vector3(1.0f, 0, -3.7f), new Vector3(3.7f, 0, -3.7f));
+                    break;
+                case "gatehouse":
+                    StoneTower(b, new Vector3(-1.2f, 0f, -3.7f), 0.6f, 2.8f);
+                    StoneTower(b, new Vector3(1.2f, 0f, -3.7f), 0.6f, 2.8f);
+                    b.Prim(PrimitiveType.Cube, new Vector3(0f, 2.3f, -3.7f), new Vector3(1.8f, 0.6f, 0.6f), "DarkRock");
+                    break;
+                case "watch_house": b.Model("medieval_cottage", new Vector3(-2.4f, 0f, -1.8f), 0.5f, 90f); break;
+                case "great_storehouse": b.Model("medieval_barn", new Vector3(2.3f, 0f, -1.6f), 0.45f, 270f); break;
+            }
         }
 
         // MARK: - The second wave: Era I

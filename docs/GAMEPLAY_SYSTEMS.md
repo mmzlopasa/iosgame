@@ -134,6 +134,12 @@ only the map's name (`gen_<code>`): the valley and its 64 lands are drawn again 
 - **Woodcutting**: woodcutters near the area fell those trees first. **Forestry**: never cut, and felled trees grow back twice as fast. **Pasture**: every 4 cells give one more herder a place (once a pasture or pen stands).
 - Content: `tools/content/zones.py`; rules: `Core/GameZones.cs`; tests: `ZonesTests`.
 
+## Monuments built part by part (Manor Lords' modular manors)
+
+- Three medieval monuments on a 4×4 plot: **Lord's Manor** (Written Law), **Abbey** (Monastic Orders), **Stone Keep** (Masonry). The player lays out the plot, then picks the next part from the monument's **plan** on its card: a part needs the parts it joins onto, costs its own goods and time, and appears on the model.
+- Five parts each, with lasting effects, gathering-place points and estate favour: e.g. Great Hall (+3 community, Crown favour), Solar Tower (bigger treasury), Cloister and Library (faster research, Clergy favour), Infirmary (less illness), Curtain Wall (calmer town), Gatehouse (faster scouts), Great Storehouse (more wood and stone storage).
+- Model names carry the parts (`lords_manor+great_hall+solar_tower`); `BuildingModels.Monument` draws the plot and each part. Content: `tools/content/monuments.py`; rules: `Core/GameMonuments.cs`; tests: `MonumentTests`.
+
 ## Next refinements (to discuss)
 
 1. **Families instead of single people**: housing gives family slots and one family

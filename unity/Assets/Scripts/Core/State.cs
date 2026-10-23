@@ -24,6 +24,9 @@ namespace Founders.Core
         /// <summary>Building level (1 = as built). Upgrading to <see cref="PendingLevel"/> raises it.</summary>
         public int Level = 1;
         public int PendingLevel;
+        /// <summary>A monument's finished parts, in the order they were built, and the part going up now.</summary>
+        public List<string> Parts = new List<string>();
+        public string PendingPart;
 
         public bool IsOperational => Status != BuildingStatus.Constructing;
 
@@ -49,6 +52,8 @@ namespace Founders.Core
             if (Rotation != 0) d["rotation"] = Rotation;
             if (Level != 1) d["level"] = Level;
             if (PendingLevel != 0) d["pendingLevel"] = PendingLevel;
+            if (Parts.Count > 0) d["parts"] = Parts.Cast<object>().ToList();
+            if (PendingPart != null) d["pendingPart"] = PendingPart;
             return d;
         }
 
@@ -66,6 +71,8 @@ namespace Founders.Core
             Rotation = o.OptInt("rotation") ?? 0,
             Level = o.OptInt("level") ?? 1,
             PendingLevel = o.OptInt("pendingLevel") ?? 0,
+            Parts = o.Has("parts") ? o.Strs("parts") : new List<string>(),
+            PendingPart = o.OptStr("pendingPart"),
         };
     }
 

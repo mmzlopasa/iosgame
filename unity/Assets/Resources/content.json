@@ -10481,6 +10481,399 @@
      "buildSeconds": 2556.0
     }
    ]
+  },
+  {
+   "id": "lords_manor",
+   "name": "Lord's Manor",
+   "description": "The lord's seat, raised part by part as you choose: a great hall first, then kitchens, a tower, a garden and a steward's office. Each part pleases the Crown.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 4,
+    "height": 4
+   },
+   "cost": {
+    "wood": 120,
+    "stone": 60
+   },
+   "buildSeconds": 60,
+   "sprite": "lords_manor",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "written_law",
+   "maxCount": 1,
+   "parts": [
+    {
+     "id": "great_hall",
+     "name": "Great Hall",
+     "description": "Feasts and the lord's court. A gathering place (+3) and +4 Crown favour an hour.",
+     "cost": {
+      "wood": 160,
+      "stone": 120,
+      "planks": 30
+     },
+     "buildSeconds": 240.0,
+     "requires": [],
+     "effects": [],
+     "community": 3,
+     "estate": "crown",
+     "favour": 4
+    },
+    {
+     "id": "manor_kitchen",
+     "name": "Kitchens",
+     "description": "Bread and stew for the hall's guests. +2 approval.",
+     "cost": {
+      "wood": 80,
+      "stone": 60,
+      "planks": 15
+     },
+     "buildSeconds": 180.0,
+     "requires": [
+      "great_hall"
+     ],
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": 2
+      }
+     ]
+    },
+    {
+     "id": "solar_tower",
+     "name": "Solar Tower",
+     "description": "The lord's chambers and strongroom. The treasury holds 25% more; +3 Crown favour.",
+     "cost": {
+      "wood": 60,
+      "stone": 180,
+      "planks": 20
+     },
+     "buildSeconds": 300.0,
+     "requires": [
+      "great_hall"
+     ],
+     "effects": [
+      {
+       "kind": "storageMultiplier",
+       "resource": "coins",
+       "value": 1.25
+      }
+     ],
+     "estate": "crown",
+     "favour": 3
+    },
+    {
+     "id": "manor_garden",
+     "name": "Walled Garden",
+     "description": "Herbs, roses and a fountain. A gathering place (+2), 5% less illness.",
+     "cost": {
+      "wood": 40,
+      "stone": 80
+     },
+     "buildSeconds": 180.0,
+     "requires": [
+      "manor_kitchen"
+     ],
+     "effects": [
+      {
+       "kind": "sicknessMultiplier",
+       "value": 0.95
+      }
+     ],
+     "community": 2
+    },
+    {
+     "id": "stewards_office",
+     "name": "Steward's Office",
+     "description": "Ledgers and the lord's builders. Building goes 10% faster; +3 Crown favour.",
+     "cost": {
+      "wood": 70,
+      "stone": 70,
+      "planks": 30,
+      "tools": 5
+     },
+     "buildSeconds": 240.0,
+     "requires": [
+      "solar_tower"
+     ],
+     "effects": [
+      {
+       "kind": "constructionSpeedMultiplier",
+       "value": 1.1
+      }
+     ],
+     "estate": "crown",
+     "favour": 3
+    }
+   ]
+  },
+  {
+   "id": "abbey",
+   "name": "Abbey",
+   "description": "Monks build their house of prayer and learning part by part: the church, a cloister, an infirmary, a brewery and a library. Each part pleases the Clergy.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 4,
+    "height": 4
+   },
+   "cost": {
+    "wood": 100,
+    "stone": 80
+   },
+   "buildSeconds": 60,
+   "sprite": "abbey",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "monastic_orders",
+   "maxCount": 1,
+   "parts": [
+    {
+     "id": "abbey_church",
+     "name": "Abbey Church",
+     "description": "Bells and chant. A gathering place (+3) and +6 Clergy favour an hour.",
+     "cost": {
+      "wood": 120,
+      "stone": 220,
+      "planks": 30
+     },
+     "buildSeconds": 300.0,
+     "requires": [],
+     "effects": [],
+     "community": 3,
+     "estate": "clergy",
+     "favour": 6
+    },
+    {
+     "id": "cloister",
+     "name": "Cloister",
+     "description": "A quiet garth for study. Research 10% faster; +3 Clergy favour.",
+     "cost": {
+      "wood": 60,
+      "stone": 140,
+      "planks": 20
+     },
+     "buildSeconds": 240.0,
+     "requires": [
+      "abbey_church"
+     ],
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "research",
+       "value": 1.1
+      }
+     ],
+     "estate": "clergy",
+     "favour": 3
+    },
+    {
+     "id": "infirmary",
+     "name": "Infirmary",
+     "description": "Beds and herbs for the sick. 15% less illness, the sick get well 15% faster.",
+     "cost": {
+      "wood": 70,
+      "stone": 90,
+      "planks": 20
+     },
+     "buildSeconds": 240.0,
+     "requires": [
+      "cloister"
+     ],
+     "effects": [
+      {
+       "kind": "sicknessMultiplier",
+       "value": 0.85
+      },
+      {
+       "kind": "recoveryMultiplier",
+       "value": 1.15
+      }
+     ]
+    },
+    {
+     "id": "abbey_brewery",
+     "name": "Brewery",
+     "description": "Ale for feast days. +2 approval, people grumble a little less.",
+     "cost": {
+      "wood": 70,
+      "stone": 50,
+      "planks": 20
+     },
+     "buildSeconds": 180.0,
+     "requires": [
+      "abbey_church"
+     ],
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": 2
+      },
+      {
+       "kind": "discontentPerHour",
+       "value": -0.3
+      }
+     ]
+    },
+    {
+     "id": "abbey_library",
+     "name": "Library",
+     "description": "Copied books from far away. Research 10% faster again; +4 Clergy favour.",
+     "cost": {
+      "wood": 60,
+      "stone": 100,
+      "planks": 40
+     },
+     "buildSeconds": 300.0,
+     "requires": [
+      "cloister"
+     ],
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "research",
+       "value": 1.1
+      }
+     ],
+     "estate": "clergy",
+     "favour": 4
+    }
+   ]
+  },
+  {
+   "id": "stone_keep",
+   "name": "Stone Keep",
+   "description": "A castle raised part by part: a keep tower, a curtain wall, a gatehouse, a watch house and a great storehouse. Pleases the Crown and keeps the town calm.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 4,
+    "height": 4
+   },
+   "cost": {
+    "wood": 80,
+    "stone": 120
+   },
+   "buildSeconds": 60,
+   "sprite": "stone_keep",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "masonry",
+   "maxCount": 1,
+   "parts": [
+    {
+     "id": "keep_tower",
+     "name": "Keep Tower",
+     "description": "A tall square tower. Stores hold 15% more food; +3 Crown favour.",
+     "cost": {
+      "wood": 80,
+      "stone": 260
+     },
+     "buildSeconds": 300.0,
+     "requires": [],
+     "effects": [
+      {
+       "kind": "storageMultiplier",
+       "resource": "food",
+       "value": 1.15
+      }
+     ],
+     "estate": "crown",
+     "favour": 3
+    },
+    {
+     "id": "curtain_wall",
+     "name": "Curtain Wall",
+     "description": "Stone walls round the bailey. People feel safe: discontent eases.",
+     "cost": {
+      "stone": 300
+     },
+     "buildSeconds": 360.0,
+     "requires": [
+      "keep_tower"
+     ],
+     "effects": [
+      {
+       "kind": "discontentPerHour",
+       "value": -0.5
+      }
+     ]
+    },
+    {
+     "id": "gatehouse",
+     "name": "Gatehouse",
+     "description": "Riders go out to the lands around. Scouts explore 15% faster.",
+     "cost": {
+      "wood": 60,
+      "stone": 140,
+      "planks": 20
+     },
+     "buildSeconds": 240.0,
+     "requires": [
+      "curtain_wall"
+     ],
+     "effects": [
+      {
+       "kind": "expeditionSpeedMultiplier",
+       "value": 1.15
+      }
+     ]
+    },
+    {
+     "id": "watch_house",
+     "name": "Watch House",
+     "description": "Guards keep the peace. +1 approval and +2 Commons favour.",
+     "cost": {
+      "wood": 70,
+      "stone": 60,
+      "planks": 15
+     },
+     "buildSeconds": 180.0,
+     "requires": [
+      "keep_tower"
+     ],
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": 1
+      }
+     ],
+     "estate": "commons",
+     "favour": 2
+    },
+    {
+     "id": "great_storehouse",
+     "name": "Great Storehouse",
+     "description": "Vaults under the bailey. Stores hold 20% more wood and stone.",
+     "cost": {
+      "wood": 100,
+      "stone": 160,
+      "planks": 30
+     },
+     "buildSeconds": 300.0,
+     "requires": [
+      "curtain_wall"
+     ],
+     "effects": [
+      {
+       "kind": "storageMultiplier",
+       "resource": "wood",
+       "value": 1.2
+      },
+      {
+       "kind": "storageMultiplier",
+       "resource": "stone",
+       "value": 1.2
+      }
+     ]
+    }
+   ]
   }
  ],
  "technologies": [
@@ -10926,7 +11319,7 @@
   {
    "id": "written_law",
    "name": "Written Law",
-   "description": "Marks on clay and wood that keep promises. The village is ready to ask a lord for a charter. +10% research.",
+   "description": "Marks on clay and wood that keep promises. The village is ready to ask a lord for a charter. +10% research. Lay out the Lord's Manor, built part by part.",
    "cost": {
     "knowledge": 320
    },
@@ -10939,6 +11332,10 @@
      "kind": "jobRateMultiplier",
      "job": "research",
      "value": 1.1
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "lords_manor"
     }
    ],
    "heartLevel": 24
@@ -10947,7 +11344,7 @@
    "id": "masonry",
    "epoch": "epoch_medieval_kingdoms",
    "name": "Stone Masonry",
-   "description": "Cut stone and lime mortar. Unlocks the Stone Cottage and the Town House. +15% stone gathering.",
+   "description": "Cut stone and lime mortar. Unlocks the Stone Cottage and the Town House. +15% stone gathering. Lay out the Stone Keep, built part by part.",
    "cost": {
     "knowledge": 360
    },
@@ -10968,6 +11365,10 @@
     {
      "kind": "unlockBuilding",
      "buildingId": "medieval_bathhouse"
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "stone_keep"
     }
    ],
    "heartLevel": 30
@@ -11097,7 +11498,7 @@
    "id": "monastic_orders",
    "epoch": "epoch_medieval_kingdoms",
    "name": "Monastic Orders",
-   "description": "Monks who copy books and keep the calendar. Unlocks the Church. +20% research.",
+   "description": "Monks who copy books and keep the calendar. Unlocks the Church. +20% research. Lay out the Abbey, built part by part.",
    "cost": {
     "knowledge": 540
    },
@@ -11114,6 +11515,10 @@
     {
      "kind": "unlockBuilding",
      "buildingId": "medieval_scriptorium"
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "abbey"
     }
    ],
    "heartLevel": 30

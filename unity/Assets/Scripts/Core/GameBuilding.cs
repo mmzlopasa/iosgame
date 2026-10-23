@@ -238,6 +238,7 @@ namespace Founders.Core
         /// because the status leaves Constructing/Upgrading here.</summary>
         void FinishConstruction(PlacedBuilding b)
         {
+            if (b.PendingPart != null) { FinishPart(b); return; }
             bool wasUpgrade = b.Status == BuildingStatus.Upgrading;
             if (wasUpgrade && b.UpgradeTargetId != null)
             {

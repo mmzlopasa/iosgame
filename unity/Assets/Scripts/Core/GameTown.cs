@@ -67,7 +67,12 @@ namespace Founders.Core
         }
 
         /// <summary>The model the building shows at its level.</summary>
-        public string SpriteOf(PlacedBuilding b) => Content.Building(b.DefinitionId)?.SpriteAt(b.Level) ?? "";
+        public string SpriteOf(PlacedBuilding b)
+        {
+            var def = Content.Building(b.DefinitionId);
+            if (def == null) return "";
+            return def.IsMonument ? MonumentSprite(b, def) : def.SpriteAt(b.Level);
+        }
 
         // Rounded half up, so even a small hut gains a bed at level 2.
         public int HousingOf(PlacedBuilding b, BuildingDefinition def) => (int)Math.Floor(def.HousingValue * LevelFactor(b.Level) + 0.5);

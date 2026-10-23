@@ -260,6 +260,7 @@ namespace Founders.UI
         /// <summary>Category label used for tabs and the build strip.</summary>
         static string Category(BuildingDefinition d)
         {
+            if (d.IsMonument) return "Monuments";
             if (d.HousingValue > 0) return "Shelter";
             if (d.JobSlots != null && d.JobSlots.Any(s => s.Job == JobType.Foraging || s.Job == JobType.Farming)) return "Food";
             if (d.StorageValue > 0 || d.ProtectedFoodValue > 0) return "Storage";
@@ -271,6 +272,7 @@ namespace Founders.UI
             "Shelter" => E.Cell.Rare,
             "Food" => E.Cell.Uncommon,
             "Storage" => E.Cell.Legendary,
+            "Monuments" => E.Cell.Epic,
             _ => d.Heart ? E.Cell.Legendary : E.Cell.Common,
         };
 
@@ -648,7 +650,8 @@ namespace Founders.UI
             {
                 var def = G.Content.Building(b.Status == BuildingStatus.Upgrading && b.UpgradeTargetId != null ? b.UpgradeTargetId : b.DefinitionId);
                 int id = b.Id;
-                cards.Add(TimerCard(b.Status == BuildingStatus.Upgrading ? "level_up" : "build", def?.Name ?? b.DefinitionId,
+                string title = b.PendingPart != null ? def?.Part(b.PendingPart)?.Name ?? def?.Name : def?.Name ?? b.DefinitionId;
+                cards.Add(TimerCard(b.Status == BuildingStatus.Upgrading ? "level_up" : "build", title,
                     () => G.State.Building(id)?.Progress ?? 1, () => Fmt.Clock(G.EstimatedSeconds(G.State.Building(id)?.RemainingWork ?? 0)),
                     E.FillKind.Gold, () => store.FocusBuilding(id), SpeedupTask.Building(id)));
             }

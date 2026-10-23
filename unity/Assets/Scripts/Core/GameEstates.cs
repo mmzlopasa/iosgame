@@ -45,6 +45,7 @@ namespace Founders.Core
                     if (e.Buildings.TryGetValue(def.Id, out var v)) f += v;
             foreach (var kv in e.Jobs) f += ActiveWorkers(kv.Key) * kv.Value;
             if (e.TaxShare > 0 && HasNeeds) f += Needs().TaxPerSecond * 3600 * e.TaxShare;
+            f += PartFavour(e.Id);
             if (e.RouteFavour > 0) f += Math.Min(State.TradeRoutes.Count, TradeRouteSlots()) * e.RouteFavour;
             return f;
         }
