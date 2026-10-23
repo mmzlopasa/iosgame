@@ -155,8 +155,7 @@ namespace Founders
             var chapter = game.CurrentChapter;
             if (chapter != null)
             {
-                game.State.PendingStory = chapter.Id;
-                store.Refresh();
+                store.OpenStory(chapter.Id);
                 yield return Shot("p_18_story", true);
                 game.DismissStory();
             }

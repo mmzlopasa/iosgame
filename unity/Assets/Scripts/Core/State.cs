@@ -24,6 +24,9 @@ namespace Founders.Core
         /// <summary>Building level (1 = as built). Upgrading to <see cref="PendingLevel"/> raises it.</summary>
         public int Level = 1;
         public int PendingLevel;
+        /// <summary>A monument's finished parts, in the order they were built, and the part going up now.</summary>
+        public List<string> Parts = new List<string>();
+        public string PendingPart;
 
         public bool IsOperational => Status != BuildingStatus.Constructing;
 
@@ -49,6 +52,8 @@ namespace Founders.Core
             if (Rotation != 0) d["rotation"] = Rotation;
             if (Level != 1) d["level"] = Level;
             if (PendingLevel != 0) d["pendingLevel"] = PendingLevel;
+            if (Parts.Count > 0) d["parts"] = Parts.Cast<object>().ToList();
+            if (PendingPart != null) d["pendingPart"] = PendingPart;
             return d;
         }
 
@@ -66,6 +71,8 @@ namespace Founders.Core
             Rotation = o.OptInt("rotation") ?? 0,
             Level = o.OptInt("level") ?? 1,
             PendingLevel = o.OptInt("pendingLevel") ?? 0,
+            Parts = o.Has("parts") ? o.Strs("parts") : new List<string>(),
+            PendingPart = o.OptStr("pendingPart"),
         };
     }
 
@@ -137,6 +144,24 @@ namespace Founders.Core
         };
     }
 
+    /// <summary>A lasting trade route: a good carried to (sold) or from (bought) a neighbouring village every minute.</summary>
+    public sealed class TradeRoute
+    {
+        public string NeighbourId;
+        public ResourceType Resource;
+        public bool Sell;
+
+        internal Dictionary<string, object> ToJson() => new Dictionary<string, object>
+        {
+            ["neighbourId"] = NeighbourId, ["resource"] = Resource.Id(), ["sell"] = Sell,
+        };
+
+        internal static TradeRoute FromJson(JObj o) => new TradeRoute
+        {
+            NeighbourId = o.Str("neighbourId"), Resource = ResourceTypes.Parse(o.Str("resource")), Sell = o.Bool("sell"),
+        };
+    }
+
     /// <summary>Job → worker count, keyed by the stable job id.</summary>
     public sealed class JobAssignments
     {
@@ -145,8 +170,11 @@ namespace Founders.Core
         public int this[JobType job]
         {
             get => Counts.TryGetValue(job.Id(), out var n) ? n : 0;
-            set => Counts[job.Id()] = System.Math.Max(0, value);
+            set { Counts[job.Id()] = System.Math.Max(0, value); Version++; }
         }
+
+        /// <summary>Changes on every assignment (for caches).</summary>
+        public int Version;
 
         public int Total => Enums.Jobs.Sum(j => this[j]);
     }
@@ -260,6 +288,16 @@ namespace Founders.Core
         public ActivePetition ActivePetition;
         /// <summary>When the people last petitioned (null = never).</summary>
         public double? LastPetitionSimTime;
+        /// <summary>The tax level the player chose (null = the content's default).</summary>
+        public string TaxLevel;
+        /// <summary>Lasting trade routes, oldest first (only as many run as the trading places allow).</summary>
+        public List<TradeRoute> TradeRoutes = new List<TradeRoute>();
+        /// <summary>Favour of each estate of the realm (estate id → favour).</summary>
+        public Dictionary<string, double> Favour = new Dictionary<string, double>();
+        /// <summary>Ground worn by feet (cell y·width + x → wear); enough wear makes a path.</summary>
+        public Dictionary<int, double> Wear = new Dictionary<int, double>();
+        /// <summary>Zones painted with the brush (cell y·width + x → zone id).</summary>
+        public Dictionary<int, string> Zones = new Dictionary<int, string>();
         /// <summary>Goods made by recipes since the founding, by resource id (e.g. bronze cast).</summary>
         public Dictionary<string, double> Made = new Dictionary<string, double>();
         /// <summary>Speed-ups owned: key (see Speedups.Key) → count.</summary>
@@ -365,6 +403,11 @@ namespace Founders.Core
                     ["petitionId"] = ActivePetition.PetitionId, ["deadlineSimTime"] = ActivePetition.DeadlineSimTime,
                 };
             if (LastPetitionSimTime.HasValue) d["lastPetitionSimTime"] = LastPetitionSimTime.Value;
+            if (TaxLevel != null) d["taxLevel"] = TaxLevel;
+            if (TradeRoutes.Count > 0) d["tradeRoutes"] = TradeRoutes.Select(x => (object)x.ToJson()).ToList();
+            if (Favour.Count > 0) d["favour"] = Favour.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
+            if (Zones.Count > 0) d["zones"] = Zones.Select(kv => (object)new List<object> { kv.Key, kv.Value }).ToList();
+            if (Wear.Count > 0) d["wear"] = Wear.Select(kv => (object)new List<object> { kv.Key, Math.Round(kv.Value, 3) }).ToList();
             if (Made.Count > 0) d["made"] = Made.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (Speedups.Count > 0) d["speedups"] = Speedups.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (SpeedupStarterGiven) d["speedupStarterGiven"] = true;
@@ -444,6 +487,17 @@ namespace Founders.Core
                 s.ActivePetition = new ActivePetition { PetitionId = ap.Str("petitionId"), DeadlineSimTime = ap.Num("deadlineSimTime") };
             }
             s.LastPetitionSimTime = o.OptNum("lastPetitionSimTime");
+            s.TaxLevel = o.OptStr("taxLevel");
+            if (o.Has("tradeRoutes")) s.TradeRoutes = o.Objs("tradeRoutes").Select(TradeRoute.FromJson).ToList();
+            if (o.Has("favour"))
+            {
+                var fav = o.Obj("favour");
+                foreach (var key in fav.Keys) s.Favour[key] = fav.Num(key);
+            }
+            if (o.Has("zones"))
+                foreach (var pair in o.Arr("zones")) { var l = (List<object>)pair; s.Zones[Convert.ToInt32(l[0])] = Convert.ToString(l[1]); }
+            if (o.Has("wear"))
+                foreach (var pair in o.Arr("wear")) { var l = (List<object>)pair; s.Wear[Convert.ToInt32(l[0])] = Convert.ToDouble(l[1]); }
             if (o.Has("made"))
             {
                 var made = o.Obj("made");

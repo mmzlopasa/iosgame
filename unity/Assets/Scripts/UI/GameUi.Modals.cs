@@ -47,11 +47,12 @@ namespace Founders.UI
             // The cloud's choice and the profile's dialogs come first: they answer the player's own taps.
             string profile = ProfileDialogKey();
             if (profile != "") return profile;
+            if (store.ChoosingMap) return MapKey();
             string speed = SpeedupDialogKey();
             if (speed != "") return speed;
             if (store.Celebration != null) return "ms|" + store.Celebration;
             if (store.Offline != null) return "wb";
-            if (G.PendingStory != null) return "story|" + G.PendingStory.Id;
+            if (store.StoryOpen && G.PendingStory != null) return "story|" + G.PendingStory.Id;
             // An event and a petition can both wait: whichever is on screen stays until answered, then the other follows.
             var ev = G.PendingEvent;
             bool evOpen = ev != null && !store.EventMinimized;
@@ -66,6 +67,8 @@ namespace Founders.UI
         {
             string key = ModalKey();
             petitionShowing = key.StartsWith("pet|", System.StringComparison.Ordinal);
+            bool wasMap = lastModal.StartsWith("map|", System.StringComparison.Ordinal);
+            lastModal = key;
             if (key == "") return;
             var scrim = E.Div().Fill().Bg(Theme.Scrim);
             host.Add(scrim);
@@ -80,9 +83,12 @@ namespace Founders.UI
             else if (key.StartsWith("sp|", System.StringComparison.Ordinal)) card = SpeedupCard();
             else if (key.StartsWith("ms|", System.StringComparison.Ordinal)) card = MilestoneCard();
             else if (key == "wb") card = WelcomeCard();
+            else if (key.StartsWith("map|", System.StringComparison.Ordinal)) card = MapCard();
             else if (petitionShowing) card = PetitionCard();
             else card = EventCard();
             frame.Add(card);
+            // The map generator is rebuilt on every step of a slider: it only pops up when it opens.
+            if (wasMap && key.StartsWith("map|", System.StringComparison.Ordinal)) return;
             card.style.opacity = 0;
             card.style.scale = new Scale(new Vector3(0.94f, 0.94f, 1));
             card.Transition(240, "opacity", "scale");

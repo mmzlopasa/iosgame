@@ -178,7 +178,8 @@ namespace Founders.Core
             return cost;
         }
 
-        public double ExpeditionSeconds(RegionDefinition r) => r.ExpeditionSeconds * DistanceFactor(r);
+        public double ExpeditionSeconds(RegionDefinition r) =>
+            r.ExpeditionSeconds * DistanceFactor(r) / Math.Max(0.1, Multiplier(EffectKind.ExpeditionSpeedMultiplier));
 
         /// <summary>True when the region borders land that is already explored (scouts go outward, step by step).</summary>
         public bool IsFrontier(RegionDefinition r)

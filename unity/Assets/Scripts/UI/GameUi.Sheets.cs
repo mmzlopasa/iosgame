@@ -220,10 +220,15 @@ namespace Founders.UI
             switch (store.ActivePanel)
             {
                 case Panel.People:
-                    TabRow(("Work", 0, G.IdleWorkers > 0 ? $"{G.IdleWorkers} idle" : null), ("Villagers", 1, G.State.People.Count.ToString(Inv)), ("Wellbeing", 2, null));
+                    if (G.HasEstates)
+                        TabRow(("Work", 0, G.IdleWorkers > 0 ? $"{G.IdleWorkers} idle" : null), ("Villagers", 1, G.State.People.Count.ToString(Inv)), ("Wellbeing", 2, null),
+                               ("Estates", 3, G.Estates.Any(e => G.Favour(e) > 0) ? string.Join("·", G.Estates.Select(e => G.EstateRank(e))) : null));
+                    else
+                        TabRow(("Work", 0, G.IdleWorkers > 0 ? $"{G.IdleWorkers} idle" : null), ("Villagers", 1, G.State.People.Count.ToString(Inv)), ("Wellbeing", 2, null));
                     break;
                 case Panel.Map:
-                    TabRow(("Explore", 0, null), ("Legacy", 1, G.State.Legacy.Count.ToString(Inv)));
+                    if (G.HasTrade) TabRow(("Explore", 0, null), ("Trade", 2, G.State.TradeRoutes.Count > 0 ? G.State.TradeRoutes.Count.ToString(Inv) : null), ("Legacy", 1, G.State.Legacy.Count.ToString(Inv)));
+                    else TabRow(("Explore", 0, null), ("Legacy", 1, G.State.Legacy.Count.ToString(Inv)));
                     break;
                 case Panel.Profile:
                     TabRow(("Profile", 0, null), ("Stats", 1, null), ("Achievements", 2, $"{G.State.ReachedMilestones.Count}/{G.Content.Milestones.Count}"));
@@ -306,7 +311,8 @@ namespace Founders.UI
                         return $"{G.IdleWorkers}|{G.State.Population}|{G.State.FoodShortage}|{G.HousingCapacity()}|" + string.Join(",", Enums.Jobs.Select(j => $"{G.State.Assignments[j]}/{G.JobCapacity(j)}"));
                     if (peopleTab == 1)
                         return expandedPerson + "|" + string.Join(",", G.State.People.Select(p => $"{p.Job}{SkillSum(p)}{(p.Sick ? "s" : "")}")) + "|" + SurvivalPeopleKey();
-                    return $"{G.SeasonIndex}|{G.Freezing}|{string.Join(",", G.ApprovalFactors().Select(f => f.Label + f.Points))}|{G.State.FoodShortage}|{SurvivalPeopleKey()}";
+                    if (peopleTab == 3) return EstatesKey();
+                    return $"{G.SeasonIndex}|{G.Freezing}|{NeedsKey()}|{string.Join(",", G.ApprovalFactors().Select(f => f.Label + f.Points))}|{G.State.FoodShortage}|{SurvivalPeopleKey()}";
                 case Panel.Weather:
                     return WeatherKey();
                 case Panel.Objectives:
@@ -316,6 +322,7 @@ namespace Founders.UI
                            (G.CurrentObjective == null ? "" : string.Join("", G.Status(G.CurrentObjective.Conditions).Select(s => s.Met ? "1" : "0"))) + "|" +
                            string.Join("", G.Content.Milestones.SelectMany(m => G.MilestoneRequirements(m.Id)).Select(s => s.Met ? "1" : "0"));
                 case Panel.Map:
+                    if (mapTab == 2) return TradeKey();
                     return $"{G.State.ActiveExpedition?.RegionId}|{string.Join(",", G.State.ExploredRegions)}|{G.State.Legacy.Count}|" +
                            string.Join("", G.Content.Regions.Select(r => G.State.Resources.Covers(G.ExpeditionCost(r)) ? "1" : "0"));
                 case Panel.Profile:
@@ -333,11 +340,12 @@ namespace Founders.UI
                 case Panel.People:
                     if (peopleTab == 0) BuildWorkTab(host);
                     else if (peopleTab == 1) BuildVillagers(host);
+                    else if (peopleTab == 3) BuildEstates(host);
                     else BuildWellbeing(host);
                     break;
                 case Panel.Objectives: BuildGoalsPanel(host); break;
                 case Panel.Weather: BuildWeatherPanel(host); break;
-                case Panel.Map: if (mapTab == 0) BuildWorldPanel(host); else BuildLegacy(host); break;
+                case Panel.Map: if (mapTab == 0) BuildWorldPanel(host); else if (mapTab == 2) BuildTrade(host); else BuildLegacy(host); break;
                 case Panel.Profile: BuildProfilePanel(host); break;
                 default: BuildSettingsPanel(host); break;
             }
@@ -406,6 +414,11 @@ namespace Founders.UI
             JobType.Stonecutting => "stone",
             JobType.Mining => "pickaxe",
             JobType.Smelting => "flame",
+            JobType.Sawing => "planks",
+            JobType.Toolmaking => "tools",
+            JobType.Baking => "wheat",
+            JobType.Weaving => "goods",
+            JobType.Milling => "flour",
             JobType.Crafting => "settings",
             JobType.Construction => "build",
             JobType.Healing => "sick",
@@ -584,6 +597,11 @@ namespace Founders.UI
             JobType.Stonecutting => "Quarrier",
             JobType.Mining => "Miner",
             JobType.Smelting => "Smelter",
+            JobType.Sawing => "Sawyer",
+            JobType.Toolmaking => "Toolsmith",
+            JobType.Baking => "Baker",
+            JobType.Weaving => "Weaver",
+            JobType.Milling => "Miller",
             JobType.Crafting => "Toolmaker",
             JobType.Construction => "Builder",
             JobType.Healing => "Healer",
@@ -617,6 +635,7 @@ namespace Founders.UI
                 rows.Add(E.StatRow(null, f.Label, (f.Points > 0 ? "+" : f.Points < 0 ? "−" : "") + Math.Abs(f.Points), null, true,
                                    f.Points > 0 ? Theme.Up : f.Points < 0 ? Theme.Bad : Theme.Pale).Also(r => r.style.minHeight = Theme.RowTightH));
             host.Add(card);
+            BuildHomes(host);
             BuildDiscontent(host);
             BuildHealth(host);
 
@@ -644,6 +663,45 @@ namespace Founders.UI
             r2.Add(Live(() => Fmt.PerMinute(-econ.Spoilage), Theme.Num, Theme.Bad));
             urows.Add(r2);
             host.Add(up);
+        }
+
+        string NeedsKey()
+        {
+            if (!G.HasNeeds) return "";
+            var r = G.Needs();
+            return $"{r.Housed}|{r.Content}|{r.WithoutWater}|{r.WithoutGoods}|{G.State.TaxLevel}|" +
+                   string.Join(",", r.Homes.Select(h => h.Tier?.Level ?? 0));
+        }
+
+        /// <summary>Homes by tier, what they lack, the taxes they pay and the tax level.</summary>
+        void BuildHomes(VisualElement host)
+        {
+            var needs = G.Content.Balance.Needs;
+            if (needs == null) return;
+            var card = Block("Homes and taxes", out var rows, Live(() => Fmt.PerMinute(G.Needs().TaxPerSecond), Theme.Num, Theme.Gold));
+            foreach (var tier in needs.Tiers)
+            {
+                var t = tier;
+                string wants = t.NeedsGoods ? "food, water, goods" : t.NeedsWater ? "food, water" : "food";
+                rows.Add(E.StatRow("home", $"{t.Name} (Lv.{t.Level}+) · {wants}",
+                                   G.Needs().Homes.Where(h => h.Tier == t).Sum(h => h.Occupants).ToString(Inv), null, true).Also(r => r.style.minHeight = Theme.RowTightH));
+            }
+            var r = G.Needs();
+            if (r.WithoutWater > 0) rows.Add(Notice("alert", $"{r.WithoutWater} people have no water. Put a well near their homes, or build by the river.", true));
+            if (r.WithoutGoods > 0) rows.Add(Notice("alert", $"{r.WithoutGoods} people lack household goods. They need a market nearby and goods from the Weaver's Hut.", true));
+            rows.Add(TreasuryLine());
+
+            var taxes = E.Div().Row().Margin(8, 0, 4);
+            var current = G.CurrentTax;
+            foreach (var level in needs.TaxLevels)
+            {
+                var id = level.Id;
+                string label = level.Approval == 0 ? level.Name : $"{level.Name} ({(level.Approval > 0 ? "+" : "−")}{Math.Abs(level.Approval)})";
+                var kind = current?.Id == id ? E.Kind.Green : E.Kind.Grey;
+                taxes.Add(E.Button(label, Act(() => G.SetTaxLevel(id)), kind, 40, null, 15).Grow().Margin(0, 3, 0, 3));
+            }
+            rows.Add(taxes);
+            host.Add(card);
         }
 
         // MARK: - Goals (the kit's Chapter Tasks)
@@ -681,7 +739,7 @@ namespace Founders.UI
             col.Add(E.T(current.Title, Theme.H1).Fit(textW, Theme.H2));
             col.Add(E.T(current.Goal, Theme.Small, Theme.Pale).Wrap().Margin(2));
             banner.Add(col);
-            var story = E.Button("Story", Act(() => G.State.PendingStory = current.Id), E.Kind.Blue, Portrait ? 40 : Theme.ButtonH, "legacy", 16, null, storyW);
+            var story = E.Button("Story", Act(() => store.OpenStory(current.Id)), E.Kind.Blue, Portrait ? 40 : Theme.ButtonH, "legacy", 16, null, storyW);
             if (Portrait) { story.style.alignSelf = Align.FlexStart; col.Add(story.Margin(8)); }
             else banner.Add(story.Margin(0, 0, 0, 10));
             host.Add(banner);
@@ -795,7 +853,7 @@ namespace Founders.UI
             head.Add(E.Icon("world", 30));
             head.Add(E.T(G.State.SettlementName, Theme.H2).Flex().Margin(0, 0, 0, 8));
             // The map's name as words ("riverside_clearing" → "Riverside Clearing").
-            string mapName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase((G.Content.Map.Name ?? "").Replace('_', ' '));
+            string mapName = G.Content.Map.Title ?? CultureInfo.InvariantCulture.TextInfo.ToTitleCase((G.Content.Map.Name ?? "").Replace('_', ' '));
             head.Add(E.T(mapName, Theme.Body, Theme.Pale).NoShrink().Margin(0, 0, 0, 8));
             info.Add(head);
             var traits = E.Div().Row().Ignore().Margin(6);

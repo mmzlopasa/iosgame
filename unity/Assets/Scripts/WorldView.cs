@@ -621,6 +621,7 @@ namespace Founders
             RepaintGround(game, initial);
             UpdateSelection();
             UpdateGhost();
+            UpdateZoneOverlay(game);
             UpdateFoundingGhost();
             UpdateVillagers(game);
         }
@@ -687,7 +688,7 @@ namespace Founders
         void RepaintGround(Game game, bool initial)
         {
             var st = game.State;
-            string key = $"{st.StageId}|{st.NextBuildingId}|{st.Buildings.Count}|{st.NextDecorationId}|{st.Decorations.Count}";
+            string key = $"{st.StageId}|{st.NextBuildingId}|{st.Buildings.Count}|{st.NextDecorationId}|{st.Decorations.Count}|{game.PathsVersion}|{st.Wear.Count > 0}";
             if (key == splatKey) return;
             // Repainting the ground is heavy: while a road is being drawn, do it a few times a second at most.
             if (!initial && Time.unscaledTime < nextGroundPaint) return;
@@ -703,7 +704,21 @@ namespace Founders
                 if (def == null) continue;
                 around.Add((Grid.FootprintCenter(b.X, b.Y, def.Footprint), 0.9f * Mathf.Max(def.Footprint.Width, def.Footprint.Height)));
             }
-            if (game.State.StageId != game.Content.StartStage)
+            if (game.HasPaths)
+            {
+                // Paths worn by feet: each trodden cell joined to its trodden neighbours, so the lanes wind as people walk.
+                var trodden = new HashSet<(int, int)>(game.TroddenCells());
+                foreach (var (x, y) in trodden)
+                {
+                    var c = Grid.CellCenter(x, y);
+                    bool any = false;
+                    foreach (var (dx, dy) in new[] { (1, 0), (0, 1), (1, 1), (1, -1) })
+                        if (trodden.Contains((x + dx, y + dy))) { paths.Add((c, Grid.CellCenter(x + dx, y + dy))); any = true; }
+                    if (!any && !trodden.Contains((x - 1, y)) && !trodden.Contains((x, y - 1)) && !trodden.Contains((x - 1, y - 1)) && !trodden.Contains((x - 1, y + 1)))
+                        paths.Add((c + new Vector3(-0.3f, 0, 0), c + new Vector3(0.3f, 0, 0)));
+                }
+            }
+            else if (game.State.StageId != game.Content.StartStage)
             {
                 var hearth = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "village_hearth");
                 if (hearth != null)
@@ -960,6 +975,55 @@ namespace Founders
             return frame.gameObject;
         }
 
+        // MARK: - Zones
+
+        readonly Dictionary<string, GameObject> zoneOverlays = new Dictionary<string, GameObject>();
+        string zoneOverlayKey;
+
+        /// <summary>The painted zones as coloured tiles, one mesh per kind, shown while building or painting.</summary>
+        void UpdateZoneOverlay(Game game)
+        {
+            bool show = game.HasZones && (store.ActivePanel == Panel.Build || GameStore.IsZoneTool(store.DecoratingId));
+            string key = show ? $"{game.ZonesVersion}|{game.State.Zones.Count}|{game.State.NextBuildingId}" : "";
+            if (key == zoneOverlayKey) return;
+            zoneOverlayKey = key;
+            foreach (var go in zoneOverlays.Values) Destroy(go);
+            zoneOverlays.Clear();
+            if (!show) return;
+            int w = game.Content.Map.Width;
+            float h = Grid.CellSize * 0.42f;
+            foreach (var zone in Game.ZoneIds)
+            {
+                var verts = new List<Vector3>();
+                var tris = new List<int>();
+                foreach (var kv in game.State.Zones)
+                {
+                    if (kv.Value != zone) continue;
+                    int x = kv.Key % w, y = kv.Key / w;
+                    if (game.BuildingIdAt(x, y) != null) continue; // built on: the zone did its work
+                    var c = Ground.OnGround(Grid.CellCenter(x, y)) + new Vector3(0, 0.05f, 0);
+                    int i = verts.Count;
+                    verts.Add(c + new Vector3(-h, 0, -h));
+                    verts.Add(c + new Vector3(-h, 0, h));
+                    verts.Add(c + new Vector3(h, 0, h));
+                    verts.Add(c + new Vector3(h, 0, -h));
+                    tris.AddRange(new[] { i, i + 1, i + 2, i, i + 2, i + 3 });
+                }
+                if (verts.Count == 0) continue;
+                var mesh = new Mesh { name = "Zone_" + zone, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+                mesh.SetVertices(verts);
+                mesh.SetTriangles(tris, 0);
+                mesh.RecalculateNormals();
+                var go = new GameObject("Zone_" + zone);
+                go.transform.SetParent(overlayRoot, false);
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var r = go.AddComponent<MeshRenderer>();
+                r.sharedMaterial = Palette.Get("Zone_" + zone);
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                zoneOverlays[zone] = go;
+            }
+        }
+
         void UpdateGhost()
         {
             var id = store.PlacingBuildingId;
@@ -1044,6 +1108,8 @@ namespace Founders
         Pathing paths;
         /// <summary>Per villager: false = on the way to work, true = carrying the goods home.</summary>
         readonly Dictionary<int, bool> carrying = new Dictionary<int, bool>();
+        /// <summary>Per villager: where in a carrying round they are (see <see cref="HaulTask"/>).</summary>
+        readonly Dictionary<int, int> haulLeg = new Dictionary<int, int>();
         /// <summary>
         /// Where each person stands (or is walking to) for their task. Nobody takes a spot within
         /// <see cref="PersonSpace"/> of a spot someone else holds, so people never stack.
@@ -1139,6 +1205,7 @@ namespace Founders
             workTargets.Remove(owner);
             dispatched.Remove(owner);
             carrying.Remove(owner);
+            haulLeg.Remove(owner);
             lying.Remove(owner);
             spots.Remove(LyingKey + owner);
         }
@@ -1320,6 +1387,74 @@ namespace Founders
             return best;
         }
 
+        /// <summary>What a production job carries in and out (models of the goods).</summary>
+        static (string input, string output) Loads(JobType job) => job switch
+        {
+            JobType.Sawing => ("k_log", "k_planks"),
+            JobType.Toolmaking => ("k_planks", "k_box"),
+            JobType.Smelting => ("k_stone", "k_box"),
+            JobType.Baking => ("k_wood", "wicker_basket_01"),
+            JobType.Weaving => ("k_bedroll", "ceramic_pot"),
+            JobType.Milling => ("wicker_basket_01", "k_bedroll"),
+            _ => (null, null),
+        };
+
+        /// <summary>The nearest finished store (or the heart) to a workplace, other than the workplace itself.</summary>
+        static PlacedBuilding StoreFor(Game game, PlacedBuilding site)
+        {
+            PlacedBuilding best = null;
+            float bestD = float.MaxValue;
+            var at = Grid.CellCenter(site.X, site.Y);
+            foreach (var (b, def) in game.OperationalBuildings())
+            {
+                if (b.Id == site.Id || (def.StorageValue <= 0 && !def.Heart)) continue;
+                float d = (Grid.CellCenter(b.X, b.Y) - at).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = b; }
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// One leg of a carrying round between the stores and a workplace: 0 walk to the store, 1 carry the input to
+        /// the work, 2 work (the caller's task: returns false), 3 carry the product back to the store. Without an
+        /// output the round skips the last leg. False when there is no store or it is time to work.
+        /// </summary>
+        bool HaulTask(Game game, int index, Vector3 from, PlacedBuilding site, string input, string output, ref VillagerTask task)
+        {
+            var stores = StoreFor(game, site);
+            if (stores == null || input == null) return false;
+            haulLeg.TryGetValue(index, out int leg);
+            haulLeg[index] = output == null ? (leg + 1) % 3 : (leg + 1) % 4;
+            var siteCenter = Grid.FootprintCenter(site.X, site.Y, game.FootprintOf(site));
+            switch (leg)
+            {
+                case 0:
+                    task.Spot = BesideBuilding(stores, from, index);
+                    task.Face = Grid.CellCenter(stores.X, stores.Y);
+                    task.Action = "Gather";
+                    task.Duration = 1.4f;
+                    return true;
+                case 1:
+                    task.Spot = BesideBuilding(site, from, index);
+                    task.Face = siteCenter;
+                    task.Carry = input;
+                    task.WalkClip = "Carry";
+                    task.Action = "Gather";
+                    task.Duration = 1.4f;
+                    return true;
+                case 3:
+                    task.Spot = BesideBuilding(stores, from, index);
+                    task.Face = Grid.CellCenter(stores.X, stores.Y);
+                    task.Carry = output;
+                    task.WalkClip = "Carry";
+                    task.Action = "Gather";
+                    task.Duration = 1.4f;
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         static bool GathersFromLand(JobType job) =>
             job == JobType.Woodcutting || job == JobType.Stonecutting || job == JobType.Mining || job == JobType.Foraging
             || job == JobType.Hunting || job == JobType.Fishing;
@@ -1482,7 +1617,12 @@ namespace Founders
             var job = JobOf(game, index);
             // Builders, and idle people while something is being built (Manor Lords: free families build).
             if (sites.Count > 0 && (job == JobType.Construction || (job == null && index % 3 != 2)))
-                return BuildAt(sites[index % sites.Count], task, from, index);
+            {
+                // Builders fetch timber and stone from the stores now and then (goods are carried, not conjured).
+                var buildSite = sites[index % sites.Count];
+                if (HaulTask(game, index, from, buildSite, index % 2 == 0 ? "k_planks" : "k_stone", null, ref task)) return task;
+                return BuildAt(buildSite, task, from, index);
+            }
             if (job == null)
             {
                 task.Spot = FreeAround(index, hearthPos, 1.6f, 2.8f);
@@ -1611,8 +1751,24 @@ namespace Founders
                 }
                 case JobType.Healing:
                     return HealTask(game, index, site, from, center, task);
-                case JobType.Crafting:
                 case JobType.Smelting:
+                case JobType.Sawing:
+                case JobType.Toolmaking:
+                case JobType.Baking:
+                case JobType.Weaving:
+                case JobType.Milling:
+                {
+                    // A working production chain moves its goods by hand: inputs from the stores, the product back.
+                    var (input, output) = Loads(job.Value);
+                    if (game.Processing(job.Value).State == ProcessingState.Working && HaulTask(game, index, from, site, input, output, ref task))
+                        return task;
+                    task.Spot = BesideBuilding(site, from, index);
+                    task.Face = center;
+                    task.Action = "Work";
+                    task.Tool = "Prop_Hammer";
+                    return task;
+                }
+                case JobType.Crafting:
                     task.Spot = BesideBuilding(site, from, index);
                     task.Face = center;
                     task.Action = "Work";

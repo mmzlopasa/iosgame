@@ -104,20 +104,20 @@ namespace Founders.UI
         // MARK: - Setup
 
         /// <summary>
-        /// Units across a phone's short side on a regular phone (390 pt wide): 446, i.e. ~0.875 pt per unit, everything
-        /// 12–13% smaller than the first 390-unit design so more of the world shows. Smaller phones get fewer units
-        /// (see <see cref="ShortSideUnits"/>) so text never drops below 10.5 pt.
+        /// Units across a phone's short side on a regular phone (390 pt wide): 500, i.e. ~0.78 pt per unit, everything
+        /// about a fifth smaller than the first 390-unit design so more of the world shows. Smaller phones get fewer units
+        /// (see <see cref="ShortSideUnits"/>) so text never drops below 9.4 pt.
         /// </summary>
-        public const float PhoneShortSide = 446;
-        /// <summary>Never fewer iOS points per panel unit than this (Small text, 12 units, stays ≥ 10.5 pt; a 46-unit tap is 40 pt).</summary>
-        public const float MinPointsPerUnit = 0.875f;
+        public const float PhoneShortSide = 500;
+        /// <summary>Never fewer iOS points per panel unit than this (Small text, 12 units, stays ≥ 9.4 pt; a 46-unit tap is 36 pt).</summary>
+        public const float MinPointsPerUnit = 0.78f;
         /// <summary>The short side a phone may not drop below (the first design's canvas).</summary>
         const float MinShortSide = 390;
-        /// <summary>iPads: units along the long side (the first design matched 844 there; 12% smaller now).</summary>
-        public const float TabletLongSide = 960;
+        /// <summary>iPads: units along the long side (the first design matched 844 there; about a quarter smaller now).</summary>
+        public const float TabletLongSide = 1080;
 
         /// <summary>Design canvas of a regular phone in landscape (portrait: the same phone turned).</summary>
-        public static readonly Vector2Int ReferenceResolution = new Vector2Int(965, 446);
+        public static readonly Vector2Int ReferenceResolution = new Vector2Int(1082, 500);
 
         static bool IsPhone(int width, int height) =>
             Mathf.Max(width, height) / (float)Mathf.Max(1, Mathf.Min(width, height)) >= 1.7f;
@@ -136,7 +136,7 @@ namespace Founders.UI
 
         /// <summary>
         /// Units across a phone's short side: <see cref="PhoneShortSide"/>, or fewer on a small phone (iPhone SE /
-        /// mini, 375 pt: 428 units) so a unit is never under <see cref="MinPointsPerUnit"/> points.
+        /// mini, 375 pt: 481 units) so a unit is never under <see cref="MinPointsPerUnit"/> points.
         /// </summary>
         public static float ShortSideUnits(int width, int height, float dpi)
         {
@@ -396,7 +396,7 @@ namespace Founders.UI
         // MARK: - Safe area and orientation
 
         /// <summary>Panel size and the safe-area insets (notch / Dynamic Island on top in portrait or on a side in landscape, home indicator below), in panel units.</summary>
-        float PanelW = 965, PanelH = 446, SafeTop, SafeBottom, SafeLeft, SafeRight;
+        float PanelW = 1082, PanelH = 500, SafeTop, SafeBottom, SafeLeft, SafeRight;
         float lastHeight;
 
         /// <summary>

@@ -235,7 +235,9 @@ namespace Founders.UI
 
         public static void Apply()
         {
-            Application.targetFrameRate = BatterySaver ? 30 : 60;
+            // As fast as the screen refreshes (120 on ProMotion iPhones and iPads), or 30 to save the battery.
+            int screenHz = Mathf.RoundToInt((float)Screen.currentResolution.refreshRateRatio.value);
+            Application.targetFrameRate = BatterySaver ? 30 : Mathf.Max(60, screenHz);
             if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urp)
             {
                 if (!baseShadowDistance.HasValue) baseShadowDistance = urp.shadowDistance;

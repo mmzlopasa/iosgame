@@ -528,7 +528,77 @@ def _spear():
     L.parent(parts, rot=(0, 40, 0))
 
 
+@icon("tools", **TOOL)
+def _tools():
+    """Bronze tools (the toolsmith's goods): a bronze axe crossed with a hammer."""
+    bronze = P("#E0913A", hue_dark="#5A1A0A", shade=0.5, light=0.5, light_col="#FFF0C0", spec=0.8, rough=0.16,
+               metal=True)
+    axe = [handle(2.4)]
+    head = [(-0.3, 1.2), (0.14, 1.12), (0.66, 1.5), (0.92, 1.08), (0.94, 0.58), (0.68, 0.1), (0.16, 0.56),
+            (-0.3, 0.52)]
+    axe.append(glyph([L.rounded_poly(head, [0.06, 0.04, 0.08, 0.1, 0.1, 0.08, 0.04, 0.06])], bronze,
+                     depth=0.26, bevel=0.06))
+    axe += wraps(0.3)
+    L.parent(axe, loc=(0, 0.1, 0), rot=(0, -38, 0))
+    ham = [handle(2.3)]
+    ham.append(box((1.2, 0.56, 0.6), (0.0, 0, 1.0), bronze, bevel=0.1))
+    ham.append(box((0.22, 0.62, 0.68), (0.62, 0, 1.0), M("iron"), bevel=0.07))
+    ham += wraps(-0.6, 4, 0.12)
+    L.parent(ham, loc=(0, -0.1, 0), rot=(0, 38, 0))
+
+
+@icon("coins", el=16, az=-14)
+def _coins():
+    """Coins (the treasury, from taxes): two stacks of gold and one coin standing in front."""
+    gold = M("gold")
+    for (x, y, n) in ((-0.55, 0.3, 5), (0.5, 0.45, 3)):
+        for k in range(n):
+            cylinder(0.62, 0.2, (x + (k % 2) * 0.03, y, -0.6 + k * 0.22), gold, verts=48, bevel=0.06)
+    disc(0.72, 0.2, gold, loc=(0.1, -0.55, -0.15), bevel=0.07)
+    disc(0.46, 0.06, M("gold", color="#F2A818"), loc=(0.1, -0.68, -0.15), bevel=0.03)
+
+
+@icon("goods", el=18, az=-16)
+def _goods():
+    """Household goods (the weaver's work): a clay pot and a folded roll of cloth."""
+    clay = P("#D8763A", hue_dark="#5A1430", light=0.35, light_col="#FFE0B0", spec=0.3, rough=0.35)
+    lathe([(0.0, -0.9), (0.42, -0.9), (0.7, -0.55), (0.78, -0.1), (0.62, 0.35), (0.38, 0.55), (0.44, 0.72),
+           (0.36, 0.76), (0.0, 0.76)], loc=(-0.5, 0.25, 0), m=clay, verts=48)
+    cloth = P("#3E8FD8", hue_dark="#141A6A", light=0.4, light_col="#E8F6FF", spec=0.3, rough=0.4)
+    stripe = M("cream")
+    box((1.5, 1.1, 0.34), (0.55, -0.25, -0.75), cloth, bevel=0.14, sub=1)
+    box((1.5, 0.2, 0.36), (0.55, -0.25, -0.75), stripe, bevel=0.06)
+    cylinder(0.32, 1.4, (0.55, -0.3, -0.32), cloth, rot=(0, 90, 0), bevel=0.1, sub=1)
+    cylinder(0.33, 0.18, (0.55, -0.3, -0.32), stripe, rot=(0, 90, 0), bevel=0.04)
+
+
+@icon("flour", el=18, az=-16)
+def _flour():
+    """Flour (the mill's work): a tied burlap sack and a little heap of flour in front."""
+    burlap = P("#D6B47A", hue_dark="#5A3A1A", light=0.4, light_col="#FFF0D0", spec=0.2, rough=0.5)
+    lathe([(0.0, -0.95), (0.62, -0.92), (0.86, -0.6), (0.9, -0.1), (0.74, 0.35), (0.4, 0.6), (0.22, 0.7),
+           (0.3, 0.98), (0.0, 1.02)], loc=(-0.2, 0.25, 0), m=burlap, verts=48)
+    cylinder(0.26, 0.14, (-0.2, 0.25, 0.66), M("wood"), bevel=0.05)
+    white = P("#FBF6EA", hue_dark="#8A7A6A", light=0.5, light_col="#FFFFFF", spec=0.1, rough=0.7)
+    lathe([(0.0, -0.95), (0.62, -0.95), (0.4, -0.8), (0.0, -0.6)], loc=(0.75, -0.6, 0), m=white, verts=40)
+
+
 # ---------------------------------------------------------------- nature
+@icon("planks", el=18, az=-16)
+def _planks():
+    """Sawn planks (the sawpit's goods): a small stack, boards crossing like a timber yard."""
+    rnd = random.Random(7)
+    for k in range(4):
+        m = M("wood_light") if k % 2 else M("wood")
+        z = k * 0.3
+        for j in range(2):
+            y = (j - 0.5) * 0.62 + rnd.uniform(-0.04, 0.04)
+            if k % 2 == 0:
+                box((2.3, 0.56, 0.26), (rnd.uniform(-0.05, 0.05), y, z), m, bevel=0.06)
+            else:
+                box((0.56, 2.0, 0.26), (y, rnd.uniform(-0.05, 0.05), z), m, bevel=0.06)
+
+
 @icon("fish", el=12, az=-10)
 def _fish():
     body = [(-1.0, 0.0), (-0.8, 0.36), (-0.3, 0.6), (0.3, 0.5), (0.8, 0.14), (0.8, -0.12), (0.3, -0.42),

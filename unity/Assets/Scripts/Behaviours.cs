@@ -495,7 +495,11 @@ namespace Founders
             carried = null;
             carriedId = id;
             if (id == null || !ModelLibrary.HasModel(id)) return;
-            float s = id == "k_wood" ? 4.2f : id == "k_stone" ? 2.2f : 1.2f;
+            float s = id switch
+            {
+                "k_wood" => 4.2f, "k_stone" => 2.2f, "k_planks" => 1.4f, "k_log" => 0.8f, "k_box" => 1.8f,
+                "k_bedroll" => 1.2f, "ceramic_pot" => 0.6f, _ => 1.2f,
+            };
             var at = id == "wicker_basket_01" ? new Vector3(0.22f, 0.78f, 0.12f) : new Vector3(0f, 1.25f, 0.06f);
             carried = ModelLibrary.Place(id, transform, at, s, 90f);
             foreach (var r in carried.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;

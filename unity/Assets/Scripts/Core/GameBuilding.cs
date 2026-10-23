@@ -174,6 +174,12 @@ namespace Founders.Core
         public GameResult<int> PlaceBuilding(string buildingId, int x, int y, int rotation = 0)
         {
             Update();
+            return PlaceBuildingNow(buildingId, x, y, rotation);
+        }
+
+        /// <summary>Places a building without first catching up on time (for the simulation itself, e.g. zones).</summary>
+        GameResult<int> PlaceBuildingNow(string buildingId, int x, int y, int rotation = 0)
+        {
             var def = Content.Building(buildingId);
             if (def == null) return GameError.UnknownContent(buildingId);
             rotation = ((rotation % 4) + 4) % 4;
@@ -222,7 +228,7 @@ namespace Founders.Core
             foreach (var b in State.Buildings)
             {
                 if (b.Status == BuildingStatus.Complete) continue;
-                b.RemainingWork -= speed * dt;
+                b.RemainingWork -= speed * SiteSpeed(b) * dt;
                 if (b.RemainingWork <= 1e-9) completed.Add(b);
             }
             foreach (var b in completed) FinishConstruction(b);
@@ -232,6 +238,7 @@ namespace Founders.Core
         /// because the status leaves Constructing/Upgrading here.</summary>
         void FinishConstruction(PlacedBuilding b)
         {
+            if (b.PendingPart != null) { FinishPart(b); return; }
             bool wasUpgrade = b.Status == BuildingStatus.Upgrading;
             if (wasUpgrade && b.UpgradeTargetId != null)
             {

@@ -6,7 +6,8 @@ namespace Founders.Core
 {
     // MARK: - Basic enums
 
-    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming, Fishing, Hunting, Mining, Herding, Healing, Smelting }
+    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming, Fishing, Hunting, Mining, Herding, Healing, Smelting,
+                          Sawing, Toolmaking, Baking, Weaving, Milling }
 
     public enum TerrainType { Grass, Forest, Rock, Water, Sand, Mountain, Ore }
 
@@ -14,7 +15,7 @@ namespace Founders.Core
     {
         public static readonly JobType[] Jobs =
             { JobType.Foraging, JobType.Farming, JobType.Herding, JobType.Fishing, JobType.Hunting, JobType.Woodcutting, JobType.Stonecutting, JobType.Mining,
-              JobType.Smelting, JobType.Crafting, JobType.Construction, JobType.Research, JobType.Healing };
+              JobType.Smelting, JobType.Sawing, JobType.Toolmaking, JobType.Milling, JobType.Baking, JobType.Weaving, JobType.Crafting, JobType.Construction, JobType.Research, JobType.Healing };
 
         public static string Id(this JobType j)
         {
@@ -32,6 +33,11 @@ namespace Founders.Core
                 case JobType.Herding: return "herding";
                 case JobType.Healing: return "healing";
                 case JobType.Smelting: return "smelting";
+                case JobType.Sawing: return "sawing";
+                case JobType.Toolmaking: return "toolmaking";
+                case JobType.Baking: return "baking";
+                case JobType.Weaving: return "weaving";
+                case JobType.Milling: return "milling";
                 default: return "research";
             }
         }
@@ -133,6 +139,10 @@ namespace Founders.Core
         GriefMultiplier,
         /// <summary>Multiplies how fast untreated illness turns deadly by Value.</summary>
         DeathMultiplier,
+        /// <summary>Multiplies how fast scouts explore a land by Value (lookout towers, trail signs).</summary>
+        ExpeditionSpeedMultiplier,
+        /// <summary>Multiplies what the neighbours pay for the town's goods by Value (guilds, a trading house).</summary>
+        TradePriceMultiplier,
     }
 
     /// <summary>A data-driven gameplay effect. Which optional fields are used depends on Kind.</summary>
@@ -265,6 +275,19 @@ namespace Founders.Core
         public double Insulation;
         /// <summary>A fire that warms the homes around it (the heart's own warmth is set in balance.warmth).</summary>
         public HeatSource Heat;
+        /// <summary>Lasting effects while the building stands and works (a herb garden keeps sickness away, a
+        /// lookout speeds the scouts). Each finished building of the kind adds its effects once.</summary>
+        public List<Effect> Effects = new List<Effect>();
+        /// <summary>A market: homes within reach can get household goods (higher house tiers need it).</summary>
+        public bool Market;
+        /// <summary>A source of water for the homes around it (a well house).</summary>
+        public bool Water;
+        /// <summary>Trade routes to the neighbours this building keeps running (a trading post, a market hall).</summary>
+        public int TradeRoutes;
+        /// <summary>A monument's parts, added one by one once the plot is laid out (empty for ordinary buildings).</summary>
+        public List<MonumentPart> Parts = new List<MonumentPart>();
+        public bool IsMonument => Parts.Count > 0;
+        public MonumentPart Part(string id) => Parts.FirstOrDefault(p => p.Id == id);
 
         /// <summary>The model shown at a level: the last look whose level has been reached.</summary>
         public string SpriteAt(int level)
@@ -314,8 +337,41 @@ namespace Founders.Core
                                                     .OrderBy(l => l.Level).ToList() : new List<LevelLook>(),
                 Insulation = o.OptNum("insulation") ?? 0,
                 Heat = o.Has("heat") ? HeatSource.FromJson(o.Obj("heat")) : null,
+                Effects = o.Has("effects") ? o.Objs("effects").Select(Effect.FromJson).ToList() : new List<Effect>(),
+                Market = o.OptBool("market", false),
+                Water = o.OptBool("water", false),
+                TradeRoutes = o.OptInt("tradeRoutes") ?? 0,
+                Parts = o.Has("parts") ? o.Objs("parts").Select(MonumentPart.FromJson).ToList() : new List<MonumentPart>(),
             };
         }
+    }
+
+    /// <summary>
+    /// One part of a monument (a manor's hall, an abbey's cloister): built on the monument's plot after the parts it
+    /// needs, each with its own cost, building time and lasting effects.
+    /// </summary>
+    public sealed class MonumentPart
+    {
+        public string Id, Name, Description;
+        public ResourceBundle Cost;
+        public double BuildSeconds;
+        /// <summary>Parts that must stand first (the joins of the monument's plan).</summary>
+        public List<string> Requires = new List<string>();
+        public List<Effect> Effects = new List<Effect>();
+        /// <summary>Gathering-place points (approval), like a building's community.</summary>
+        public int Community;
+        /// <summary>The estate the part pleases, and the favour per hour it brings.</summary>
+        public string Estate;
+        public double Favour;
+
+        internal static MonumentPart FromJson(JObj o) => new MonumentPart
+        {
+            Id = o.Str("id"), Name = o.Str("name"), Description = o.OptStr("description") ?? "",
+            Cost = ResourceBundle.FromJson(o.OptObj("cost")), BuildSeconds = o.Num("buildSeconds"),
+            Requires = o.Has("requires") ? o.Strs("requires") : new List<string>(),
+            Effects = o.Has("effects") ? o.Objs("effects").Select(Effect.FromJson).ToList() : new List<Effect>(),
+            Community = o.OptInt("community") ?? 0, Estate = o.OptStr("estate"), Favour = o.OptNum("favour") ?? 0,
+        };
     }
 
     /// <summary>A fire that warms the cells around it and burns firewood while it does.</summary>
@@ -438,6 +494,8 @@ namespace Founders.Core
         public bool IsBridge;
         /// <summary>Fences and walls: people walk around them.</summary>
         public bool Blocks;
+        /// <summary>Gives water to the homes around it (the well).</summary>
+        public bool Water;
         /// <summary>Braziers and fire pits warm the homes around them.</summary>
         public HeatSource Heat;
 
@@ -455,6 +513,7 @@ namespace Founders.Core
                                                      : new List<TerrainType> { TerrainType.Grass, TerrainType.Sand, TerrainType.Forest },
             IsRoad = o.OptBool("road", false),
             IsBridge = o.OptBool("bridge", false),
+            Water = o.OptBool("water", false),
             Blocks = o.OptBool("blocks", false),
             Heat = o.Has("heat") ? HeatSource.FromJson(o.Obj("heat")) : null,
         };
@@ -644,6 +703,8 @@ namespace Founders.Core
     public sealed class MapDefinition
     {
         public string Name;
+        /// <summary>The name players see (generated valleys); null = made from <see cref="Name"/>.</summary>
+        public string Title;
         public int Width, Height;
         public List<string> Rows = new List<string>();
         public List<StartBuilding> StartBuildings = new List<StartBuilding>();
@@ -762,6 +823,10 @@ namespace Founders.Core
         public double CraftingBonusPerCrafter;
         public double MaxCraftingBonus;
         public ResourceBundle CraftingInputPerCrafterPerSecond;
+        /// <summary>Extra output of every gatherer while there are tools in store (0.15 = +15 %).</summary>
+        public double ToolBonus;
+        /// <summary>Tools each working gatherer wears out per second (they are used up as they go).</summary>
+        public double ToolWearPerWorkerPerSecond;
         public double MaxOfflineSeconds;
         public double SimulationStepSeconds;
         public List<JobConfig> Jobs = new List<JobConfig>();
@@ -794,6 +859,18 @@ namespace Founders.Core
         public HealthConfig Health;
         /// <summary>Discontent, petitions and laws' cooldown (null = always content).</summary>
         public DiscontentConfig Discontent;
+        /// <summary>Needs, house tiers and taxes (null = off).</summary>
+        public NeedsConfig Needs;
+        /// <summary>Most coins the treasury holds.</summary>
+        public double TreasuryCap;
+        /// <summary>Trade with the neighbouring villages (null = no trade).</summary>
+        public TradeConfig Trade;
+        /// <summary>The three estates of the realm (null = none).</summary>
+        public EstatesConfig Estates;
+        /// <summary>Paths worn by people's feet (null = none).</summary>
+        public PathsConfig Paths;
+        /// <summary>Zones painted with the brush (null = none).</summary>
+        public ZonesConfig Zones;
 
         internal static BalanceConfig FromJson(JObj o) => new BalanceConfig
         {
@@ -814,6 +891,8 @@ namespace Founders.Core
             CraftingBonusPerCrafter = o.Num("craftingBonusPerCrafter"),
             MaxCraftingBonus = o.Num("maxCraftingBonus"),
             CraftingInputPerCrafterPerSecond = ResourceBundle.FromJson(o.Obj("craftingInputPerCrafterPerSecond")),
+            ToolBonus = o.OptNum("toolBonus") ?? 0,
+            ToolWearPerWorkerPerSecond = o.OptNum("toolWearPerWorkerPerSecond") ?? 0,
             MaxOfflineSeconds = o.Num("maxOfflineSeconds"),
             SimulationStepSeconds = o.Num("simulationStepSeconds"),
             Jobs = o.Objs("jobs").Select(JobConfig.FromJson).ToList(),
@@ -833,6 +912,12 @@ namespace Founders.Core
             Climate = o.Has("climate") ? ClimateConfig.FromJson(o.Obj("climate")) : null,
             Warmth = o.Has("warmth") ? WarmthConfig.FromJson(o.Obj("warmth")) : null,
             Health = o.Has("health") ? HealthConfig.FromJson(o.Obj("health")) : null,
+            Needs = o.Has("needs") ? NeedsConfig.FromJson(o.Obj("needs")) : null,
+            TreasuryCap = o.OptNum("treasuryCap") ?? 5000,
+            Trade = o.Has("trade") ? TradeConfig.FromJson(o.Obj("trade")) : null,
+            Estates = o.Has("estates") ? EstatesConfig.FromJson(o.Obj("estates")) : null,
+            Paths = o.Has("paths") ? PathsConfig.FromJson(o.Obj("paths")) : null,
+            Zones = o.Has("zones") ? ZonesConfig.FromJson(o.Obj("zones")) : null,
             Discontent = o.Has("discontent") ? DiscontentConfig.FromJson(o.Obj("discontent")) : null,
         };
     }
@@ -912,6 +997,198 @@ namespace Founders.Core
             StokeSeconds = o.Num("stokeSeconds"), StokeCooldownSeconds = o.Num("stokeCooldownSeconds"),
             StokeHeat = o.Num("stokeHeat"), StokeRadius = o.Num("stokeRadius"), StokeWoodPerSecond = o.Num("stokeWoodPerSecond"),
             StokeApproval = o.OptNum("stokeApproval") ?? 0,
+        };
+    }
+
+    /// <summary>A house tier: from which home level it starts, what it needs and what it pays.</summary>
+    public sealed class HouseTier
+    {
+        public int Level;
+        public string Name;
+        public bool NeedsWater, NeedsGoods;
+        public double TaxPerPersonPerHour;
+
+        internal static HouseTier FromJson(JObj o)
+        {
+            var needs = o.Has("needs") ? o.Strs("needs") : new List<string>();
+            return new HouseTier
+            {
+                Level = o.Int("level"), Name = o.Str("name"), NeedsWater = needs.Contains("water"), NeedsGoods = needs.Contains("goods"),
+                TaxPerPersonPerHour = o.OptNum("taxPerPersonPerHour") ?? 0,
+            };
+        }
+    }
+
+    /// <summary>A tax level the player picks: how much it raises and how people take it.</summary>
+    public sealed class TaxLevel
+    {
+        public string Id, Name;
+        public double Multiplier;
+        public int Approval;
+
+        internal static TaxLevel FromJson(JObj o) => new TaxLevel
+        {
+            Id = o.Str("id"), Name = o.Str("name"), Multiplier = o.Num("multiplier"), Approval = o.OptInt("approval") ?? 0,
+        };
+    }
+
+    /// <summary>Needs of the homes (Manor Lords, Foundation): water and goods for the higher tiers, and taxes.</summary>
+    public sealed class NeedsConfig
+    {
+        /// <summary>Cells from a home to a well (or water building), to the river or lake, and to a market.</summary>
+        public double WaterReach, RiverReach, MarketReach;
+        public double GoodsPerPersonPerSecond;
+        /// <summary>Approval when every home has what it needs, and lost when none has.</summary>
+        public double MetApproval, UnmetApproval;
+        public List<HouseTier> Tiers = new List<HouseTier>();
+        public List<TaxLevel> TaxLevels = new List<TaxLevel>();
+        public string DefaultTax;
+
+        internal static NeedsConfig FromJson(JObj o) => new NeedsConfig
+        {
+            WaterReach = o.Num("waterReach"), RiverReach = o.Num("riverReach"), MarketReach = o.Num("marketReach"),
+            GoodsPerPersonPerSecond = o.Num("goodsPerPersonPerSecond"),
+            MetApproval = o.Num("metApproval"), UnmetApproval = o.Num("unmetApproval"),
+            Tiers = o.Objs("tiers").Select(HouseTier.FromJson).OrderBy(t => t.Level).ToList(),
+            TaxLevels = o.Objs("taxLevels").Select(TaxLevel.FromJson).ToList(),
+            DefaultTax = o.OptStr("defaultTax") ?? "normal",
+        };
+    }
+
+    /// <summary>Trade with the neighbouring villages (Manor Lords' trade routes): one-off deals and lasting routes.</summary>
+    public sealed class TradeConfig
+    {
+        /// <summary>Goods a route carries each minute.</summary>
+        public double RouteAmountPerMinute;
+        /// <summary>How many goods one deal moves.</summary>
+        public double DealAmount;
+        public List<NeighbourDefinition> Neighbours = new List<NeighbourDefinition>();
+
+        internal static TradeConfig FromJson(JObj o) => new TradeConfig
+        {
+            RouteAmountPerMinute = o.Num("routeAmountPerMinute"),
+            DealAmount = o.OptNum("dealAmount") ?? 10,
+            Neighbours = o.Objs("neighbours").Select(NeighbourDefinition.FromJson).ToList(),
+        };
+    }
+
+    /// <summary>A neighbouring village: what it pays for goods, what it sells, and what a lasting route costs.</summary>
+    public sealed class NeighbourDefinition
+    {
+        public string Id, Name, Description;
+        /// <summary>Lands the scouts must have explored before the village is met.</summary>
+        public int LandsExplored;
+        /// <summary>Coins paid per unit for the town's goods, and asked per unit for theirs.</summary>
+        public ResourceBundle Buys, Sells;
+        /// <summary>Coins to open a lasting route with them.</summary>
+        public double RouteCost;
+
+        internal static NeighbourDefinition FromJson(JObj o) => new NeighbourDefinition
+        {
+            Id = o.Str("id"), Name = o.Str("name"), Description = o.OptStr("description") ?? "",
+            LandsExplored = o.OptInt("landsExplored") ?? 0,
+            Buys = ResourceBundle.FromJson(o.OptObj("buys")), Sells = ResourceBundle.FromJson(o.OptObj("sells")),
+            RouteCost = o.OptNum("routeCost") ?? 0,
+        };
+    }
+
+    /// <summary>Zones painted with the brush: homes, woodcutting, forestry and pastures.</summary>
+    public sealed class ZonesConfig
+    {
+        /// <summary>Game seconds between the villagers' looks at the homes zones.</summary>
+        public double CheckSeconds;
+        /// <summary>Villagers build a new home when this many beds or fewer are free.</summary>
+        public int FreeBeds;
+        /// <summary>Painted pasture cells per extra herder.</summary>
+        public int PastureCellsPerHerder;
+        /// <summary>How much faster felled trees grow back in a forestry zone.</summary>
+        public double ForestryRegrowMultiplier;
+
+        internal static ZonesConfig FromJson(JObj o) => new ZonesConfig
+        {
+            CheckSeconds = o.OptNum("checkSeconds") ?? 60, FreeBeds = o.OptInt("freeBeds") ?? 1,
+            PastureCellsPerHerder = o.OptInt("pastureCellsPerHerder") ?? 0, ForestryRegrowMultiplier = o.OptNum("forestryRegrowMultiplier") ?? 1,
+        };
+    }
+
+    /// <summary>Paths worn by people's feet (Manor Lords' organic towns).</summary>
+    public sealed class PathsConfig
+    {
+        /// <summary>Wear a cell gets per person walking that way each hour; a path from this much wear; most wear kept.</summary>
+        public double WearPerPersonPerHour, Threshold, MaxWear;
+        /// <summary>Share of the wear that grasses over each hour.</summary>
+        public double DecayPerHour;
+        /// <summary>Extra construction speed on sites beside a path (0.1 = +10%).</summary>
+        public double ConstructionBonus;
+        /// <summary>How much cheaper walking a path is than open ground (1 = the same).</summary>
+        public double WalkCost;
+
+        internal static PathsConfig FromJson(JObj o) => new PathsConfig
+        {
+            WearPerPersonPerHour = o.Num("wearPerPersonPerHour"), Threshold = o.Num("threshold"), MaxWear = o.Num("maxWear"),
+            DecayPerHour = o.OptNum("decayPerHour") ?? 0, ConstructionBonus = o.OptNum("constructionBonus") ?? 0,
+            WalkCost = o.OptNum("walkCost") ?? 1,
+        };
+    }
+
+    /// <summary>The three estates of the realm (Manor Lords' development paths): labour, clergy and the crown.</summary>
+    public sealed class EstatesConfig
+    {
+        /// <summary>Coins a gift to an estate costs, and the favour it brings.</summary>
+        public double GrantCost, GrantFavour;
+        /// <summary>Ranks between the most and the least favoured estate before the least grumbles.</summary>
+        public int ImbalanceRanks;
+        /// <summary>Approval lost while one estate is left behind, and won while all stand together (rank 1 or more).</summary>
+        public int ImbalanceApproval, HarmonyApproval;
+        public List<EstateDefinition> Estates = new List<EstateDefinition>();
+
+        internal static EstatesConfig FromJson(JObj o) => new EstatesConfig
+        {
+            GrantCost = o.Num("grantCost"), GrantFavour = o.Num("grantFavour"),
+            ImbalanceRanks = o.OptInt("imbalanceRanks") ?? 2,
+            ImbalanceApproval = o.OptInt("imbalanceApproval") ?? 0, HarmonyApproval = o.OptInt("harmonyApproval") ?? 0,
+            Estates = o.Objs("estates").Select(EstateDefinition.FromJson).ToList(),
+        };
+    }
+
+    /// <summary>An estate: where its favour comes from, and what each rank of favour grants the town.</summary>
+    public sealed class EstateDefinition
+    {
+        public string Id, Name, Description, Icon;
+        /// <summary>Favour per hour from each finished building of a kind (building id → favour).</summary>
+        public Dictionary<string, double> Buildings = new Dictionary<string, double>();
+        /// <summary>Favour per hour from each worker at a job.</summary>
+        public Dictionary<JobType, double> Jobs = new Dictionary<JobType, double>();
+        /// <summary>Favour per coin of tax collected, and per hour from each trade route that runs.</summary>
+        public double TaxShare, RouteFavour;
+        public List<EstateRank> Ranks = new List<EstateRank>();
+
+        internal static EstateDefinition FromJson(JObj o)
+        {
+            var e = new EstateDefinition
+            {
+                Id = o.Str("id"), Name = o.Str("name"), Description = o.OptStr("description") ?? "", Icon = o.OptStr("icon") ?? "approval",
+                TaxShare = o.OptNum("taxShare") ?? 0, RouteFavour = o.OptNum("routeFavour") ?? 0,
+                Ranks = o.Objs("ranks").Select(EstateRank.FromJson).OrderBy(r => r.Favour).ToList(),
+            };
+            var b = o.OptObj("buildings");
+            if (b != null) foreach (var k in b.Keys) e.Buildings[k] = b.Num(k);
+            var j = o.OptObj("jobs");
+            if (j != null) foreach (var k in j.Keys) e.Jobs[Enums.ParseJob(k)] = j.Num(k);
+            return e;
+        }
+    }
+
+    public sealed class EstateRank
+    {
+        public double Favour;
+        public string Name, Description;
+        public List<Effect> Effects = new List<Effect>();
+
+        internal static EstateRank FromJson(JObj o) => new EstateRank
+        {
+            Favour = o.Num("favour"), Name = o.Str("name"), Description = o.OptStr("description") ?? "",
+            Effects = o.Has("effects") ? o.Objs("effects").Select(Effect.FromJson).ToList() : new List<Effect>(),
         };
     }
 
@@ -1044,6 +1321,33 @@ namespace Founders.Core
         public List<LawDefinition> Laws = new List<LawDefinition>();
         public List<PetitionDefinition> Petitions = new List<PetitionDefinition>();
         public MapDefinition Map;
+        /// <summary>The content as loaded, when this copy carries a generated valley instead (see <see cref="ForMap"/>).</summary>
+        public GameContent Base { get; private set; }
+
+        /// <summary>
+        /// The content for a settlement's map: the hand-drawn valley as loaded, or a valley drawn by
+        /// <see cref="MapGenerator"/> from the settings in its name. An unknown name gives the loaded content
+        /// (a save from an unknown map then fails validation as before).
+        /// </summary>
+        public GameContent ForMap(string mapName)
+        {
+            var root = Base ?? this;
+            if (string.IsNullOrEmpty(mapName) || mapName == Map.Name) return this;
+            if (mapName == root.Map.Name) return root;
+            return MapSettings.IsGeneratedName(mapName) && MapSettings.TryParse(mapName, out var settings)
+                ? MapGenerator.ContentFor(root, settings) : root;
+        }
+
+        /// <summary>A copy of this content on another map, with that map's lands to explore.</summary>
+        internal GameContent WithMap(MapDefinition map, List<RegionDefinition> regions)
+        {
+            var c = (GameContent)MemberwiseClone();
+            c.Base = Base ?? this;
+            c.Map = map;
+            c.Regions = regions;
+            return c;
+        }
+
         public LawDefinition Law(string id) => Laws.FirstOrDefault(l => l.Id == id);
         public PetitionDefinition Petition(string id) => Petitions.FirstOrDefault(p => p.Id == id);
         public SkillDefinition Skill(JobType job) => Skills.FirstOrDefault(s => s.Job == job);
