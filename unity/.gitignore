@@ -44,3 +44,8 @@
 /Assets/Art/**/*.fbx.meta
 /Assets/Art/**/*.hdr.meta
 /CompileCheck/Modules.props
+# Licensed nature packs (Ultimate Nature PRO + Starter): imported in the editor, never committed
+/Assets/Innerverse Games/
+/Assets/Innerverse Games.meta
+/Assets/InnerverseInteractive/
+/Assets/InnerverseInteractive.meta

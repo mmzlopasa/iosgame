@@ -52,8 +52,8 @@ namespace Founders.Tests
                 RaiseTheHeart(game);
                 if (game.State.ActiveExpedition == null)
                 {
-                    var region = game.Content.Regions.Where(r => !game.State.ExploredRegions.Contains(r.Id) && game.State.Resources.Covers(r.Cost))
-                                     .OrderBy(r => r.Cost.Entries.Sum(kv => kv.Value)).FirstOrDefault();
+                    var region = game.Content.Regions.Where(r => game.IsFrontier(r) && game.State.Resources.Covers(game.ExpeditionCost(r)))
+                                     .OrderBy(r => game.ExpeditionCost(r).Entries.Sum(kv => kv.Value)).FirstOrDefault();
                     if (region != null) game.StartExpedition(region.Id);
                 }
                 // A gathering crew with nothing left in reach moves on: a new camp by fresh land.
@@ -140,6 +140,9 @@ namespace Founders.Tests
                     for (int x = cx - r; x <= cx + r; x++)
                     {
                         if (Math.Max(Math.Abs(x - cx), Math.Abs(y - cy)) != r || game.PlacementIssues(id, x, y).Count > 0) continue;
+                        // This player keeps the woods and the quarry stone: it builds only where the ground is open
+                        // (or where the building belongs, a quarry on its rock), never over a resource.
+                        if (game.TerrainNow(x, y) is TerrainType t && !def.AllowedTerrain.Contains(t)) continue;
                         if (job == null) return (x, y);
                         int score = 0;
                         for (int yy = y - 4; yy <= y + 4; yy++)

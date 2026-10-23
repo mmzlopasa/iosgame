@@ -238,7 +238,7 @@ namespace Founders.UI
         bool ModalOpen => store != null && ModalKey() != "";
 
         /// <summary>True while a card for a selection, a resource or a placement is docked on the left.</summary>
-        bool ContextOpen => store != null && (store.DecoratingId != null || store.PlacingBuildingId != null ||
+        bool ContextOpen => store != null && (store.Founding || store.DecoratingId != null || store.PlacingBuildingId != null ||
                                               store.SelectedBuildingId != null || store.SelectedNode != null);
 
         /// <summary>True when a screen point (pixels, bottom-left origin) is over UI or a sheet/dialog is open.</summary>

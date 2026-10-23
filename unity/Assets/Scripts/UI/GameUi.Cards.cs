@@ -21,6 +21,7 @@ namespace Founders.UI
 
         string ContextKey()
         {
+            if (store.Founding) return $"found|{store.FoundingFire}|{store.FoundingCell}|{store.FoundingIssue()}";
             if (store.DecoratingId != null)
             {
                 var d = G.Content.Decoration(store.DecoratingId);
@@ -63,7 +64,8 @@ namespace Founders.UI
 
         void BuildContext(VisualElement host)
         {
-            if (store.DecoratingId != null) DecorationCard(host);
+            if (store.Founding) FoundingCard(host);
+            else if (store.DecoratingId != null) DecorationCard(host);
             else if (store.PlacingBuildingId != null) PlacementCard(host);
             else if (store.SelectedBuildingId != null) BuildingCard(host);
             else if (store.SelectedNode != null) NodeCard(host);
@@ -265,6 +267,36 @@ namespace Founders.UI
             bool afford = G.State.Resources.Covers(def.Cost);
             foot.Add(Share(E.Button("Build here", ok ? Act(store.ConfirmPlacement) : null, ok ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 16,
                                     afford ? SubLine("clock", Fmt.Clock(G.EstimatedSeconds(def.BuildSeconds))) : CostSub(def.Cost)), foot));
+        }
+
+        // MARK: - Founding
+
+        /// <summary>A new game: first where the campfire burns, then where the first shelters stand.</summary>
+        void FoundingCard(VisualElement host)
+        {
+            bool fireChosen = store.FoundingFire != null;
+            string issue = store.FoundingIssue();
+            bool ok = issue == null;
+            CardShell(host, fireChosen ? "Raise the shelters" : "Light the campfire", null, store.BackFounding, out var body, out var foot);
+            var head = E.Div().Row(0, Align.FlexStart).Ignore();
+            head.Add(E.Slot(fireChosen ? "home" : "campfire", 64, E.Cell.Epic));
+            var col = E.Div().Col().Grow().Ignore();
+            col.style.marginLeft = 10;
+            col.Add(E.Ink(fireChosen
+                ? "Tap where your people raise their first three shelters, close to the fire's warmth."
+                : "Your band has found a valley. Tap the land where the campfire should burn: the land around it will be yours to build on.", Theme.Body));
+            head.Add(col);
+            body.Add(head);
+            var status = E.Inset().Row().Margin(8);
+            status.Add(E.Icon(ok ? "check" : "alert", 24).NoShrink());
+            var msg = E.T(ok ? (fireChosen ? "Good, dry ground near the fire." : "A good place to settle.") : issue, Theme.Body, ok ? (Color?)null : Theme.Bad).Flex();
+            msg.style.marginLeft = 8;
+            status.Add(msg);
+            body.Add(status);
+            body.Add(E.Ink("Forests, rocks and ore around the camp are resources: you may build over them, but what you build over is gone.", Theme.Small, Theme.Pale).Margin(6));
+            if (fireChosen) foot.Add(Share(E.Button("Back", Act(store.BackFounding), E.Kind.Red), foot));
+            foot.Add(Share(E.Button(fireChosen ? "Settle here" : "Light the fire here", ok ? Act(store.ConfirmFounding) : null,
+                                    ok ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH), foot));
         }
 
         // MARK: - Decorations (roads, fences, lights…)

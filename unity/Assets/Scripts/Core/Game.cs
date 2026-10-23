@@ -30,7 +30,7 @@ namespace Founders.Core
         }
 
         /// <summary>Creates a brand new settlement from content.</summary>
-        public static Game NewGame(GameContent content, IGameClock clock, string settlementName = "Riverside Camp")
+        public static Game NewGame(GameContent content, IGameClock clock, string settlementName = "Riverside Camp", bool foundAtSuggestedSpot = true)
         {
             var b = content.Balance;
             var assignments = new JobAssignments();
@@ -51,22 +51,14 @@ namespace Founders.Core
                 Assignments = assignments,
                 FoodShortage = false,
                 NextBuildingId = 1,
-                ExploredRegions = content.Regions.Where(r => r.RevealedAtStart).Select(r => r.Id).ToList(),
+                ExploredRegions = content.Regions.Where(r => r.RevealedAtStart && !r.Home).Select(r => r.Id).ToList(),
                 NextLegacyId = 1,
+                Founded = false,
             };
             var game = new Game(content, state, clock);
-            foreach (var sb in content.Map.StartBuildings)
-            {
-                var def = content.Building(sb.BuildingId);
-                if (def == null) continue;
-                game.State.Buildings.Add(new PlacedBuilding
-                {
-                    Id = game.State.NextBuildingId, DefinitionId = def.Id, X = sb.X, Y = sb.Y,
-                    Status = BuildingStatus.Complete, RemainingWork = 0, TotalWork = def.BuildSeconds,
-                    History = new List<string> { def.Id }, FoundedAtSimTime = 0,
-                });
-                game.State.NextBuildingId += 1;
-            }
+            // The player chooses where to settle (Found); tests and previews start where the map suggests.
+            if (!foundAtSuggestedSpot) return game;
+            game.FoundAtSuggestedSpot();
             var traits = string.Join(", ", content.Map.Traits);
             game.AddLegacy("founding", $"{settlementName} is founded",
                 $"A small band settles in a clearing ({traits}). This place will shape everything built here.", content.Map.Name);
@@ -94,6 +86,12 @@ namespace Founders.Core
         public void Update()
         {
             double now = clock.Now();
+            // Before the campfire is lit nothing happens: time starts when the settlement is founded.
+            if (!State.Founded)
+            {
+                State.LastUpdateWallTime = now;
+                return;
+            }
             double elapsed = now - State.LastUpdateWallTime;
             if (!(elapsed > 0))
             {

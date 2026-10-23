@@ -193,18 +193,26 @@ namespace Founders.Tests
         public void InvalidTerrainRejected()
         {
             var (game, _) = Fixtures.NewGame();
-            // (10,5) is river water, (5,7) is rock.
+            // (10,5) is river water. (5,7) is rock and (1,2) forest: anything that stands on grass may
+            // stand there too (the stones are cleared, the trees felled).
             Expect.Issues(game.PlacementIssues("shelter", 10, 5), PlacementIssue.InvalidTerrain(TerrainType.Water));
-            Expect.Issues(game.PlacementIssues("shelter", 5, 7), PlacementIssue.InvalidTerrain(TerrainType.Rock));
+            Expect.Issues(game.PlacementIssues("shelter", 5, 7));
+            Assert.That(game.Content.Map.Terrain(1, 2), Is.EqualTo(TerrainType.Forest));
+            Expect.Issues(game.PlacementIssues("shelter", 1, 2));
+            // Mountains stay unbuildable.
+            var peak = Enumerable.Range(0, game.Content.Map.Width * game.Content.Map.Height)
+                .Select(i => (x: i % game.Content.Map.Width, y: i / game.Content.Map.Width))
+                .First(c => game.Content.Map.Terrain(c.x, c.y) == TerrainType.Mountain);
+            Assert.That(game.PlacementIssues("shelter", peak.x, peak.y), Does.Contain(PlacementIssue.InvalidTerrain(TerrainType.Mountain)));
         }
 
         [Test]
         public void UnexploredAndOutOfBoundsRejected()
         {
             var (game, _) = Fixtures.NewGame();
-            Assert.That(game.PlacementIssues("shelter", 13, 8), Does.Contain(PlacementIssue.Unexplored));
+            Assert.That(game.PlacementIssues("shelter", 20, 8), Does.Contain(PlacementIssue.Unexplored));
             Assert.That(game.PlacementIssues("shelter", -1, 0), Does.Contain(PlacementIssue.OutOfBounds));
-            Assert.That(game.PlacementIssues("shelter", 64, 3), Does.Contain(PlacementIssue.OutOfBounds));
+            Assert.That(game.PlacementIssues("shelter", game.Content.Map.Width, 3), Does.Contain(PlacementIssue.OutOfBounds));
         }
 
         [Test]
@@ -487,13 +495,19 @@ namespace Founders.Tests
         public void ExplorationRevealsLandAndTriggersEvent()
         {
             var (game, clock) = Fixtures.NewGame();
-            Assert.That(game.IsRevealed(13, 8), Is.False);
-            Expect.Success(game.StartExpedition("east_ridge"));
-            Expect.Failure(game.StartExpedition("north_forest"), GameError.ExpeditionInProgress);
-            game.Run(game.Content.Region("east_ridge").ExpeditionSeconds, clock);
-            Assert.That(game.IsRevealed(13, 8), Is.True);
+            Assert.That(game.IsRevealed(20, 8), Is.False);
+            // Scouts go outward, land by land: the far valley waits until its neighbours are known.
+            Expect.Failure(game.StartExpedition("land_3_0"), GameError.RegionNotAdjacent);
+            Expect.Success(game.StartExpedition("land_1_0"));
+            Expect.Failure(game.StartExpedition("land_0_1"), GameError.ExpeditionInProgress);
+            game.Run(game.ExpeditionSeconds(game.Content.Region("land_1_0")), clock);
+            Assert.That(game.IsRevealed(20, 8), Is.True);
             Assert.That(game.PendingEvent?.Id, Is.EqualTo("ridge_deposit"));
-            Expect.Failure(game.StartExpedition("east_ridge"), GameError.RegionAlreadyExplored);
+            Expect.Failure(game.StartExpedition("land_1_0"), GameError.RegionAlreadyExplored);
+            // Lands further away cost more and take longer.
+            var near = game.Content.Region("land_2_0");
+            var far = game.Content.Region("land_7_7");
+            Assert.That(game.ExpeditionSeconds(far), Is.GreaterThan(game.ExpeditionSeconds(near)));
         }
     }
 

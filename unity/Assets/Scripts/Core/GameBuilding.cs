@@ -45,7 +45,7 @@ namespace Founders.Core
                     case PlacementIssueKind.LockedByTech: return $"Requires the technology {Name}.";
                     case PlacementIssueKind.LimitReached: return $"Limit reached: only {Number} allowed.";
                     case PlacementIssueKind.OutOfBounds: return "Outside the settlement area.";
-                    case PlacementIssueKind.Unexplored: return "This land is unexplored. Send scouts from the Map first.";
+                    case PlacementIssueKind.Unexplored: return "This land is not explored yet. Send scouts from the Map first.";
                     case PlacementIssueKind.InvalidTerrain: return $"Cannot build on {Terrain.DisplayName().ToLowerInvariant()}.";
                     case PlacementIssueKind.Overlaps: return "Something is already built here.";
                     case PlacementIssueKind.NeedsAdjacent: return $"Must be placed next to {Terrain.DisplayName().ToLowerInvariant()}.";
@@ -66,8 +66,26 @@ namespace Founders.Core
     {
         // MARK: - Placement
 
-        public bool IsRevealed(int x, int y) =>
-            State.ExploredRegions.Any(id => Content.Region(id)?.Contains(x, y) ?? false);
+        public bool IsRevealed(int x, int y)
+        {
+            foreach (var id in State.ExploredRegions)
+            {
+                var r = Content.Region(id);
+                if (r != null && RegionContains(r, x, y)) return true;
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Whether a building may stand on this ground. Anything that can stand on open grass can
+        /// also stand where forest, rock or ore is (the trees are felled and the stones cleared for
+        /// it); water and bare mountain stay as they are.
+        /// </summary>
+        public static bool AllowsTerrain(IEnumerable<TerrainType> allowed, TerrainType t)
+        {
+            if (allowed.Contains(t)) return true;
+            return (t == TerrainType.Forest || t == TerrainType.Rock || t == TerrainType.Ore) && allowed.Contains(TerrainType.Grass);
+        }
 
         static List<(int x, int y)> Cells(int x, int y, Footprint fp)
         {
@@ -118,7 +136,7 @@ namespace Founders.Core
                 foreach (var c in cells)
                 {
                     var t = TerrainNow(c.x, c.y);
-                    if (t.HasValue && !def.AllowedTerrain.Contains(t.Value))
+                    if (t.HasValue && !AllowsTerrain(def.AllowedTerrain, t.Value))
                     {
                         issues.Add(PlacementIssue.InvalidTerrain(t.Value));
                         break;

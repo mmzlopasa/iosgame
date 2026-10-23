@@ -90,15 +90,15 @@ namespace Founders
                 case LoadResult.Corrupt:
                     Debug.LogWarning($"[FOUNDERS] Corrupt save moved aside: {outcome.Reason}");
                     message = "Your previous save could not be read, so a new camp was started. A backup was kept.";
-                    Game = Game.NewGame(Content, clock);
+                    Game = NewSettlement();
                     break;
                 case LoadResult.UnsupportedVersion:
                     Debug.LogWarning($"[FOUNDERS] Save version {outcome.Version} is newer than this build supports.");
                     message = $"Your save is from a newer version of FOUNDERS (v{outcome.Version}). Started a temporary new camp; the save was not changed.";
-                    Game = Game.NewGame(Content, clock);
+                    Game = NewSettlement();
                     break;
                 default:
-                    Game = Game.NewGame(Content, clock);
+                    Game = NewSettlement();
                     break;
             }
 
@@ -163,11 +163,96 @@ namespace Founders
 
         void FocusOnSettlement(bool instant)
         {
+            if (Founding)
+            {
+                // The band looks over the valley: a wide view around where the map suggests to settle.
+                BeginFounding();
+                var (sx, sy) = FoundingCell ?? Game.CampCell();
+                Rig.SetFocus(Grid.CellCenter(sx, sy), instant, 70f);
+                return;
+            }
             var first = Game.State.Buildings.Count > 0 ? Game.State.Buildings[0] : null;
             var center = first != null
                 ? Grid.CellCenter(first.X, first.Y)
                 : Grid.CellCenter(Content.Map.Width / 2f, Content.Map.Height / 2f);
             Rig.SetFocus(center, instant, 30f);
+        }
+
+        // MARK: - Founding (the player chooses where the campfire and the first shelters go)
+
+        /// <summary>A new settlement: in capture mode it stands where the map suggests, otherwise the player chooses.</summary>
+        Game NewSettlement() => Ephemeral ? Game.NewGame(Content, clock) : Game.NewUnfoundedGame(Content, clock);
+
+        /// <summary>True until the campfire is lit and the first shelters stand.</summary>
+        public bool Founding => Game != null && !Game.State.Founded;
+        /// <summary>Where the player decided the campfire burns (second step: the shelters), or null (first step).</summary>
+        public (int x, int y)? FoundingFire { get; private set; }
+        /// <summary>The cell the player is pointing at in the current step.</summary>
+        public (int x, int y)? FoundingCell { get; private set; }
+
+        /// <summary>Why the current choice does not work (null = it does).</summary>
+        public string FoundingIssue()
+        {
+            if (!Founding || FoundingCell == null) return "Tap the land where your people should settle.";
+            var (x, y) = FoundingCell.Value;
+            return FoundingFire is (int fx, int fy) ? Game.SettlementIssue(fx, fy, x, y) : Game.CampfireIssue(x, y);
+        }
+
+        void BeginFounding()
+        {
+            ActivePanel = Panel.None;
+            PlacingBuildingId = null;
+            GhostCell = null;
+            SelectedBuildingId = null;
+            SelectedNode = null;
+            DecoratingId = null;
+            if (FoundingCell == null) FoundingCell = FoundingFire ?? Game.CampCell();
+        }
+
+        public void ConfirmFounding()
+        {
+            if (!Founding || FoundingCell == null || FoundingIssue() != null) return;
+            var (x, y) = FoundingCell.Value;
+            if (FoundingFire == null)
+            {
+                FoundingFire = (x, y);
+                FoundingCell = SuggestedSettlement(x, y);
+                AudioDirector.Ui("ui_tap");
+                Rig.SetFocus(Grid.CellCenter(x, y), false, 34f);
+                Refresh();
+                return;
+            }
+            var (fx, fy) = FoundingFire.Value;
+            if (!Perform(Game.Found(fx, fy, x, y).Error)) return;
+            FoundingFire = null;
+            FoundingCell = null;
+            Celebration = null;
+            World.RebuildAll();
+            Rig.SetFocus(Grid.CellCenter(fx, fy), false, 30f);
+            Save();
+            Refresh();
+        }
+
+        /// <summary>Back to choosing the campfire's place.</summary>
+        public void BackFounding()
+        {
+            if (FoundingFire == null) return;
+            FoundingCell = FoundingFire;
+            FoundingFire = null;
+            Refresh();
+        }
+
+        /// <summary>The nearest spot around the fire where the first shelters fit.</summary>
+        (int x, int y) SuggestedSettlement(int fx, int fy)
+        {
+            for (int r = 1; r <= Game.SettlementReach; r++)
+                for (int dy = -r; dy <= r; dy++)
+                    for (int dx = -r; dx <= r; dx++)
+                    {
+                        if (Math.Max(Math.Abs(dx), Math.Abs(dy)) != r) continue;
+                        if (Game.SettlementIssue(fx, fy, fx + dx, fy + dy) == null) return (fx + dx, fy + dy);
+                    }
+            return (fx + 1, fy + 1);
         }
 
         // MARK: - Clock
@@ -261,7 +346,8 @@ namespace Founders
         {
             try { SaveStore.Reset(); }
             catch (Exception e) { Debug.LogError($"[FOUNDERS] Reset failed: {e}"); }
-            Game = Game.NewGame(Content, clock);
+            Game = NewSettlement();
+            FoundingFire = null;
             PlacingBuildingId = null;
             GhostCell = null;
             SelectedBuildingId = null;
@@ -507,6 +593,11 @@ namespace Founders
 
         public void BeginPlacement(string buildingId)
         {
+            if (Founding)
+            {
+                Notify("First choose where your people settle.");
+                return;
+            }
             ActivePanel = Panel.None;
             SelectedBuildingId = null;
             DecoratingId = null;
@@ -595,7 +686,11 @@ namespace Founders
         {
             if (!Rig.GroundPoint(screen, out var point)) return;
             var (x, y) = Grid.CellAt(point);
-            if (DecoratingId != null)
+            if (Founding)
+            {
+                if (x >= 0 && y >= 0 && x < Content.Map.Width && y < Content.Map.Height) FoundingCell = (x, y);
+            }
+            else if (DecoratingId != null)
             {
                 lastPainted = null;
                 DecorateCell(x, y, false);

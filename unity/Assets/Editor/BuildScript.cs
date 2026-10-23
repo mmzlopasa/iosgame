@@ -31,6 +31,9 @@ namespace FoundersEditor
             ConfigurePlayer();
             AssetDatabase.Refresh();
             ArtSetup.Run();
+            // The licensed nature packs, when they are in the project (see NatureKitSetup).
+            try { NatureKitSetup.Run(); }
+            catch (Exception e) { Debug.LogWarning("[FOUNDERS] nature packs could not be prepared: " + e); }
             UiSetup.Run();
             // The player's own art (Assets/Custom): prepare it and list what the build will use.
             try

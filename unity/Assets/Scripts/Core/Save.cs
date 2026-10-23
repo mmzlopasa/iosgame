@@ -89,6 +89,7 @@ namespace Founders.Core
             if (!Finite(s.SimTime) || s.SimTime < 0) problems.Add("invalid simTime");
             if (!Finite(s.LastUpdateWallTime)) problems.Add("invalid lastUpdateWallTime");
             if (content.Epoch(s.EpochId) == null) problems.Add($"unknown epoch {s.EpochId}");
+            if (!string.IsNullOrEmpty(s.MapName) && s.MapName != content.Map.Name) problems.Add($"settlement was founded on another map ({s.MapName})");
             var ids = new HashSet<int>();
             foreach (var b in s.Buildings)
             {

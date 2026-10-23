@@ -128,7 +128,7 @@ namespace Founders.Core
             if (x < 0 || y < 0 || x >= map.Width || y >= map.Height) { issues.Add(PlacementIssue.OutOfBounds); return issues; }
             if (!IsRevealed(x, y)) issues.Add(PlacementIssue.Unexplored);
             var t = TerrainNow(x, y);
-            if (t.HasValue && !def.AllowedTerrain.Contains(t.Value)) issues.Add(PlacementIssue.InvalidTerrain(t.Value));
+            if (t.HasValue && !(def.IsBridge ? def.AllowedTerrain.Contains(t.Value) : AllowsTerrain(def.AllowedTerrain, t.Value))) issues.Add(PlacementIssue.InvalidTerrain(t.Value));
             if (BuildingIdAt(x, y) != null || DecorationAt(x, y) != null) issues.Add(PlacementIssue.Overlaps);
             if (def.IsBridge && t != TerrainType.Water && !NextToWater(x, y)) issues.Add(PlacementIssue.NeedsAdjacent(TerrainType.Water));
             else if (def.IsBridge && !BridgeAnchored(x, y)) issues.Add(PlacementIssue.NeedsAdjacent(TerrainType.Grass));
