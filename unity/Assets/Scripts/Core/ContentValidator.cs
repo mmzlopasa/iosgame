@@ -220,6 +220,24 @@ namespace Founders.Core
                 problems.Add("warmth thresholds must be comfortable > cold > freezing");
             if (b.Health != null && (b.Health.RecoverSeconds <= 0 || b.Health.TreatedRecoverSeconds <= 0 || b.Health.DeathSeconds <= 0))
                 problems.Add("health needs recoverSeconds, treatedRecoverSeconds and deathSeconds > 0");
+            if (b.Trade != null)
+            {
+                if (b.Trade.RouteAmountPerMinute <= 0 || b.Trade.DealAmount <= 0) problems.Add("trade needs routeAmountPerMinute and dealAmount > 0");
+                var seen = new HashSet<string>();
+                foreach (var n in b.Trade.Neighbours)
+                {
+                    if (!seen.Add(n.Id)) problems.Add($"neighbour '{n.Id}' is listed twice");
+                    if (!n.Buys.IsValid || !n.Sells.IsValid || n.RouteCost < 0) problems.Add($"neighbour '{n.Id}' has negative prices");
+                    if (n.Buys.Coins > 0 || n.Sells.Coins > 0) problems.Add($"neighbour '{n.Id}' cannot trade coins for coins");
+                }
+                // Buying from one village and selling to another must never pay.
+                foreach (var t in ResourceTypes.All)
+                {
+                    double top = b.Trade.Neighbours.Select(n => n.Buys[t]).DefaultIfEmpty(0).Max();
+                    double low = b.Trade.Neighbours.Where(n => n.Sells[t] > 0).Select(n => n.Sells[t]).DefaultIfEmpty(double.MaxValue).Min();
+                    if (top > 0 && top >= low) problems.Add($"trade: {t.Id()} sells for {top} but can be bought for {low}");
+                }
+            }
             foreach (var r in c.Regions)
                 if (r.Survivors < 0 || !r.Loot.IsValid) problems.Add($"region '{r.Id}' has negative survivors or loot");
             foreach (var ev in c.Events)
@@ -303,6 +321,8 @@ namespace Founders.Core
                     case EffectKind.ExperienceMultiplier:
                     case EffectKind.GriefMultiplier:
                     case EffectKind.DeathMultiplier:
+                    case EffectKind.ExpeditionSpeedMultiplier:
+                    case EffectKind.TradePriceMultiplier:
                         if (e.Value == null) problems.Add($"{owner}: {Enums.FirstLower(e.Kind.ToString())} needs value");
                         break;
                     case EffectKind.UnlockBuilding:

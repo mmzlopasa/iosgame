@@ -140,6 +140,8 @@ namespace Founders.Core
         DeathMultiplier,
         /// <summary>Multiplies how fast scouts explore a land by Value (lookout towers, trail signs).</summary>
         ExpeditionSpeedMultiplier,
+        /// <summary>Multiplies what the neighbours pay for the town's goods by Value (guilds, a trading house).</summary>
+        TradePriceMultiplier,
     }
 
     /// <summary>A data-driven gameplay effect. Which optional fields are used depends on Kind.</summary>
@@ -279,6 +281,8 @@ namespace Founders.Core
         public bool Market;
         /// <summary>A source of water for the homes around it (a well house).</summary>
         public bool Water;
+        /// <summary>Trade routes to the neighbours this building keeps running (a trading post, a market hall).</summary>
+        public int TradeRoutes;
 
         /// <summary>The model shown at a level: the last look whose level has been reached.</summary>
         public string SpriteAt(int level)
@@ -331,6 +335,7 @@ namespace Founders.Core
                 Effects = o.Has("effects") ? o.Objs("effects").Select(Effect.FromJson).ToList() : new List<Effect>(),
                 Market = o.OptBool("market", false),
                 Water = o.OptBool("water", false),
+                TradeRoutes = o.OptInt("tradeRoutes") ?? 0,
             };
         }
     }
@@ -824,6 +829,8 @@ namespace Founders.Core
         public NeedsConfig Needs;
         /// <summary>Most coins the treasury holds.</summary>
         public double TreasuryCap;
+        /// <summary>Trade with the neighbouring villages (null = no trade).</summary>
+        public TradeConfig Trade;
 
         internal static BalanceConfig FromJson(JObj o) => new BalanceConfig
         {
@@ -867,6 +874,7 @@ namespace Founders.Core
             Health = o.Has("health") ? HealthConfig.FromJson(o.Obj("health")) : null,
             Needs = o.Has("needs") ? NeedsConfig.FromJson(o.Obj("needs")) : null,
             TreasuryCap = o.OptNum("treasuryCap") ?? 5000,
+            Trade = o.Has("trade") ? TradeConfig.FromJson(o.Obj("trade")) : null,
             Discontent = o.Has("discontent") ? DiscontentConfig.FromJson(o.Obj("discontent")) : null,
         };
     }
@@ -1001,6 +1009,43 @@ namespace Founders.Core
             Tiers = o.Objs("tiers").Select(HouseTier.FromJson).OrderBy(t => t.Level).ToList(),
             TaxLevels = o.Objs("taxLevels").Select(TaxLevel.FromJson).ToList(),
             DefaultTax = o.OptStr("defaultTax") ?? "normal",
+        };
+    }
+
+    /// <summary>Trade with the neighbouring villages (Manor Lords' trade routes): one-off deals and lasting routes.</summary>
+    public sealed class TradeConfig
+    {
+        /// <summary>Goods a route carries each minute.</summary>
+        public double RouteAmountPerMinute;
+        /// <summary>How many goods one deal moves.</summary>
+        public double DealAmount;
+        public List<NeighbourDefinition> Neighbours = new List<NeighbourDefinition>();
+
+        internal static TradeConfig FromJson(JObj o) => new TradeConfig
+        {
+            RouteAmountPerMinute = o.Num("routeAmountPerMinute"),
+            DealAmount = o.OptNum("dealAmount") ?? 10,
+            Neighbours = o.Objs("neighbours").Select(NeighbourDefinition.FromJson).ToList(),
+        };
+    }
+
+    /// <summary>A neighbouring village: what it pays for goods, what it sells, and what a lasting route costs.</summary>
+    public sealed class NeighbourDefinition
+    {
+        public string Id, Name, Description;
+        /// <summary>Lands the scouts must have explored before the village is met.</summary>
+        public int LandsExplored;
+        /// <summary>Coins paid per unit for the town's goods, and asked per unit for theirs.</summary>
+        public ResourceBundle Buys, Sells;
+        /// <summary>Coins to open a lasting route with them.</summary>
+        public double RouteCost;
+
+        internal static NeighbourDefinition FromJson(JObj o) => new NeighbourDefinition
+        {
+            Id = o.Str("id"), Name = o.Str("name"), Description = o.OptStr("description") ?? "",
+            LandsExplored = o.OptInt("landsExplored") ?? 0,
+            Buys = ResourceBundle.FromJson(o.OptObj("buys")), Sells = ResourceBundle.FromJson(o.OptObj("sells")),
+            RouteCost = o.OptNum("routeCost") ?? 0,
         };
     }
 

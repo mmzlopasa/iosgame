@@ -102,10 +102,17 @@ only the map's name (`gen_<code>`): the valley and its 64 lands are drawn again 
 ## Needs, house tiers and taxes (Manor Lords / Foundation)
 
 - Homes climb three tiers with their level: **Huts** (Lv.1, need food), **Houses** (Lv.5, also water), **Burgher Houses** (Lv.10, also household goods). Raising a home into a tier needs that tier's water (a well within 6 cells or the river within 3) or market (stall or hall within 10 cells) nearby, so towns grow around wells and markets.
-- Every home pays tax in **Coins** (new treasury, cap 5000): 0.4 / 1.2 / 3 per person per hour by tier; half when a need is missing. Needs met lift approval (up to +6), needs missing lower it (down to −8).
+- Every home pays tax in **Coins** (new treasury, cap 5000): 2 / 5 / 12 per person per hour by tier; half when a need is missing. Needs met lift approval (up to +6), needs missing lower it (down to −8).
 - Tax level in People › Wellbeing › Homes and taxes: Low (×0.5, +3 approval), Fair, Heavy (×1.6, −8 approval).
 - **Household Goods** are woven at the new **Weaver's Hut** (hide working) from hides and a little wood; burghers use them up only when a market is in reach. New **Market Stall** (permanent settlement) brings markets into the first era.
 - Content: `tools/content/living_town.py`; rules: `Core/GameNeeds.cs` (report cached, the UI asks every frame); tests: `CoreTests/NeedsTests.cs`.
+
+## Trade with the neighbours (Manor Lords' trade routes)
+
+- The scouts meet four neighbouring villages as lands are explored (1, 3, 5, 8 lands): Marsh Folk, Hill Clan, River Traders, Abbey of the Vale. Each pays well for some goods and sells others; buying from one and selling to another never pays (checked by the validator and `TradeTests`).
+- A **Trading Post** (Trail Signs) keeps 1 route; the medieval **Market Hall** keeps 2. Deals sell or buy 10 at once; a lasting route (costs coins to open) carries 6 goods a minute while there is stock, coins and room.
+- **Guilds** make neighbours pay 15% more (`tradePriceMultiplier`). Taxes were raised to 2 / 5 / 12 coins per person per hour so coins matter.
+- Map window › Trade tab; the trading post's card has a Trade button. Content: `tools/content/trade.py`; rules: `Core/GameTrade.cs`.
 
 ## Next refinements (to discuss)
 

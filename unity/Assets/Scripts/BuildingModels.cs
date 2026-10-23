@@ -58,6 +58,7 @@ namespace Founders
                 case "apiary": Apiary(b); break;
                 case "weavers_hut": WeaversHut(b); break;
                 case "market_stall": MarketStall(b); break;
+                case "trading_post": TradingPost(b); break;
                 case "toolsmith": Toolsmith(b); break;
                 case "medieval_bakery": Bakery(b); break;
                 case "medieval_carpenter": CarpentersYard(b); break;
@@ -909,6 +910,34 @@ namespace Founders
             b.Model("k_barrel", new Vector3(-1.25f, 0f, -0.75f), 2.4f, 10f);
             b.Model("k_box", new Vector3(1.2f, 0f, 0.85f), 2.4f, 40f);
             b.Model("wicker_basket_01", new Vector3(1.25f, 0f, -0.8f), 1.3f, 70f);
+        }
+
+        /// <summary>A fenced yard with a signpost to the neighbours, a hanging scale, and bundles waiting for the carts.</summary>
+        static void TradingPost(Builder b)
+        {
+            for (int i = 0; i < 6; i++)
+            {
+                float t = i / 5f;
+                b.Pole(new Vector3(-1.2f + 2.4f * t, 0f, 1.2f), new Vector3(-1.2f + 2.4f * t, 0.55f, 1.2f), 0.05f);
+                b.Pole(new Vector3(1.2f, 0f, 1.2f - 2.4f * t), new Vector3(1.2f, 0.55f, 1.2f - 2.4f * t), 0.05f);
+            }
+            b.Pole(new Vector3(-1.2f, 0.45f, 1.2f), new Vector3(1.2f, 0.45f, 1.2f), 0.04f);
+            b.Pole(new Vector3(1.2f, 0.45f, 1.2f), new Vector3(1.2f, 0.45f, -1.2f), 0.04f);
+            b.Model("k_signpost", new Vector3(-1.0f, 0f, -1.0f), 2.6f, 35f);
+            // The scale: a post, a beam, two pans on cords.
+            b.Pole(new Vector3(0f, 0f, 0.2f), new Vector3(0f, 1.3f, 0.2f), 0.06f);
+            b.Pole(new Vector3(-0.45f, 1.25f, 0.2f), new Vector3(0.45f, 1.25f, 0.2f), 0.035f);
+            foreach (float x in new[] { -0.42f, 0.42f })
+            {
+                b.Pole(new Vector3(x, 1.25f, 0.2f), new Vector3(x, 0.85f, 0.2f), 0.01f);
+                b.Shape(Meshes.Dome(), new Vector3(x, 0.8f, 0.2f), new Vector3(0.24f, 0.06f, 0.24f), "RoughWood");
+            }
+            b.PrimColor(PrimitiveType.Capsule, new Vector3(0.6f, 0.15f, -0.6f), new Vector3(0.24f, 0.32f, 0.24f), "Cloth", new Vector3(0, 30, 90));
+            b.Prim(PrimitiveType.Cube, new Vector3(-0.4f, 0.12f, -0.55f), new Vector3(0.45f, 0.24f, 0.32f), "Hide", new Vector3(0, 15, 0));
+            b.Model("k_barrel", new Vector3(0.75f, 0f, 0.6f), 2.4f, 0f);
+            b.Model("k_box", new Vector3(-0.7f, 0f, 0.65f), 2.4f, 20f);
+            b.Model("k_box", new Vector3(-0.7f, 0.3f, 0.65f), 2f, 50f);
+            b.Model("wicker_basket_01", new Vector3(0.2f, 0f, -0.95f), 1.2f, 0f);
         }
 
         /// <summary>An open forge shed: anvil, workbench and a rack of new tools.</summary>

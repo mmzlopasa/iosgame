@@ -480,7 +480,7 @@
      "needs": [
       "food"
      ],
-     "taxPerPersonPerHour": 0.4
+     "taxPerPersonPerHour": 2
     },
     {
      "level": 5,
@@ -489,7 +489,7 @@
       "food",
       "water"
      ],
-     "taxPerPersonPerHour": 1.2
+     "taxPerPersonPerHour": 5
     },
     {
      "level": 10,
@@ -499,7 +499,7 @@
       "water",
       "goods"
      ],
-     "taxPerPersonPerHour": 3
+     "taxPerPersonPerHour": 12
     }
    ],
    "taxLevels": [
@@ -524,7 +524,79 @@
    ],
    "defaultTax": "normal"
   },
-  "treasuryCap": 5000
+  "treasuryCap": 5000,
+  "trade": {
+   "routeAmountPerMinute": 6,
+   "dealAmount": 10,
+   "neighbours": [
+    {
+     "id": "marsh_folk",
+     "name": "Marsh Folk",
+     "description": "Reed huts on stilts across the wetland. Rich in fish and hides, short of good timber and stone.",
+     "landsExplored": 1,
+     "routeCost": 30,
+     "buys": {
+      "wood": 0.6,
+      "stone": 0.8,
+      "tools": 9
+     },
+     "sells": {
+      "food": 0.9,
+      "hides": 3.0
+     }
+    },
+    {
+     "id": "hill_clan",
+     "name": "Hill Clan",
+     "description": "Herders and miners in the high valleys. They dig ore and quarry stone, and want bread and cloth.",
+     "landsExplored": 3,
+     "routeCost": 60,
+     "buys": {
+      "food": 0.6,
+      "goods": 6,
+      "planks": 2.2
+     },
+     "sells": {
+      "stone": 1.2,
+      "ore": 3.0
+     }
+    },
+    {
+     "id": "river_traders",
+     "name": "River Traders",
+     "description": "Boatmen who carry goods up and down the great river. They pay for bronze and fine cloth.",
+     "landsExplored": 5,
+     "routeCost": 120,
+     "buys": {
+      "bronze": 9,
+      "goods": 6.5,
+      "hides": 2.2
+     },
+     "sells": {
+      "tools": 13,
+      "planks": 3.0,
+      "wood": 0.9
+     }
+    },
+    {
+     "id": "abbey_of_the_vale",
+     "name": "Abbey of the Vale",
+     "description": "Monks who copy books and keep bees. They trade their learning for food, cloth and timber.",
+     "landsExplored": 8,
+     "routeCost": 150,
+     "buys": {
+      "food": 0.65,
+      "goods": 7,
+      "planks": 2.3,
+      "wood": 0.55
+     },
+     "sells": {
+      "knowledge": 4,
+      "bronze": 14
+     }
+    }
+   ]
+  }
  },
  "buildings": [
   {
@@ -6681,7 +6753,7 @@
   {
    "id": "medieval_market",
    "name": "Market Hall",
-   "description": "A tiled hall where the valley trades. Big community boost, extra storage, and homes within 10 cells can get Household Goods.",
+   "description": "A tiled hall where the valley trades. Big community boost, extra storage, and homes within 10 cells can get Household Goods. Keeps 2 trade routes to the neighbours.",
    "epoch": "epoch_medieval_kingdoms",
    "footprint": {
     "width": 3,
@@ -6814,7 +6886,8 @@
      "buildSeconds": 1818.0
     }
    ],
-   "market": true
+   "market": true,
+   "tradeRoutes": 2
   },
   {
    "id": "medieval_mill",
@@ -10029,6 +10102,193 @@
      "buildSeconds": 2272.0
     }
    ]
+  },
+  {
+   "id": "trading_post",
+   "name": "Trading Post",
+   "description": "A fenced yard with a scale and a signpost to the neighbours. Sell and buy goods for coins, and keep 1 lasting trade route.",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 45,
+    "stone": 15,
+    "hides": 5
+   },
+   "buildSeconds": 45,
+   "sprite": "trading_post",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "trail_signs",
+   "tradeRoutes": 1,
+   "levels": [
+    {
+     "cost": {
+      "wood": 35,
+      "stone": 11,
+      "hides": 4
+     },
+     "buildSeconds": 36.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 15,
+      "hides": 5
+     },
+     "buildSeconds": 45.0
+    },
+    {
+     "cost": {
+      "wood": 55,
+      "stone": 19,
+      "hides": 6
+     },
+     "buildSeconds": 54.0
+    },
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 20,
+      "hides": 8
+     },
+     "buildSeconds": 63.0
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 30,
+      "hides": 10
+     },
+     "buildSeconds": 81.0
+    },
+    {
+     "cost": {
+      "wood": 115,
+      "stone": 40,
+      "hides": 13
+     },
+     "buildSeconds": 103.0
+    },
+    {
+     "cost": {
+      "wood": 150,
+      "stone": 50,
+      "hides": 16
+     },
+     "buildSeconds": 132.0
+    },
+    {
+     "cost": {
+      "wood": 195,
+      "stone": 65,
+      "hides": 20
+     },
+     "buildSeconds": 169.0
+    },
+    {
+     "cost": {
+      "wood": 250,
+      "stone": 85,
+      "hides": 30
+     },
+     "buildSeconds": 216.0
+    },
+    {
+     "cost": {
+      "wood": 330,
+      "stone": 110,
+      "hides": 35
+     },
+     "buildSeconds": 277.0
+    },
+    {
+     "cost": {
+      "wood": 420,
+      "stone": 140,
+      "hides": 45,
+      "ore": 50
+     },
+     "buildSeconds": 355.0
+    },
+    {
+     "cost": {
+      "wood": 550,
+      "stone": 185,
+      "hides": 60,
+      "ore": 65
+     },
+     "buildSeconds": 454.0
+    },
+    {
+     "cost": {
+      "wood": 720,
+      "stone": 240,
+      "hides": 80,
+      "ore": 85
+     },
+     "buildSeconds": 581.0
+    },
+    {
+     "cost": {
+      "wood": 930,
+      "stone": 310,
+      "hides": 105,
+      "ore": 110
+     },
+     "buildSeconds": 744.0
+    },
+    {
+     "cost": {
+      "wood": 1210,
+      "stone": 400,
+      "hides": 135,
+      "ore": 140
+     },
+     "buildSeconds": 952.0
+    },
+    {
+     "cost": {
+      "wood": 1570,
+      "stone": 520,
+      "hides": 175,
+      "ore": 180
+     },
+     "buildSeconds": 1219.0
+    },
+    {
+     "cost": {
+      "wood": 2050,
+      "stone": 680,
+      "hides": 230,
+      "ore": 240
+     },
+     "buildSeconds": 1560.0
+    },
+    {
+     "cost": {
+      "wood": 2650,
+      "stone": 890,
+      "hides": 300,
+      "ore": 310
+     },
+     "buildSeconds": 1997.0
+    },
+    {
+     "cost": {
+      "wood": 3450,
+      "stone": 1150,
+      "hides": 380,
+      "ore": 400
+     },
+     "buildSeconds": 2556.0
+    }
+   ]
   }
  ],
  "technologies": [
@@ -10145,7 +10405,7 @@
   {
    "id": "trail_signs",
    "name": "Trail Signs",
-   "description": "Blazes on trees and cairns on hills. Scouts explore 10% faster and can build a Lookout Tower.",
+   "description": "Blazes on trees and cairns on hills. Scouts explore 10% faster and can build a Lookout Tower and a Trading Post.",
    "cost": {
     "knowledge": 40
    },
@@ -10161,6 +10421,10 @@
     {
      "kind": "unlockBuilding",
      "buildingId": "lookout_tower"
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "trading_post"
     }
    ],
    "heartLevel": 6
@@ -10587,7 +10851,7 @@
    "id": "guilds",
    "epoch": "epoch_medieval_kingdoms",
    "name": "Craft Guilds",
-   "description": "Masters, journeymen and apprentices. Unlocks the Market Hall. +15% crafting bonus.",
+   "description": "Masters, journeymen and apprentices. Unlocks the Market Hall. +15% crafting bonus. Neighbours pay 15% more for your goods.",
    "cost": {
     "knowledge": 460
    },
@@ -10605,6 +10869,10 @@
     {
      "kind": "unlockBuilding",
      "buildingId": "medieval_warehouse"
+    },
+    {
+     "kind": "tradePriceMultiplier",
+     "value": 1.15
     }
    ],
    "heartLevel": 30

@@ -21,9 +21,9 @@ NEEDS = {
     "goodsPerPersonPerSecond": 0.0003,
     "metApproval": 6, "unmetApproval": 8,
     "tiers": [
-        {"level": 1, "name": "Huts", "needs": ["food"], "taxPerPersonPerHour": 0.4},
-        {"level": 5, "name": "Houses", "needs": ["food", "water"], "taxPerPersonPerHour": 1.2},
-        {"level": 10, "name": "Burgher Houses", "needs": ["food", "water", "goods"], "taxPerPersonPerHour": 3},
+        {"level": 1, "name": "Huts", "needs": ["food"], "taxPerPersonPerHour": 2},
+        {"level": 5, "name": "Houses", "needs": ["food", "water"], "taxPerPersonPerHour": 5},
+        {"level": 10, "name": "Burgher Houses", "needs": ["food", "water", "goods"], "taxPerPersonPerHour": 12},
     ],
     "taxLevels": [
         {"id": "low", "name": "Low", "multiplier": 0.5, "approval": 3},

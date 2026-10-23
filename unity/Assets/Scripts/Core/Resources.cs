@@ -117,6 +117,14 @@ namespace Founders.Core
             }
         }
 
+        /// <summary>A bundle of one resource.</summary>
+        public static ResourceBundle Of(ResourceType t, double amount)
+        {
+            var b = new ResourceBundle();
+            b[t] = amount;
+            return b;
+        }
+
         public bool IsZero
         {
             get

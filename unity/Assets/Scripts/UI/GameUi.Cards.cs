@@ -49,7 +49,7 @@ namespace Founders.UI
                 var lv = G.NextLevel(b);
                 string level = $"{b.Level}|{(lv == null ? "" : CoverKey(lv.Cost))}|{G.HasRoadAccess(b)}|{Time.unscaledTime < confirmDemolishUntil}|" +
                                string.Join("", G.LevelRequirements(b).Select(r => r.Met ? "1" : "0"));
-                return $"sel|{b.Id}|{b.DefinitionId}|{b.Status}|{up}|{jobs}|{G.IdleWorkers > 0}|{level}|{(def?.Heart == true ? StokeKey() : "")}";
+                return $"sel|{b.Id}|{b.DefinitionId}|{b.Status}|{up}|{jobs}|{G.IdleWorkers > 0}|{level}|{(def?.Heart == true ? StokeKey() : "")}|{HomeNeedsKey(b)}";
             }
             return "none";
         }
@@ -208,6 +208,38 @@ namespace Founders.UI
             box.style.marginLeft = 8;
             box.Add(content);
             return box;
+        }
+
+        HomeNeeds? NeedsOf(PlacedBuilding b)
+        {
+            if (!G.HasNeeds) return null;
+            foreach (var h in G.Needs().Homes) if (h.Building == b) return h;
+            return null;
+        }
+
+        string HomeNeedsKey(PlacedBuilding b)
+        {
+            var h = NeedsOf(b);
+            return h == null ? "" : $"{h.Value.Tier?.Name}{h.Value.Occupants}{h.Value.Food}{h.Value.Water}{h.Value.Market}{h.Value.Goods}";
+        }
+
+        /// <summary>What a home's tier needs and whether it has it, and the tax it pays.</summary>
+        void HomeNeedsSection(VisualElement body, PlacedBuilding b)
+        {
+            var found = NeedsOf(b);
+            if (found == null) return;
+            var h = found.Value;
+            var sec = E.Section($"{h.Tier.Name} · {h.Occupants} living here", out var rows, E.T(Fmt.PerMinute(h.TaxPerSecond), Theme.Num, Theme.Gold));
+            sec.style.marginTop = 8;
+            rows.Add(RequirementRow("food", "Food in store", h.Food, null, false));
+            if (h.Tier.NeedsWater) rows.Add(RequirementRow("home", "A well or the river nearby", h.Water, null, true));
+            if (h.Tier.NeedsGoods)
+            {
+                rows.Add(RequirementRow("coins", "A market nearby", h.Market, null, true));
+                rows.Add(RequirementRow("goods", "Household goods in store", h.Goods, null, true));
+            }
+            if (!h.AllMet) rows.Add(Notice("alert", "Missing needs: this home pays half tax and its people grumble.", true));
+            body.Add(sec);
         }
 
         /// <summary>A requirement row: the text (wraps if long), then ✓ or Go. The width is no longer needed.</summary>
@@ -496,6 +528,8 @@ namespace Founders.UI
                 can = ready && G.State.Resources.Covers(lv.Cost);
             }
 
+            if (b.IsOperational) HomeNeedsSection(body, b);
+
             // The heart's stoking (its button sits in the footer, as the kit's orange "Finish Now").
             if (def.Heart && G.HasWarmth && (complete || b.IsOperational)) body.Add(FireSection());
 
@@ -532,6 +566,8 @@ namespace Founders.UI
                 else Lead(E.Square("trash", demolish, E.Kind.Brown, Theme.ButtonH), foot); // remove: the kit's navy secondary
             }
             if (def.Heart && G.HasWarmth && (complete || b.IsOperational)) foot.Add(Share(StokeButton(), foot));
+            if (def.TradeRoutes > 0 && G.HasTrade && b.IsOperational)
+                foot.Add(Share(E.Button("Trade", Act(() => { mapTab = 2; store.ActivePanel = Panel.Map; }), E.Kind.Blue, Theme.ButtonH, "coins"), foot));
             if (target != null && complete)
             {
                 var kind = canRebuild ? (canLevel ? E.Kind.Blue : E.Kind.Orange) : E.Kind.Grey; // yellow when it is the card's primary

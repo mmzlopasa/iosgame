@@ -223,7 +223,8 @@ namespace Founders.UI
                     TabRow(("Work", 0, G.IdleWorkers > 0 ? $"{G.IdleWorkers} idle" : null), ("Villagers", 1, G.State.People.Count.ToString(Inv)), ("Wellbeing", 2, null));
                     break;
                 case Panel.Map:
-                    TabRow(("Explore", 0, null), ("Legacy", 1, G.State.Legacy.Count.ToString(Inv)));
+                    if (G.HasTrade) TabRow(("Explore", 0, null), ("Trade", 2, G.State.TradeRoutes.Count > 0 ? G.State.TradeRoutes.Count.ToString(Inv) : null), ("Legacy", 1, G.State.Legacy.Count.ToString(Inv)));
+                    else TabRow(("Explore", 0, null), ("Legacy", 1, G.State.Legacy.Count.ToString(Inv)));
                     break;
                 case Panel.Profile:
                     TabRow(("Profile", 0, null), ("Stats", 1, null), ("Achievements", 2, $"{G.State.ReachedMilestones.Count}/{G.Content.Milestones.Count}"));
@@ -306,7 +307,7 @@ namespace Founders.UI
                         return $"{G.IdleWorkers}|{G.State.Population}|{G.State.FoodShortage}|{G.HousingCapacity()}|" + string.Join(",", Enums.Jobs.Select(j => $"{G.State.Assignments[j]}/{G.JobCapacity(j)}"));
                     if (peopleTab == 1)
                         return expandedPerson + "|" + string.Join(",", G.State.People.Select(p => $"{p.Job}{SkillSum(p)}{(p.Sick ? "s" : "")}")) + "|" + SurvivalPeopleKey();
-                    return $"{G.SeasonIndex}|{G.Freezing}|{string.Join(",", G.ApprovalFactors().Select(f => f.Label + f.Points))}|{G.State.FoodShortage}|{SurvivalPeopleKey()}";
+                    return $"{G.SeasonIndex}|{G.Freezing}|{NeedsKey()}|{string.Join(",", G.ApprovalFactors().Select(f => f.Label + f.Points))}|{G.State.FoodShortage}|{SurvivalPeopleKey()}";
                 case Panel.Weather:
                     return WeatherKey();
                 case Panel.Objectives:
@@ -316,6 +317,7 @@ namespace Founders.UI
                            (G.CurrentObjective == null ? "" : string.Join("", G.Status(G.CurrentObjective.Conditions).Select(s => s.Met ? "1" : "0"))) + "|" +
                            string.Join("", G.Content.Milestones.SelectMany(m => G.MilestoneRequirements(m.Id)).Select(s => s.Met ? "1" : "0"));
                 case Panel.Map:
+                    if (mapTab == 2) return TradeKey();
                     return $"{G.State.ActiveExpedition?.RegionId}|{string.Join(",", G.State.ExploredRegions)}|{G.State.Legacy.Count}|" +
                            string.Join("", G.Content.Regions.Select(r => G.State.Resources.Covers(G.ExpeditionCost(r)) ? "1" : "0"));
                 case Panel.Profile:
@@ -337,7 +339,7 @@ namespace Founders.UI
                     break;
                 case Panel.Objectives: BuildGoalsPanel(host); break;
                 case Panel.Weather: BuildWeatherPanel(host); break;
-                case Panel.Map: if (mapTab == 0) BuildWorldPanel(host); else BuildLegacy(host); break;
+                case Panel.Map: if (mapTab == 0) BuildWorldPanel(host); else if (mapTab == 2) BuildTrade(host); else BuildLegacy(host); break;
                 case Panel.Profile: BuildProfilePanel(host); break;
                 default: BuildSettingsPanel(host); break;
             }
@@ -655,6 +657,14 @@ namespace Founders.UI
             host.Add(up);
         }
 
+        string NeedsKey()
+        {
+            if (!G.HasNeeds) return "";
+            var r = G.Needs();
+            return $"{r.Housed}|{r.Content}|{r.WithoutWater}|{r.WithoutGoods}|{G.State.TaxLevel}|" +
+                   string.Join(",", r.Homes.Select(h => h.Tier?.Level ?? 0));
+        }
+
         /// <summary>Homes by tier, what they lack, the taxes they pay and the tax level.</summary>
         void BuildHomes(VisualElement host)
         {
@@ -671,7 +681,7 @@ namespace Founders.UI
             var r = G.Needs();
             if (r.WithoutWater > 0) rows.Add(Notice("alert", $"{r.WithoutWater} people have no water. Put a well near their homes, or build by the river.", true));
             if (r.WithoutGoods > 0) rows.Add(Notice("alert", $"{r.WithoutGoods} people lack household goods. They need a market nearby and goods from the Weaver's Hut.", true));
-            rows.Add(E.StatRow("coins", "Treasury", $"{Math.Floor(G.State.Resources.Coins):0}", null, true, Theme.Gold));
+            rows.Add(TreasuryLine());
 
             var taxes = E.Div().Row().Margin(8, 0, 4);
             var current = G.CurrentTax;

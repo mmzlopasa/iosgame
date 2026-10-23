@@ -137,6 +137,24 @@ namespace Founders.Core
         };
     }
 
+    /// <summary>A lasting trade route: a good carried to (sold) or from (bought) a neighbouring village every minute.</summary>
+    public sealed class TradeRoute
+    {
+        public string NeighbourId;
+        public ResourceType Resource;
+        public bool Sell;
+
+        internal Dictionary<string, object> ToJson() => new Dictionary<string, object>
+        {
+            ["neighbourId"] = NeighbourId, ["resource"] = Resource.Id(), ["sell"] = Sell,
+        };
+
+        internal static TradeRoute FromJson(JObj o) => new TradeRoute
+        {
+            NeighbourId = o.Str("neighbourId"), Resource = ResourceTypes.Parse(o.Str("resource")), Sell = o.Bool("sell"),
+        };
+    }
+
     /// <summary>Job → worker count, keyed by the stable job id.</summary>
     public sealed class JobAssignments
     {
@@ -262,6 +280,8 @@ namespace Founders.Core
         public double? LastPetitionSimTime;
         /// <summary>The tax level the player chose (null = the content's default).</summary>
         public string TaxLevel;
+        /// <summary>Lasting trade routes, oldest first (only as many run as the trading places allow).</summary>
+        public List<TradeRoute> TradeRoutes = new List<TradeRoute>();
         /// <summary>Goods made by recipes since the founding, by resource id (e.g. bronze cast).</summary>
         public Dictionary<string, double> Made = new Dictionary<string, double>();
         /// <summary>Speed-ups owned: key (see Speedups.Key) → count.</summary>
@@ -368,6 +388,7 @@ namespace Founders.Core
                 };
             if (LastPetitionSimTime.HasValue) d["lastPetitionSimTime"] = LastPetitionSimTime.Value;
             if (TaxLevel != null) d["taxLevel"] = TaxLevel;
+            if (TradeRoutes.Count > 0) d["tradeRoutes"] = TradeRoutes.Select(x => (object)x.ToJson()).ToList();
             if (Made.Count > 0) d["made"] = Made.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (Speedups.Count > 0) d["speedups"] = Speedups.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (SpeedupStarterGiven) d["speedupStarterGiven"] = true;
@@ -448,6 +469,7 @@ namespace Founders.Core
             }
             s.LastPetitionSimTime = o.OptNum("lastPetitionSimTime");
             s.TaxLevel = o.OptStr("taxLevel");
+            if (o.Has("tradeRoutes")) s.TradeRoutes = o.Objs("tradeRoutes").Select(TradeRoute.FromJson).ToList();
             if (o.Has("made"))
             {
                 var made = o.Obj("made");
