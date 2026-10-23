@@ -539,12 +539,12 @@ def _tools():
     axe.append(glyph([L.rounded_poly(head, [0.06, 0.04, 0.08, 0.1, 0.1, 0.08, 0.04, 0.06])], bronze,
                      depth=0.26, bevel=0.06))
     axe += wraps(0.3)
-    L.parent(axe, loc=(-0.35, 0.1, 0), rot=(0, 30, 0))
+    L.parent(axe, loc=(0, 0.1, 0), rot=(0, -38, 0))
     ham = [handle(2.3)]
     ham.append(box((1.2, 0.56, 0.6), (0.0, 0, 1.0), bronze, bevel=0.1))
     ham.append(box((0.22, 0.62, 0.68), (0.62, 0, 1.0), M("iron"), bevel=0.07))
     ham += wraps(-0.6, 4, 0.12)
-    L.parent(ham, loc=(0.35, -0.1, 0), rot=(0, -30, 0))
+    L.parent(ham, loc=(0, -0.1, 0), rot=(0, 38, 0))
 
 
 # ---------------------------------------------------------------- nature
