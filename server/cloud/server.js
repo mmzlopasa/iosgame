@@ -8,9 +8,11 @@
 //   GET    /v1/save/:key                              (token) -> {value}    404 when nothing is saved
 //   PUT    /v1/save/:key        {value}               (token)
 //   GET    /health                                    -> {ok: true}
+//   /admin                                                 password-protected admin page (admin.js)
 //
 // Configuration (environment, e.g. /etc/founders-cloud.env): DB_HOST, DB_PORT, DB_USER, DB_PASSWORD, DB_NAME,
-// PORT (default 8787), HOST (default 127.0.0.1: only the HTTPS proxy on the same server reaches it).
+// PORT (default 8787), HOST (default 127.0.0.1: only the HTTPS proxy on the same server reaches it),
+// ADMIN_PASSWORD (turns on /admin; at least 12 characters).
 'use strict';
 
 const http = require('http');
@@ -188,10 +190,14 @@ async function route(req, url) {
   throw new HttpError(404, 'Not found.');
 }
 
+const admin = require('./admin')({ pool, HttpError, readBody, hashPassword, usernameProblem, passwordProblem, tooManyFailures, noteFailure });
+
 const server = http.createServer(async (req, res) => {
   let status = 200, body;
   try {
-    body = await route(req, new URL(req.url, 'http://localhost'));
+    const url = new URL(req.url, 'http://localhost');
+    if (await admin(req, res, url)) return;
+    body = await route(req, url);
   } catch (e) {
     status = e instanceof HttpError ? e.status : 500;
     body = { error: e instanceof HttpError ? e.message : 'Server error.' };
