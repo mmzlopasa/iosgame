@@ -7,7 +7,7 @@ namespace Founders.Core
     // MARK: - Basic enums
 
     public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming, Fishing, Hunting, Mining, Herding, Healing, Smelting,
-                          Sawing, Toolmaking, Baking, Weaving }
+                          Sawing, Toolmaking, Baking, Weaving, Milling }
 
     public enum TerrainType { Grass, Forest, Rock, Water, Sand, Mountain, Ore }
 
@@ -15,7 +15,7 @@ namespace Founders.Core
     {
         public static readonly JobType[] Jobs =
             { JobType.Foraging, JobType.Farming, JobType.Herding, JobType.Fishing, JobType.Hunting, JobType.Woodcutting, JobType.Stonecutting, JobType.Mining,
-              JobType.Smelting, JobType.Sawing, JobType.Toolmaking, JobType.Baking, JobType.Weaving, JobType.Crafting, JobType.Construction, JobType.Research, JobType.Healing };
+              JobType.Smelting, JobType.Sawing, JobType.Toolmaking, JobType.Milling, JobType.Baking, JobType.Weaving, JobType.Crafting, JobType.Construction, JobType.Research, JobType.Healing };
 
         public static string Id(this JobType j)
         {
@@ -37,6 +37,7 @@ namespace Founders.Core
                 case JobType.Toolmaking: return "toolmaking";
                 case JobType.Baking: return "baking";
                 case JobType.Weaving: return "weaving";
+                case JobType.Milling: return "milling";
                 default: return "research";
             }
         }

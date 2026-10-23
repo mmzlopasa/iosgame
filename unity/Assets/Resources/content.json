@@ -268,10 +268,11 @@
    {
     "job": "baking",
     "name": "Baking",
-    "description": "Bake bread from the town's flour: each Wood burnt in the oven gives 4 Food.",
+    "description": "Bake bread: 3 Flour and 1 Wood make 10 Food (the grain goes three times as far as bread).",
     "output": "food",
     "inputs": {
-     "wood": 0.25
+     "flour": 0.3,
+     "wood": 0.1
     },
     "ratePerWorkerPerSecond": 0.3,
     "unlimitedSlots": false
@@ -286,6 +287,17 @@
      "wood": 0.25
     },
     "ratePerWorkerPerSecond": 0.04,
+    "unlimitedSlots": false
+   },
+   {
+    "job": "milling",
+    "name": "Milling",
+    "description": "Grind grain between the millstones: 1 Food makes 1 Flour for the bakers.",
+    "output": "flour",
+    "inputs": {
+     "food": 1
+    },
+    "ratePerWorkerPerSecond": 0.12,
     "unlimitedSlots": false
    }
   ],
@@ -7084,7 +7096,7 @@
   {
    "id": "medieval_mill",
    "name": "Watermill",
-   "description": "A mill on the river. Must touch water. +3 Farming jobs.",
+   "description": "A mill on the river. Must touch water. +3 Farming jobs and 2 Milling jobs that grind grain into Flour.",
    "epoch": "epoch_medieval_kingdoms",
    "footprint": {
     "width": 2,
@@ -7107,6 +7119,10 @@
     {
      "job": "farming",
      "count": 3
+    },
+    {
+     "job": "milling",
+     "count": 2
     }
    ],
    "levels": [
@@ -8926,7 +8942,7 @@
   {
    "id": "medieval_bakery",
    "name": "Bakery",
-   "description": "A brick oven that never cools. 3 Baking jobs bake bread: each Wood burnt gives 4 Food. Bread counts for food variety.",
+   "description": "A brick oven that never cools. 3 Baking jobs bake bread from the mill's Flour and a little firewood. Bread counts for food variety.",
    "epoch": "epoch_medieval_kingdoms",
    "footprint": {
     "width": 2,
@@ -11403,7 +11419,7 @@
    "id": "watermill",
    "epoch": "epoch_medieval_kingdoms",
    "name": "The Watermill",
-   "description": "The river turns the millstone. Unlocks the Watermill. +20% farming.",
+   "description": "The river turns the millstone. Unlocks the Watermill, whose millers grind grain into Flour. +20% farming.",
    "cost": {
     "knowledge": 400
    },
@@ -12197,7 +12213,7 @@
   {
    "id": "obj_bread",
    "title": "Bake the town's bread",
-   "hint": "Research Bread Ovens and build a Bakery: bakers turn firewood into food.",
+   "hint": "Research Bread Ovens, build a Watermill and a Bakery: millers grind grain into flour, bakers bake it into bread.",
    "conditions": [
     {
      "kind": "buildingCount",
@@ -14961,6 +14977,55 @@
       {
        "kind": "jobRateMultiplier",
        "job": "weaving",
+       "value": 1.05
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "job": "milling",
+   "title": "Miller",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Dressed Stones",
+     "description": "Sharp grooves, fine flour.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Fair Measure",
+     "description": "No one says the miller cheats.",
+     "bonus": 0.1,
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "level": 6,
+     "name": "Sluice Keeper",
+     "description": "Water at the right speed.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "Bolting Cloth",
+     "description": "White flour for the feast days.",
+     "bonus": 0.15
+    },
+    {
+     "level": 10,
+     "name": "Master Miller",
+     "description": "The wheel never stops.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "milling",
        "value": 1.05
       }
      ]

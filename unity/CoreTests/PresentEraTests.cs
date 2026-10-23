@@ -84,14 +84,32 @@ namespace Founders.Tests
         }
 
         [Test]
-        public void BakersTurnFirewoodIntoFood()
+        public void BakersBakeFlourIntoFood()
         {
-            var (game, clock) = Town(new ResourceBundle(food: 100, wood: 100), "medieval_bakery");
+            var (game, clock) = Town(new ResourceBundle(food: 100, wood: 100, flour: 100), "medieval_bakery");
             Assert.That(game.JobCapacity(JobType.Baking), Is.EqualTo(3));
             Expect.Success(game.SetWorkers(JobType.Baking, 3));
             game.Run(100, clock);
-            Assert.That(game.Made(ResourceType.Food), Is.EqualTo(3 * 0.3 * 100).Within(1e-6));
-            Assert.That(game.State.Resources.Wood, Is.EqualTo(100 - 3 * 0.3 * 100 * 0.25).Within(1e-6));
+            double bread = 3 * 0.3 * 100;
+            Assert.That(game.Made(ResourceType.Food), Is.EqualTo(bread).Within(1e-6));
+            Assert.That(game.State.Resources.Flour, Is.EqualTo(100 - bread * 0.3).Within(1e-6));
+            Assert.That(game.State.Resources.Wood, Is.EqualTo(100 - bread * 0.1).Within(1e-6));
+        }
+
+        [Test]
+        public void MillersGrindGrainIntoFlourAndTheBreadGoesFurther()
+        {
+            var (game, clock) = Town(new ResourceBundle(food: 500, wood: 100), "medieval_mill");
+            Assume.That(game.JobCapacity(JobType.Milling), Is.EqualTo(2));
+            Expect.Success(game.SetWorkers(JobType.Milling, 2));
+            double food = game.State.Resources.Food;
+            game.Run(100, clock);
+            double flour = 2 * 0.12 * 100;
+            Assert.That(game.State.Resources.Flour, Is.EqualTo(flour).Within(1e-6));
+            Assert.That(game.State.Resources.Food, Is.LessThan(food - flour + 1e-6), "the mill takes its grain from the stores");
+            // Each Flour bakes into more than three Food.
+            var baking = game.Content.JobConfig(JobType.Baking);
+            Assert.That(1 / baking.Inputs.Flour, Is.GreaterThan(3));
         }
 
         [Test]

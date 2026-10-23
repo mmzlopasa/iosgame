@@ -68,7 +68,7 @@ BUILDINGS = [
              jobSlots=[{"job": "toolmaking", "count": 2}]),
     # MARK: Era IV
     building("medieval_bakery", "Bakery",
-             "A brick oven that never cools. 3 Baking jobs bake bread: each Wood burnt gives 4 Food. Bread counts for food variety.",
+             "A brick oven that never cools. 3 Baking jobs bake bread from the mill's Flour and a little firewood. Bread counts for food variety.",
              IV, (2, 2), {"wood": 80, "stone": 90, "planks": 30}, 90, "bread_ovens", foodSource="bread",
              jobSlots=[{"job": "baking", "count": 3}]),
     building("medieval_carpenter", "Carpenter's Yard",
@@ -148,8 +148,9 @@ JOBS = [
     {"job": "toolmaking", "name": "Toolmaking",
      "description": "Cast and haft tools: 1 Bronze and 1 Plank make 2 Tools. Tools make gatherers faster.",
      "output": "tools", "inputs": {"bronze": 0.5, "planks": 0.5}, "ratePerWorkerPerSecond": 0.03, "unlimitedSlots": False},
-    {"job": "baking", "name": "Baking", "description": "Bake bread from the town's flour: each Wood burnt in the oven gives 4 Food.",
-     "output": "food", "inputs": {"wood": 0.25}, "ratePerWorkerPerSecond": 0.3, "unlimitedSlots": False},
+    {"job": "baking", "name": "Baking",
+     "description": "Bake bread: 3 Flour and 1 Wood make 10 Food (the grain goes three times as far as bread).",
+     "output": "food", "inputs": {"flour": 0.3, "wood": 0.1}, "ratePerWorkerPerSecond": 0.3, "unlimitedSlots": False},
 ]
 
 SKILLS = [

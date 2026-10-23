@@ -572,6 +572,17 @@ def _goods():
     cylinder(0.33, 0.18, (0.55, -0.3, -0.32), stripe, rot=(0, 90, 0), bevel=0.04)
 
 
+@icon("flour", el=18, az=-16)
+def _flour():
+    """Flour (the mill's work): a tied burlap sack and a little heap of flour in front."""
+    burlap = P("#D6B47A", hue_dark="#5A3A1A", light=0.4, light_col="#FFF0D0", spec=0.2, rough=0.5)
+    lathe([(0.0, -0.95), (0.62, -0.92), (0.86, -0.6), (0.9, -0.1), (0.74, 0.35), (0.4, 0.6), (0.22, 0.7),
+           (0.3, 0.98), (0.0, 1.02)], loc=(-0.2, 0.25, 0), m=burlap, verts=48)
+    cylinder(0.26, 0.14, (-0.2, 0.25, 0.66), M("wood"), bevel=0.05)
+    white = P("#FBF6EA", hue_dark="#8A7A6A", light=0.5, light_col="#FFFFFF", spec=0.1, rough=0.7)
+    lathe([(0.0, -0.95), (0.62, -0.95), (0.4, -0.8), (0.0, -0.6)], loc=(0.75, -0.6, 0), m=white, verts=40)
+
+
 # ---------------------------------------------------------------- nature
 @icon("planks", el=18, az=-16)
 def _planks():

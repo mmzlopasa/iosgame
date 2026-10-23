@@ -140,6 +140,11 @@ only the map's name (`gen_<code>`): the valley and its 64 lands are drawn again 
 - Five parts each, with lasting effects, gathering-place points and estate favour: e.g. Great Hall (+3 community, Crown favour), Solar Tower (bigger treasury), Cloister and Library (faster research, Clergy favour), Infirmary (less illness), Curtain Wall (calmer town), Gatehouse (faster scouts), Great Storehouse (more wood and stone storage).
 - Model names carry the parts (`lords_manor+great_hall+solar_tower`); `BuildingModels.Monument` draws the plot and each part. Content: `tools/content/monuments.py`; rules: `Core/GameMonuments.cs`; tests: `MonumentTests`.
 
+## Goods carried across the map, and the bread chain
+
+- Workers at recipe buildings (sawpit, toolsmith, smelter, mill, bakery, weaver) walk to the nearest store, carry the input to their workplace, work, and carry the output back; builders carry planks and stone to the site. This is drawn by `WorldView.HaulTask` only: the economy keeps one shared stockpile, so carrying never slows production and costs nothing per frame beyond the walkers already on the map.
+- New resource **Flour**. The mill's **millers** grind grain (Food) into Flour; the bakery's bakers bake Flour (plus a little wood) into much more Food. Content: `tools/content/flour.py`; tests: `PresentEraTests` (bakers and millers).
+
 ## Next refinements (to discuss)
 
 1. **Families instead of single people**: housing gives family slots and one family

@@ -42,6 +42,7 @@
 | Town | Organic paths worn by foot traffic (faster walking, faster building beside them) | ✅ | `GamePaths.cs`, `PathsTests` |
 | Town | Zone brush: homes built by villagers, woodcutting, forestry, pastures | ✅ | `GameZones.cs`, `ZonesTests` |
 | Town | Monuments built part by part (Manor, Abbey, Keep) with a plan of parts | ✅ | `GameMonuments.cs`, `MonumentTests` |
+| Economy | Goods carried by villagers between stores and workplaces; mill grinds flour for the bakery | ✅ | `WorldView.HaulTask`, `flour.py`, `PresentEraTests` |
 | Save | Versioned local save, validation, corruption recovery | ✅ | `Save.cs`, `SaveTests` |
 | Save | Cloud save on own server | ✅ | `CloudSave.cs`, `server/cloud` |
 | Profile | Founder profile, achievements, settings | ✅ | `Profile.cs`, `ProfileTests` |

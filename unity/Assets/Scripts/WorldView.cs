@@ -1108,6 +1108,8 @@ namespace Founders
         Pathing paths;
         /// <summary>Per villager: false = on the way to work, true = carrying the goods home.</summary>
         readonly Dictionary<int, bool> carrying = new Dictionary<int, bool>();
+        /// <summary>Per villager: where in a carrying round they are (see <see cref="HaulTask"/>).</summary>
+        readonly Dictionary<int, int> haulLeg = new Dictionary<int, int>();
         /// <summary>
         /// Where each person stands (or is walking to) for their task. Nobody takes a spot within
         /// <see cref="PersonSpace"/> of a spot someone else holds, so people never stack.
@@ -1203,6 +1205,7 @@ namespace Founders
             workTargets.Remove(owner);
             dispatched.Remove(owner);
             carrying.Remove(owner);
+            haulLeg.Remove(owner);
             lying.Remove(owner);
             spots.Remove(LyingKey + owner);
         }
@@ -1384,6 +1387,74 @@ namespace Founders
             return best;
         }
 
+        /// <summary>What a production job carries in and out (models of the goods).</summary>
+        static (string input, string output) Loads(JobType job) => job switch
+        {
+            JobType.Sawing => ("k_log", "k_planks"),
+            JobType.Toolmaking => ("k_planks", "k_box"),
+            JobType.Smelting => ("k_stone", "k_box"),
+            JobType.Baking => ("k_wood", "wicker_basket_01"),
+            JobType.Weaving => ("k_bedroll", "ceramic_pot"),
+            JobType.Milling => ("wicker_basket_01", "k_bedroll"),
+            _ => (null, null),
+        };
+
+        /// <summary>The nearest finished store (or the heart) to a workplace, other than the workplace itself.</summary>
+        static PlacedBuilding StoreFor(Game game, PlacedBuilding site)
+        {
+            PlacedBuilding best = null;
+            float bestD = float.MaxValue;
+            var at = Grid.CellCenter(site.X, site.Y);
+            foreach (var (b, def) in game.OperationalBuildings())
+            {
+                if (b.Id == site.Id || (def.StorageValue <= 0 && !def.Heart)) continue;
+                float d = (Grid.CellCenter(b.X, b.Y) - at).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = b; }
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// One leg of a carrying round between the stores and a workplace: 0 walk to the store, 1 carry the input to
+        /// the work, 2 work (the caller's task: returns false), 3 carry the product back to the store. Without an
+        /// output the round skips the last leg. False when there is no store or it is time to work.
+        /// </summary>
+        bool HaulTask(Game game, int index, Vector3 from, PlacedBuilding site, string input, string output, ref VillagerTask task)
+        {
+            var stores = StoreFor(game, site);
+            if (stores == null || input == null) return false;
+            haulLeg.TryGetValue(index, out int leg);
+            haulLeg[index] = output == null ? (leg + 1) % 3 : (leg + 1) % 4;
+            var siteCenter = Grid.FootprintCenter(site.X, site.Y, game.FootprintOf(site));
+            switch (leg)
+            {
+                case 0:
+                    task.Spot = BesideBuilding(stores, from, index);
+                    task.Face = Grid.CellCenter(stores.X, stores.Y);
+                    task.Action = "Gather";
+                    task.Duration = 1.4f;
+                    return true;
+                case 1:
+                    task.Spot = BesideBuilding(site, from, index);
+                    task.Face = siteCenter;
+                    task.Carry = input;
+                    task.WalkClip = "Carry";
+                    task.Action = "Gather";
+                    task.Duration = 1.4f;
+                    return true;
+                case 3:
+                    task.Spot = BesideBuilding(stores, from, index);
+                    task.Face = Grid.CellCenter(stores.X, stores.Y);
+                    task.Carry = output;
+                    task.WalkClip = "Carry";
+                    task.Action = "Gather";
+                    task.Duration = 1.4f;
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         static bool GathersFromLand(JobType job) =>
             job == JobType.Woodcutting || job == JobType.Stonecutting || job == JobType.Mining || job == JobType.Foraging
             || job == JobType.Hunting || job == JobType.Fishing;
@@ -1546,7 +1617,12 @@ namespace Founders
             var job = JobOf(game, index);
             // Builders, and idle people while something is being built (Manor Lords: free families build).
             if (sites.Count > 0 && (job == JobType.Construction || (job == null && index % 3 != 2)))
-                return BuildAt(sites[index % sites.Count], task, from, index);
+            {
+                // Builders fetch timber and stone from the stores now and then (goods are carried, not conjured).
+                var buildSite = sites[index % sites.Count];
+                if (HaulTask(game, index, from, buildSite, index % 2 == 0 ? "k_planks" : "k_stone", null, ref task)) return task;
+                return BuildAt(buildSite, task, from, index);
+            }
             if (job == null)
             {
                 task.Spot = FreeAround(index, hearthPos, 1.6f, 2.8f);
@@ -1675,12 +1751,24 @@ namespace Founders
                 }
                 case JobType.Healing:
                     return HealTask(game, index, site, from, center, task);
-                case JobType.Crafting:
                 case JobType.Smelting:
                 case JobType.Sawing:
                 case JobType.Toolmaking:
                 case JobType.Baking:
                 case JobType.Weaving:
+                case JobType.Milling:
+                {
+                    // A working production chain moves its goods by hand: inputs from the stores, the product back.
+                    var (input, output) = Loads(job.Value);
+                    if (game.Processing(job.Value).State == ProcessingState.Working && HaulTask(game, index, from, site, input, output, ref task))
+                        return task;
+                    task.Spot = BesideBuilding(site, from, index);
+                    task.Face = center;
+                    task.Action = "Work";
+                    task.Tool = "Prop_Hammer";
+                    return task;
+                }
+                case JobType.Crafting:
                     task.Spot = BesideBuilding(site, from, index);
                     task.Face = center;
                     task.Action = "Work";
