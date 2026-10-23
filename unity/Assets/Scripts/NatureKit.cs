@@ -80,12 +80,17 @@ namespace Founders
 
         public bool Has(string group) => Group(group).Count > 0;
 
-        /// <summary>One prefab of a group, picked by the random generator.</summary>
+        /// <summary>
+        /// One prefab of a group, picked by the random generator. Only the first few of a group are
+        /// used: every different model is drawn separately, so fewer kinds keep the iPhone fast.
+        /// </summary>
         public GameObject Pick(string group, System.Random rng)
         {
             var list = Group(group);
-            return list.Count == 0 ? null : list[rng.Next(list.Count)];
+            return list.Count == 0 ? null : list[rng.Next(Math.Min(list.Count, MaxVariants))];
         }
+
+        const int MaxVariants = 3;
 
         /// <summary>The URP material that stands in for one of the packs' materials.</summary>
         public Material Convert(Material source)
@@ -112,8 +117,33 @@ namespace Founders
             return null;
         }
 
-        /// <summary>The ground layer for one of the game's grounds (Grass, Mud, Sand, RockGround), or null.</summary>
+        readonly Dictionary<string, TerrainLayer> matte = new Dictionary<string, TerrainLayer>();
+
+        /// <summary>
+        /// The ground layer for one of the game's grounds (Grass, Mud, Sand, RockGround), or null. A
+        /// matte copy: the packs' layers are partly smooth (and the dirt's mask map makes it shine),
+        /// which made the valley floor look wet and glossy.
+        /// </summary>
         public TerrainLayer GroundFor(string ground)
+        {
+            if (matte.TryGetValue(ground, out var cached)) return cached;
+            var l = PackGroundFor(ground);
+            if (l == null) return matte[ground] = null;
+            return matte[ground] = new TerrainLayer
+            {
+                name = l.name + "_Matte",
+                diffuseTexture = l.diffuseTexture,
+                normalMapTexture = l.normalMapTexture,
+                normalScale = Mathf.Min(l.normalScale, 0.6f),
+                tileSize = l.tileSize,
+                tileOffset = l.tileOffset,
+                smoothness = 0f,
+                metallic = 0f,
+                specular = Color.black,
+            };
+        }
+
+        TerrainLayer PackGroundFor(string ground)
         {
             switch (ground)
             {

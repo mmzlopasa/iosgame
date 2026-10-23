@@ -143,24 +143,30 @@ namespace Founders
             foreach (var part in model.Near)
             {
                 var key = (part.Mesh, part.SubMesh, part.Material);
-                if (!kitSets.TryGetValue(key, out var set)) kitSets[key] = set = new InstanceSet(part.Mesh, part.SubMesh, part.Material, false);
+                if (!kitSets.TryGetValue(key, out var set))
+                    kitSets[key] = set = new InstanceSet(part.Mesh, part.SubMesh, part.Material, false) { MaxDistance = KitGrassDistance };
                 set.Add(root * part.Local, index);
             }
         }
 
+        /// <summary>The packs' grass clumps are drawn up to this far from the camera (beyond, the ground's own grass shows).</summary>
+        const float KitGrassDistance = 90f;
+
         void Update()
         {
+            var cam = Camera.main;
+            var c = cam != null ? cam.transform.position : Vector3.zero;
             if (kitSets.Count > 0)
             {
-                foreach (var set in kitSets.Values) set.Draw();
+                foreach (var set in kitSets.Values) set.Draw(c);
                 return;
             }
             if (mesh == null || grass?.Side == null) return;
             // The strategy camera looks down, so each tuft is a top-view card plus two crossed side cards.
-            grass.TopSet?.Draw();
-            grass.Side?.Draw();
-            flowers.TopSet?.Draw();
-            flowers.Side?.Draw();
+            grass.TopSet?.Draw(c);
+            grass.Side?.Draw(c);
+            flowers.TopSet?.Draw(c);
+            flowers.Side?.Draw(c);
         }
 
         /// <summary>Horizontal unit card a little above the ground (seen from the strategy camera).</summary>
