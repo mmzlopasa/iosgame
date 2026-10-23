@@ -158,7 +158,24 @@ namespace Founders.Core
 
         public const int ApprovalBase = 40;
 
-        public int Approval => Math.Max(0, Math.Min(100, ApprovalBase + ApprovalFactors().Sum(f => f.Points)));
+        public int Approval
+        {
+            get
+            {
+                // Asked for many times a frame by the UI (every job's rate): kept until something it depends on changes.
+                var st = State;
+                var key = (st.SimTime, ActiveEffects(), st.Resources, st.Population, st.Assignments.Version, st.Buildings.Count, st.NextBuildingId,
+                           st.Decorations.Count, st.NextDecorationId, st.Discontent, st.FoodShortage, st, st.Modifiers.Count);
+                if (approvalCache.HasValue && approvalKey.Equals(key)) return approvalCache.Value;
+                int value = Math.Max(0, Math.Min(100, ApprovalBase + ApprovalFactors().Sum(f => f.Points)));
+                approvalCache = value;
+                approvalKey = key;
+                return value;
+            }
+        }
+
+        int? approvalCache;
+        (double, List<Effect>, ResourceBundle, int, int, int, int, int, int, double, bool, GameState, int) approvalKey;
 
         /// <summary>Work speed from approval: 0.85 at 0 %, 1.0 at 50 %, 1.15 at 100 %.</summary>
         public double ApprovalProductivity(int approval) => Content.Balance.ApprovalAffectsWork ? 0.85 + 0.003 * approval : 1.0;

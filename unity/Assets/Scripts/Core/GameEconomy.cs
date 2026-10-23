@@ -49,6 +49,12 @@ namespace Founders.Core
         internal List<Effect> ActiveEffects()
         {
             if (stepEffects != null) return stepEffects;
+            // The UI asks for multipliers many times a frame: the list is kept until anything it is made of changes.
+            int ranks = 0;
+            if (HasEstates) foreach (var e in Estates) ranks = ranks * 8 + EstateRank(e);
+            var buildings = BuildingEffects();
+            var key = (State.SimTime, State.Researched.Count, State.Modifiers.Count, State.Laws.Count, ranks, State.People.Count, buildings, State);
+            if (effectsCache != null && effectsCacheKey.Equals(key)) return effectsCache;
             var effects = new List<Effect>();
             foreach (var id in State.Researched)
             {
@@ -56,12 +62,18 @@ namespace Founders.Core
                 if (tech != null) effects.AddRange(tech.Effects);
             }
             foreach (var m in State.Modifiers) effects.Add(m.Effect);
-            effects.AddRange(BuildingEffects());
+            effects.AddRange(buildings);
             effects.AddRange(PerkEffects());
             effects.AddRange(LawEffects());
             effects.AddRange(EstateEffects());
+            effectsCache = effects;
+            effectsCacheKey = key;
             return effects;
         }
+
+        List<Effect> effectsCache;
+        static readonly List<Effect> noEffects = new List<Effect>();
+        (double, int, int, int, int, int, List<Effect>, GameState) effectsCacheKey;
 
         int CurrentApproval => stepApproval ?? Approval;
 
@@ -100,7 +112,7 @@ namespace Founders.Core
                 effectsByBuilding = Content.Buildings.Where(d => d.Effects.Count > 0).ToDictionary(d => d.Id, d => d.Effects);
                 hasMonuments = Content.Buildings.Any(d => d.IsMonument);
             }
-            if (effectsByBuilding.Count == 0 && !hasMonuments) return new List<Effect>();
+            if (effectsByBuilding.Count == 0 && !hasMonuments) return noEffects;
             int operational = 0;
             foreach (var b in State.Buildings) if (b.IsOperational) operational++;
             int parts = 0;

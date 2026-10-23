@@ -58,6 +58,8 @@ namespace Founders.Core
 
         List<Walk> walks;
         string walksKey;
+        HashSet<int> walkedCells;
+        List<Walk> walkedFor;
 
         /// <summary>The ways people walk now: from the heart to every home (its people) and to every workplace (its workers).</summary>
         List<Walk> Walks()
@@ -141,19 +143,27 @@ namespace Founders.Core
             double hours = pathClock / 3600;
             pathClock = 0;
             double t = cfg.Threshold;
-            // Old wear grasses over; then this minute's walking adds to it.
+            // Old wear grasses over where no one walks now (walked lanes never flicker off and on at the threshold,
+            // which would redraw the ground and the people's routes every minute); then this minute's walking adds to it.
+            var current = Walks();
             if (State.Wear.Count > 0 && cfg.DecayPerHour > 0)
             {
+                if (walkedCells == null || walkedFor != current)
+                {
+                    walkedCells = new HashSet<int>(current.SelectMany(x => x.Cells));
+                    walkedFor = current;
+                }
                 double keep = Math.Pow(1 - cfg.DecayPerHour, hours);
                 foreach (var k in State.Wear.Keys.ToList())
                 {
+                    if (walkedCells.Contains(k)) continue;
                     double before = State.Wear[k], after = before * keep;
                     if (before >= t && after < t) PathsVersion++;
                     if (after < 0.01) State.Wear.Remove(k);
                     else State.Wear[k] = after;
                 }
             }
-            foreach (var walk in Walks())
+            foreach (var walk in current)
             {
                 double add = walk.People * cfg.WearPerPersonPerHour * hours;
                 foreach (var k in walk.Cells)

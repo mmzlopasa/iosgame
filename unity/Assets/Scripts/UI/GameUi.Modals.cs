@@ -52,7 +52,7 @@ namespace Founders.UI
             if (speed != "") return speed;
             if (store.Celebration != null) return "ms|" + store.Celebration;
             if (store.Offline != null) return "wb";
-            if (G.PendingStory != null) return "story|" + G.PendingStory.Id;
+            if (store.StoryOpen && G.PendingStory != null) return "story|" + G.PendingStory.Id;
             // An event and a petition can both wait: whichever is on screen stays until answered, then the other follows.
             var ev = G.PendingEvent;
             bool evOpen = ev != null && !store.EventMinimized;

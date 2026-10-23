@@ -435,7 +435,7 @@ namespace Founders.UI
             var frame = E.HexFrame(store.Profile.Avatar, HexFrameW);
             bool goalWaits = MilestoneReady() || G.PendingStory != null;
             if (goalWaits) frame.Add(CornerBadge("!", 20).Abs(null, 2, 0));
-            Tap(frame, () => { if (MilestoneReady() || G.PendingStory != null) store.ActivePanel = Panel.Objectives; else ShowProfile(); });
+            Tap(frame, () => { if (G.PendingStory != null) store.OpenStory(); else if (MilestoneReady()) store.ActivePanel = Panel.Objectives; else ShowProfile(); });
             block.Add(frame);
             var col = E.Div().Col().Ignore().Size(PlayerNameW);
             col.style.marginLeft = 8;

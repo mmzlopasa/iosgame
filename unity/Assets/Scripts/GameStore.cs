@@ -593,8 +593,21 @@ namespace Founders
             return null;
         }
 
+        /// <summary>The narrator's story box is on screen: only when the player taps for it, never by itself.</summary>
+        public bool StoryOpen;
+
+        /// <summary>Opens the narrator's story box for the waiting chapter (or the given one).</summary>
+        public void OpenStory(string chapterId = null)
+        {
+            if (chapterId != null) Game.State.PendingStory = chapterId;
+            if (Game.State.PendingStory == null) return;
+            StoryOpen = true;
+            Refresh();
+        }
+
         public void DismissStory()
         {
+            StoryOpen = false;
             Game.DismissStory();
             Save();
             Refresh();

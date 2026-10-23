@@ -16,7 +16,7 @@ namespace Founders
         readonly int width, height;
         readonly bool[] blocked;
         readonly float[] cost;
-        string key;
+        (int, int, int, int, int, int, int, GameState) key;
 
         public Pathing(int width, int height)
         {
@@ -34,8 +34,10 @@ namespace Founders
         public void Refresh(Game game)
         {
             var s = game.State;
-            string k = $"{s.NextBuildingId}|{s.Buildings.Count}|{s.NextDecorationId}|{s.Decorations.Count}|{s.NodeCleared.Count}|{s.Buildings.Count(b => b.Rotation != 0)}|{game.PathsVersion}";
-            if (k == key) return;
+            int turned = 0;
+            foreach (var b in s.Buildings) if (b.Rotation != 0) turned++;
+            var k = (s.NextBuildingId, s.Buildings.Count, s.NextDecorationId, s.Decorations.Count, s.NodeCleared.Count, turned, game.PathsVersion, s);
+            if (k.Equals(key)) return;
             key = k;
             for (int y = 0; y < height; y++)
                 for (int x = 0; x < width; x++)

@@ -170,8 +170,11 @@ namespace Founders.Core
         public int this[JobType job]
         {
             get => Counts.TryGetValue(job.Id(), out var n) ? n : 0;
-            set => Counts[job.Id()] = System.Math.Max(0, value);
+            set { Counts[job.Id()] = System.Math.Max(0, value); Version++; }
         }
+
+        /// <summary>Changes on every assignment (for caches).</summary>
+        public int Version;
 
         public int Total => Enums.Jobs.Sum(j => this[j]);
     }

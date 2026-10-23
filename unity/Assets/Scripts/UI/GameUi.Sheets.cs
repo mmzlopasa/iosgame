@@ -739,7 +739,7 @@ namespace Founders.UI
             col.Add(E.T(current.Title, Theme.H1).Fit(textW, Theme.H2));
             col.Add(E.T(current.Goal, Theme.Small, Theme.Pale).Wrap().Margin(2));
             banner.Add(col);
-            var story = E.Button("Story", Act(() => G.State.PendingStory = current.Id), E.Kind.Blue, Portrait ? 40 : Theme.ButtonH, "legacy", 16, null, storyW);
+            var story = E.Button("Story", Act(() => store.OpenStory(current.Id)), E.Kind.Blue, Portrait ? 40 : Theme.ButtonH, "legacy", 16, null, storyW);
             if (Portrait) { story.style.alignSelf = Align.FlexStart; col.Add(story.Margin(8)); }
             else banner.Add(story.Margin(0, 0, 0, 10));
             host.Add(banner);

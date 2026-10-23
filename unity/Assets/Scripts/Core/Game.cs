@@ -84,6 +84,9 @@ namespace Founders.Core
         /// simulated exactly once, so calling this on resume, after a restart or repeatedly can
         /// never grant duplicate production.
         /// </summary>
+        /// <summary>Shortest wall-clock time worth simulating (the rest waits for the next call).</summary>
+        public const double MinUpdateSeconds = 0.1;
+
         public void Update()
         {
             double now = clock.Now();
@@ -100,6 +103,8 @@ namespace Founders.Core
                 State.LastUpdateWallTime = now;
                 return;
             }
+            // A phone calls this every frame: the town moves on ten times a second, which looks the same and costs a tenth.
+            if (elapsed < MinUpdateSeconds) return;
             double simulated = Math.Min(elapsed, Content.Balance.MaxOfflineSeconds);
             State.LastUpdateWallTime = now;
             Advance(simulated);
