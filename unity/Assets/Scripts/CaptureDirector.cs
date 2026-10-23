@@ -35,6 +35,7 @@ namespace Founders
             this.ui = ui;
             outDir = Path.Combine(Application.persistentDataPath, "captures");
             Directory.CreateDirectory(outDir);
+            File.Delete(Path.Combine(outDir, "layout_audit.txt"));
             StartCoroutine(Tour());
         }
 
@@ -182,6 +183,25 @@ namespace Founders
             yield return null;
             yield return new WaitForSeconds(0.6f);
             Debug.Log($"[FOUNDERS] captured {name}");
+            if (ui) Audit(name);
+        }
+
+        /// <summary>Writes the layout mistakes on this screen (see LayoutAudit) to captures/layout_audit.txt.</summary>
+        void Audit(string name)
+        {
+            try
+            {
+                var found = LayoutAudit.Check(this.ui.Root);
+                var sb = new System.Text.StringBuilder();
+                sb.Append("== ").Append(name).Append(found.Count == 0 ? " ok" : $" {found.Count} problem(s)").Append('\n');
+                foreach (var f in found) sb.Append("  ").Append(f).Append('\n');
+                File.AppendAllText(Path.Combine(outDir, "layout_audit.txt"), sb.ToString());
+                if (found.Count > 0) Debug.LogWarning($"[FOUNDERS] layout {name}: {found.Count} problem(s)");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[FOUNDERS] layout audit {name} failed: {ex.Message}");
+            }
         }
 
         /// <summary>

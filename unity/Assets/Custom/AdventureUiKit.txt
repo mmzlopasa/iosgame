@@ -1,0 +1,79 @@
+# Adventure UI Kit (Smashy Tech) → game skins. Only names of the kit's files are written here (no pictures: the
+# kit is licensed and is not in this repository). FOUNDERS → Adventure UI Kit → Apply (and every build) reads this;
+# a line overrides the automatic pick, "none" keeps the game's own, missing lines are picked automatically.
+# The whole game is in the kit's look (2026-10-14): every window, row, button, tab, cell and HUD piece is a kit
+# picture, chosen after the kit's own demo screens (Home, Profile, Setting, Audio, Confirm).
+# windows: the vine-wrapped stone popup; inside, the dark inset (sections, the Audio screen's box)
+skin:panel = Assets/Adventure UI Kit/Sprites/GameUI/popup_bg.png
+skin:section = Assets/Adventure UI Kit/Sprites/GameUI/PopUp_Front.png
+# the title strip: the kit writes titles straight on the stone (E.Plank draws no strip in the kit look)
+skin:plank = Assets/Adventure UI Kit/Sprites/GameUI/btn_menu_bg.png
+# buttons: two kinds only, as in the kit's demo screens. The leafy stone is every main action (orange words);
+# the plain raised stone is every other button; a locked button is the flat dark stone, dimmed. The
+# vine-wrapped stone is the big BUILD button only (E.Button draws the leafy one for every main action)
+skin:btn_green = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_leaf.png
+skin:btn_orange = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_crack.png
+skin:btn_blue = Assets/Adventure UI Kit/Sprites/GameUI/btn_rec_large.png
+skin:btn_red = Assets/Adventure UI Kit/Sprites/GameUI/btn_rec_large.png
+skin:btn_brown = Assets/Adventure UI Kit/Sprites/GameUI/btn_rec_large.png
+skin:btn_grey = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_light.png
+# tabs: the chosen one is the lighter stone, the others the dark stone
+skin:tab_on = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_dark.png
+skin:tab_off = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_light.png
+# cells behind pictures: the stone frame with the dark inset (the kit's empty check box)
+skin:slot = Assets/Adventure UI Kit/Sprites/GameUI/btn_uncheck.png
+skin:tile = Assets/Adventure UI Kit/Sprites/GameUI/btn_uncheck.png
+skin:cell_common = Assets/Adventure UI Kit/Sprites/GameUI/btn_uncheck.png
+skin:cell_uncommon = Assets/Adventure UI Kit/Sprites/GameUI/btn_uncheck.png
+skin:cell_rare = Assets/Adventure UI Kit/Sprites/GameUI/btn_uncheck.png
+skin:cell_epic = Assets/Adventure UI Kit/Sprites/GameUI/btn_uncheck.png
+skin:cell_legendary = Assets/Adventure UI Kit/Sprites/GameUI/btn_uncheck.png
+# counters and chips: the stone frame round a dark inset (the kit's coin counter without its coin)
+skin:capsule = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_box.png
+skin:hud_capsule = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_box.png
+skin:hud_rank = Assets/Adventure UI Kit/Sprites/Button/Primary_Button/btn_box.png
+# bars: the kit's progress track and fills
+skin:bar_track = Assets/Adventure UI Kit/Sprites/GameUI/progressbar_bg_.png
+skin:hud_bar_track = Assets/Adventure UI Kit/Sprites/GameUI/progressbar_bg_.png
+skin:fill_green = Assets/Adventure UI Kit/Sprites/Slider/slider_fill_green.png
+skin:fill_gold = Assets/Adventure UI Kit/Sprites/Slider/slider_fill_orange.png
+skin:fill_blue = Assets/Adventure UI Kit/Sprites/Slider/slider_fill_blue.png
+skin:hud_bar_fill_blue = Assets/Adventure UI Kit/Sprites/Slider/slider_fill_orange.png
+# HUD buttons: plain raised stone squares under the game's painted pictures; the portrait in the stone frame
+skin:hud_plus = Assets/Adventure UI Kit/Sprites/GameUI/btn_add.png
+skin:hud_square_blue = Assets/Adventure UI Kit/Sprites/GameUI/btn_small.png
+skin:hud_hex = Assets/Adventure UI Kit/Sprites/GameUI/btn_small.png
+skin:hud_round_blue = Assets/Adventure UI Kit/Sprites/GameUI/btn_small.png
+skin:hud_round_yellow = Assets/Adventure UI Kit/Sprites/GameUI/btn_small.png
+skin:hud_hex_frame = Assets/Adventure UI Kit/Sprites/GameUI/btn_uncheck.png
+# whole kit buttons, symbol included: close ✕, back ‹, settings gear
+skin:close_btn = Assets/Adventure UI Kit/Sprites/GameUI/btn_close.png
+skin:back_btn = Assets/Adventure UI Kit/Sprites/GameUI/Previous.png
+skin:settings_btn = Assets/Adventure UI Kit/Sprites/GameUI/btn_setting.png
+# the stone switch (ON / OFF are part of the picture)
+skin:toggle_on = Assets/Adventure UI Kit/Sprites/GameUI/btn_toggle_on.png
+skin:toggle_off = Assets/Adventure UI Kit/Sprites/GameUI/btn_toggle_off.png
+# not in the kit: red danger fill, notification badges (kept small, red and green)
+skin:fill_red = none
+skin:badge_green = none
+skin:badge_red = none
+# the kit's icons are whole stone buttons with the symbol baked in: inside other frames they double up, so the
+# game's painted glyphs stay (whole kit buttons are used directly above instead)
+icon:close = none
+icon:back = none
+icon:next = none
+icon:check = none
+icon:plus = none
+icon:settings = none
+icon:info = none
+icon:lock = none
+icon:home = none
+icon:user = none
+icon:trophy = none
+icon:goals = none
+icon:world = none
+icon:minus = none
+icon:bell = none
+icon:alert = none
+icon:clock = none
+icon:trash = none

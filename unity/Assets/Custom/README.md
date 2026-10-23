@@ -134,6 +134,19 @@ Ograničenja: tvoji likovi ne drže alat u ruci (sjekiru, motiku); trupci i koš
 - **Velike slike** `UI/Images/<ime>.png`: `logo_mark` (logo), `loading_bg` (pozadina učitavanja), `glow`.
 - Font se (za sada) ne može zamijeniti.
 
+## 7a. Adventure UI Kit (Unity Asset Store)
+
+Igra sama stavlja **Adventure UI Kit** (Smashy Tech) na sučelje: okvire prozora, gumbe, kartice, trake, utore i male ikone (zatvori, natrag, postavke, plus…). Ikone resursa, zgrada i ljudi ostaju naše, oslikane.
+
+1. U Unityju: *Window → Package Manager → My Assets → Adventure UI Kit → Download → Import* (sve).
+2. Izbornik **FOUNDERS → Adventure UI Kit → Apply**. Igra pronađe mapu kita (ime sadrži „Adventure”), odabere slike po imenima datoteka i javi što je uzela. Izbor je zapisan u `Assets/Custom/AdventureUiKit.txt` – tu možeš promijeniti bilo koju sliku (ili napisati `none` da ostane naša) i ponovno kliknuti *Apply*.
+3. Ono što kit nema ostaje u izgledu igre.
+4. Builds na GitHubu ovo rade same prije svakog builda – dovoljno je da je kit u repozitoriju.
+
+> ⚠️ Kit je pod licencom Asset Storea: **ne smije biti u ovom javnom repozitoriju** (mapa `unity/Assets/Adventure UI Kit/` je u `.gitignore`). Za buildove na GitHubu kit je u zasebnom **privatnom** repozitoriju `mmzlopasa/iosgame-uikit` (mapa `Kit/Adventure UI Kit/`), a workflowi ga preuzimaju sa secretom `KIT_TOKEN`. Bez tog secreta igra se gradi u svom izgledu.
+
+*English:* import the kit anywhere under `Assets` (folder name containing "Adventure"); `FoundersEditor.AdventureUiKit` (menu **FOUNDERS → Adventure UI Kit → Apply**, and automatically in `BuildScript.Generate`) maps its sprites to the game's skins and interface glyphs by file/sprite name, copies them to `Assets/Generated/Resources/Kit/UI/{Skin,Icons}` with the kit's own 9-slice borders (`slices.txt`), and writes the choices to `Assets/Custom/AdventureUiKit.txt` for correction. Lookup order at runtime: Custom → Kit → the game's own.
+
 ## 8. Tlo (`Textures/Terrain/`)
 
 `Grass.png`, `Mud.png`, `Sand.png`, `RockGround.png` – bešavna (seamless) tekstura koja se ponavlja svakih 5 m, npr. 1024×1024 px. Normal map po želji: `Grass_normal.png`.

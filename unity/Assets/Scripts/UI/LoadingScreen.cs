@@ -69,7 +69,7 @@ namespace Founders.UI
             brand.style.left = 0; brand.style.right = 0;
             brand.style.top = Length.Percent(9);
             brand.Add(E.Image(Theme.Image("logo_mark"), 70, 70));
-            var word = E.T("FOUNDERS", 38);
+            var word = E.Title("FOUNDERS", 38);
             word.style.letterSpacing = 4;
             word.style.marginTop = 6;
             brand.Add(word);
@@ -103,7 +103,7 @@ namespace Founders.UI
             percent = E.T("0%", Theme.Num, Theme.Gold);
             labels.Add(percent);
             progress.Add(labels);
-            var bar = E.Bar(out fill, 12);
+            var bar = E.Bar(out fill, 12, E.FillKind.Gold);
             bar.style.marginTop = 4;
             progress.Add(bar);
             progressRow.Add(progress);

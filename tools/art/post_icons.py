@@ -24,10 +24,15 @@ FONT = os.path.join(ROOT, "unity", "Assets", "Art", "UI", "Resources", "UI", "Fo
 INK = np.array([0x2B, 0x1A, 0x0E], np.float32) / 255
 RAW = 512
 OUT_PX = 128
-OUTLINE = 22.0     # px at 512 (~5.5 px at 128, like the kit)
-INNER = 5.0       # inner ink lines between parts, px at 512
-SHADOW = (0, 11)   # px at 512
-SHADOW_ALPHA = 0.38
+# The painted style (see the reference sheet): no thick cartoon outline, only a thin dark edge so the
+# icon still reads on bright and dark backgrounds; soft dark creases between parts; a brushy finish.
+OUTLINE = 7.0      # px at 512 (~1.7 px at 128)
+INNER = 3.5        # crease lines between parts, px at 512
+INNER_ALPHA = 0.55
+SHADOW = (0, 9)    # px at 512
+SHADOW_ALPHA = 0.32
+EDGE_INK = np.array([0x1E, 0x14, 0x22], np.float32) / 255
+PAINT_R = 4        # Kuwahara radius at 512 px: flattens the render into brush dabs
 
 # Per-icon overrides: outline radius (simple glyphs and tiny marks can take a slightly thinner line).
 OVERRIDES = {}
@@ -65,9 +70,37 @@ def blur(a, radius):
 
 
 def grade(img):
-    img = ImageEnhance.Color(img).enhance(1.10)
-    img = ImageEnhance.Contrast(img).enhance(1.05)
+    img = ImageEnhance.Color(img).enhance(1.04)
+    img = ImageEnhance.Contrast(img).enhance(1.06)
     return img
+
+
+def box_mean(a, r):
+    """Mean over a (2r+1)^2 box (edge-padded), via an integral image."""
+    p = np.pad(a, ((r + 1, r), (r + 1, r)) + ((0, 0),) * (a.ndim - 2), mode="edge")
+    ii = p.cumsum(0).cumsum(1)
+    k = 2 * r + 1
+    return (ii[k:, k:] - ii[:-k, k:] - ii[k:, :-k] + ii[:-k, :-k]) / (k * k)
+
+
+def kuwahara(c, r):
+    """Kuwahara filter: each pixel takes the mean of its least varied quadrant, which turns smooth
+    shading into flat painted dabs while keeping edges crisp."""
+    h, w = c.shape[:2]
+    lum = c @ np.array([0.299, 0.587, 0.114], np.float32)
+    m = box_mean(c, r // 2 if r > 1 else 1)
+    v = box_mean(lum * lum, r // 2 if r > 1 else 1) - box_mean(lum, r // 2 if r > 1 else 1) ** 2
+    q = r // 2 if r > 1 else 1
+    best = np.full((h, w), np.inf, np.float32)
+    out = c.copy()
+    for dy in (-q, q):
+        for dx in (-q, q):
+            vs = shift(v, dx, dy) if True else v
+            ms = shift(m, dx, dy)
+            take = vs < best
+            best = np.where(take, vs, best)
+            out = np.where(take[..., None], ms, out)
+    return out
 
 
 def finish(src, dst, outline=OUTLINE, size=OUT_PX, shadow=True):
@@ -77,6 +110,8 @@ def finish(src, dst, outline=OUTLINE, size=OUT_PX, shadow=True):
     rgb = grade(im.convert("RGB"))
     a = np.asarray(im, np.float32)[..., 3] / 255
     c = np.asarray(rgb, np.float32) / 255
+    if PAINT_R:
+        c = c * 0.25 + kuwahara(c, PAINT_R) * 0.75
     ol = dilate(a, outline) if outline > 0 else a
     idf = src[:-4] + "_id.png"
     if os.path.exists(idf):
@@ -86,8 +121,8 @@ def finish(src, dst, outline=OUTLINE, size=OUT_PX, shadow=True):
             sh_ = np.roll(np.roll(ids, dy, 0), dx, 1)
             diff = (ids != sh_) & (ids > 0) & (sh_ > 0)
             edge = np.maximum(edge, diff.astype(np.float32))
-        line = dilate(edge, INNER / 2) * a
-        c = c * (1 - line[..., None] * 0.92) + INK * line[..., None] * 0.92
+        line = blur(dilate(edge, INNER / 2), 1.2) * a * INNER_ALPHA
+        c = c * (1 - line[..., None]) + c * 0.35 * line[..., None]
     # layers, back to front: shadow, outline, subject (straight alpha "over")
     out_c = np.zeros_like(c)
     out_a = np.zeros_like(a)
@@ -102,7 +137,7 @@ def finish(src, dst, outline=OUTLINE, size=OUT_PX, shadow=True):
     if shadow:
         sh = blur(shift(ol, *SHADOW), 3.0) * SHADOW_ALPHA
         over(np.zeros_like(c), sh)
-    over(np.broadcast_to(INK, c.shape), ol)
+    over(np.broadcast_to(EDGE_INK, c.shape), ol)
     over(c, a)
     # premultiplied downsample
     pm = np.dstack([out_c * out_a[..., None], out_a])

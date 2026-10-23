@@ -187,8 +187,8 @@ namespace Founders.UI
                 bool on = tab == buildTab;
                 string name = tab;
                 var t = E.Tab(on ? tab : null, on, Act(() => buildTab = name), null, Theme.TabH, Theme.Num, icon);
-                t.style.minWidth = 48;
-                t.style.marginRight = 4;
+                t.style.minWidth = 44;
+                t.style.marginRight = 3;
                 tabs.Add(t);
             }
             return tabs;
@@ -218,7 +218,7 @@ namespace Founders.UI
             return list;
         }
 
-        const float ItemW = 104, ItemCell = 78;
+        const float ItemW = 118, ItemCell = 78;
 
         /// <summary>An item of the strip: rarity cell with the icon (badge: how many stand), the name in two lines.</summary>
         static VisualElement ItemCard(string icon, E.Cell cell, string name, bool locked, string count)
@@ -298,31 +298,33 @@ namespace Founders.UI
             tree.contentContainer.style.flexDirection = FlexDirection.Row;
             tree.contentContainer.style.alignItems = Align.FlexStart;
             tree.contentContainer.style.paddingBottom = 6;
+            // Whole columns only: the tree's width is shared out so the last one in view ends at its edge (the rest
+            // scroll in from the right) instead of a column cut in half under the detail card.
+            float treeW = InnerW - TechDetailW - 8;
+            int cols = Mathf.Max(1, Mathf.FloorToInt((treeW + 8) / (TechColW + 8)));
+            float colW = Mathf.Floor((treeW + 8) / cols) - 8;
             foreach (var group in techs.GroupBy(Tier).OrderBy(g => g.Key))
             {
                 int from = group.Key * 5 + 1, to = from + 4;
                 bool reached = G.HeartLevel >= from;
-                var col = E.Div().Col().Ignore().Size(TechColW);
+                var col = E.Div().Col().Ignore().Size(colW);
                 col.style.marginRight = 8;
                 var head = E.Div().Row().Center().Ignore();
                 head.style.height = 28;
                 head.Add(E.Icon(reached ? "flame" : "lock", 22));
                 head.Add(E.T(group.Key >= 6 ? $"Level {from}+" : $"Level {from}–{to}", Theme.Num, reached ? Color.white : Theme.Pale).Margin(0, 0, 0, 5));
                 col.Add(head);
-                foreach (var t in group) col.Add(TechNode(t, TechColW));
+                foreach (var t in group) col.Add(TechNode(t, colW));
                 tree.Add(col);
             }
             body.Add(tree);
 
-            var side = E.Scroll(ScrollViewMode.Vertical);
-            side.style.width = TechDetailW;
-            side.style.flexShrink = 0;
-            side.style.marginLeft = 8;
-            side.contentContainer.style.paddingBottom = 6;
-            if (active != null) side.Add(ActiveResearchBar(active, TechDetailW));
+            // The detail scrolls; its action (cost and the Research button) stays pinned under it, always whole.
+            var side = SidePane(TechDetailW, out var sideScroll, out var sideFoot);
+            if (active != null) sideScroll.Add(ActiveResearchBar(active, TechDetailW));
             else if (econ.Production.Knowledge <= 0)
-                side.Add(Notice("people", "Nobody studies yet: put people on Research (People › Work).", true).Margin(0, 0, 6));
-            side.Add(TechDetail(G.Content.Technology(selectedTech), TechDetailW));
+                sideScroll.Add(Notice("people", "Nobody studies yet: put people on Research (People › Work).", true).Margin(0, 0, 6));
+            sideScroll.Add(TechDetail(G.Content.Technology(selectedTech), TechDetailW, sideFoot));
             body.Add(side);
             host.Add(body);
         }
@@ -445,7 +447,30 @@ namespace Founders.UI
             return parts.Count == 0 ? "" : char.ToUpperInvariant(parts[0][0]) + string.Join(" · ", parts).Substring(1);
         }
 
-        VisualElement TechDetail(TechnologyDefinition t, float detailW)
+        /// <summary>
+        /// A detail column beside a list (landscape): a scrolling part over a pinned foot, so the action at the
+        /// bottom (a button, a cost) is never half-scrolled out of sight. The foot hides while empty.
+        /// </summary>
+        VisualElement SidePane(float width, out ScrollView scroll, out VisualElement foot)
+        {
+            var side = E.Div("side").Col().Ignore();
+            side.style.width = width;
+            side.style.flexShrink = 0;
+            side.style.marginLeft = 8;
+            scroll = E.Scroll(ScrollViewMode.Vertical);
+            scroll.style.flexGrow = 1;
+            scroll.style.flexShrink = 1;
+            scroll.style.minHeight = 0;
+            scroll.contentContainer.style.paddingBottom = 6;
+            side.Add(scroll);
+            var f = E.Inset().Pad(6, 10, 8, 10).Margin(6);
+            foot = f;
+            f.style.display = DisplayStyle.None; // shown by the detail when it has an action
+            side.Add(f);
+            return side;
+        }
+
+        VisualElement TechDetail(TechnologyDefinition t, float detailW, VisualElement foot = null)
         {
             var card = E.Inset().Col().Pad(10, 10);
             if (t == null) return card;
@@ -498,7 +523,8 @@ namespace Founders.UI
                     break;
                 }
             }
-            card.Add(bottom);
+            if (foot != null) { bottom.style.marginTop = 0; foot.Add(bottom); foot.Hidden(bottom.childCount == 0); }
+            else card.Add(bottom);
             return card;
         }
     }

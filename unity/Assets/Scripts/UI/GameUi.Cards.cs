@@ -398,7 +398,7 @@ namespace Founders.UI
                 string verb = n.Terrain == TerrainType.Forest ? "Send woodcutters" : n.Terrain == TerrainType.Rock ? "Send quarriers"
                     : n.Terrain == TerrainType.Ore ? "Send miners" : n.Terrain == TerrainType.Water ? "Send fishers" : "Send foragers";
                 string tool = n.Terrain == TerrainType.Forest ? "axe" : n.Terrain == TerrainType.Water ? "spear" : n.Terrain == TerrainType.Grass ? "food" : "pickaxe";
-                if (n.Ordered) Lead(E.Square("close", Act(() => store.ToggleHarvest(x, y)), E.Kind.Brown, Theme.ButtonH), foot);
+                if (n.Ordered) Lead(E.Square("trash", Act(() => store.ToggleHarvest(x, y)), E.Kind.Brown, Theme.ButtonH), foot);
                 foot.Add(Share(E.Button(verb, Act(() => store.SendGatherer(x, y)), E.Kind.Green, Theme.ButtonH, tool, 16, null, CardW - 20 - (n.Ordered ? Theme.ButtonH + 8 : 0)), foot));
             }
             else foot.Hidden(true);

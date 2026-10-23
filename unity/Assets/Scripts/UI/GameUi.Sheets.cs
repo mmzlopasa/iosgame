@@ -85,7 +85,7 @@ namespace Founders.UI
             AddRegion(sheetTabsBottom, () => WindowPanel && store.ActivePanel == Panel.Objectives ? $"g{goalsTab}" : "", BuildBottomTabs);
             sheetLayer.Add(sheetTabsBottom);
 
-            backArrow = E.Icon("back", 54).Abs();
+            backArrow = E.Back().Abs();
             backArrow.name = "back";
             Tap(backArrow, () => store.ActivePanel = Panel.None);
             sheetLayer.Add(backArrow);
@@ -141,6 +141,9 @@ namespace Founders.UI
                 pendingTab = null;
                 if (open) Pop(store.ActivePanel == Panel.Build ? drawer : sheet);
             }
+            // A dialog opened from a window (portrait, rename, bind account…) stands alone: the window's title and
+            // tabs would otherwise show around its edges.
+            if (ModalOpen) open = false;
             if (open != sheetShown)
             {
                 sheetShown = open;
@@ -378,17 +381,16 @@ namespace Founders.UI
         /// <summary>A reward/resource cell with the amount at the bottom (the kit's rarity cells).</summary>
         static VisualElement RewardCell(string icon, E.Cell kind, string amount, float size = 48)
         {
-            var c = E.Slot(icon, size, kind, 0.58f);
-            c.style.justifyContent = Justify.FlexStart;
-            c.ElementAt(0).style.marginTop = 3;
-            if (amount != null)
-            {
-                // The amount sits on the cell's lower edge and may reach past its sides a little (like the kit's "80,000").
-                var l = E.T(amount, Theme.Small).Align(TextAnchor.MiddleCenter).Abs(-6, null, -6, 1);
-                l.style.whiteSpace = WhiteSpace.NoWrap;
-                c.Add(l);
-            }
-            return c;
+            var c = E.Slot(icon, size, kind, 0.62f);
+            if (amount == null) return c;
+            // The amount stands under the cell, clear of its frame.
+            var col = E.Div().Col(Align.Center).Ignore();
+            col.style.width = size + 12;
+            col.Add(c);
+            var l = E.T(amount, Theme.Small).Align(TextAnchor.MiddleCenter).Margin(2);
+            l.style.whiteSpace = WhiteSpace.NoWrap;
+            col.Add(l);
+            return col;
         }
 
         // MARK: - People: Work
@@ -659,9 +661,14 @@ namespace Founders.UI
             if (current == null) { host.Add(E.Ink("The story has not begun yet.")); return; }
             // Banner: the chapter on dark wood, with the story button.
             // The kit's chapter banner: dark wood, "Chapter N" big, the title under it, the story button on the right.
-            var banner = E.Div().Row().Radius(10).Border(Theme.Outline, 2.5f).Pad(10, 12).Margin(0, 0, 8);
-            banner.BgImage(Theme.Gradient("banner", false, Theme.Hex("#4A2E1A"), Theme.Hex("#8A5A32")));
-            banner.AddToClassList("surf-dark");
+            var banner = E.Div().Row().Pad(10, 12).Margin(0, 0, 8);
+            if (Theme.KitLook) banner.Skin("section");
+            else
+            {
+                banner.Radius(10).Border(Theme.Outline, 2.5f);
+                banner.BgImage(Theme.Gradient("banner", false, Theme.Hex("#4A2E1A"), Theme.Hex("#8A5A32")));
+                banner.AddToClassList("surf-dark");
+            }
             banner.style.minHeight = 92;
             float art = Portrait ? 48 : 60;
             banner.Add(E.Icon("campfire", art));
@@ -787,7 +794,9 @@ namespace Founders.UI
             var head = E.Div().Row().Ignore();
             head.Add(E.Icon("world", 30));
             head.Add(E.T(G.State.SettlementName, Theme.H2).Flex().Margin(0, 0, 0, 8));
-            head.Add(E.T(G.Content.Map.Name ?? "", Theme.Body, Theme.Pale).NoShrink().Margin(0, 0, 0, 8));
+            // The map's name as words ("riverside_clearing" → "Riverside Clearing").
+            string mapName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase((G.Content.Map.Name ?? "").Replace('_', ' '));
+            head.Add(E.T(mapName, Theme.Body, Theme.Pale).NoShrink().Margin(0, 0, 0, 8));
             info.Add(head);
             var traits = E.Div().Row().Ignore().Margin(6);
             traits.style.flexWrap = Wrap.Wrap;
@@ -852,7 +861,7 @@ namespace Founders.UI
             rail.Add(E.Icon("sparkle", 24).Margin(4));
             if (!last)
             {
-                var l = E.Div().Ignore().Bg(Theme.Wood4);
+                var l = E.Div().Ignore().Bg(Theme.KitLook ? Theme.Rim : Theme.Wood4);
                 l.style.width = 3;
                 l.style.flexGrow = 1;
                 l.style.marginTop = 2;

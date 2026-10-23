@@ -79,6 +79,22 @@ jobs:
           ls unity/Assets
           echo "Nature packs added."
 
+      # The Asset Store "Adventure UI Kit" is licensed and may not sit in this public repository: it lives in
+      # the private repository mmzlopasa/iosgame-uikit (folder Kit/ = what goes into unity/Assets/) and is
+      # fetched with the KIT_TOKEN secret. Without the secret the game builds with its own interface look.
+      - name: Adventure UI Kit (private repository, optional)
+        env:
+          KIT_TOKEN: ${{ secrets.KIT_TOKEN }}
+        run: |
+          if [ -z "$KIT_TOKEN" ]; then echo "No KIT_TOKEN secret: the game's own interface look is used."; exit 0; fi
+          if ! git clone --depth 1 "https://x-access-token:${KIT_TOKEN}@github.com/mmzlopasa/iosgame-uikit.git" "$RUNNER_TEMP/kit"; then
+            echo "::warning::Could not fetch mmzlopasa/iosgame-uikit: the game's own interface look is used."; exit 0
+          fi
+          cp -R "$RUNNER_TEMP/kit/Kit/." unity/Assets/
+          if [ -f "$RUNNER_TEMP/kit/AdventureUiKit.txt" ]; then cp "$RUNNER_TEMP/kit/AdventureUiKit.txt" unity/Assets/Custom/; fi
+          rm -rf "$RUNNER_TEMP/kit"
+          echo "Adventure UI Kit added."
+
       - uses: actions/cache@v4
         with:
           path: unity/Library
