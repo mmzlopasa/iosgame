@@ -4,18 +4,19 @@ using System.Globalization;
 
 namespace Founders.Core
 {
-    /// <summary>Resources. Ore (from mines) and hides (from hunters) join the first four; bronze is the first
-    /// processed good (smelted from ore and wood, see <see cref="JobConfig.Inputs"/>).</summary>
-    public enum ResourceType { Food, Wood, Stone, Knowledge, Ore, Hides, Bronze }
+    /// <summary>Resources. Ore (from mines) and hides (from hunters) join the first four; bronze, planks and tools
+    /// are processed goods (made by recipes, see <see cref="JobConfig.Inputs"/>).</summary>
+    public enum ResourceType { Food, Wood, Stone, Knowledge, Ore, Hides, Bronze, Planks, Tools }
 
     public static class ResourceTypes
     {
         public static readonly ResourceType[] All =
-            { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Knowledge, ResourceType.Ore, ResourceType.Hides, ResourceType.Bronze };
+            { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Knowledge, ResourceType.Ore, ResourceType.Hides, ResourceType.Bronze,
+              ResourceType.Planks, ResourceType.Tools };
 
         /// <summary>Material goods kept in storage (everything except knowledge).</summary>
         public static readonly ResourceType[] Stored =
-            { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Ore, ResourceType.Hides, ResourceType.Bronze };
+            { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Ore, ResourceType.Hides, ResourceType.Bronze, ResourceType.Planks, ResourceType.Tools };
 
         public static string Id(this ResourceType t)
         {
@@ -27,6 +28,8 @@ namespace Founders.Core
                 case ResourceType.Ore: return "ore";
                 case ResourceType.Hides: return "hides";
                 case ResourceType.Bronze: return "bronze";
+                case ResourceType.Planks: return "planks";
+                case ResourceType.Tools: return "tools";
                 default: return "knowledge";
             }
         }
@@ -41,6 +44,8 @@ namespace Founders.Core
                 case ResourceType.Ore: return "Ore";
                 case ResourceType.Hides: return "Hides";
                 case ResourceType.Bronze: return "Bronze";
+                case ResourceType.Planks: return "Planks";
+                case ResourceType.Tools: return "Tools";
                 default: return "Knowledge";
             }
         }
@@ -56,14 +61,15 @@ namespace Founders.Core
     /// Missing keys read as zero so content JSON stays short.</summary>
     public struct ResourceBundle : IEquatable<ResourceBundle>
     {
-        public double Food, Wood, Stone, Knowledge, Ore, Hides, Bronze;
+        public double Food, Wood, Stone, Knowledge, Ore, Hides, Bronze, Planks, Tools;
 
         public const double Epsilon = 1e-9;
         public static readonly ResourceBundle Zero = new ResourceBundle();
 
-        public ResourceBundle(double food = 0, double wood = 0, double stone = 0, double knowledge = 0, double ore = 0, double hides = 0, double bronze = 0)
+        public ResourceBundle(double food = 0, double wood = 0, double stone = 0, double knowledge = 0, double ore = 0, double hides = 0, double bronze = 0,
+                              double planks = 0, double tools = 0)
         {
-            Food = food; Wood = wood; Stone = stone; Knowledge = knowledge; Ore = ore; Hides = hides; Bronze = bronze;
+            Food = food; Wood = wood; Stone = stone; Knowledge = knowledge; Ore = ore; Hides = hides; Bronze = bronze; Planks = planks; Tools = tools;
         }
 
         public double this[ResourceType t]
@@ -78,6 +84,8 @@ namespace Founders.Core
                     case ResourceType.Ore: return Ore;
                     case ResourceType.Hides: return Hides;
                     case ResourceType.Bronze: return Bronze;
+                    case ResourceType.Planks: return Planks;
+                    case ResourceType.Tools: return Tools;
                     default: return Knowledge;
                 }
             }
@@ -91,6 +99,8 @@ namespace Founders.Core
                     case ResourceType.Ore: Ore = value; break;
                     case ResourceType.Hides: Hides = value; break;
                     case ResourceType.Bronze: Bronze = value; break;
+                    case ResourceType.Planks: Planks = value; break;
+                    case ResourceType.Tools: Tools = value; break;
                     default: Knowledge = value; break;
                 }
             }
@@ -176,18 +186,20 @@ namespace Founders.Core
         }
 
         public bool Equals(ResourceBundle o) =>
-            Food == o.Food && Wood == o.Wood && Stone == o.Stone && Knowledge == o.Knowledge && Ore == o.Ore && Hides == o.Hides && Bronze == o.Bronze;
+            Food == o.Food && Wood == o.Wood && Stone == o.Stone && Knowledge == o.Knowledge && Ore == o.Ore && Hides == o.Hides && Bronze == o.Bronze
+            && Planks == o.Planks && Tools == o.Tools;
         public override bool Equals(object obj) => obj is ResourceBundle o && Equals(o);
-        public override int GetHashCode() => HashCode.Combine(Food, Wood, Stone, Knowledge, Ore, Hides, Bronze);
+        public override int GetHashCode() => HashCode.Combine(HashCode.Combine(Food, Wood, Stone, Knowledge, Ore, Hides, Bronze), Planks, Tools);
         public static bool operator ==(ResourceBundle a, ResourceBundle b) => a.Equals(b);
         public static bool operator !=(ResourceBundle a, ResourceBundle b) => !a.Equals(b);
-        public override string ToString() => $"(food {Food}, wood {Wood}, stone {Stone}, knowledge {Knowledge}, ore {Ore}, hides {Hides}, bronze {Bronze})";
+        public override string ToString() => $"(food {Food}, wood {Wood}, stone {Stone}, knowledge {Knowledge}, ore {Ore}, hides {Hides}, bronze {Bronze}, planks {Planks}, tools {Tools})";
 
         public static ResourceBundle FromJson(JObj o)
         {
             if (o == null) return Zero;
             return new ResourceBundle(o.OptNum("food") ?? 0, o.OptNum("wood") ?? 0, o.OptNum("stone") ?? 0, o.OptNum("knowledge") ?? 0,
-                                      o.OptNum("ore") ?? 0, o.OptNum("hides") ?? 0, o.OptNum("bronze") ?? 0);
+                                      o.OptNum("ore") ?? 0, o.OptNum("hides") ?? 0, o.OptNum("bronze") ?? 0,
+                                      o.OptNum("planks") ?? 0, o.OptNum("tools") ?? 0);
         }
 
         public Dictionary<string, object> ToJson()
@@ -197,6 +209,8 @@ namespace Founders.Core
             if (Ore != 0) d["ore"] = Ore;
             if (Hides != 0) d["hides"] = Hides;
             if (Bronze != 0) d["bronze"] = Bronze;
+            if (Planks != 0) d["planks"] = Planks;
+            if (Tools != 0) d["tools"] = Tools;
             return d;
         }
     }

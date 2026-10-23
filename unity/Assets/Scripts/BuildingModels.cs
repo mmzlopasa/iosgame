@@ -50,6 +50,19 @@ namespace Founders
                 case "mine": Mine(b); break;
                 case "pasture": Pasture(b); break;
                 case "healers_hut": HealersHut(b); break;
+                case "lookout_tower": LookoutTower(b); break;
+                case "herb_garden": HerbGarden(b); break;
+                case "smokehouse": Smokehouse(b); break;
+                case "ancestor_shrine": AncestorShrine(b); break;
+                case "sawpit": Sawpit(b); break;
+                case "apiary": Apiary(b); break;
+                case "toolsmith": Toolsmith(b); break;
+                case "medieval_bakery": Bakery(b); break;
+                case "medieval_carpenter": CarpentersYard(b); break;
+                case "medieval_tavern": Tavern(b); break;
+                case "medieval_scriptorium": Scriptorium(b); break;
+                case "medieval_warehouse": Warehouse(b); break;
+                case "medieval_bathhouse": Bathhouse(b); break;
                 case "medieval_cottage":
                 case "medieval_house":
                 case "medieval_townhouse":
@@ -726,6 +739,233 @@ namespace Founders
             float k = Mathf.Min(1f, footprintMetres / native);
             b.Model(id, Vector3.zero, 0.94f * k, 180f);
             if (id == "medieval_smithy") b.Fire(new Vector3(-0.55f, 0.95f, 1.75f), 0.35f);
+        }
+
+        // MARK: - The second wave: Era I
+
+        /// <summary>A timber tower on four splayed legs, a railed platform under a little thatch roof.</summary>
+        static void LookoutTower(Builder b)
+        {
+            const float foot = 0.75f, top = 0.42f, deck = 2.7f;
+            foreach (var (x, z) in new[] { (1f, 1f), (-1f, 1f), (1f, -1f), (-1f, -1f) })
+                b.Pole(new Vector3(x * foot, 0f, z * foot), new Vector3(x * top, deck + 0.9f, z * top), 0.1f);
+            // Cross braces on two sides.
+            b.Pole(new Vector3(-foot, 0.3f, -foot), new Vector3(top + 0.12f, deck - 0.2f, -top - 0.12f), 0.05f);
+            b.Pole(new Vector3(foot, 0.3f, foot), new Vector3(-top - 0.12f, deck - 0.2f, top + 0.12f), 0.05f);
+            b.Prim(PrimitiveType.Cube, new Vector3(0f, deck, 0f), new Vector3(1.15f, 0.08f, 1.15f), "RoughWood");
+            foreach (var (x, z) in new[] { (1f, 0f), (-1f, 0f), (0f, 1f), (0f, -1f) })
+            {
+                var side = new Vector3(x, 0f, z) * 0.55f + new Vector3(0f, deck + 0.42f, 0f);
+                var along = new Vector3(z, 0f, x) * 0.55f;
+                b.Pole(side - along, side + along, 0.04f);
+            }
+            b.Shape(Meshes.Roof(), new Vector3(0f, deck + 0.85f, 0f), new Vector3(1.6f, 0.75f, 1.6f), "Thatch");
+            // Ladder up the front.
+            b.Pole(new Vector3(-0.2f, 0f, -1.05f), new Vector3(-0.2f, deck, -0.55f), 0.04f);
+            b.Pole(new Vector3(0.2f, 0f, -1.05f), new Vector3(0.2f, deck, -0.55f), 0.04f);
+            for (int i = 1; i < 8; i++)
+            {
+                float t = i / 8f;
+                var y = t * deck;
+                var z = Mathf.Lerp(-1.05f, -0.55f, t);
+                b.Pole(new Vector3(-0.22f, y, z), new Vector3(0.22f, y, z), 0.03f);
+            }
+            b.Torch(new Vector3(0.5f, deck + 0.55f, -0.5f), 0.25f);
+        }
+
+        /// <summary>Two raised beds of herbs and flowers inside a low wattle edge.</summary>
+        static void HerbGarden(Builder b)
+        {
+            foreach (float x in new[] { -0.45f, 0.45f })
+            {
+                b.Prim(PrimitiveType.Cube, new Vector3(x, 0.08f, 0.05f), new Vector3(0.7f, 0.16f, 1.5f), "Mud");
+                for (int i = 0; i < 4; i++)
+                {
+                    var at = new Vector3(x + (i % 2 == 0 ? -0.15f : 0.15f), 0.16f, -0.5f + i * 0.34f);
+                    string plant = (i + (x > 0 ? 1 : 0)) % 3 == 0 ? "sn_flowers" : i % 2 == 0 ? "nettle_plant" : "fern_02";
+                    b.Model(plant, at, plant == "sn_flowers" ? 0.6f : 0.45f, i * 67f);
+                }
+            }
+            foreach (var (from, to) in new[] { (new Vector3(-0.95f, 0.2f, -0.85f), new Vector3(0.95f, 0.2f, -0.85f)),
+                                               (new Vector3(-0.95f, 0.2f, 0.95f), new Vector3(0.95f, 0.2f, 0.95f)),
+                                               (new Vector3(-0.95f, 0.2f, -0.85f), new Vector3(-0.95f, 0.2f, 0.95f)) })
+                b.Pole(from, to, 0.05f);
+            b.Model("wicker_basket_01", new Vector3(0.8f, 0f, -0.75f), 1.1f, 40f);
+            b.Model("ceramic_pot", new Vector3(-0.8f, 0f, -0.75f), 0.45f, 10f);
+        }
+
+        /// <summary>A low smoky hut with fish and meat hanging on a rack outside.</summary>
+        static void Smokehouse(Builder b)
+        {
+            Roundhouse(b, 1.35f, 0.8f, 1.05f, "Mud");
+            b.Fire(new Vector3(0f, 1.75f, 0f), 0.25f);
+            b.Pole(new Vector3(-0.95f, 0f, -0.75f), new Vector3(-0.95f, 1.1f, -0.75f), 0.05f);
+            b.Pole(new Vector3(0.35f, 0f, -1.0f), new Vector3(0.35f, 1.1f, -1.0f), 0.05f);
+            b.Pole(new Vector3(-1.0f, 1.05f, -0.73f), new Vector3(0.4f, 1.05f, -1.02f), 0.04f);
+            for (int i = 0; i < 5; i++)
+            {
+                var at = Vector3.Lerp(new Vector3(-0.85f, 0.85f, -0.77f), new Vector3(0.25f, 0.85f, -0.98f), i / 4f);
+                if (i % 2 == 0) b.PrimColor(PrimitiveType.Capsule, at, new Vector3(0.07f, 0.17f, 0.04f), "Fish");
+                else b.Prim(PrimitiveType.Cube, at, new Vector3(0.12f, 0.24f, 0.05f), "Hide");
+            }
+            b.Model("k_wood", new Vector3(0.8f, 0f, 0.6f), 3f, 80f);
+        }
+
+        /// <summary>A ring of tall standing stones round a great stone and a small fire of offerings.</summary>
+        static void AncestorShrine(Builder b)
+        {
+            for (int i = 0; i < 7; i++)
+            {
+                float a = (i + 0.5f) / 7f * Mathf.PI * 2f;
+                var p = new Vector3(Mathf.Cos(a) * 1.5f, 0f, Mathf.Sin(a) * 1.5f);
+                float h = 1.25f + (i % 3) * 0.25f;
+                b.Model("boulder_01", p, 1f, -a * Mathf.Rad2Deg, new Vector3(0.3f, h, 0.22f));
+            }
+            b.Model("boulder_01", new Vector3(0f, 0f, 0.35f), 1f, 15f, new Vector3(0.45f, 2.3f, 0.32f));
+            b.Model("stone_fire_pit", new Vector3(0f, 0f, -0.55f), 0.4f);
+            b.Fire(new Vector3(0f, 0.05f, -0.55f), 0.35f);
+            b.Model("ceramic_pot", new Vector3(0.45f, 0f, -0.2f), 0.45f, 30f);
+            b.Model("ceramic_pot", new Vector3(-0.45f, 0f, -0.15f), 0.38f, 140f);
+            b.Model("sn_flowers", new Vector3(0.25f, 0f, 0.85f), 0.6f, 60f);
+        }
+
+        // MARK: - The second wave: Era II
+
+        /// <summary>A log on trestles over a sawing pit, planks stacked beside it.</summary>
+        static void Sawpit(Builder b)
+        {
+            b.PrimColor(PrimitiveType.Cube, new Vector3(0f, 0.005f, 0.1f), new Vector3(0.55f, 0.01f, 1.5f), "Ash");
+            foreach (float z in new[] { -0.5f, 0.7f })
+            {
+                b.Pole(new Vector3(-0.38f, 0f, z), new Vector3(-0.3f, 0.75f, z), 0.08f);
+                b.Pole(new Vector3(0.38f, 0f, z), new Vector3(0.3f, 0.75f, z), 0.08f);
+                b.Pole(new Vector3(-0.42f, 0.75f, z), new Vector3(0.42f, 0.75f, z), 0.09f);
+            }
+            b.Pole(new Vector3(0f, 0.86f, -0.85f), new Vector3(0f, 0.86f, 1.0f), 0.24f);
+            b.Model("k_planks", new Vector3(0.72f, 0f, -0.2f), 2.2f, 0f);
+            b.Model("k_planks", new Vector3(0.72f, 0.2f, -0.2f), 2.2f, 4f);
+            b.Model("k_log", new Vector3(-0.75f, 0f, 0.25f), 1.4f, 0f);
+            b.Model("wooden_axe", new Vector3(-0.75f, 0f, -0.75f), 0.9f, 0f, null, new Vector3(0, 30, 75));
+        }
+
+        /// <summary>Straw hives on a plank bench among flowers.</summary>
+        static void Apiary(Builder b)
+        {
+            b.Prim(PrimitiveType.Cube, new Vector3(0f, 0.35f, 0.2f), new Vector3(1.6f, 0.06f, 0.5f), "RoughWood");
+            foreach (float x in new[] { -0.7f, 0f, 0.7f })
+                b.Pole(new Vector3(x, 0f, 0.2f), new Vector3(x, 0.33f, 0.2f), 0.07f);
+            for (int i = 0; i < 4; i++)
+            {
+                float x = -0.6f + i * 0.4f;
+                b.Shape(Meshes.Dome(), new Vector3(x, 0.38f, 0.2f), new Vector3(0.34f, 0.42f, 0.34f), "Thatch");
+            }
+            b.Shape(Meshes.Dome(), new Vector3(0.6f, 0f, -0.55f), new Vector3(0.36f, 0.44f, 0.36f), "Thatch");
+            b.Model("sn_bush_flowers", new Vector3(-0.65f, 0f, -0.6f), 0.6f, 20f);
+            b.Model("sn_flowers", new Vector3(0.05f, 0f, -0.75f), 0.7f, 110f);
+            b.Model("sn_flowers", new Vector3(-0.2f, 0f, 0.85f), 0.6f, 200f);
+            b.Model("ceramic_pot", new Vector3(0.85f, 0f, 0.75f), 0.45f, 0f);
+        }
+
+        /// <summary>An open forge shed: anvil, workbench and a rack of new tools.</summary>
+        static void Toolsmith(Builder b)
+        {
+            foreach (var c in new[] { new Vector3(-0.8f, 0, -0.7f), new Vector3(0.8f, 0, -0.7f), new Vector3(-0.8f, 0, 0.7f), new Vector3(0.8f, 0, 0.7f) })
+                b.Pole(c, c + new Vector3(0, 1.35f, 0), 0.09f);
+            b.Shape(Meshes.Roof(), new Vector3(0, 1.3f, 0), new Vector3(2.4f, 1.0f, 2.3f), "Thatch");
+            b.Model("stone_fire_pit", new Vector3(-0.4f, 0f, 0.35f), 0.42f);
+            b.Fire(new Vector3(-0.4f, 0.05f, 0.35f), 0.4f);
+            b.Model("k_anvil", new Vector3(0.3f, 0f, -0.1f), 1.8f, 30f);
+            b.Model("k_workbench", new Vector3(0.4f, 0f, 0.6f), 2.6f, 180f);
+            b.Model("k_axe", new Vector3(-0.75f, 0.04f, -0.55f), 2.8f, 0f, null, new Vector3(0, 20, 80));
+            b.Model("k_pickaxe", new Vector3(-0.45f, 0.04f, -0.75f), 2.8f, 0f, null, new Vector3(0, 60, 80));
+            b.Model("k_hoe", new Vector3(0.75f, 0.04f, -0.8f), 3.5f, 0f, null, new Vector3(0, 110, 80));
+        }
+
+        // MARK: - The second wave: the Middle Ages
+
+        /// <summary>A kit house kept small in the back corner of the plot, door to the street (as <see cref="Medieval"/>);
+        /// the yard in front and to the left is left for the trade's own things.</summary>
+        static void KitHouse(Builder b, string model, float scale, Vector3 at) => b.Model(model, at, scale, 180f);
+
+        static void Bakery(Builder b)
+        {
+            KitHouse(b, "medieval_cottage", 0.6f, new Vector3(0.65f, 0f, 0.65f));
+            // The round brick oven in the yard, always lit.
+            b.Shape(Meshes.Dome(), new Vector3(-1.4f, 0f, -1.4f), new Vector3(0.9f, 0.85f, 0.9f), "Mud");
+            b.PrimColor(PrimitiveType.Cube, new Vector3(-1.4f, 0.18f, -1.83f), new Vector3(0.3f, 0.28f, 0.05f), "Ash");
+            b.Fire(new Vector3(-1.4f, 0.05f, -1.8f), 0.3f);
+            b.Model("k_wood", new Vector3(-1.6f, 0f, 0.6f), 3f, 0f);
+            b.Model("k_wood", new Vector3(-1.6f, 0.1f, 0.62f), 3f, 4f);
+            b.Model("k_barrel", new Vector3(1.6f, 0f, -1.65f), 2.4f, 20f);
+            b.Model("wicker_basket_01", new Vector3(0.4f, 0f, -1.7f), 1.4f, 50f);
+        }
+
+        static void CarpentersYard(Builder b)
+        {
+            // A long open shed on six posts.
+            foreach (float x in new[] { -1.4f, 0f, 1.4f })
+                foreach (float z in new[] { -0.6f, 0.9f })
+                    b.Pole(new Vector3(x, 0f, z), new Vector3(x, 1.55f, z), 0.1f);
+            b.Shape(Meshes.LongRoof(), new Vector3(0f, 1.5f, 0.15f), new Vector3(2.2f, 1.0f, 3.5f), "Thatch", new Vector3(0f, 90f, 0f));
+            b.Model("k_workbench", new Vector3(-0.7f, 0f, 0.3f), 2.8f, 0f);
+            b.Model("k_workbench", new Vector3(0.7f, 0f, 0.3f), 2.8f, 0f);
+            b.Model("k_planks", new Vector3(-1.1f, 0f, -1.45f), 2.6f, 90f);
+            b.Model("k_planks", new Vector3(-1.1f, 0.24f, -1.45f), 2.6f, 94f);
+            b.Model("k_log", new Vector3(0.7f, 0f, -1.45f), 1.6f, 90f);
+            b.Model("k_trunk", new Vector3(1.65f, 0f, -1.0f), 2.6f, 90f);
+            b.Model("k_axe", new Vector3(1.6f, 0.04f, 1.55f), 2.8f, 0f, null, new Vector3(0, 40, 75));
+        }
+
+        static void Tavern(Builder b)
+        {
+            KitHouse(b, "medieval_house", 0.62f, new Vector3(0.4f, 0f, 0.4f));
+            b.Model("k_barrel", new Vector3(-1.65f, 0f, 0.3f), 2.4f, 0f);
+            b.Model("k_barrel", new Vector3(-1.65f, 0f, -0.35f), 2.4f, 40f);
+            b.Model("k_barrel", new Vector3(-1.65f, 0.3f, 1.05f), 2.4f, 0f, null, new Vector3(90f, 0f, 0f));
+            b.Model("k_signpost", new Vector3(1.55f, 0f, -1.7f), 3.4f, 180f);
+            // A table and a bench out front.
+            b.Prim(PrimitiveType.Cube, new Vector3(-0.3f, 0.42f, -1.6f), new Vector3(0.95f, 0.06f, 0.42f), "RoughWood");
+            b.Pole(new Vector3(-0.68f, 0f, -1.6f), new Vector3(-0.68f, 0.4f, -1.6f), 0.07f);
+            b.Pole(new Vector3(0.08f, 0f, -1.6f), new Vector3(0.08f, 0.4f, -1.6f), 0.07f);
+            b.Pole(new Vector3(-0.75f, 0.2f, -1.9f), new Vector3(0.15f, 0.2f, -1.9f), 0.12f);
+            b.Torch(new Vector3(-1.4f, 1.6f, -1.35f), 0.3f, true);
+        }
+
+        static void Scriptorium(Builder b)
+        {
+            KitHouse(b, "medieval_cottage", 0.62f, new Vector3(0.4f, 0f, 0.4f));
+            b.Model("k_chest", new Vector3(-1.6f, 0f, -1.6f), 1.8f, 10f);
+            b.Model("k_box", new Vector3(-1.6f, 0f, 0.4f), 2.2f, 30f);
+            b.Model("k_box", new Vector3(-1.6f, 0.55f, 0.4f), 2.0f, 50f);
+            b.Pole(new Vector3(-1.7f, 0f, 1.7f), new Vector3(-1.7f, 3.0f, 1.7f), 0.07f);
+            b.PrimColor(PrimitiveType.Cube, new Vector3(-1.7f, 2.45f, 1.5f), new Vector3(0.03f, 0.9f, 0.36f), "Cloth");
+            b.Torch(new Vector3(0.6f, 1.5f, -1.6f), 0.3f, true);
+        }
+
+        static void Warehouse(Builder b)
+        {
+            KitHouse(b, "medieval_barn", 0.7f, new Vector3(0f, 0f, 0.3f));
+            for (int i = 0; i < 4; i++)
+                b.Model("k_box", new Vector3(-2.4f + (i % 2) * 0.6f, (i / 2) * 0.58f, -2.7f), 2.3f, i * 17f);
+            b.Model("k_barrel", new Vector3(2.5f, 0f, -2.65f), 2.4f, 0f);
+            b.Model("k_barrel", new Vector3(1.9f, 0f, -2.7f), 2.4f, 50f);
+            b.Model("k_planks", new Vector3(0.6f, 0f, -2.7f), 2.6f, 90f);
+        }
+
+        static void Bathhouse(Builder b)
+        {
+            KitHouse(b, "medieval_cottage", 0.55f, new Vector3(0.6f, 0f, 0.6f));
+            // A stone-edged plunge pool in the yard and the boiler fire.
+            b.PrimColor(PrimitiveType.Cylinder, new Vector3(-1.3f, 0.04f, -1.3f), new Vector3(0.9f, 0.02f, 0.9f), "Water");
+            for (int i = 0; i < 10; i++)
+            {
+                float a = i / 10f * Mathf.PI * 2f;
+                b.Model("stone_01", new Vector3(-1.3f + Mathf.Cos(a) * 0.5f, 0f, -1.3f + Mathf.Sin(a) * 0.5f), 2.2f, i * 37f);
+            }
+            b.Model("stone_fire_pit", new Vector3(1.5f, 0f, -1.55f), 0.32f);
+            b.Fire(new Vector3(1.5f, 0.05f, -1.55f), 0.3f);
+            b.Model("k_bucket", new Vector3(0.75f, 0f, -1.65f), 2.2f, 0f);
+            b.Model("k_bucket", new Vector3(-1.65f, 0f, 0.3f), 2.2f, 60f);
         }
 
         // MARK: - Decorations (roads are painted on the ground, not modelled)

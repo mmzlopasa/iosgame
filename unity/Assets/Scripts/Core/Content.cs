@@ -6,7 +6,8 @@ namespace Founders.Core
 {
     // MARK: - Basic enums
 
-    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming, Fishing, Hunting, Mining, Herding, Healing, Smelting }
+    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming, Fishing, Hunting, Mining, Herding, Healing, Smelting,
+                          Sawing, Toolmaking, Baking }
 
     public enum TerrainType { Grass, Forest, Rock, Water, Sand, Mountain, Ore }
 
@@ -14,7 +15,7 @@ namespace Founders.Core
     {
         public static readonly JobType[] Jobs =
             { JobType.Foraging, JobType.Farming, JobType.Herding, JobType.Fishing, JobType.Hunting, JobType.Woodcutting, JobType.Stonecutting, JobType.Mining,
-              JobType.Smelting, JobType.Crafting, JobType.Construction, JobType.Research, JobType.Healing };
+              JobType.Smelting, JobType.Sawing, JobType.Toolmaking, JobType.Baking, JobType.Crafting, JobType.Construction, JobType.Research, JobType.Healing };
 
         public static string Id(this JobType j)
         {
@@ -32,6 +33,9 @@ namespace Founders.Core
                 case JobType.Herding: return "herding";
                 case JobType.Healing: return "healing";
                 case JobType.Smelting: return "smelting";
+                case JobType.Sawing: return "sawing";
+                case JobType.Toolmaking: return "toolmaking";
+                case JobType.Baking: return "baking";
                 default: return "research";
             }
         }
@@ -133,6 +137,8 @@ namespace Founders.Core
         GriefMultiplier,
         /// <summary>Multiplies how fast untreated illness turns deadly by Value.</summary>
         DeathMultiplier,
+        /// <summary>Multiplies how fast scouts explore a land by Value (lookout towers, trail signs).</summary>
+        ExpeditionSpeedMultiplier,
     }
 
     /// <summary>A data-driven gameplay effect. Which optional fields are used depends on Kind.</summary>
@@ -265,6 +271,9 @@ namespace Founders.Core
         public double Insulation;
         /// <summary>A fire that warms the homes around it (the heart's own warmth is set in balance.warmth).</summary>
         public HeatSource Heat;
+        /// <summary>Lasting effects while the building stands and works (a herb garden keeps sickness away, a
+        /// lookout speeds the scouts). Each finished building of the kind adds its effects once.</summary>
+        public List<Effect> Effects = new List<Effect>();
 
         /// <summary>The model shown at a level: the last look whose level has been reached.</summary>
         public string SpriteAt(int level)
@@ -314,6 +323,7 @@ namespace Founders.Core
                                                     .OrderBy(l => l.Level).ToList() : new List<LevelLook>(),
                 Insulation = o.OptNum("insulation") ?? 0,
                 Heat = o.Has("heat") ? HeatSource.FromJson(o.Obj("heat")) : null,
+                Effects = o.Has("effects") ? o.Objs("effects").Select(Effect.FromJson).ToList() : new List<Effect>(),
             };
         }
     }
@@ -762,6 +772,10 @@ namespace Founders.Core
         public double CraftingBonusPerCrafter;
         public double MaxCraftingBonus;
         public ResourceBundle CraftingInputPerCrafterPerSecond;
+        /// <summary>Extra output of every gatherer while there are tools in store (0.15 = +15 %).</summary>
+        public double ToolBonus;
+        /// <summary>Tools each working gatherer wears out per second (they are used up as they go).</summary>
+        public double ToolWearPerWorkerPerSecond;
         public double MaxOfflineSeconds;
         public double SimulationStepSeconds;
         public List<JobConfig> Jobs = new List<JobConfig>();
@@ -814,6 +828,8 @@ namespace Founders.Core
             CraftingBonusPerCrafter = o.Num("craftingBonusPerCrafter"),
             MaxCraftingBonus = o.Num("maxCraftingBonus"),
             CraftingInputPerCrafterPerSecond = ResourceBundle.FromJson(o.Obj("craftingInputPerCrafterPerSecond")),
+            ToolBonus = o.OptNum("toolBonus") ?? 0,
+            ToolWearPerWorkerPerSecond = o.OptNum("toolWearPerWorkerPerSecond") ?? 0,
             MaxOfflineSeconds = o.Num("maxOfflineSeconds"),
             SimulationStepSeconds = o.Num("simulationStepSeconds"),
             Jobs = o.Objs("jobs").Select(JobConfig.FromJson).ToList(),

@@ -100,6 +100,11 @@ namespace Founders.Core
                 }
                 foreach (var look in bld.Looks)
                     if (look.Level < 1 || string.IsNullOrEmpty(look.Sprite)) problems.Add($"building '{bld.Id}' has a broken look");
+                problems.AddRange(ValidateEffects(bld.Effects, $"building '{bld.Id}'", buildingIds));
+                foreach (var e in bld.Effects)
+                    // A building's effects last while it stands: one-off grants, unlocks and timers do not fit.
+                    if (e.Kind == EffectKind.GrantResources || e.Kind == EffectKind.UnlockBuilding || e.DurationSeconds.HasValue)
+                        problems.Add($"building '{bld.Id}' has a {Enums.FirstLower(e.Kind.ToString())} effect, which only events and research may give");
                 if (bld.SuccessorId != null)
                 {
                     var succ = c.Building(bld.SuccessorId);

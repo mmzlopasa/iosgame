@@ -22,10 +22,11 @@
 | Economy | Storage caps, spoilage, shortage | ✅ | `GameEconomy.cs` |
 | Economy | **Recipes (inputs → output) with status** | ✅ | `GameEconomy.ApplyRecipes`, `RecipeTests` |
 | Economy | **Bronze chain: ore + wood → bronze** | ✅ rules · 🟡 UI | Copper Smelter; UI not yet seen in a build |
-| Economy | Tools, planks, bread, iron chains | ⬜ | Phase 2 |
+| Economy | **Planks (sawpit), tools (toolsmith), bread (bakery)** | ✅ rules · 🟡 UI | `tools/content/present_eras.py`, `PresentEraTests`; iron chain still ⬜ |
+| Buildings | **Lasting building effects** (herb garden, lookout, shrine, tavern, bathhouse) | ✅ | `BuildingDefinition.Effects`, `Game.BuildingEffects` |
 | Economy | Per-building stores, porters | ⬜ | Phase 5 (shared stockpile today) |
 | Economy | Trade | 🟡 | traders event only |
-| Research | 23 techs, prerequisites, heart gating | ✅ | `GameProgress.cs` |
+| Research | 29 techs, prerequisites, heart gating | ✅ | `GameProgress.cs` |
 | Eras | First Communities, First Civilizations, Medieval | ✅ | milestones in `content.json` |
 | Eras | Classical, Exploration, Industrial, Modern, Future | ⬜ / ⏸ | modern paused 2026-10-14 |
 | Story | 8 chapters, story scenes | ✅ | `GameStory.cs`, `StoryTests` |

@@ -528,7 +528,41 @@ def _spear():
     L.parent(parts, rot=(0, 40, 0))
 
 
+@icon("tools", **TOOL)
+def _tools():
+    """Bronze tools (the toolsmith's goods): a bronze axe crossed with a hammer."""
+    bronze = P("#E0913A", hue_dark="#5A1A0A", shade=0.5, light=0.5, light_col="#FFF0C0", spec=0.8, rough=0.16,
+               metal=True)
+    axe = [handle(2.4)]
+    head = [(-0.3, 1.2), (0.14, 1.12), (0.66, 1.5), (0.92, 1.08), (0.94, 0.58), (0.68, 0.1), (0.16, 0.56),
+            (-0.3, 0.52)]
+    axe.append(glyph([L.rounded_poly(head, [0.06, 0.04, 0.08, 0.1, 0.1, 0.08, 0.04, 0.06])], bronze,
+                     depth=0.26, bevel=0.06))
+    axe += wraps(0.3)
+    L.parent(axe, loc=(-0.35, 0.1, 0), rot=(0, 30, 0))
+    ham = [handle(2.3)]
+    ham.append(box((1.2, 0.56, 0.6), (0.0, 0, 1.0), bronze, bevel=0.1))
+    ham.append(box((0.22, 0.62, 0.68), (0.62, 0, 1.0), M("iron"), bevel=0.07))
+    ham += wraps(-0.6, 4, 0.12)
+    L.parent(ham, loc=(0.35, -0.1, 0), rot=(0, -30, 0))
+
+
 # ---------------------------------------------------------------- nature
+@icon("planks", el=18, az=-16)
+def _planks():
+    """Sawn planks (the sawpit's goods): a small stack, boards crossing like a timber yard."""
+    rnd = random.Random(7)
+    for k in range(4):
+        m = M("wood_light") if k % 2 else M("wood")
+        z = k * 0.3
+        for j in range(2):
+            y = (j - 0.5) * 0.62 + rnd.uniform(-0.04, 0.04)
+            if k % 2 == 0:
+                box((2.3, 0.56, 0.26), (rnd.uniform(-0.05, 0.05), y, z), m, bevel=0.06)
+            else:
+                box((0.56, 2.0, 0.26), (y, rnd.uniform(-0.05, 0.05), z), m, bevel=0.06)
+
+
 @icon("fish", el=12, az=-10)
 def _fish():
     body = [(-1.0, 0.0), (-0.8, 0.36), (-0.3, 0.6), (0.3, 0.5), (0.8, 0.14), (0.8, -0.12), (0.3, -0.42),

@@ -1613,6 +1613,9 @@ namespace Founders
                     return HealTask(game, index, site, from, center, task);
                 case JobType.Crafting:
                 case JobType.Smelting:
+                case JobType.Sawing:
+                case JobType.Toolmaking:
+                case JobType.Baking:
                     task.Spot = BesideBuilding(site, from, index);
                     task.Face = center;
                     task.Action = "Work";

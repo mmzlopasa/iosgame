@@ -90,7 +90,9 @@ namespace Founders.Tests
                 $"PLAYTHROUGH: stable village (campfire level 10) reached after {t / 3600:0.0} h of game time; " +
                 $"objectives {game.State.CompletedObjectives.Count}/{game.Content.Objectives.Count}, population {game.State.Population}");
             Assert.That(game.State.StageId, Is.EqualTo("village"));
-            Assert.That(game.State.CompletedObjectives.Count, Is.EqualTo(game.Content.Objectives.Count));
+            // Every goal of the camp is done; the goals after the founding belong to the later eras.
+            int campGoals = game.Content.Objectives.FindIndex(o => o.Id == "obj_village") + 1;
+            Assert.That(game.Content.Objectives.Take(campGoals).All(o => game.State.CompletedObjectives.Contains(o.Id)), Is.True);
             Assert.That(t, Is.LessThan(Hours * 3600));
             // About three hours (the thinner woods leave more meadow and berry bushes: a little under).
             Assert.That(t, Is.GreaterThan(2.5 * 3600), "the first era change should take hours, not minutes");

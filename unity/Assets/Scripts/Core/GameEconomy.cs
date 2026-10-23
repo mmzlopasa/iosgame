@@ -54,6 +54,7 @@ namespace Founders.Core
                 if (tech != null) effects.AddRange(tech.Effects);
             }
             foreach (var m in State.Modifiers) effects.Add(m.Effect);
+            effects.AddRange(BuildingEffects());
             effects.AddRange(PerkEffects());
             effects.AddRange(LawEffects());
             return effects;
@@ -78,6 +79,32 @@ namespace Founders.Core
                 var def = Content.Building(b.DefinitionId);
                 if (def != null) yield return (b, def);
             }
+        }
+
+        /// <summary>Building kinds with lasting effects (content does not change while playing).</summary>
+        Dictionary<string, List<Effect>> effectsByBuilding;
+        List<Effect> buildingEffects;
+        int buildingEffectsKey = -1;
+        object buildingEffectsOwner;
+
+        /// <summary>Lasting effects of the finished buildings that have any (herb garden, lookout tower…).
+        /// Kept until a building is added, removed or finished, so the UI can ask for multipliers every frame.</summary>
+        List<Effect> BuildingEffects()
+        {
+            if (effectsByBuilding == null)
+                effectsByBuilding = Content.Buildings.Where(d => d.Effects.Count > 0).ToDictionary(d => d.Id, d => d.Effects);
+            if (effectsByBuilding.Count == 0) return new List<Effect>();
+            int operational = 0;
+            foreach (var b in State.Buildings) if (b.IsOperational) operational++;
+            int key = State.Buildings.Count * 4096 + operational;
+            if (buildingEffects != null && key == buildingEffectsKey && ReferenceEquals(buildingEffectsOwner, State.Buildings)) return buildingEffects;
+            var list = new List<Effect>();
+            foreach (var b in State.Buildings)
+                if (b.IsOperational && effectsByBuilding.TryGetValue(b.DefinitionId, out var effects)) list.AddRange(effects);
+            buildingEffects = list;
+            buildingEffectsKey = key;
+            buildingEffectsOwner = State.Buildings;
+            return list;
         }
 
         public int HousingCapacity() => OperationalBuildings().Sum(x => HousingOf(x.building, x.def));
@@ -112,8 +139,21 @@ namespace Founders.Core
             double rate = cfg.RatePerWorkerPerSecond * Multiplier(EffectKind.JobRateMultiplier, job) * SeasonJobMultiplier(job) * productivity
                           * RoadMultiplier(job) * WorkRate;
             if (State.FoodShortage) rate *= Content.Balance.ShortageProductivityMultiplier;
-            if (IsGathering(job)) rate *= 1 + GetCraftingStatus().Bonus;
+            if (IsGathering(job)) rate *= 1 + GetCraftingStatus().Bonus + ToolBonus;
             return rate;
+        }
+
+        /// <summary>Extra output of the gatherers while the store holds tools (bronze axes, sickles, picks).</summary>
+        public double ToolBonus => State.Resources.Tools > 1e-6 ? Content.Balance.ToolBonus : 0;
+
+        /// <summary>Tools the working gatherers wear out per second (never more than the store holds for one step).</summary>
+        double ToolWear(double dt)
+        {
+            var b = Content.Balance;
+            if (b.ToolWearPerWorkerPerSecond <= 0 || State.Resources.Tools <= 1e-6) return 0;
+            int gatherers = 0;
+            foreach (var job in Enums.Jobs) if (IsGathering(job)) gatherers += ActiveWorkers(job);
+            return Math.Min(gatherers * b.ToolWearPerWorkerPerSecond, State.Resources.Tools / dt);
         }
 
         internal static bool IsGathering(JobType job) =>
@@ -178,6 +218,7 @@ namespace Founders.Core
             consumption.Food += snap.Spoilage;
             consumption.Wood = FuelPerSecond;
             consumption += crafting.Input;
+            consumption.Tools += ToolWear(dt);
             ApplyRecipes(snap, ref production, ref consumption, productivity, dt);
             snap.Production = production;
             snap.Consumption = consumption;

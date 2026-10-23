@@ -78,7 +78,9 @@ Not yet: age and life stages, families, generational replacement of individual v
 | Stone | natural | stone gathering (rocks run out) | building |
 | Ore | natural, finite per vein | mining | heart and late building levels, smelting |
 | Hides | by-product | hunting, herding | heart and building levels |
-| **Bronze** | **processed** | **smelting: 2 ore + 1 wood → 1 bronze** | **Bronze Workshop; the Bronze Dawn milestone** |
+| **Bronze** | **processed** | **smelting: 2 ore + 1 wood → 1 bronze** | **Bronze Workshop, Toolsmith, tools; the Bronze Dawn milestone** |
+| **Planks** | **processed** | **sawing (Sawpit, Carpenter's Yard): 2 wood → 1 plank** | **tools; Bakery, Tavern, Scriptorium, Warehouse** |
+| **Tools** | **processed** | **toolmaking (Toolsmith): 1 bronze + 1 plank → 2 tools** | **in store: every gatherer +15 %; each gatherer wears out 0.001 per second** |
 | Knowledge | abstract | research | technologies |
 
 Each resource has an id, display name and storage cap (base + storage buildings, levels and tech
