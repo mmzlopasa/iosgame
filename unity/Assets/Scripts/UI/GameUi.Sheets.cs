@@ -816,6 +816,7 @@ namespace Founders.UI
                     r.Add(Live(() => Fmt.Clock(G.State.ActiveExpedition?.RemainingSeconds ?? 0), Theme.Num));
                     rows.Add(r);
                     rows.Add(LiveBar(() => { var e = G.State.ActiveExpedition; return e == null ? 1 : 1 - e.RemainingSeconds / Math.Max(1, e.TotalSeconds); }, 14).Margin(0, 0, 8));
+                    rows.Add(SpeedupRow(SpeedupTask.Expedition));
                 }
                 else if (!explored)
                 {

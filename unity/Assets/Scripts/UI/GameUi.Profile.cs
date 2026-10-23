@@ -265,6 +265,7 @@ namespace Founders.UI
             for (int i = 0; i < lines.Length; i++)
                 rows.Add(E.StatRow(lines[i].icon, lines[i].label, lines[i].value, null, i > 0));
             host.Add(town);
+            host.Add(SpeedupInventory());
 
             var me = Block("Founder", out var frows);
             frows.Add(E.StatRow("user", "Name", Founder.Name, null, false));

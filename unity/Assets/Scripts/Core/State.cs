@@ -258,6 +258,10 @@ namespace Founders.Core
         public double? LastPetitionSimTime;
         /// <summary>Goods made by recipes since the founding, by resource id (e.g. bronze cast).</summary>
         public Dictionary<string, double> Made = new Dictionary<string, double>();
+        /// <summary>Speed-ups owned: key (see Speedups.Key) → count.</summary>
+        public Dictionary<string, int> Speedups = new Dictionary<string, int>();
+        /// <summary>The starter speed-ups were given (older saves get them once on load).</summary>
+        public bool SpeedupStarterGiven;
 
         public PlacedBuilding Building(int id) => Buildings.FirstOrDefault(b => b.Id == id);
 
@@ -355,6 +359,8 @@ namespace Founders.Core
                 };
             if (LastPetitionSimTime.HasValue) d["lastPetitionSimTime"] = LastPetitionSimTime.Value;
             if (Made.Count > 0) d["made"] = Made.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
+            if (Speedups.Count > 0) d["speedups"] = Speedups.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
+            if (SpeedupStarterGiven) d["speedupStarterGiven"] = true;
             return d;
         }
 
@@ -433,6 +439,12 @@ namespace Founders.Core
                 var made = o.Obj("made");
                 foreach (var key in made.Keys) s.Made[key] = made.Num(key);
             }
+            if (o.Has("speedups"))
+            {
+                var sp = o.Obj("speedups");
+                foreach (var key in sp.Keys) s.Speedups[key] = sp.Int(key);
+            }
+            s.SpeedupStarterGiven = o.OptBool("speedupStarterGiven", false);
             s.Legacy = o.Objs("legacy").Select(l => new LegacyEntry
             {
                 Id = l.Int("id"), SimTime = l.Num("simTime"), EpochId = l.Str("epochId"),

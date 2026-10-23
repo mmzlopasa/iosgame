@@ -43,6 +43,7 @@ namespace Founders.Core
             AddLegacy("chapter", $"Chapter {chapter.Number}: {chapter.Title}",
                       chapter.LegacyText ?? $"The chapter of {chapter.Title} came to an end.", chapter.Id);
             Notice(NoticeKind.Milestone, $"Chapter {next.Number} begins: {next.Title}.");
+            GrantSpeedups(Speedups.ChapterFinished, $"Chapter {chapter.Number} done!");
         }
     }
 }

@@ -138,6 +138,7 @@ namespace Founders.Core
                     if (obj.Reward.HasValue) Apply(new Effect(EffectKind.GrantResources) { Resources = obj.Reward }, obj.Id);
                     string rewardText = obj.Reward.HasValue ? $" Reward: {obj.Reward.Value.ShortDescription}" : "";
                     Notice(NoticeKind.Success, $"Objective complete: {obj.Title}.{rewardText}");
+                    GrantSpeedups(Speedups.ObjectiveCompleted, "Goal reached!");
                     changed = true;
                 }
             }
@@ -182,6 +183,7 @@ namespace Founders.Core
             NormalizeAssignments();
             AddLegacy("milestone", ms.Name, ms.LegacyText, id);
             Notice(NoticeKind.Milestone, $"{ms.Name}! {ms.Description}");
+            GrantSpeedups(Speedups.MilestoneReached, $"{ms.Name}!");
             EvaluateProgress();
             return GameResult.Success;
         }
@@ -240,6 +242,14 @@ namespace Founders.Core
             if (active == null) return;
             active.RemainingSeconds -= dt;
             if (active.RemainingSeconds > 1e-9) return;
+            CompleteResearch();
+        }
+
+        /// <summary>Finishes the running research (its time ran out or speed-ups covered it).</summary>
+        void CompleteResearch()
+        {
+            var active = State.ActiveResearch;
+            if (active == null) return;
             State.ActiveResearch = null;
             if (State.Researched.Contains(active.TechId)) return;
             State.Researched.Add(active.TechId);
@@ -247,6 +257,7 @@ namespace Founders.Core
             string name = tech?.Name ?? active.TechId;
             Notice(NoticeKind.Success, $"Research complete: {name}!");
             AddLegacy("technology", $"Discovered {name}", tech?.Description ?? "", active.TechId);
+            GrantSpeedups(Speedups.ResearchFinished, "Discovery!");
         }
 
         // MARK: - Events
@@ -339,6 +350,14 @@ namespace Founders.Core
             if (exp == null) return;
             exp.RemainingSeconds -= dt;
             if (exp.RemainingSeconds > 1e-9) return;
+            CompleteExpedition();
+        }
+
+        /// <summary>Brings the scouts home (their time ran out or speed-ups covered it).</summary>
+        void CompleteExpedition()
+        {
+            var exp = State.ActiveExpedition;
+            if (exp == null) return;
             State.ActiveExpedition = null;
             var region = Content.Region(exp.RegionId);
             if (State.ExploredRegions.Contains(exp.RegionId) || region == null) return;
@@ -359,6 +378,7 @@ namespace Founders.Core
             }
             if (!string.IsNullOrEmpty(region.Finding)) Notice(NoticeKind.Info, region.Finding);
             AddLegacy("exploration", $"Explored {region.Name}", region.LegacyText, region.Id);
+            GrantSpeedups(Speedups.RegionExplored, "New land explored!");
         }
     }
 }

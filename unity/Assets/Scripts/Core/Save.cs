@@ -101,6 +101,11 @@ namespace Founders.Core
             if (s.ActiveResearch != null && content.Technology(s.ActiveResearch.TechId) == null)
                 problems.Add($"unknown research {s.ActiveResearch.TechId}");
             foreach (var r in s.ExploredRegions) if (content.Region(r) == null) problems.Add($"unknown region {r}");
+            foreach (var kv in s.Speedups)
+            {
+                if (!Speedups.TryParse(kv.Key, out _, out _)) problems.Add($"unknown speed-up {kv.Key}");
+                if (kv.Value < 0) problems.Add($"negative speed-up count {kv.Key}");
+            }
             if (s.PendingEventId != null && content.Event(s.PendingEventId) == null) problems.Add($"unknown event {s.PendingEventId}");
             return problems;
         }

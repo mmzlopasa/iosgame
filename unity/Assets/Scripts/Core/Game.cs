@@ -26,6 +26,7 @@ namespace Founders.Core
             State = state;
             this.clock = clock;
             SyncPeople(); // older saves had no named people: create them from the population
+            EnsureStarterSpeedups();
         }
 
         /// <summary>Creates a brand new settlement from content.</summary>

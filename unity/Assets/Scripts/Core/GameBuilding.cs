@@ -235,9 +235,11 @@ namespace Founders.Core
             if (levelUp)
             {
                 Notice(NoticeKind.Success, $"{name} reached level {b.Level}.");
+                GrantSpeedups(Speedups.LevelReached(b.Level), $"{name} level {b.Level}!");
                 return;
             }
             Notice(NoticeKind.Success, wasUpgrade ? $"Upgrade complete: {name}." : $"Construction complete: {name}.");
+            GrantSpeedups(wasUpgrade ? Speedups.BuildingImproved : Speedups.BuildingFinished, wasUpgrade ? "Improved building!" : "New building!");
             if (Count(b.DefinitionId) == 1) AddLegacy("building", $"First {name}", def?.Description ?? "", b.DefinitionId);
         }
 
