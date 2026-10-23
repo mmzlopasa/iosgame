@@ -103,8 +103,9 @@ namespace Founders
                 camGo.AddComponent<AudioListener>();
                 Cam.fieldOfView = Fov;
                 Cam.nearClipPlane = 0.5f;
-                Cam.farClipPlane = 400f;
             }
+            // The fog hides everything beyond ~230 m: drawing further only costs frame rate.
+            Cam.farClipPlane = 260f;
             Cam.transform.SetParent(transform, false);
             Apply();
         }
