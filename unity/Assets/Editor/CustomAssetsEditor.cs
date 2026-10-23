@@ -266,6 +266,7 @@ namespace FoundersEditor
                 ? Directory.GetFiles("Assets/Art/UI/Resources/UI/Icons", "*.png").Select(Path.GetFileNameWithoutExtension) : Enumerable.Empty<string>());
             // Optional icons the game only uses when the player brings them (it falls back to a built-in one).
             foreach (var kind in new[] { "general", "construction", "research", "exploration" }) uiIcons.Add("speedup_" + kind);
+            foreach (var f in new[] { "lake", "river", "island", "mountain", "hill", "forest", "ore" }) uiIcons.Add("map_" + f);
             if (content != null) foreach (var law in content.Laws) uiIcons.Add("law_" + law.Id);
             var images = new HashSet<string> { "loading_bg", "logo_mark", "glow" };
             var terrain = new HashSet<string> { "Grass", "Mud", "Sand", "RockGround" };

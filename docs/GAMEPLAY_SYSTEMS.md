@@ -83,6 +83,22 @@ Content for the three eras that are already playable (the modern era stays pause
 - **Events:** the Master Carpenter (first sawpit), Frost-Cracked Tools (10 tools made), Minstrels at
   the Tavern (first tavern).
 
+## Map generator (Foundation's "Select map")
+
+A new game first opens **Choose Your Valley**: ready-made valleys on the left (Long Valley is the
+hand-drawn one; Riverlands, Lakeland, Highlands, Mountain Pass, Wildwood, Open Plains), the valley
+from above in the middle with the suggested campfire, and seven sliders (lakes, rivers, islands,
+mountains, hills, forest, ore, 0–5 each) with a dice button for another valley of the same kind.
+Every valley has a 13-character code (one digit per slider + the seed) to copy, paste or type, so
+players can share valleys. Confirm builds the terrain, water and nature (Ultimate Nature) from the
+generated map, then the player picks where the campfire and shelters go; the globe button on the
+campfire card goes back to the generator until the fire is lit.
+
+Rules (`Core/MapGenerator.cs`, tested in `CoreTests/MapGeneratorTests.cs`): deterministic for a
+code; mountains only along edges (plus an inland massif at 4–5), ore at their feet or in the hills;
+every valley keeps water (a pond at least), wood, stone and ore, and a valid start. The save keeps
+only the map's name (`gen_<code>`): the valley and its 64 lands are drawn again on load.
+
 ## Next refinements (to discuss)
 
 1. **Families instead of single people**: housing gives family slots and one family

@@ -293,6 +293,8 @@ Za ukras / For a decoration: `deco_dirt_path`, `deco_stone_road`, `deco_wooden_b
 
 `alert`, `approval`, `arrow`, `autumn`, `axe`, `back`, `bell`, `bronze`, `build`, `campfire`, `check`, `clock`, `close`, `compass`, `copy`, `customs`, `discontent`, `eye`, `eye_off`, `face_f1`, `face_f2`, `face_f3`, `face_m1`, `face_m2`, `face_m3`, `fence`, `fish`, `flame`, `food`, `goals`, `hides`, `home`, `info`, `knowledge`, `landmark`, `lantern`, `law_apprentices`, `law_bitter_remedies`, `law_burial_rites`, `law_dawn_to_dusk`, `law_day_of_rest`, `law_elders_council`, `law_fire_wardens`, `law_harvest_festival`, `law_hearty_meals`, `law_long_days`, `law_shared_stew`, `law_story_nights`, `law_watch_the_sick`, `law_watchmen`, `legacy`, `level_up`, `lock`, `minus`, `moon`, `next`, `ore`, `people`, `pickaxe`, `planks`, `plus`, `research`, `road`, `rotate`, `settings`, `sick`, `sparkle`, `spear`, `spring`, `stone`, `storage`, `summer`, `thermometer`, `tools`, `trash`, `tree`, `trophy`, `user`, `wheat`, `winter`, `wood`, `world`
 
+`map_lake`, `map_river`, `map_island`, `map_mountain`, `map_hill`, `map_forest`, `map_ore` – sličice uz klizače generatora mape / swatches beside the map generator's sliders (bez njih / without them: naslikane kružne sličice iz igre / the game's painted round swatches).
+
 ### Okviri i gumbi / UI skins (9-slice) – `UI/Skin/<ime>.png`
 
 Rubovi (lijevo, gore, desno, dolje) se ne rastežu; sredina se rasteže (kod `panel`, `plank`, `section` se ponavlja). Druga veličina slike je u redu ako su proporcije iste – rubovi se skaliraju s njom. Borders (left, top, right, bottom) never stretch; the middle does (tiles for panel/plank/section). Another resolution is fine with the same proportions – the borders scale with it.

@@ -71,7 +71,7 @@ namespace Founders.Core
             {
                 return LoadOutcome.Corrupt($"Save data is incomplete: {e.Message}");
             }
-            var problems = Validate(state, content);
+            var problems = Validate(state, content.ForMap(state.MapName));
             if (problems.Count > 0) return LoadOutcome.Corrupt(string.Join("; ", problems));
             return LoadOutcome.Loaded(state);
         }

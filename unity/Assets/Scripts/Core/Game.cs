@@ -22,7 +22,8 @@ namespace Founders.Core
 
         public Game(GameContent content, GameState state, IGameClock clock)
         {
-            Content = content;
+            // A settlement on a generated valley plays on that valley's map and lands.
+            Content = content.ForMap(state.MapName);
             State = state;
             this.clock = clock;
             SyncPeople(); // older saves had no named people: create them from the population
