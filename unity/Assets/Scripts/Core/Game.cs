@@ -180,6 +180,8 @@ namespace Founders.Core
             AdvanceExpedition(dt);
             AdvanceHealth(dt);
             AdvanceDiscontent(dt);
+            AdvanceEstates(dt);
+            AdvancePaths(dt);
             AdvanceGrowth(dt, snapshot.Net.Food);
 
             State.SimTime += dt;

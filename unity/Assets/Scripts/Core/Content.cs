@@ -831,6 +831,10 @@ namespace Founders.Core
         public double TreasuryCap;
         /// <summary>Trade with the neighbouring villages (null = no trade).</summary>
         public TradeConfig Trade;
+        /// <summary>The three estates of the realm (null = none).</summary>
+        public EstatesConfig Estates;
+        /// <summary>Paths worn by people's feet (null = none).</summary>
+        public PathsConfig Paths;
 
         internal static BalanceConfig FromJson(JObj o) => new BalanceConfig
         {
@@ -875,6 +879,8 @@ namespace Founders.Core
             Needs = o.Has("needs") ? NeedsConfig.FromJson(o.Obj("needs")) : null,
             TreasuryCap = o.OptNum("treasuryCap") ?? 5000,
             Trade = o.Has("trade") ? TradeConfig.FromJson(o.Obj("trade")) : null,
+            Estates = o.Has("estates") ? EstatesConfig.FromJson(o.Obj("estates")) : null,
+            Paths = o.Has("paths") ? PathsConfig.FromJson(o.Obj("paths")) : null,
             Discontent = o.Has("discontent") ? DiscontentConfig.FromJson(o.Obj("discontent")) : null,
         };
     }
@@ -1046,6 +1052,87 @@ namespace Founders.Core
             LandsExplored = o.OptInt("landsExplored") ?? 0,
             Buys = ResourceBundle.FromJson(o.OptObj("buys")), Sells = ResourceBundle.FromJson(o.OptObj("sells")),
             RouteCost = o.OptNum("routeCost") ?? 0,
+        };
+    }
+
+    /// <summary>Paths worn by people's feet (Manor Lords' organic towns).</summary>
+    public sealed class PathsConfig
+    {
+        /// <summary>Wear a cell gets per person walking that way each hour; a path from this much wear; most wear kept.</summary>
+        public double WearPerPersonPerHour, Threshold, MaxWear;
+        /// <summary>Share of the wear that grasses over each hour.</summary>
+        public double DecayPerHour;
+        /// <summary>Extra construction speed on sites beside a path (0.1 = +10%).</summary>
+        public double ConstructionBonus;
+        /// <summary>How much cheaper walking a path is than open ground (1 = the same).</summary>
+        public double WalkCost;
+
+        internal static PathsConfig FromJson(JObj o) => new PathsConfig
+        {
+            WearPerPersonPerHour = o.Num("wearPerPersonPerHour"), Threshold = o.Num("threshold"), MaxWear = o.Num("maxWear"),
+            DecayPerHour = o.OptNum("decayPerHour") ?? 0, ConstructionBonus = o.OptNum("constructionBonus") ?? 0,
+            WalkCost = o.OptNum("walkCost") ?? 1,
+        };
+    }
+
+    /// <summary>The three estates of the realm (Manor Lords' development paths): labour, clergy and the crown.</summary>
+    public sealed class EstatesConfig
+    {
+        /// <summary>Coins a gift to an estate costs, and the favour it brings.</summary>
+        public double GrantCost, GrantFavour;
+        /// <summary>Ranks between the most and the least favoured estate before the least grumbles.</summary>
+        public int ImbalanceRanks;
+        /// <summary>Approval lost while one estate is left behind, and won while all stand together (rank 1 or more).</summary>
+        public int ImbalanceApproval, HarmonyApproval;
+        public List<EstateDefinition> Estates = new List<EstateDefinition>();
+
+        internal static EstatesConfig FromJson(JObj o) => new EstatesConfig
+        {
+            GrantCost = o.Num("grantCost"), GrantFavour = o.Num("grantFavour"),
+            ImbalanceRanks = o.OptInt("imbalanceRanks") ?? 2,
+            ImbalanceApproval = o.OptInt("imbalanceApproval") ?? 0, HarmonyApproval = o.OptInt("harmonyApproval") ?? 0,
+            Estates = o.Objs("estates").Select(EstateDefinition.FromJson).ToList(),
+        };
+    }
+
+    /// <summary>An estate: where its favour comes from, and what each rank of favour grants the town.</summary>
+    public sealed class EstateDefinition
+    {
+        public string Id, Name, Description, Icon;
+        /// <summary>Favour per hour from each finished building of a kind (building id → favour).</summary>
+        public Dictionary<string, double> Buildings = new Dictionary<string, double>();
+        /// <summary>Favour per hour from each worker at a job.</summary>
+        public Dictionary<JobType, double> Jobs = new Dictionary<JobType, double>();
+        /// <summary>Favour per coin of tax collected, and per hour from each trade route that runs.</summary>
+        public double TaxShare, RouteFavour;
+        public List<EstateRank> Ranks = new List<EstateRank>();
+
+        internal static EstateDefinition FromJson(JObj o)
+        {
+            var e = new EstateDefinition
+            {
+                Id = o.Str("id"), Name = o.Str("name"), Description = o.OptStr("description") ?? "", Icon = o.OptStr("icon") ?? "approval",
+                TaxShare = o.OptNum("taxShare") ?? 0, RouteFavour = o.OptNum("routeFavour") ?? 0,
+                Ranks = o.Objs("ranks").Select(EstateRank.FromJson).OrderBy(r => r.Favour).ToList(),
+            };
+            var b = o.OptObj("buildings");
+            if (b != null) foreach (var k in b.Keys) e.Buildings[k] = b.Num(k);
+            var j = o.OptObj("jobs");
+            if (j != null) foreach (var k in j.Keys) e.Jobs[Enums.ParseJob(k)] = j.Num(k);
+            return e;
+        }
+    }
+
+    public sealed class EstateRank
+    {
+        public double Favour;
+        public string Name, Description;
+        public List<Effect> Effects = new List<Effect>();
+
+        internal static EstateRank FromJson(JObj o) => new EstateRank
+        {
+            Favour = o.Num("favour"), Name = o.Str("name"), Description = o.OptStr("description") ?? "",
+            Effects = o.Has("effects") ? o.Objs("effects").Select(Effect.FromJson).ToList() : new List<Effect>(),
         };
     }
 

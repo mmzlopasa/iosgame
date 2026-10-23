@@ -282,6 +282,10 @@ namespace Founders.Core
         public string TaxLevel;
         /// <summary>Lasting trade routes, oldest first (only as many run as the trading places allow).</summary>
         public List<TradeRoute> TradeRoutes = new List<TradeRoute>();
+        /// <summary>Favour of each estate of the realm (estate id → favour).</summary>
+        public Dictionary<string, double> Favour = new Dictionary<string, double>();
+        /// <summary>Ground worn by feet (cell y·width + x → wear); enough wear makes a path.</summary>
+        public Dictionary<int, double> Wear = new Dictionary<int, double>();
         /// <summary>Goods made by recipes since the founding, by resource id (e.g. bronze cast).</summary>
         public Dictionary<string, double> Made = new Dictionary<string, double>();
         /// <summary>Speed-ups owned: key (see Speedups.Key) → count.</summary>
@@ -389,6 +393,8 @@ namespace Founders.Core
             if (LastPetitionSimTime.HasValue) d["lastPetitionSimTime"] = LastPetitionSimTime.Value;
             if (TaxLevel != null) d["taxLevel"] = TaxLevel;
             if (TradeRoutes.Count > 0) d["tradeRoutes"] = TradeRoutes.Select(x => (object)x.ToJson()).ToList();
+            if (Favour.Count > 0) d["favour"] = Favour.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
+            if (Wear.Count > 0) d["wear"] = Wear.Select(kv => (object)new List<object> { kv.Key, Math.Round(kv.Value, 3) }).ToList();
             if (Made.Count > 0) d["made"] = Made.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (Speedups.Count > 0) d["speedups"] = Speedups.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (SpeedupStarterGiven) d["speedupStarterGiven"] = true;
@@ -470,6 +476,13 @@ namespace Founders.Core
             s.LastPetitionSimTime = o.OptNum("lastPetitionSimTime");
             s.TaxLevel = o.OptStr("taxLevel");
             if (o.Has("tradeRoutes")) s.TradeRoutes = o.Objs("tradeRoutes").Select(TradeRoute.FromJson).ToList();
+            if (o.Has("favour"))
+            {
+                var fav = o.Obj("favour");
+                foreach (var key in fav.Keys) s.Favour[key] = fav.Num(key);
+            }
+            if (o.Has("wear"))
+                foreach (var pair in o.Arr("wear")) { var l = (List<object>)pair; s.Wear[Convert.ToInt32(l[0])] = Convert.ToDouble(l[1]); }
             if (o.Has("made"))
             {
                 var made = o.Obj("made");

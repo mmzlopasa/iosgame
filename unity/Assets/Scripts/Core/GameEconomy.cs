@@ -59,6 +59,7 @@ namespace Founders.Core
             effects.AddRange(BuildingEffects());
             effects.AddRange(PerkEffects());
             effects.AddRange(LawEffects());
+            effects.AddRange(EstateEffects());
             return effects;
         }
 

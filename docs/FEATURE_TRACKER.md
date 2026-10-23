@@ -38,6 +38,8 @@
 | UI | Economy overview panel | ⬜ | |
 | Economy | Needs (food, water, goods), house tiers, taxes in coins, tax level | ✅ | `GameNeeds.cs`, `NeedsTests` |
 | Economy | Trade with neighbouring villages: deals, routes, trading post | ✅ | `GameTrade.cs`, `TradeTests` |
+| Society | Three estates (Commons, Clergy, Crown): favour, ranks, boons, balance | ✅ | `GameEstates.cs`, `EstatesTests` |
+| Town | Organic paths worn by foot traffic (faster walking, faster building beside them) | ✅ | `GamePaths.cs`, `PathsTests` |
 | Save | Versioned local save, validation, corruption recovery | ✅ | `Save.cs`, `SaveTests` |
 | Save | Cloud save on own server | ✅ | `CloudSave.cs`, `server/cloud` |
 | Profile | Founder profile, achievements, settings | ✅ | `Profile.cs`, `ProfileTests` |

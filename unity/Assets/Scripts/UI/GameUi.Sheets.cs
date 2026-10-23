@@ -220,7 +220,11 @@ namespace Founders.UI
             switch (store.ActivePanel)
             {
                 case Panel.People:
-                    TabRow(("Work", 0, G.IdleWorkers > 0 ? $"{G.IdleWorkers} idle" : null), ("Villagers", 1, G.State.People.Count.ToString(Inv)), ("Wellbeing", 2, null));
+                    if (G.HasEstates)
+                        TabRow(("Work", 0, G.IdleWorkers > 0 ? $"{G.IdleWorkers} idle" : null), ("Villagers", 1, G.State.People.Count.ToString(Inv)), ("Wellbeing", 2, null),
+                               ("Estates", 3, G.Estates.Any(e => G.Favour(e) > 0) ? string.Join("·", G.Estates.Select(e => G.EstateRank(e))) : null));
+                    else
+                        TabRow(("Work", 0, G.IdleWorkers > 0 ? $"{G.IdleWorkers} idle" : null), ("Villagers", 1, G.State.People.Count.ToString(Inv)), ("Wellbeing", 2, null));
                     break;
                 case Panel.Map:
                     if (G.HasTrade) TabRow(("Explore", 0, null), ("Trade", 2, G.State.TradeRoutes.Count > 0 ? G.State.TradeRoutes.Count.ToString(Inv) : null), ("Legacy", 1, G.State.Legacy.Count.ToString(Inv)));
@@ -307,6 +311,7 @@ namespace Founders.UI
                         return $"{G.IdleWorkers}|{G.State.Population}|{G.State.FoodShortage}|{G.HousingCapacity()}|" + string.Join(",", Enums.Jobs.Select(j => $"{G.State.Assignments[j]}/{G.JobCapacity(j)}"));
                     if (peopleTab == 1)
                         return expandedPerson + "|" + string.Join(",", G.State.People.Select(p => $"{p.Job}{SkillSum(p)}{(p.Sick ? "s" : "")}")) + "|" + SurvivalPeopleKey();
+                    if (peopleTab == 3) return EstatesKey();
                     return $"{G.SeasonIndex}|{G.Freezing}|{NeedsKey()}|{string.Join(",", G.ApprovalFactors().Select(f => f.Label + f.Points))}|{G.State.FoodShortage}|{SurvivalPeopleKey()}";
                 case Panel.Weather:
                     return WeatherKey();
@@ -335,6 +340,7 @@ namespace Founders.UI
                 case Panel.People:
                     if (peopleTab == 0) BuildWorkTab(host);
                     else if (peopleTab == 1) BuildVillagers(host);
+                    else if (peopleTab == 3) BuildEstates(host);
                     else BuildWellbeing(host);
                     break;
                 case Panel.Objectives: BuildGoalsPanel(host); break;

@@ -687,7 +687,7 @@ namespace Founders
         void RepaintGround(Game game, bool initial)
         {
             var st = game.State;
-            string key = $"{st.StageId}|{st.NextBuildingId}|{st.Buildings.Count}|{st.NextDecorationId}|{st.Decorations.Count}";
+            string key = $"{st.StageId}|{st.NextBuildingId}|{st.Buildings.Count}|{st.NextDecorationId}|{st.Decorations.Count}|{game.PathsVersion}|{st.Wear.Count > 0}";
             if (key == splatKey) return;
             // Repainting the ground is heavy: while a road is being drawn, do it a few times a second at most.
             if (!initial && Time.unscaledTime < nextGroundPaint) return;
@@ -703,7 +703,21 @@ namespace Founders
                 if (def == null) continue;
                 around.Add((Grid.FootprintCenter(b.X, b.Y, def.Footprint), 0.9f * Mathf.Max(def.Footprint.Width, def.Footprint.Height)));
             }
-            if (game.State.StageId != game.Content.StartStage)
+            if (game.HasPaths)
+            {
+                // Paths worn by feet: each trodden cell joined to its trodden neighbours, so the lanes wind as people walk.
+                var trodden = new HashSet<(int, int)>(game.TroddenCells());
+                foreach (var (x, y) in trodden)
+                {
+                    var c = Grid.CellCenter(x, y);
+                    bool any = false;
+                    foreach (var (dx, dy) in new[] { (1, 0), (0, 1), (1, 1), (1, -1) })
+                        if (trodden.Contains((x + dx, y + dy))) { paths.Add((c, Grid.CellCenter(x + dx, y + dy))); any = true; }
+                    if (!any && !trodden.Contains((x - 1, y)) && !trodden.Contains((x, y - 1)) && !trodden.Contains((x - 1, y - 1)) && !trodden.Contains((x - 1, y + 1)))
+                        paths.Add((c + new Vector3(-0.3f, 0, 0), c + new Vector3(0.3f, 0, 0)));
+                }
+            }
+            else if (game.State.StageId != game.Content.StartStage)
             {
                 var hearth = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "village_hearth");
                 if (hearth != null)

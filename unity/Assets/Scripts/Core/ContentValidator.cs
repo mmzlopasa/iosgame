@@ -220,6 +220,26 @@ namespace Founders.Core
                 problems.Add("warmth thresholds must be comfortable > cold > freezing");
             if (b.Health != null && (b.Health.RecoverSeconds <= 0 || b.Health.TreatedRecoverSeconds <= 0 || b.Health.DeathSeconds <= 0))
                 problems.Add("health needs recoverSeconds, treatedRecoverSeconds and deathSeconds > 0");
+            if (b.Paths != null && (b.Paths.Threshold <= 0 || b.Paths.MaxWear < b.Paths.Threshold || b.Paths.WearPerPersonPerHour <= 0
+                                    || b.Paths.DecayPerHour < 0 || b.Paths.DecayPerHour >= 1 || b.Paths.WalkCost <= 0 || b.Paths.ConstructionBonus < 0))
+                problems.Add("paths need threshold > 0, maxWear >= threshold, wear > 0, decay in [0, 1), walkCost > 0");
+            if (b.Estates != null)
+            {
+                if (b.Estates.GrantCost <= 0 || b.Estates.GrantFavour <= 0) problems.Add("estates need grantCost and grantFavour > 0");
+                foreach (var e in b.Estates.Estates)
+                {
+                    if (e.Ranks.Count == 0) problems.Add($"estate '{e.Id}' has no ranks");
+                    foreach (var id in e.Buildings.Keys)
+                        if (!buildingIds.Contains(id)) problems.Add($"estate '{e.Id}' counts unknown building '{id}'");
+                    foreach (var r in e.Ranks)
+                    {
+                        if (r.Favour <= 0) problems.Add($"estate '{e.Id}' rank '{r.Name}' needs favour > 0");
+                        if (r.Effects.Any(x => x.Kind == EffectKind.GrantResources || x.Kind == EffectKind.UnlockBuilding || x.DurationSeconds.HasValue))
+                            problems.Add($"estate '{e.Id}' rank '{r.Name}' effects must be lasting boons");
+                        problems.AddRange(ValidateEffects(r.Effects, $"estate '{e.Id}' rank '{r.Name}'", buildingIds));
+                    }
+                }
+            }
             if (b.Trade != null)
             {
                 if (b.Trade.RouteAmountPerMinute <= 0 || b.Trade.DealAmount <= 0) problems.Add("trade needs routeAmountPerMinute and dealAmount > 0");

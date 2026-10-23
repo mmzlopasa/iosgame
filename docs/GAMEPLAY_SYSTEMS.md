@@ -114,6 +114,19 @@ only the map's name (`gen_<code>`): the valley and its 64 lands are drawn again 
 - **Guilds** make neighbours pay 15% more (`tradePriceMultiplier`). Taxes were raised to 2 / 5 / 12 coins per person per hour so coins matter.
 - Map window › Trade tab; the trading post's card has a Trade button. Content: `tools/content/trade.py`; rules: `Core/GameTrade.cs`.
 
+## The three estates of the realm (Manor Lords' development paths)
+
+- **Commons** (labour: every worker), **Clergy** (shrines, church, scriptorium, scholars, healers) and **Crown** (taxes, trade routes, market, lookout, warehouse) win favour every hour; a gift of 40 coins brings 20 favour.
+- Three ranks each (40 / 150 / 400 favour) with lasting boons: work and building speed; less illness, faster research, feast days; a bigger treasury, faster scouts, Market Rights (+10% trade prices).
+- One estate two ranks behind the others feels forgotten (−6 approval); all three at rank 1+ within a rank of each other stand together (+3).
+- People window › Estates tab. Content: `tools/content/estates.py`; rules: `Core/GameEstates.cs`; tests: `EstatesTests`.
+
+## Organic paths (Manor Lords' grid-less towns)
+
+- People walk from the heart of the town to every home (its family) and workplace (its workers); their feet wear the cells on the way (1 wear per person per hour). From 6 wear a cell is a **trodden path**, drawn as a winding dirt lane.
+- Paths are quicker to walk (villagers prefer them) and **building sites beside a path go up 15% faster**, so the town grows along the ways people already take. Unused paths grass over (3% of the wear an hour).
+- Wear is applied once a game minute, so long absences stay cheap. Content: `tools/content/paths.py`; rules: `Core/GamePaths.cs`; drawing: `WorldView.RepaintGround`; walking: `Pathing`.
+
 ## Next refinements (to discuss)
 
 1. **Families instead of single people**: housing gives family slots and one family

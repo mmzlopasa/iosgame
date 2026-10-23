@@ -128,6 +128,7 @@ namespace Founders.Core
             }
 
             NeedsApproval(list);
+            double estates = EstatesApproval(list);
 
             // Gathering places
             int community = OperationalBuildings().Sum(x => x.def.Community ?? 0);
@@ -145,7 +146,7 @@ namespace Founders.Core
             if (Math.Abs(grief) > 0.5) list.Add(new ApprovalFactor("Mourning", (int)Math.Round(grief)));
             if (Math.Abs(stoke) > 0.5) list.Add(new ApprovalFactor("Roaring fire", (int)Math.Round(stoke)));
             if (Math.Abs(promise) > 0.5) list.Add(new ApprovalFactor("Promise kept", (int)Math.Round(promise)));
-            double bonus = ActiveEffects().Where(e => e.Kind == EffectKind.ApprovalBonus).Sum(e => e.Value ?? 0) - laws - grief - stoke - promise;
+            double bonus = ActiveEffects().Where(e => e.Kind == EffectKind.ApprovalBonus).Sum(e => e.Value ?? 0) - laws - grief - stoke - promise - estates;
             if (Math.Abs(bonus) > 0.5) list.Add(new ApprovalFactor("Recent events", (int)Math.Round(bonus)));
 
             // Discontent drags hope down

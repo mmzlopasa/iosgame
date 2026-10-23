@@ -222,7 +222,7 @@ namespace Founders.Core
             foreach (var b in State.Buildings)
             {
                 if (b.Status == BuildingStatus.Complete) continue;
-                b.RemainingWork -= speed * dt;
+                b.RemainingWork -= speed * SiteSpeed(b) * dt;
                 if (b.RemainingWork <= 1e-9) completed.Add(b);
             }
             foreach (var b in completed) FinishConstruction(b);

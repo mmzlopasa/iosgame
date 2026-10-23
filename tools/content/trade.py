@@ -15,8 +15,9 @@ sys.path.insert(0, os.path.dirname(__file__))
 from progression import CONTENT  # noqa: E402
 from present_eras import building, levels, upsert, I  # noqa: E402
 
-# Guilds raise what the neighbours pay; keep every buy price under every sell price even then.
+# Guilds and the Crown's Market Rights raise what the neighbours pay; keep every buy price under every sell price even then.
 GUILDS = 1.15
+MARKET_RIGHTS = 1.1
 
 TRADE = {
     "routeAmountPerMinute": 6,
@@ -55,7 +56,7 @@ BUILDINGS = [
 
 def check(trade):
     for res in {r for n in trade["neighbours"] for r in list(n["buys"]) + list(n["sells"])}:
-        top = max((n["buys"].get(res, 0) for n in trade["neighbours"]), default=0) * GUILDS
+        top = max((n["buys"].get(res, 0) for n in trade["neighbours"]), default=0) * GUILDS * MARKET_RIGHTS
         low = min((n["sells"][res] for n in trade["neighbours"] if res in n["sells"]), default=1e9)
         assert top < low, f"{res}: sells for {top:.2f} with guilds, buys for {low}"
 

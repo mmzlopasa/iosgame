@@ -34,7 +34,7 @@ namespace Founders
         public void Refresh(Game game)
         {
             var s = game.State;
-            string k = $"{s.NextBuildingId}|{s.Buildings.Count}|{s.NextDecorationId}|{s.Decorations.Count}|{s.NodeCleared.Count}|{s.Buildings.Count(b => b.Rotation != 0)}";
+            string k = $"{s.NextBuildingId}|{s.Buildings.Count}|{s.NextDecorationId}|{s.Decorations.Count}|{s.NodeCleared.Count}|{s.Buildings.Count(b => b.Rotation != 0)}|{game.PathsVersion}";
             if (k == key) return;
             key = k;
             for (int y = 0; y < height; y++)
@@ -44,6 +44,7 @@ namespace Founders
                     bool block = t == TerrainType.Water || t == TerrainType.Mountain || t == TerrainType.Rock || t == TerrainType.Ore
                                  || t == TerrainType.Forest || t == null;
                     float c = t == TerrainType.Sand ? 1.15f : 1f;
+                    if (game.IsTrodden(x, y)) c = (float)game.Content.Balance.Paths.WalkCost;
                     var d = game.DecorationAt(x, y);
                     var def = d == null ? null : game.Content.Decoration(d.DefinitionId);
                     if (def != null)

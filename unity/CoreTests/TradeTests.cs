@@ -133,7 +133,7 @@ namespace Founders.Tests
             Assert.That(ContentValidator.Validate(content), Is.Empty);
             foreach (var t in ResourceTypes.All)
             {
-                double top = content.Balance.Trade.Neighbours.Max(n => n.Buys[t]) * 1.15;
+                double top = content.Balance.Trade.Neighbours.Max(n => n.Buys[t]) * 1.15 * 1.1; // guilds and the crown's market rights
                 foreach (var n in content.Balance.Trade.Neighbours.Where(n => n.Sells[t] > 0))
                     Assert.That(top, Is.LessThan(n.Sells[t]), $"{t} from {n.Id}");
             }
