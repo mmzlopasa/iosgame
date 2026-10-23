@@ -25,7 +25,7 @@ namespace Founders.UI
             if (store.DecoratingId != null)
             {
                 var d = G.Content.Decoration(store.DecoratingId);
-                return $"deco|{store.DecoratingId}|{store.PaintMode}|{store.DecorationRotation}|{(d == null || G.State.Resources.Covers(d.Cost))}|{G.State.Decorations.Count}";
+                return $"deco|{store.DecoratingId}|{store.PaintMode}|{store.DecorationRotation}|{(d == null || G.State.Resources.Covers(d.Cost))}|{G.State.Decorations.Count}|{G.ZonesVersion}";
             }
             if (store.PlacingBuildingId != null)
             {
@@ -337,6 +337,7 @@ namespace Founders.UI
 
         void DecorationCard(VisualElement host)
         {
+            if (GameStore.IsZoneTool(store.DecoratingId)) { ZoneBrushCard(host); return; }
             bool removing = store.DecoratingId == GameStore.RemoveTool;
             var def = removing ? null : G.Content.Decoration(store.DecoratingId);
             CardShell(host, removing ? "Clear decorations" : def?.Name ?? "Town", null, store.EndDecorating, out var body, out var foot);
@@ -371,6 +372,26 @@ namespace Founders.UI
                 Lead(E.Square("rotate", Act(store.RotatePlacement), E.Kind.Blue, Theme.ButtonH), foot);
             }
             Lead(E.Square("trash", Act(() => store.BeginDecorating(removing ? "dirt_path" : GameStore.RemoveTool)), E.Kind.Brown, Theme.ButtonH), foot);
+            foot.Add(Share(E.Button("Done", Act(store.EndDecorating), E.Kind.Green, Theme.ButtonH, "check"), foot));
+        }
+
+        /// <summary>The zone brush: what the zone does, how much is painted, the eraser and Done.</summary>
+        void ZoneBrushCard(VisualElement host)
+        {
+            bool erasing = store.DecoratingId == GameStore.ZoneEraser;
+            string zone = erasing ? null : store.DecoratingId.Substring(GameStore.ZonePrefix.Length);
+            CardShell(host, erasing ? "Clear zones" : $"{ZoneName(zone)} zone", null, store.EndDecorating, out var body, out var foot);
+            var head = E.Div().Row(0, Align.FlexStart).Ignore();
+            head.Add(E.Slot(erasing ? "trash" : ZoneIcon(zone), 64, erasing ? E.Cell.Common : E.Cell.Rare));
+            var col = E.Div().Col().Grow().Ignore();
+            col.style.marginLeft = 10;
+            col.Add(E.Ink(erasing ? "Drag across painted ground to clear it." : ZoneHint(zone), Theme.Body));
+            col.Add(E.Ink(store.PaintMode ? "Drag to paint. Tap the hand to move the camera." : "Tap a cell to paint it.", Theme.Small, Theme.Pale).Margin(4));
+            if (!erasing) col.Add(E.T($"{G.ZoneCells(zone)} cells painted", Theme.Num, Theme.Gold).Margin(4));
+            head.Add(col);
+            body.Add(head);
+            Lead(E.Square(store.PaintMode ? "road" : "compass", Act(store.TogglePaintMode), store.PaintMode ? E.Kind.Orange : E.Kind.Blue, Theme.ButtonH), foot);
+            Lead(E.Square("trash", Act(() => store.BeginDecorating(erasing ? GameStore.ZonePrefix + Game.HomesZone : GameStore.ZoneEraser)), E.Kind.Brown, Theme.ButtonH), foot);
             foot.Add(Share(E.Button("Done", Act(store.EndDecorating), E.Kind.Green, Theme.ButtonH, "check"), foot));
         }
 

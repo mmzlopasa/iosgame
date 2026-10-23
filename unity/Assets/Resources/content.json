@@ -782,6 +782,12 @@
    "decayPerHour": 0.03,
    "constructionBonus": 0.15,
    "walkCost": 0.75
+  },
+  "zones": {
+   "checkSeconds": 60,
+   "freeBeds": 1,
+   "pastureCellsPerHerder": 4,
+   "forestryRegrowMultiplier": 2
   }
  },
  "buildings": [

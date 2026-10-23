@@ -174,6 +174,12 @@ namespace Founders.Core
         public GameResult<int> PlaceBuilding(string buildingId, int x, int y, int rotation = 0)
         {
             Update();
+            return PlaceBuildingNow(buildingId, x, y, rotation);
+        }
+
+        /// <summary>Places a building without first catching up on time (for the simulation itself, e.g. zones).</summary>
+        GameResult<int> PlaceBuildingNow(string buildingId, int x, int y, int rotation = 0)
+        {
             var def = Content.Building(buildingId);
             if (def == null) return GameError.UnknownContent(buildingId);
             rotation = ((rotation % 4) + 4) % 4;

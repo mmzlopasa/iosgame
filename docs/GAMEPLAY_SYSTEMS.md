@@ -127,6 +127,13 @@ only the map's name (`gen_<code>`): the valley and its 64 lands are drawn again 
 - Paths are quicker to walk (villagers prefer them) and **building sites beside a path go up 15% faster**, so the town grows along the ways people already take. Unused paths grass over (3% of the wear an hour).
 - Wear is applied once a game minute, so long absences stay cheap. Content: `tools/content/paths.py`; rules: `Core/GamePaths.cs`; drawing: `WorldView.RepaintGround`; walking: `Pathing`.
 
+## Zones painted with a brush (Manor Lords' plots and work areas)
+
+- Build drawer › **Zones** tab: brushes for **Homes**, **Woodcutting**, **Forestry** and **Pasture**, and an eraser. Drag to paint (the hand button moves the camera instead). Painted cells show as coloured tiles while building.
+- **Homes**: when one bed or fewer is free, the villagers start the roomiest home the town can afford in the zone by themselves (paid from the stores, one at a time), nearest the heart and along trodden paths first.
+- **Woodcutting**: woodcutters near the area fell those trees first. **Forestry**: never cut, and felled trees grow back twice as fast. **Pasture**: every 4 cells give one more herder a place (once a pasture or pen stands).
+- Content: `tools/content/zones.py`; rules: `Core/GameZones.cs`; tests: `ZonesTests`.
+
 ## Next refinements (to discuss)
 
 1. **Families instead of single people**: housing gives family slots and one family

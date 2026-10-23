@@ -286,6 +286,8 @@ namespace Founders.Core
         public Dictionary<string, double> Favour = new Dictionary<string, double>();
         /// <summary>Ground worn by feet (cell y·width + x → wear); enough wear makes a path.</summary>
         public Dictionary<int, double> Wear = new Dictionary<int, double>();
+        /// <summary>Zones painted with the brush (cell y·width + x → zone id).</summary>
+        public Dictionary<int, string> Zones = new Dictionary<int, string>();
         /// <summary>Goods made by recipes since the founding, by resource id (e.g. bronze cast).</summary>
         public Dictionary<string, double> Made = new Dictionary<string, double>();
         /// <summary>Speed-ups owned: key (see Speedups.Key) → count.</summary>
@@ -394,6 +396,7 @@ namespace Founders.Core
             if (TaxLevel != null) d["taxLevel"] = TaxLevel;
             if (TradeRoutes.Count > 0) d["tradeRoutes"] = TradeRoutes.Select(x => (object)x.ToJson()).ToList();
             if (Favour.Count > 0) d["favour"] = Favour.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
+            if (Zones.Count > 0) d["zones"] = Zones.Select(kv => (object)new List<object> { kv.Key, kv.Value }).ToList();
             if (Wear.Count > 0) d["wear"] = Wear.Select(kv => (object)new List<object> { kv.Key, Math.Round(kv.Value, 3) }).ToList();
             if (Made.Count > 0) d["made"] = Made.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (Speedups.Count > 0) d["speedups"] = Speedups.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
@@ -481,6 +484,8 @@ namespace Founders.Core
                 var fav = o.Obj("favour");
                 foreach (var key in fav.Keys) s.Favour[key] = fav.Num(key);
             }
+            if (o.Has("zones"))
+                foreach (var pair in o.Arr("zones")) { var l = (List<object>)pair; s.Zones[Convert.ToInt32(l[0])] = Convert.ToString(l[1]); }
             if (o.Has("wear"))
                 foreach (var pair in o.Arr("wear")) { var l = (List<object>)pair; s.Wear[Convert.ToInt32(l[0])] = Convert.ToDouble(l[1]); }
             if (o.Has("made"))

@@ -835,6 +835,8 @@ namespace Founders.Core
         public EstatesConfig Estates;
         /// <summary>Paths worn by people's feet (null = none).</summary>
         public PathsConfig Paths;
+        /// <summary>Zones painted with the brush (null = none).</summary>
+        public ZonesConfig Zones;
 
         internal static BalanceConfig FromJson(JObj o) => new BalanceConfig
         {
@@ -881,6 +883,7 @@ namespace Founders.Core
             Trade = o.Has("trade") ? TradeConfig.FromJson(o.Obj("trade")) : null,
             Estates = o.Has("estates") ? EstatesConfig.FromJson(o.Obj("estates")) : null,
             Paths = o.Has("paths") ? PathsConfig.FromJson(o.Obj("paths")) : null,
+            Zones = o.Has("zones") ? ZonesConfig.FromJson(o.Obj("zones")) : null,
             Discontent = o.Has("discontent") ? DiscontentConfig.FromJson(o.Obj("discontent")) : null,
         };
     }
@@ -1052,6 +1055,25 @@ namespace Founders.Core
             LandsExplored = o.OptInt("landsExplored") ?? 0,
             Buys = ResourceBundle.FromJson(o.OptObj("buys")), Sells = ResourceBundle.FromJson(o.OptObj("sells")),
             RouteCost = o.OptNum("routeCost") ?? 0,
+        };
+    }
+
+    /// <summary>Zones painted with the brush: homes, woodcutting, forestry and pastures.</summary>
+    public sealed class ZonesConfig
+    {
+        /// <summary>Game seconds between the villagers' looks at the homes zones.</summary>
+        public double CheckSeconds;
+        /// <summary>Villagers build a new home when this many beds or fewer are free.</summary>
+        public int FreeBeds;
+        /// <summary>Painted pasture cells per extra herder.</summary>
+        public int PastureCellsPerHerder;
+        /// <summary>How much faster felled trees grow back in a forestry zone.</summary>
+        public double ForestryRegrowMultiplier;
+
+        internal static ZonesConfig FromJson(JObj o) => new ZonesConfig
+        {
+            CheckSeconds = o.OptNum("checkSeconds") ?? 60, FreeBeds = o.OptInt("freeBeds") ?? 1,
+            PastureCellsPerHerder = o.OptInt("pastureCellsPerHerder") ?? 0, ForestryRegrowMultiplier = o.OptNum("forestryRegrowMultiplier") ?? 1,
         };
     }
 

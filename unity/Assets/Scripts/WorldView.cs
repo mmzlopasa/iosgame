@@ -621,6 +621,7 @@ namespace Founders
             RepaintGround(game, initial);
             UpdateSelection();
             UpdateGhost();
+            UpdateZoneOverlay(game);
             UpdateFoundingGhost();
             UpdateVillagers(game);
         }
@@ -972,6 +973,55 @@ namespace Founders
             Parts.Prim(PrimitiveType.Cube, frame, new Vector3(s * 0.46f, 0, 0), new Vector3(0.1f, 0.06f, s * 0.96f), m, default, false);
             Parts.Prim(PrimitiveType.Cube, frame, new Vector3(-s * 0.46f, 0, 0), new Vector3(0.1f, 0.06f, s * 0.96f), m, default, false);
             return frame.gameObject;
+        }
+
+        // MARK: - Zones
+
+        readonly Dictionary<string, GameObject> zoneOverlays = new Dictionary<string, GameObject>();
+        string zoneOverlayKey;
+
+        /// <summary>The painted zones as coloured tiles, one mesh per kind, shown while building or painting.</summary>
+        void UpdateZoneOverlay(Game game)
+        {
+            bool show = game.HasZones && (store.ActivePanel == Panel.Build || GameStore.IsZoneTool(store.DecoratingId));
+            string key = show ? $"{game.ZonesVersion}|{game.State.Zones.Count}|{game.State.NextBuildingId}" : "";
+            if (key == zoneOverlayKey) return;
+            zoneOverlayKey = key;
+            foreach (var go in zoneOverlays.Values) Destroy(go);
+            zoneOverlays.Clear();
+            if (!show) return;
+            int w = game.Content.Map.Width;
+            float h = Grid.CellSize * 0.42f;
+            foreach (var zone in Game.ZoneIds)
+            {
+                var verts = new List<Vector3>();
+                var tris = new List<int>();
+                foreach (var kv in game.State.Zones)
+                {
+                    if (kv.Value != zone) continue;
+                    int x = kv.Key % w, y = kv.Key / w;
+                    if (game.BuildingIdAt(x, y) != null) continue; // built on: the zone did its work
+                    var c = Ground.OnGround(Grid.CellCenter(x, y)) + new Vector3(0, 0.05f, 0);
+                    int i = verts.Count;
+                    verts.Add(c + new Vector3(-h, 0, -h));
+                    verts.Add(c + new Vector3(-h, 0, h));
+                    verts.Add(c + new Vector3(h, 0, h));
+                    verts.Add(c + new Vector3(h, 0, -h));
+                    tris.AddRange(new[] { i, i + 1, i + 2, i, i + 2, i + 3 });
+                }
+                if (verts.Count == 0) continue;
+                var mesh = new Mesh { name = "Zone_" + zone, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+                mesh.SetVertices(verts);
+                mesh.SetTriangles(tris, 0);
+                mesh.RecalculateNormals();
+                var go = new GameObject("Zone_" + zone);
+                go.transform.SetParent(overlayRoot, false);
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var r = go.AddComponent<MeshRenderer>();
+                r.sharedMaterial = Palette.Get("Zone_" + zone);
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                zoneOverlays[zone] = go;
+            }
         }
 
         void UpdateGhost()

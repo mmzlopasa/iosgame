@@ -182,6 +182,7 @@ namespace Founders.Core
             AdvanceDiscontent(dt);
             AdvanceEstates(dt);
             AdvancePaths(dt);
+            AdvanceZones(dt);
             AdvanceGrowth(dt, snapshot.Net.Food);
 
             State.SimTime += dt;

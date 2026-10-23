@@ -130,7 +130,7 @@ namespace Founders.Core
         public int JobCapacity(JobType job)
         {
             if (Content.JobConfig(job)?.UnlimitedSlots == true) return State.Population;
-            return OperationalBuildings().Sum(x => SlotsOf(x.building, x.def, job));
+            return OperationalBuildings().Sum(x => SlotsOf(x.building, x.def, job)) + PastureSlots(job);
         }
 
         /// <summary>Output per worker per second, including all current bonuses and penalties.</summary>

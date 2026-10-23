@@ -53,6 +53,9 @@ namespace Founders
         /// <summary>Decoration being laid out (tap or drag on the ground), or "remove" to clear decorations.</summary>
         public string DecoratingId { get; private set; }
         public const string RemoveTool = "remove";
+        /// <summary>Zone brushes are decoration tools named "zone:&lt;zone id&gt;" ("zone:clear" erases).</summary>
+        public const string ZonePrefix = "zone:", ZoneEraser = "zone:clear";
+        public static bool IsZoneTool(string id) => id != null && id.StartsWith(ZonePrefix, StringComparison.Ordinal);
         /// <summary>When true a drag paints decorations (roads, fences) instead of moving the camera.</summary>
         public bool PaintMode { get; private set; }
         public int DecorationRotation { get; private set; }
@@ -637,7 +640,7 @@ namespace Founders
             DecoratingId = decorationId;
             var def = Content.Decoration(decorationId);
             // Roads and fences are drawn by dragging; single objects are placed by tapping.
-            PaintMode = def != null && (def.IsRoad || def.Category == "Fences");
+            PaintMode = IsZoneTool(decorationId) || def != null && (def.IsRoad || def.Category == "Fences");
             Refresh();
         }
 
@@ -662,7 +665,13 @@ namespace Founders
             if (lastPainted == (x, y) && quiet) return;
             lastPainted = (x, y);
             GameError error;
-            if (DecoratingId == RemoveTool)
+            if (IsZoneTool(DecoratingId))
+            {
+                string zone = DecoratingId == ZoneEraser ? null : DecoratingId.Substring(ZonePrefix.Length);
+                if (Game.ZoneAt(x, y) == zone) return;
+                error = Game.SetZone(x, y, zone).Error;
+            }
+            else if (DecoratingId == RemoveTool)
             {
                 var d = Game.DecorationAt(x, y);
                 if (d == null) return;
