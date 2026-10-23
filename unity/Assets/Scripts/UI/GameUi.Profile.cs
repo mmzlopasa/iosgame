@@ -150,7 +150,7 @@ namespace Founders.UI
             const float face = 104;
             var left = E.Div().Col(Align.Center).Ignore();
             left.style.width = face;
-            var portrait = E.Slot(Founder.Avatar, face, FrameCell(Founder.Frame), 0.84f);
+            var portrait = E.Slot(Founder.Avatar, face, FrameCell(Founder.Frame), 0.84f).Rarity(FrameCell(Founder.Frame));
             Tap(portrait, () => ShowProfileDialog("avatar"));
             left.Add(portrait);
             left.Add(E.T(PlayerProfile.Frames.FirstOrDefault(f => f.Id == Founder.Frame)?.Name + " frame", Theme.Small, Theme.Pale).Fit(face + 10).Margin(4));
@@ -265,6 +265,7 @@ namespace Founders.UI
             for (int i = 0; i < lines.Length; i++)
                 rows.Add(E.StatRow(lines[i].icon, lines[i].label, lines[i].value, null, i > 0));
             host.Add(town);
+            host.Add(SpeedupInventory());
 
             var me = Block("Founder", out var frows);
             frows.Add(E.StatRow("user", "Name", Founder.Name, null, false));
@@ -304,7 +305,7 @@ namespace Founders.UI
         /// <summary>The frames: unlocked ones are picked with a tap, locked ones say how many milestones they need.</summary>
         VisualElement FrameRow(float rowW)
         {
-            var row = E.Div().Row(0, Align.FlexStart).Ignore().Margin(8, 0, 6);
+            var row = E.Div().Row(0, Align.FlexStart).Ignore().Margin(8, 0, 12);
             int reached = G.State.ReachedMilestones.Count;
             float cellW = Mathf.Floor(rowW / PlayerProfile.Frames.Length);
             foreach (var f in PlayerProfile.Frames)
@@ -312,8 +313,8 @@ namespace Founders.UI
                 bool open = reached >= f.Milestones;
                 bool on = Founder.Frame == f.Id;
                 var c = E.Div().Col(Align.Center).Size(cellW);
-                var slot = E.Slot(open ? Founder.Avatar : "lock", 60, FrameCell(f.Id), open ? 0.84f : 0.5f, !open);
-                if (on) slot.Add(E.Icon("check", 24).Abs(null, null, -6, -6));
+                var slot = E.Slot(open ? Founder.Avatar : "lock", 60, FrameCell(f.Id), open ? 0.84f : 0.5f, !open).Rarity(FrameCell(f.Id));
+                if (on) slot.Add(E.Icon("check", 22).Abs(null, null, -4, 2)); // on the corner, clear of the name under it
                 c.Add(slot);
                 c.Add(E.T(f.Name, Theme.Body, open ? (Color?)null : Theme.Pale).Fit(cellW - 4).Margin(3));
                 if (!open) c.Add(E.T(f.Milestones == 1 ? "1 milestone" : $"{f.Milestones} milestones", Theme.Small, Theme.Pale).Fit(cellW - 4));
@@ -410,7 +411,7 @@ namespace Founders.UI
             var acc = Block("Account", out var arows);
             string user = CloudSave.Username;
             var who = E.Line(false, 52);
-            who.Add(E.Slot(Founder.Avatar, 40, FrameCell(Founder.Frame), 0.84f).Margin(0, 10));
+            who.Add(E.Slot(Founder.Avatar, 40, FrameCell(Founder.Frame), 0.84f).Rarity(FrameCell(Founder.Frame)).Margin(0, 10));
             var wcol = E.Div().Col().Grow().Ignore();
             wcol.Add(E.T(user != null ? $"Bound: {user}" : "Guest on this device", Theme.Num).Fit(rowW - 60));
             wcol.Add(E.T(user != null ? "Sign in with this username on a new phone to continue there."
@@ -503,11 +504,16 @@ namespace Founders.UI
             col.Add(E.T(label, Theme.Num));
             col.Add(E.T(hint, Theme.Small, Theme.Pale).Fit(InnerW - 20 - 90));
             row.Add(col);
-            var sw = E.Div().Row().Skin(value ? "btn_green" : "btn_grey").Pad(0, 5, 4, 7).Size(80, 36).Ignore();
-            var knob = E.Div().Skin("slot").Size(24, 24).Ignore();
-            var text = E.T(value ? "ON" : "OFF", Theme.Body).Grow().Align(TextAnchor.MiddleCenter);
-            if (value) { sw.Add(text); sw.Add(knob); }
-            else { sw.Add(knob); sw.Add(text); }
+            // The kit's stone switch when the kit is in; otherwise the game's own.
+            var sw = E.KitSwitch(value, 40)?.Ignore();
+            if (sw == null)
+            {
+                sw = E.Div().Row().Skin(value ? "btn_green" : "btn_grey").Pad(0, 5, 4, 7).Size(80, 36).Ignore();
+                var knob = E.Div().Skin("slot").Size(24, 24).Ignore();
+                var text = E.T(value ? "ON" : "OFF", Theme.Body).Grow().Align(TextAnchor.MiddleCenter);
+                if (value) { sw.Add(text); sw.Add(knob); }
+                else { sw.Add(knob); sw.Add(text); }
+            }
             row.Add(sw);
             Tap(row, () => set(!value));
             return row;
@@ -546,9 +552,9 @@ namespace Founders.UI
             foreach (var a in PlayerProfile.Avatars)
             {
                 bool on = Founder.Avatar == a.Id;
-                var cell = E.Div().Col(Align.Center).Size(cellW).Margin(0, 0, 8);
-                var slot = E.Slot(a.Id, 76, on ? FrameCell(Founder.Frame) : E.Cell.Slot, 0.84f);
-                if (on) slot.Add(E.Icon("check", 26).Abs(null, null, -6, -6));
+                var cell = E.Div().Col(Align.Center).Size(cellW).Margin(0, 0, 4);
+                var slot = E.Slot(a.Id, 66, on ? FrameCell(Founder.Frame) : E.Cell.Slot, 0.84f).Rarity(on ? FrameCell(Founder.Frame) : E.Cell.Slot);
+                if (on) slot.Add(E.Icon("check", 22).Abs(null, null, -4, 2)); // on the corner, clear of the name under it
                 cell.Add(slot);
                 cell.Add(E.T(a.Name, Theme.Body, on ? Theme.Gold : (Color?)null).Fit(cellW - 4).Margin(3));
                 string id = a.Id;
@@ -687,8 +693,10 @@ namespace Founders.UI
             if (input != null)
             {
                 var st = input.style;
-                st.backgroundColor = Theme.Wood1;
-                st.color = Theme.InkDark;
+                // The kit's input field: the dark inset with a lilac rim and white words (the Profile demo).
+                st.backgroundColor = Theme.KitLook ? Theme.Hex("#1A1029") : Theme.Wood1;
+                st.color = Theme.KitLook ? Color.white : Theme.InkDark;
+                if (Theme.KitLook) { input.Border(Theme.Rim, 2).Radius(12); st.unityFontDefinition = Theme.Display; }
                 st.paddingLeft = 12;
                 st.paddingRight = 12;
                 st.unityTextAlign = TextAnchor.MiddleLeft;

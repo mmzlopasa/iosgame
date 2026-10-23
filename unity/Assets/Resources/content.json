@@ -224,6 +224,18 @@
     "unlimitedSlots": false
    },
    {
+    "job": "smelting",
+    "name": "Smelting",
+    "description": "Melt ore in the furnace with charcoal: 2 Ore and 1 Wood cast 1 Bronze.",
+    "output": "bronze",
+    "inputs": {
+     "ore": 2,
+     "wood": 1
+    },
+    "ratePerWorkerPerSecond": 0.02,
+    "unlimitedSlots": false
+   },
+   {
     "job": "healing",
     "name": "Healing",
     "description": "Healers look after the sick: each cares for three, who get well quickly and never worse.",
@@ -5295,7 +5307,7 @@
   {
    "id": "copper_smelter",
    "name": "Copper Smelter",
-   "description": "A stone furnace and bellows. +2 Stone Gathering and +1 Crafting job.",
+   "description": "A stone furnace and bellows. 2 Smelting jobs turn Ore and Wood into Bronze, +1 Crafting job.",
    "epoch": "epoch_first_civilizations",
    "footprint": {
     "width": 1,
@@ -5315,7 +5327,7 @@
    "requiresTech": "copper_smelting",
    "jobSlots": [
     {
-     "job": "stonecutting",
+     "job": "smelting",
      "count": 2
     },
     {
@@ -5492,7 +5504,8 @@
    },
    "cost": {
     "wood": 50,
-    "stone": 40
+    "stone": 40,
+    "bronze": 10
    },
    "buildSeconds": 50,
    "sprite": "bronze_workshop",
@@ -7746,7 +7759,7 @@
   {
    "id": "copper_smelting",
    "name": "Copper Smelting",
-   "description": "Green stones melt into copper in hot kilns. Unlocks the Copper Smelter. +15% stone gathering.",
+   "description": "Green stones melt into copper in hot kilns. Unlocks the Copper Smelter, where smelters cast bronze from ore and wood. +15% stone gathering.",
    "cost": {
     "knowledge": 170
    },
@@ -8046,11 +8059,11 @@
   {
    "id": "ridge_deposit",
    "title": "A Useful Stone Deposit",
-   "text": "Scouts found a seam of fine flint on the eastern ridge. Opening it takes effort, but would serve the settlement for generations.",
+   "text": "Scouts found a seam of fine flint in the hills beyond the camp. Opening it takes effort, but would serve the settlement for generations.",
    "trigger": [
     {
-     "kind": "regionExplored",
-     "id": "east_ridge"
+     "kind": "regionsExploredAtLeast",
+     "amount": 1
     }
    ],
    "options": [
@@ -8069,12 +8082,12 @@
        "value": 1.3
       }
      ],
-     "legacyText": "The Ridge Quarry was opened. Its stone will shape the village's future buildings."
+     "legacyText": "The Hill Quarry was opened. Its stone will shape the village's future buildings."
     },
     {
      "id": "keep_wild",
-     "label": "Leave the ridge wild",
-     "tradeOff": "No cost. The ridge stays rich in wild plants: foraging is permanently +10%.",
+     "label": "Leave the hills wild",
+     "tradeOff": "No cost. The hills stay rich in wild plants: foraging is permanently +10%.",
      "effects": [
       {
        "kind": "jobRateMultiplier",
@@ -8082,7 +8095,7 @@
        "value": 1.1
       }
      ],
-     "legacyText": "The eastern ridge was left untouched and became a cherished foraging ground."
+     "legacyText": "The hills were left untouched and became a cherished foraging ground."
     }
    ]
   },
@@ -8197,8 +8210,8 @@
    "text": "Spring rain swells the river. Water creeps toward the lower stores.",
    "trigger": [
     {
-     "kind": "regionExplored",
-     "id": "southern_marsh"
+     "kind": "regionsExploredAtLeast",
+     "amount": 2
     }
    ],
    "options": [
@@ -8433,7 +8446,7 @@
   {
    "id": "first_civilization",
    "name": "The Bronze Dawn",
-   "description": "Fields, granaries and bronze: a new era begins.",
+   "description": "Fields, granaries and the first cast bronze: a new era begins.",
    "requirements": [
     {
      "kind": "heartLevelAtLeast",
@@ -8450,6 +8463,11 @@
     {
      "kind": "techResearched",
      "id": "bronze_working"
+    },
+    {
+     "kind": "madeAtLeast",
+     "resource": "bronze",
+     "amount": 20
     },
     {
      "kind": "buildingCount",
@@ -8593,313 +8611,1344 @@
   {
    "id": "home_clearing",
    "name": "Home Clearing",
-   "description": "The riverside clearing where the camp stands.",
-   "x": 3,
-   "y": 3,
-   "width": 9,
-   "height": 9,
+   "description": "The land around your first campfire.",
+   "home": true,
+   "x": 0,
+   "y": 0,
+   "width": 15,
+   "height": 15,
    "revealedAtStart": true,
    "cost": {},
    "expeditionSeconds": 1,
-   "legacyText": "The first clearing beside the river."
+   "legacyText": "The clearing where the first fire was lit."
   },
   {
-   "id": "north_forest",
-   "name": "Northern Forest",
-   "description": "Dense woodland upstream.",
+   "id": "land_0_0",
+   "name": "Great Meadow",
+   "description": "Open grassland: room to farm, herd and build.",
    "x": 0,
    "y": 0,
-   "width": 12,
-   "height": 3,
+   "width": 16,
+   "height": 16,
    "revealedAtStart": false,
    "cost": {
     "food": 10
    },
    "expeditionSeconds": 600.0,
-   "legacyText": "Scouts traced the river upstream through the northern forest.",
-   "finding": "In the northern forest the scouts found a cache of dry firewood.",
+   "legacyText": "Scouts mapped Great Meadow.",
+   "finding": "A wanderer crossing the plain joined the village.",
+   "survivors": 1
+  },
+  {
+   "id": "land_1_0",
+   "name": "Sunny Fields",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 16,
+   "y": 0,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Sunny Fields.",
+   "finding": "The scouts gathered wild grain in the meadows.",
+   "loot": {
+    "food": 25
+   }
+  },
+  {
+   "id": "land_2_0",
+   "name": "Whispering Pines",
+   "description": "Thick woods full of timber and game.",
+   "x": 32,
+   "y": 0,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Whispering Pines.",
+   "finding": "In the woods the scouts found a cache of dry firewood.",
    "loot": {
     "wood": 40
    }
   },
   {
-   "id": "west_woods",
-   "name": "Western Woods",
-   "description": "Old trees west of the clearing.",
-   "x": 0,
-   "y": 3,
-   "width": 3,
-   "height": 9,
-   "revealedAtStart": false,
-   "cost": {
-    "food": 10
-   },
-   "expeditionSeconds": 600.0,
-   "legacyText": "Paths were cut into the western woods.",
-   "finding": "A hunter lost in the western woods followed the scouts home.",
-   "survivors": 1
-  },
-  {
-   "id": "east_ridge",
-   "name": "Eastern Ridge",
-   "description": "Rocky high ground across the river.",
-   "x": 12,
+   "id": "land_3_0",
+   "name": "Hills of Stone",
+   "description": "Stony hills: good stone for quarries.",
+   "x": 48,
    "y": 0,
-   "width": 4,
+   "width": 16,
    "height": 16,
    "revealedAtStart": false,
    "cost": {
     "food": 15
    },
    "expeditionSeconds": 720.0,
-   "legacyText": "Scouts crossed the river and climbed the eastern ridge.",
-   "finding": "The scouts carried back fine flint from the ridge.",
+   "legacyText": "Scouts mapped Hills of Stone.",
+   "finding": "The scouts carried back fine flint from the hills.",
    "loot": {
     "stone": 30
    }
   },
   {
-   "id": "south_bank",
-   "name": "Southern Riverbank",
-   "description": "Where the river bends south.",
-   "x": 0,
-   "y": 12,
-   "width": 12,
-   "height": 4,
+   "id": "land_4_0",
+   "name": "Flint Rise",
+   "description": "Stony hills: good stone for quarries.",
+   "x": 64,
+   "y": 0,
+   "width": 16,
+   "height": 16,
    "revealedAtStart": false,
    "cost": {
-    "food": 10
+    "food": 15
    },
-   "expeditionSeconds": 600.0,
-   "legacyText": "The southern riverbank was explored — a future crossing point.",
-   "finding": "On the south bank the scouts found a fisher's abandoned catch.",
+   "expeditionSeconds": 720.0,
+   "legacyText": "Scouts mapped Flint Rise.",
+   "finding": "Among the rocks the scouts found a shelter of old hides.",
    "loot": {
-    "food": 30
+    "hides": 10
    }
   },
   {
-   "id": "eastern_highlands",
-   "name": "Eastern Highlands",
-   "description": "Wind-cut uplands beyond the ridge, rich in stone.",
-   "x": 16,
+   "id": "land_5_0",
+   "name": "Grey Knolls",
+   "description": "Stony hills: good stone for quarries.",
+   "x": 80,
    "y": 0,
-   "width": 5,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15
+   },
+   "expeditionSeconds": 720.0,
+   "legacyText": "Scouts mapped Grey Knolls.",
+   "finding": "Among the rocks the scouts found a shelter of old hides.",
+   "loot": {
+    "hides": 10
+   }
+  },
+  {
+   "id": "land_6_0",
+   "name": "Iron Mountains",
+   "description": "Steep peaks; ore shows in the scree at their feet.",
+   "x": 96,
+   "y": 0,
+   "width": 16,
    "height": 16,
    "revealedAtStart": false,
    "cost": {
     "food": 15,
     "wood": 10
    },
-   "expeditionSeconds": 1500.0,
-   "legacyText": "Scouts climbed past the ridge and saw the highlands roll on toward the mountains.",
-   "finding": "The highlands hide copper-green rocks and old hides in a cave.",
+   "expeditionSeconds": 900.0,
+   "legacyText": "Scouts mapped Iron Mountains.",
+   "finding": "The mountains hide copper-green rocks and old hides in a cave.",
    "loot": {
     "ore": 20,
     "hides": 10
    }
   },
   {
-   "id": "southern_marsh",
-   "name": "Southern Marsh",
-   "description": "Reed beds and pools where the river slows.",
+   "id": "land_7_0",
+   "name": "Copper Peaks",
+   "description": "Steep peaks; ore shows in the scree at their feet.",
+   "x": 112,
+   "y": 0,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15,
+    "wood": 10
+   },
+   "expeditionSeconds": 900.0,
+   "legacyText": "Scouts mapped Copper Peaks.",
+   "finding": "Scouts came back with red stones that melt in fire.",
+   "loot": {
+    "ore": 15
+   }
+  },
+  {
+   "id": "land_0_1",
+   "name": "Old Spruce Wood",
+   "description": "Thick woods full of timber and game.",
    "x": 0,
    "y": 16,
-   "width": 21,
-   "height": 5,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Old Spruce Wood.",
+   "finding": "The scouts carried back a load of fallen timber.",
+   "loot": {
+    "wood": 30
+   }
+  },
+  {
+   "id": "land_1_1",
+   "name": "Bee Pastures",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 16,
+   "y": 16,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Bee Pastures.",
+   "finding": "The scouts gathered wild grain in the meadows.",
+   "loot": {
+    "food": 25
+   }
+  },
+  {
+   "id": "land_2_1",
+   "name": "Clover Plain",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 32,
+   "y": 16,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Clover Plain."
+  },
+  {
+   "id": "land_3_1",
+   "name": "Golden Grass",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 48,
+   "y": 16,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Golden Grass.",
+   "finding": "The scouts gathered wild grain in the meadows.",
+   "loot": {
+    "food": 25
+   }
+  },
+  {
+   "id": "land_4_1",
+   "name": "Boulder Field",
+   "description": "Stony hills: good stone for quarries.",
+   "x": 64,
+   "y": 16,
+   "width": 16,
+   "height": 16,
    "revealedAtStart": false,
    "cost": {
     "food": 15
    },
-   "expeditionSeconds": 1500.0,
-   "legacyText": "Scouts waded the southern marsh and found where the river widens into pools.",
-   "finding": "Two people hiding in the reeds of the marsh joined the village.",
+   "expeditionSeconds": 720.0,
+   "legacyText": "Scouts mapped Boulder Field.",
+   "finding": "Among the rocks the scouts found a shelter of old hides.",
+   "loot": {
+    "hides": 10
+   }
+  },
+  {
+   "id": "land_5_1",
+   "name": "Mossy Hollow",
+   "description": "Thick woods full of timber and game.",
+   "x": 80,
+   "y": 16,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Mossy Hollow.",
+   "finding": "The scouts carried back a load of fallen timber.",
+   "loot": {
+    "wood": 30
+   }
+  },
+  {
+   "id": "land_6_1",
+   "name": "Eagle Crags",
+   "description": "Steep peaks; ore shows in the scree at their feet.",
+   "x": 96,
+   "y": 16,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15,
+    "wood": 10
+   },
+   "expeditionSeconds": 900.0,
+   "legacyText": "Scouts mapped Eagle Crags.",
+   "finding": "Scouts came back with red stones that melt in fire.",
+   "loot": {
+    "ore": 15
+   }
+  },
+  {
+   "id": "land_7_1",
+   "name": "Frost Heights",
+   "description": "Steep peaks; ore shows in the scree at their feet.",
+   "x": 112,
+   "y": 16,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15,
+    "wood": 10
+   },
+   "expeditionSeconds": 900.0,
+   "legacyText": "Scouts mapped Frost Heights.",
+   "finding": "The mountains hide copper-green rocks and old hides in a cave.",
+   "loot": {
+    "ore": 20,
+    "hides": 10
+   }
+  },
+  {
+   "id": "land_0_2",
+   "name": "Elk Woods",
+   "description": "Thick woods full of timber and game.",
+   "x": 0,
+   "y": 32,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Elk Woods.",
+   "finding": "A hunter lost in the woods followed the scouts home.",
+   "survivors": 1
+  },
+  {
+   "id": "land_1_2",
+   "name": "Windy Downs",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 16,
+   "y": 32,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Windy Downs.",
+   "finding": "The scouts gathered wild grain in the meadows.",
+   "loot": {
+    "food": 25
+   }
+  },
+  {
+   "id": "land_2_2",
+   "name": "Lark Fields",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 32,
+   "y": 32,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Lark Fields.",
+   "finding": "A wanderer crossing the plain joined the village.",
+   "survivors": 1
+  },
+  {
+   "id": "land_3_2",
+   "name": "Deer Meadows",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 48,
+   "y": 32,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Deer Meadows.",
+   "finding": "The scouts gathered wild grain in the meadows.",
+   "loot": {
+    "food": 25
+   }
+  },
+  {
+   "id": "land_4_2",
+   "name": "Broken Hills",
+   "description": "Stony hills: good stone for quarries.",
+   "x": 64,
+   "y": 32,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15
+   },
+   "expeditionSeconds": 720.0,
+   "legacyText": "Scouts mapped Broken Hills.",
+   "finding": "The scouts carried back fine flint from the hills.",
+   "loot": {
+    "stone": 30
+   }
+  },
+  {
+   "id": "land_5_2",
+   "name": "Quarry Downs",
+   "description": "Stony hills: good stone for quarries.",
+   "x": 80,
+   "y": 32,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15
+   },
+   "expeditionSeconds": 720.0,
+   "legacyText": "Scouts mapped Quarry Downs.",
+   "finding": "Among the rocks the scouts found a shelter of old hides.",
+   "loot": {
+    "hides": 10
+   }
+  },
+  {
+   "id": "land_6_2",
+   "name": "Rocky Heights",
+   "description": "Stony hills: good stone for quarries.",
+   "x": 96,
+   "y": 32,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15
+   },
+   "expeditionSeconds": 720.0,
+   "legacyText": "Scouts mapped Rocky Heights.",
+   "finding": "Among the rocks the scouts found a shelter of old hides.",
+   "loot": {
+    "hides": 10
+   }
+  },
+  {
+   "id": "land_7_2",
+   "name": "Thunder Peaks",
+   "description": "Steep peaks; ore shows in the scree at their feet.",
+   "x": 112,
+   "y": 32,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15,
+    "wood": 10
+   },
+   "expeditionSeconds": 900.0,
+   "legacyText": "Scouts mapped Thunder Peaks.",
+   "finding": "The mountains hide copper-green rocks and old hides in a cave.",
+   "loot": {
+    "ore": 20,
+    "hides": 10
+   }
+  },
+  {
+   "id": "land_0_3",
+   "name": "Shadow Firs",
+   "description": "Thick woods full of timber and game.",
+   "x": 0,
+   "y": 48,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Shadow Firs.",
+   "finding": "A hunter lost in the woods followed the scouts home.",
+   "survivors": 1
+  },
+  {
+   "id": "land_1_3",
+   "name": "Flower Vale",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 16,
+   "y": 48,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Flower Vale.",
+   "finding": "A wanderer crossing the plain joined the village.",
+   "survivors": 1
+  },
+  {
+   "id": "land_2_3",
+   "name": "Open Steppe",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 32,
+   "y": 48,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Open Steppe.",
+   "finding": "The scouts gathered wild grain in the meadows.",
+   "loot": {
+    "food": 25
+   }
+  },
+  {
+   "id": "land_3_3",
+   "name": "Owl Thicket",
+   "description": "Thick woods full of timber and game.",
+   "x": 48,
+   "y": 48,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Owl Thicket.",
+   "finding": "A hunter lost in the woods followed the scouts home.",
+   "survivors": 1
+  },
+  {
+   "id": "land_4_3",
+   "name": "Stone Teeth",
+   "description": "Stony hills: good stone for quarries.",
+   "x": 64,
+   "y": 48,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15
+   },
+   "expeditionSeconds": 720.0,
+   "legacyText": "Scouts mapped Stone Teeth.",
+   "finding": "The scouts carried back fine flint from the hills.",
+   "loot": {
+    "stone": 30
+   }
+  },
+  {
+   "id": "land_5_3",
+   "name": "Windy Crags",
+   "description": "Stony hills: good stone for quarries.",
+   "x": 80,
+   "y": 48,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15
+   },
+   "expeditionSeconds": 720.0,
+   "legacyText": "Scouts mapped Windy Crags.",
+   "finding": "Among the rocks the scouts found a shelter of old hides.",
+   "loot": {
+    "hides": 10
+   }
+  },
+  {
+   "id": "land_6_3",
+   "name": "Quiet Plain",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 96,
+   "y": 48,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Quiet Plain.",
+   "finding": "A wanderer crossing the plain joined the village.",
+   "survivors": 1
+  },
+  {
+   "id": "land_7_3",
+   "name": "Red Cliffs",
+   "description": "Steep peaks; ore shows in the scree at their feet.",
+   "x": 112,
+   "y": 48,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15,
+    "wood": 10
+   },
+   "expeditionSeconds": 900.0,
+   "legacyText": "Scouts mapped Red Cliffs.",
+   "finding": "Scouts came back with red stones that melt in fire.",
+   "loot": {
+    "ore": 15
+   }
+  },
+  {
+   "id": "land_0_4",
+   "name": "Deepwood",
+   "description": "Thick woods full of timber and game.",
+   "x": 0,
+   "y": 64,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Deepwood.",
+   "finding": "The scouts carried back a load of fallen timber.",
+   "loot": {
+    "wood": 30
+   }
+  },
+  {
+   "id": "land_1_4",
+   "name": "Needle Grove",
+   "description": "Thick woods full of timber and game.",
+   "x": 16,
+   "y": 64,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Needle Grove.",
+   "finding": "The scouts carried back a load of fallen timber.",
+   "loot": {
+    "wood": 30
+   }
+  },
+  {
+   "id": "land_2_4",
+   "name": "Hare Fields",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 32,
+   "y": 64,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Hare Fields.",
+   "finding": "A wanderer crossing the plain joined the village.",
+   "survivors": 1
+  },
+  {
+   "id": "land_3_4",
+   "name": "Wolf Forest",
+   "description": "Thick woods full of timber and game.",
+   "x": 48,
+   "y": 64,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Wolf Forest.",
+   "finding": "The scouts carried back a load of fallen timber.",
+   "loot": {
+    "wood": 30
+   }
+  },
+  {
+   "id": "land_4_4",
+   "name": "Cairn Hills",
+   "description": "Stony hills: good stone for quarries.",
+   "x": 64,
+   "y": 64,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15
+   },
+   "expeditionSeconds": 720.0,
+   "legacyText": "Scouts mapped Cairn Hills.",
+   "finding": "The scouts carried back fine flint from the hills.",
+   "loot": {
+    "stone": 30
+   }
+  },
+  {
+   "id": "land_5_4",
+   "name": "Slate Slopes",
+   "description": "Stony hills: good stone for quarries.",
+   "x": 80,
+   "y": 64,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15
+   },
+   "expeditionSeconds": 720.0,
+   "legacyText": "Scouts mapped Slate Slopes.",
+   "finding": "The scouts carried back fine flint from the hills.",
+   "loot": {
+    "stone": 30
+   }
+  },
+  {
+   "id": "land_6_4",
+   "name": "Bluebell Lea",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 96,
+   "y": 64,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Bluebell Lea.",
+   "finding": "The scouts gathered wild grain in the meadows.",
+   "loot": {
+    "food": 25
+   }
+  },
+  {
+   "id": "land_7_4",
+   "name": "High Scree",
+   "description": "Steep peaks; ore shows in the scree at their feet.",
+   "x": 112,
+   "y": 64,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15,
+    "wood": 10
+   },
+   "expeditionSeconds": 900.0,
+   "legacyText": "Scouts mapped High Scree.",
+   "finding": "Scouts came back with red stones that melt in fire.",
+   "loot": {
+    "ore": 15
+   }
+  },
+  {
+   "id": "land_0_5",
+   "name": "Fern Dell",
+   "description": "Thick woods full of timber and game.",
+   "x": 0,
+   "y": 80,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Fern Dell.",
+   "finding": "A hunter lost in the woods followed the scouts home.",
+   "survivors": 1
+  },
+  {
+   "id": "land_1_5",
+   "name": "Great Lake",
+   "description": "Open water and reedy banks, rich in fish.",
+   "x": 16,
+   "y": 80,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Great Lake.",
+   "finding": "Two people hiding in the reeds joined the village.",
    "survivors": 2
   },
   {
-   "id": "great_meadow",
-   "name": "Hills of Stone",
-   "description": "Open meadows and stony hills east of the ridge: good quarries.",
-   "x": 21,
-   "y": 0,
-   "width": 20,
-   "height": 21,
+   "id": "land_2_5",
+   "name": "Reed Shallows",
+   "description": "Open water and reedy banks, rich in fish.",
+   "x": 32,
+   "y": 80,
+   "width": 16,
+   "height": 16,
    "revealedAtStart": false,
    "cost": {
-    "food": 25,
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Reed Shallows.",
+   "finding": "On the shore the scouts found a fisher's abandoned catch.",
+   "loot": {
+    "food": 30
+   }
+  },
+  {
+   "id": "land_3_5",
+   "name": "Green Vale",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 48,
+   "y": 80,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Green Vale."
+  },
+  {
+   "id": "land_4_5",
+   "name": "Pebble Heath",
+   "description": "Stony hills: good stone for quarries.",
+   "x": 64,
+   "y": 80,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15
+   },
+   "expeditionSeconds": 720.0,
+   "legacyText": "Scouts mapped Pebble Heath.",
+   "finding": "The scouts carried back fine flint from the hills.",
+   "loot": {
+    "stone": 30
+   }
+  },
+  {
+   "id": "land_5_5",
+   "name": "Long Meadow",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 80,
+   "y": 80,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Long Meadow."
+  },
+  {
+   "id": "land_6_5",
+   "name": "Daisy Fields",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 96,
+   "y": 80,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Daisy Fields."
+  },
+  {
+   "id": "land_7_5",
+   "name": "Storm Ridge",
+   "description": "Steep peaks; ore shows in the scree at their feet.",
+   "x": 112,
+   "y": 80,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15,
     "wood": 10
    },
-   "expeditionSeconds": 2700.0,
-   "legacyText": "Scouts crossed the ridge and found hills of good building stone.",
-   "finding": "Herders on the great meadow chose to settle with us.",
-   "survivors": 2,
+   "expeditionSeconds": 900.0,
+   "legacyText": "Scouts mapped Storm Ridge.",
+   "finding": "The mountains hide copper-green rocks and old hides in a cave.",
    "loot": {
-    "food": 40
+    "ore": 20,
+    "hides": 10
    }
   },
   {
-   "id": "iron_mountains",
-   "name": "Iron Mountains",
-   "description": "Steep peaks with veins of ore at their feet.",
-   "x": 41,
-   "y": 0,
-   "width": 23,
-   "height": 32,
-   "revealedAtStart": false,
-   "cost": {
-    "food": 40,
-    "wood": 20
-   },
-   "expeditionSeconds": 5400.0,
-   "legacyText": "Scouts came back from the mountains with green and red stones that melt in fire.",
-   "finding": "Red stone that rings when struck: iron, in the mountains.",
-   "loot": {
-    "ore": 50
-   }
-  },
-  {
-   "id": "lake_country",
-   "name": "Lake Country",
-   "description": "The river widens into a great lake full of fish.",
+   "id": "land_0_6",
+   "name": "Silent Timber",
+   "description": "Thick woods full of timber and game.",
    "x": 0,
-   "y": 21,
-   "width": 41,
-   "height": 22,
+   "y": 96,
+   "width": 16,
+   "height": 16,
    "revealedAtStart": false,
    "cost": {
-    "food": 30,
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Silent Timber.",
+   "finding": "In the woods the scouts found a cache of dry firewood.",
+   "loot": {
+    "wood": 40
+   }
+  },
+  {
+   "id": "land_1_6",
+   "name": "Bear Wood",
+   "description": "Thick woods full of timber and game.",
+   "x": 16,
+   "y": 96,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Bear Wood.",
+   "finding": "The scouts carried back a load of fallen timber.",
+   "loot": {
+    "wood": 30
+   }
+  },
+  {
+   "id": "land_2_6",
+   "name": "Lichen Wood",
+   "description": "Thick woods full of timber and game.",
+   "x": 32,
+   "y": 96,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Lichen Wood.",
+   "finding": "The scouts carried back a load of fallen timber.",
+   "loot": {
+    "wood": 30
+   }
+  },
+  {
+   "id": "land_3_6",
+   "name": "Riverside Lea",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 48,
+   "y": 96,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Riverside Lea."
+  },
+  {
+   "id": "land_4_6",
+   "name": "Granite Knoll",
+   "description": "Stony hills: good stone for quarries.",
+   "x": 64,
+   "y": 96,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15
+   },
+   "expeditionSeconds": 720.0,
+   "legacyText": "Scouts mapped Granite Knoll.",
+   "finding": "The scouts carried back fine flint from the hills.",
+   "loot": {
+    "stone": 30
+   }
+  },
+  {
+   "id": "land_5_6",
+   "name": "Pine Ridge Forest",
+   "description": "Thick woods full of timber and game.",
+   "x": 80,
+   "y": 96,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Pine Ridge Forest.",
+   "finding": "In the woods the scouts found a cache of dry firewood.",
+   "loot": {
+    "wood": 40
+   }
+  },
+  {
+   "id": "land_6_6",
+   "name": "Hunter's Wood",
+   "description": "Thick woods full of timber and game.",
+   "x": 96,
+   "y": 96,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Hunter's Wood.",
+   "finding": "The scouts carried back a load of fallen timber.",
+   "loot": {
+    "wood": 30
+   }
+  },
+  {
+   "id": "land_7_6",
+   "name": "Cold Summits",
+   "description": "Steep peaks; ore shows in the scree at their feet.",
+   "x": 112,
+   "y": 96,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15,
     "wood": 10
    },
-   "expeditionSeconds": 3600.0,
-   "legacyText": "Scouts followed the river south and found a lake as wide as the sky.",
-   "finding": "Lake folk came back with the scouts, and baskets of dried fish.",
-   "survivors": 2,
+   "expeditionSeconds": 900.0,
+   "legacyText": "Scouts mapped Cold Summits.",
+   "finding": "Scouts came back with red stones that melt in fire.",
    "loot": {
-    "food": 60
+    "ore": 15
    }
   },
   {
-   "id": "deep_forest",
-   "name": "Deep Forest",
-   "description": "Old woods south of the lake, rich in game.",
+   "id": "land_0_7",
+   "name": "Darkfir",
+   "description": "Thick woods full of timber and game.",
    "x": 0,
-   "y": 43,
-   "width": 41,
-   "height": 21,
+   "y": 112,
+   "width": 16,
+   "height": 16,
    "revealedAtStart": false,
    "cost": {
-    "food": 35,
-    "wood": 15
+    "food": 10
    },
-   "expeditionSeconds": 4500.0,
-   "legacyText": "Hunters returned from the deep forest with tales of giant elk.",
-   "finding": "Two trappers from the deep forest joined the village.",
-   "survivors": 2,
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Darkfir.",
+   "finding": "The scouts carried back a load of fallen timber.",
    "loot": {
-    "hides": 20
+    "wood": 30
    }
   },
   {
-   "id": "southern_peaks",
-   "name": "Southern Peaks",
-   "description": "Wild mountains beyond the lake, with ore in the scree.",
-   "x": 41,
-   "y": 32,
-   "width": 23,
-   "height": 32,
+   "id": "land_1_7",
+   "name": "Greenmantle",
+   "description": "Thick woods full of timber and game.",
+   "x": 16,
+   "y": 112,
+   "width": 16,
+   "height": 16,
    "revealedAtStart": false,
    "cost": {
-    "food": 45,
-    "wood": 20
+    "food": 10
    },
-   "expeditionSeconds": 7200.0,
-   "legacyText": "The southern peaks were mapped for the first time.",
-   "finding": "A family from the peaks came down to live with us.",
-   "survivors": 3,
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Greenmantle.",
+   "finding": "The scouts carried back a load of fallen timber.",
    "loot": {
-    "stone": 60
+    "wood": 30
+   }
+  },
+  {
+   "id": "land_2_7",
+   "name": "Barley Flats",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 32,
+   "y": 112,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Barley Flats.",
+   "finding": "The scouts gathered wild grain in the meadows.",
+   "loot": {
+    "food": 25
+   }
+  },
+  {
+   "id": "land_3_7",
+   "name": "Bramble Wood",
+   "description": "Thick woods full of timber and game.",
+   "x": 48,
+   "y": 112,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Bramble Wood.",
+   "finding": "The scouts carried back a load of fallen timber.",
+   "loot": {
+    "wood": 30
+   }
+  },
+  {
+   "id": "land_4_7",
+   "name": "Heather Moor",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 64,
+   "y": 112,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Heather Moor."
+  },
+  {
+   "id": "land_5_7",
+   "name": "Wide Plain",
+   "description": "Open grassland: room to farm, herd and build.",
+   "x": 80,
+   "y": 112,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 10
+   },
+   "expeditionSeconds": 600.0,
+   "legacyText": "Scouts mapped Wide Plain.",
+   "finding": "A wanderer crossing the plain joined the village.",
+   "survivors": 1
+  },
+  {
+   "id": "land_6_7",
+   "name": "Giant's Steps",
+   "description": "Steep peaks; ore shows in the scree at their feet.",
+   "x": 96,
+   "y": 112,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15,
+    "wood": 10
+   },
+   "expeditionSeconds": 900.0,
+   "legacyText": "Scouts mapped Giant's Steps.",
+   "finding": "Scouts came back with red stones that melt in fire.",
+   "loot": {
+    "ore": 15
+   }
+  },
+  {
+   "id": "land_7_7",
+   "name": "Raven Peaks",
+   "description": "Steep peaks; ore shows in the scree at their feet.",
+   "x": 112,
+   "y": 112,
+   "width": 16,
+   "height": 16,
+   "revealedAtStart": false,
+   "cost": {
+    "food": 15,
+    "wood": 10
+   },
+   "expeditionSeconds": 900.0,
+   "legacyText": "Scouts mapped Raven Peaks.",
+   "finding": "The mountains hide copper-green rocks and old hides in a cave.",
+   "loot": {
+    "ore": 20,
+    "hides": 10
    }
   }
  ],
  "map": {
-  "name": "riverside_clearing",
-  "width": 64,
-  "height": 64,
+  "name": "long_valley",
+  "width": 128,
+  "height": 128,
   "traits": [
-   "riverside",
-   "forest edge",
-   "rock outcrop",
-   "southern marsh",
-   "eastern highlands",
-   "lake",
    "river valley",
+   "great lake",
+   "forest edge",
    "hills of stone",
    "iron mountains"
   ],
   "rows": [
-   "..TT.....,~,RRRRRR..........TT.......................TMMMMMMMMMM",
-   ".TTTT....,~,RRRRRRR.........TTT.....................TTTMMMMMMMMM",
-   "TTTTT....,~,.RRRRR..........TTT...............TTTT.TTTTOMMMMMMMM",
-   ".TTT.....,~,..RRR............................TTTTT.TT...OMMMMMMM",
-   "TTT..TT..,~,...RR...T....................RRRRTTTTTTT....OMMMMMMM",
-   "TT...T...,~,...RR.......................RRRRRR.TTTT.......MMMMMM",
-   "TT.......,~,..RRRR......................RRRRRR.TTT......OMMMMMMM",
-   ".....R...,~,...RR..R....................RRRRRR...........MMMMMMM",
-   "....RR...,~,.......RR......RRRRRRRRR....RRRRRR..........MMMMMMMM",
-   ".........,~,..RRR..RR.....RRRRRRRRRRR...RRRRR...T......MMMMMMMMM",
-   "........,~~,...RR...R....RRRRRRRRRRRRR..RRRRR.........OMMMMOMMMM",
-   "........,~,.........R...RRRRRRRRRRRRRRR.RRRRR..........MMMM.MMMM",
-   ".......,~~,....TT...R...RRRRRRRRRRRRRRRRRRRRR.TTT......MMMMMMMMM",
-   "...TT..,~,....TTTT..TTT.RRRRRRRRRRRRRRRRRRRRR.TTT.....MMMMMMMMMM",
-   "TTT...,~~,..TTTTTTT.TTTT.RRRRRRRRRRRRRRR.RRR.........OMMMMMMMMMM",
-   "TTT...,~,...TTTTTTTTT....RRRRRRRRRRRRRR..RRR.........OMMMMMMMMMM",
-   "TTT...,~~,...TTTTTTTT.....RRRRRRRRRRRR...RRR.........OMMMMMMMMMM",
-   "TTT....,~,...TTTT.TTT......RRRRRRRRRR....RRR..........OMMMMMMMMM",
-   ".TT....,~~,...TT...TT.......RRRRRRRR..TT.RR...........OMMMMMMMMM",
-   "..T.....,~,....T....T........RRRRR..TTTT..R............OMMMMMMMM",
-   "........,~,...TTTT..T................TTTTTTT...........OMMMMMMMM",
-   "........~~,,TTTT.......................TTTTTT..........OMMMMMMMM",
-   ".........~~.TT................RR........TTTT..........OMMMMMMMMM",
-   "....T...,.~~,................RRR......................OMMMMMMMMM",
-   "..........,~~................RRRR.....................MMMMMMMMMM",
-   "..........,.~~,..............RRR......................MMMMMMMMMM",
-   "............~~.,......................................MMMMMMMMMM",
-   "...........,,~~,......................................MMMMMMMMMM",
-   ".T......TTT.,~~.,,...................................OMMMMMMMMMM",
-   "..........,.,,~~~.,.,..RRR.........RRR...............OMMMMMMMMMM",
-   "........,,,~~~~~~~~~,..RRR.........RRR...............OMMMMMMMMMM",
-   ".......,,~~~~~~~~~~~~,.,RR.........RR................OMMMMMMMMMM",
-   "........~~~~~~~~~~~~~~~.,.............................MMMMMMMMMM",
-   ".......~~~~~~~~~~~~~~~~~,.............................MMMMMMMMMM",
-   "......,~~~~~~~~~~~~~~~~~,,............................MMMMMMMMMM",
-   "......,~~~~~~~~~~~~~~~~~~,..........................OMMMMMMMMMMM",
-   "......,~~~~~~~~~~~~~~~~~~,...........................OMMMMMMMMMM",
-   "......,~~~~~~~~~~~~~~~~~..............................O.MMMMMMMM",
-   "......,.~~~~~~~~~~~~~~~.,..........TT.....................MMMMMM",
-   ".......,,,~~~~~~~~~~~~.,...........TTTTTT.................MMMMMM",
-   ".......T..,~~~~~~~~..,,...............TTTTTTT.............MMMMMM",
-   "....TTTT..,,.,,~,,,,...................TTTTTTT............MMMMMM",
-   "...TTTTT......,,,~~.....................TTTTT.............MMMMMM",
-   "...TTTTTTT......,~~.....................TTTTT............MMMMMMM",
-   "....TTTTTTTTT...,,~~.....................T.TT...........MMMMMMMM",
-   "....TTTTTTT......,~~,,...................TT.............MMMMMMMM",
-   "..TTTTTTTT.......,,~~.....................T.............MMMMMMMM",
-   ".TTT.TTTTT.........~~,.......................T........OMMMMMMMMM",
-   "..T......T......T.,~~,................................OMMMMMMMMM",
-   ".........T........,~~,,..............................OMMMMMMMMMM",
-   ".................T,.~~................................MMMMMOMMMM",
-   ".................T.~~,,...............................MMMMMMMMMM",
-   "..................,~~,...............................OMMMMMMMMMM",
-   "TT................,~~,.............TTTTTTTTT............OOMMMMMM",
-   "TTT................~~,...........TTTTTTTTTTT......MMO.....OMMMMM",
-   "TTT................~~,...........TTTTTTTTTTT.....MMMMO....OMMMMM",
-   "TTT..............,~~,,...........TTTTTTTTTTTT...OMMMMO...OMMMMMM",
-   "TTTT...TTTT.....,,~~,............TTTTTTTTTTTTT...OMMMMMMMMMMMMMM",
-   "TTTTTTTTTTTT.....~~.,...........TT.TTTTTTTTTTT.O..OOMMMMMMMMMMMM",
-   "TTTTTTTTTTTTT....~~,............T...T...T..TTMMMO..OMMMMMMMMMMMM",
-   "TTTTTTTTTTTTTT...~~,...............TT...T..OMMMMO...MMMMMMMMMMMM",
-   "TTTTTTTTTTTTT..,,~~,.............TTTT......OMMMMOOO.MMMMMMMMMMMM",
-   ".TTTTTTTTTTT...,~~,,.........TTTTTTT........MMMMMMMMMMMMMMMMMMMM",
-   ".........TT....,~~......T....TTTTT..........MMMMMMMMMMMMMMMMMMMM"
+   "..TT.....,~,RRRRRR............TTTTTTTTTTTTRRRRRRRRRRTTTTRRRRRRRRRRRRRTTTTTTTT........MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   ".TTTT....,~,RRRRRRR...........TTTTTTTTTTTTTRRRRRRRRRTTTTRRRRRRRRRRRRRTTTT............MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTT....,~,.RRRRR...........TTTTTTTTTTTTTTRRRRRRRRRTTTRRRRRRRRRRRRRRTTT.............MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   ".TTT.....,~,..RRR...........TTTTTTTTTTTTTTTTRRRRRRRRRRRRRRRRRRRRRRRRRTTT..............MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTT..TT..,~,...RR...T.......TTTTTTTTTTTTTTTTRRRRRRRRRRRRRRRRRRRRRRRTTTT...............MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "TT...T...,~,...RR...........TTTTTTTTTTTTTTTTTTTTRRRRRRRRRRRTTTTTTTTTTTTT.....RRRRRR....MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "TT.......,~,..RRRR..........TTTTTTTTTTTTTTTTTTTTTRRRRRRRRRTTTTTTTTTTTTTTTT.RRRRRRRRRTTTTMMMMMTTOMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   ".....R...,~,...RR..R........TTTTTTTTTTTTTTTT..TTTTRRRRRRRRTTTTTTTTTTTTTRRRRRRRRRRRRRRTTTOOOOTTTTOOMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "....RR...,~,.......RR.......TT....TTTTTTTTT....TTTRRRRRRRRTTTTTTTTTTTTTRRRRRRRRRRRRRRTTTTTTTTTTTTOMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   ".........,~,..RRR..RR........T....TTTTTTTTT....TTTRRRRRRRRTTTTTTTTTTTTTRRRRRRRRRRRRRRRTTTTTTTTTTTTOMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "........,~~,...RR...R..............TTTTT.TTTTT...TRRRRRRRTTTTTTTTTT...TRRRRRRRRRRRRRRRTTTTTTTTTTTTOMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "........,~,.........R.....................TTTTT...TRRRRRRTTTTTTTTTT....TRRRRRRRRRRRRRTTTTTTTTTTTTTOMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   ".......,~~,....TT...R.....................TTTTT....RRRRRRTTTTTTTTTT.....TTTRRRRRRRRRRTTTTTTTTTTTTTOMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "...TT..,~,....TTTT..T......................TTT.....TTRRRTTTTTTTTTT........TTRRRRRRRRRTTTTTTTTTTTTTOMMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTT...,~~,..TTTTTTT.T................................TTTTTTTTTT............TRRRRRRRRRTTTTTTTTTTTTTTOMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTT...,~,...TTTTTTTTT...........................TT....TTTTTTTT..............TRRRRRRRTTTTTTTTTTTTTTTTMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTT...,~~,...TTTTTTTTT..........................TT.....TTTTTTT...............RRRRRRRTTTTTTTTTTTTTTTTMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTT....,~,...TTTT.TTTT..........................T......TTTTT..................RRRRRRTTTTTTTTTTTTTTTTMMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   ".TT....,~~,...TT...TT..TT.............................TTTT....................RRRRRRTTTTTTTTTTTTTTTTTMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "..T.....,~,....T....T..TT.............................TTTT....................RRRRRRTTTTTTTTTTTTTTTTTMMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "........,~,...TTTT..T..TTT............................TTTT....................RRRRRRTTTTTTTTTTTTTTTT.OMMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTT~~,TTTTTTTT....TTT............................TTTT....................RRRRR.TTTTTTTTTTTTTTTT..OMMMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTT,~~,TTTTTTTT...TT..............................TTT...................RRRRRR.TTTTTTTTTTTTTTTT..TOMMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTT,~~,,TTTTTTTTT.................................TT......RRRRR........RRRRRRRTTTTTTTTTTTTTTTTTTTTTOMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTT,T~~,,TTTTTTTT..............RR.......................RRRRRRRRRRRRRRRRRRRRR.TTTTTTTTTTTTTTTTTTTTTTOMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTT,,~~,TTTTTTTT.............RRR......................RRRRRRRRRRRRRRRRRRRR...TTTTTTTTTTTTTTTTTTTTTTTOOMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTT~~TTTTRRR...............RRR......................RRRRRRRRRRRRRRRRRRR.....TTTTTTTTTTTTTTTTTTTTTTTTOOMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTT,,~~T,RRRR...............RRR......................RRRRRRRRRRRRRRRRRRR.....TTTTTTTTTTT...TTTTTTTTTTTTTMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTT,T~~,RRRR...............RRR......................RRRRRRRRRRRRRRRRRRR......TTTTTTTT.....TTTTTTTTTTTTT.MMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTT,~~T,RRR...............RRR......................RRRRRRRRRRRRRRRRRRR....TTTTTTTTT.......TTTTTTTTTTTTTO.MMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTT,~~,...................R........................RRRRRRRRRRTTTT..RRRRRTTTTTTTTTTTT.......TTTTTTTTTTTTOMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTT,~~.............................................RRRRRRR..TTTTT...RRRRRTTTTTTTTTTTT.......TTTTTTTTTTTTTMMMMMMMMMMMMM",
+   "..TTTTTTTTTTT,~~,..............................................RR.....TTTTT...RRRRRTTTT,,,,TT,TT......TTTTTTTTTTTTTMMMMMMMMMMMMM",
+   "..TTTTTTTTTTT,.~~,....................................................TTTTT...RRRRR,TTT~~~~~~,,T,.....TTTTTTTTTTTTTTMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTT,~~,.................TT..................................TTTTTTTRRRR,R~~~,T,,,,~~~,T.....TTTTTTTTTTTTTMMMMMMMMMMMM",
+   "TTTTTTTTTTTT..,~~,,...............TTTT...................................TTTTTRR,,~~..,,TTT.,,,,TTT......TTTTTTTTTTTMMMMMMMMMMMM",
+   "TTTTTTTTTRTT..,.~~,.........T......TTT......T.............................TTTT,R~~R,...TTTT....TTT........TTTTTTTTTTTMMMMMMMMMMM",
+   "TTTTTTTTTTT....,~~........................................................TTT,,~,R,R..TTTTT...............TTTTTTTTTTTMMMMMMMMMMM",
+   "TTTTTTTTTTT.....~~...................,,,.,,................................TT,~,,RRR..TTTTT...............TTTTTTTTTTOMMMMMMMMMMM",
+   "TTTTTTTTTT......~~,...............,.,~~~~~~.,,,...........................,.~~R,RRRR..TTTTT........RRR...TTTTTTTTTT.OMMMMMMMMMMM",
+   "TTTTTTTTTT.....,~~...............,~~~,.,,.,~~~.,,........................,,~,,,RRRRR.TTTTTT.......RRRRRRR....TTT....OMMMMMMMMMMM",
+   "TTTTTTTTTT......~~,..........,,.~~.,.,....,...~~.,,......................,~,,RRRRRRRTTTTTTTT.....RRRRRRRRRRRRR......OMMMMMMMMMMM",
+   "TTTTTTTTTTT.....~~............~~.,...........,..~~,,..............RRRR,R~~R,RRRRRRRRTTTTTTTT....RRRRRRRRRRRRRRRR....OMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTT~~........,.,~,,..................~~.,,RRRR.....RRRR,,R~R,,RRRRRRRRRRRTTTTTTTRRRRRRRRRRRRRRRRRRRR...OMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTT~~R.......,~~.,..................,,,~~R,,RRRRRRRR,,R,~~R,RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..OMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTT~~RRT.....~,,,......................,R~~~,,,,,,,,R~~~,,,RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..OMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTT,~~,TTT,,.~,,..........................,,,~~~~~~~~~,,,,RRRRRRRRRRRTTRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR.OMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTT.~~,TT,,~~,..............................,.,,.,,,..,RRRRRRRRRRRRRTTTTRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR..MMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTT.~~TTTT~,,,..........................................RRRRRRRRRRR.TTTTTRRRRRRRRRRRRRRRRRRRRRRRRRRRR...MMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTT~~,T~~T,.............................................RRRRRRRRR..TTTTTRRRRRRRRRRR.........RRRRRRR....OMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTT,~~,~T,,...............................................RRRRRRR..TTTTTTTRRRRRRRRR.....................TMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTT,~~~,TTT...................................TTTTTTTTTTTTRRRRRR..TTTTT...RRRRRRRRR....................TTTMMMMMMMMMM",
+   "...TTTTTTTTTTTT,,~~TTT...............................TTTTTTTTTTTTTTTTTTRRRRR..TTTTT...RRRRRRRRTT..................TTTTTMMMMMMMMM",
+   "RRRRRRRRRRRRTTTTT~~,TTT...........................TTTTTTTTTTTTTTTTTTTTTRRRR....TTT....RRRRRRRRTTTT.................TTTTTMMMMMMMM",
+   "RRRRRRRRRRRRTTTTT~~T,TTT........................TTTTTTTTTTTTTTTTTTTTTTTRRRR...........RRRRRRRRTTTTT.................TTTTTMMMMMMM",
+   "RRRRRRRRRRRRTTTT,T~~,TTTTT......................TTTTTTTTTTTTTTTTTTTTTTTRRRR...........RRRRRRRRTTTTTTTT...............TTTOMMMMMMM",
+   "..RRRRRRRRRTTTTTT,~~.,TTTT......................TTTTTTTTTTTTTTTTTTTTTTTRRRR............RRRRRR.TTTTTTTTT..............TTTTOMMMMMM",
+   ".....TTTTTTTTTTTT,T~~.TTTT......................TTTTTTTTTTTTTTTTTTTTTTRRRRRR.............RR...TTTTTTTTT..............TTTTOMMMMMM",
+   "TTTTTTTTTTTTTTTTTTT~~T,TTT...................R.......TTTTTTTTTTTTTTTTTRRRRRR..................TTTTTTTTTT............TTTTOMMMMMMM",
+   "TTTTTTTTTTTTTTTTTT,,~~TTTT..................RRR...........TTTTTTTTTTTRRRRRRRR.................TTTTTTTTTTT...........TTTTOMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTT,~~T,TT.................RRRR............TTTTTTTTTTRRRRRRRR................TTTTTTTTTTTT..........TTTTOMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTT~~,,T..............RRRRRRRR...........TTTTTTTTTRRRRRRRRR.................TTTTTTTTTT...........TTTTOMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTT..,.~~,..........RRRRRRRRRRRRRR............TTTTTTTRRRRRRRRR....................TTTTT..............TTOMMMMMMMMM",
+   ".TTTTTTTTTTTTTTTTT...,~~.,.........RRRRRRRRRRRRRR.................TTRRRRRRRRR......................TTT...............TOMMMMMMMMM",
+   ".TTTTTTTTTTTTTTTTT....,~~,,........RRRRRRRRRRRRRR.................TTRRRRRRRRR......................TT................TOMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTT....,,~~,.......................................TTRRRRRRRRR.......................T................TOMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTT....,,~~.......................................TTRRRRRRRRRR.....................................TTTOMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTT.....,~~,......................................TTRRRRRRRRRR.....................................TTTTOMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTT.......~~.,....................................TTRRRRRRRRRRRR...................................TTTTOMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTT........~~.....................................TTRRRRRRRRRRRRRRRRR...T..........................TTTTTOMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTT.......,~~...................................TTTTRRRRRRRRRRRRRRRRRRRTTTT........................TTTTTTOMMMMMM",
+   "RTTTTTTTTTTTTTTTTTRT......,,~~.................................TTTTTRRRRRRRRRRRRRRRRRRRRRTTTT.......................TTTTTOMMMMMM",
+   "RTTTTTTTTTTTTTTTTRRR.......,~~..TTTT..........................TTTTTTRRRRRRRRRRRRRRRRRRRRRRRTT.......................TTTTTOMMMMMM",
+   "TTTTTTTTTTTTTTTTTTRTTTTTTTT,,~~,TTTTT..................TTTT..TTTTTTTRRRRRRRRRRRRRRRRRRRRRTTTTT......................TTTTTTMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTT,~~,TTTTT...........TT....TTTTTTTTTTTTTRRRRRRRRRRRRRRRRRRRTTTTTTTT..............TT........TTTTMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTT,T~~,TTTTTTTT......TTTT..TTTTTTTTTTTTTTRRRRRRRRRRRRRRRRRTTTTTTTTTT..............TT.........TTMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~T,TTTTTTTT....TTTTTTTTTTTTTTTTTTTTRRRRRRRRRRRRR.....TTTTTTTTTT..............TTT.........MMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,~~TTTTTTTTT....TTTTTTTTTTTTTTTTTTTRRRRRRRRRRRR.......TTTTTTTTTT..............TTT.......TMMMMMMMMM",
+   "TTTTTTT....TTTTTTTTTTTTTTTTTTT,~~,TTTTTTTT....TTTTTTTTTTTTTTTTTRRRRRRRRRRRRR.........TTTTTTTT.....................TTTTTMMMMMMMMM",
+   "TTTTTTT....TTTTTTTTTTTTTTTT,T,T~~TT,,TTTTT....TTTTTTTTTTTTTTTTRRRRRRRRRRRRRR.........TTTTTTT................RR..TTTTTTMMMMMMMMMM",
+   "TTTTTTT...TTTTTTTTTTTTT,TTT~~~~~~~~~~T,TTT.....TTTTTTTTTTT....RRRRRRRRRRRRR............TTT.................RRRRRRRTTTTMMMMMMMMMM",
+   "TTTTTTTT.TTTTTTTTTTTT,,,~~~~~~~~~~~~~~,T,T.....TTTTTTTTT......RRRRRRRRRRRRR................................RRRRRRRRRTTMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTT,,,~~~~~~~~~~~~~~~~~~~,.......T.............RRRRRRRRRRRRR................................RRRRRRR..TTMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTT,,~~~~~~~~~~~~~~~~~~~~~~~,.......................RRRRRRRRRR...............................RRRR......OMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTT,~~~~~~~~~~~~~~~~~~~~~~~~,,.......................RRRRRRRRR...........................TT...R........OMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTT,~~~~~~~~~~~~~~~~~~~~~~~~~,........................RRRRRRRR...........................TT............OMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTT,~~~~~~~~~~~~~~~~~~~~~~~~~,.........................RRRRRRRT.......................................OMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTT,~~~~~~~~~~~~~~~~~~~~~~~~~..........................RRRRRRRT.......................................OMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTT,~~~~~~~~~~~~~~~~~~~~~~~~~~,........................RRRRRRRT.......................................OMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTT,~~~~~~~~~~~~~~~~~~~~~~~~~~,........RRR.............RRRRRRR.........................................MMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTT~~~~~~~~~~~~~~~~~~~~~~~~~,.........RRR.............RRRRRRR.....................TT..................MMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTT~~~~~~~~~~~~~~~~~~~~~~~~~..........RRR.............RRRRRRR...................TTTT...................MMMMMMMMMM",
+   "....TTTTTTTTTTTTT,T~~~~~~~~~~~~~~~~~~~~~~~,..........................RRRRRRR..................TTTTT...................OMMMMMMMMM",
+   ".....TTTTTTTTTTTTTT~~~~~~~~~~~~~~~~~~~~~~~...........................RRRRRRR........T.......TTTTTTT.....................MMMMMMMM",
+   "......TTTTTTTTTTTT,T,~~~~~~~~~~~~~~~~~~~~,,.........................RRRRRRRR..TTTTTTTTT...TTTTTTTTT........TTT...........MMMMMMM",
+   "......TTTTTTTTTTTTTTT,,~~~~~~~~~~~~~~,.,,...........................RRRRRRRR.TTTTTTTTTTTTTTTTTTT....T......TTT..........OMMMMMMM",
+   ".......TTTTTTTTTTTTTTT,T,,~~~~~~~.,.,,............................TTRRRRRRRRRTTTTTTTTTTTTTTTTTTT....T......TTT...........OMMMMMM",
+   ".......TTTTTTTTTTTTTTTTTT,T.,,,~~..........TTT....................TTRRRRRRRRRTTTTTTTTTTTTTTTTTTT..........TTTTT..........OMMMMMM",
+   "........TTTTTTTTTTTTTTTTTTT...,~~.,......TTTTTTTT..................RRRRRRRRRRTTTTTTTTTTTTTTTTTTTT.........TTTT...........OMMMMMM",
+   "........TTTTTTTTTTTTTTTTTT....,.~~,.....TTTTTTTTTT.................RRRRRRRRRRTTTTTTTTTTTTTTTTTTTT......TTTTTTT...........OMMMMMM",
+   "........TTTTTTTTTTTTTTTTTT.....,~~......TTTTTTTTTT.................RRRRRRRRRRTTTTTTTTTTTTTTTTTTTTT.....TTTTTTT...........OMMMMMM",
+   ".....TTTTTTTTTTTTTTTTTTTTT.....,.~~,....TTTTTTTTTT..................RRRRRRRRRTTTTTTTTTTTTTTTTTTTTT....TTTTTTTT...........OMMMMMM",
+   "....TTTTTTTTTTTTTTTTTTTTTTT.....,~~.....TTTTTTTTT...................RRRRRRRRRTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...........OMMMMMM",
+   "...TTTTTTTTTTTTTTTTTTTTTTTT.....,~~,.....TTTTTTT....................RRRRRRRRRTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.............OMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTT.....,.~~.....TTTTTT......................RRRRRRRRTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..............OMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTT.....,~~,....TTTTTT......................RRRRRRRRRTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.............OMMMMMM",
+   "RRTTTTTTTTTTTTTTTTTTTTTTTTTT.....,~~......TTTTT......................RRRRRRRRRTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...TT......OOMMMMMMM",
+   "RRTTTTTTTTTTTTTTTTTTTTTTTTTTT.....~~.......TTTTT.....................RRRRRRRRRTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTT..MMMMMMMMMMMMM",
+   "RRTTTTTTTTTTTTTTTTTTTTTTTTTTT....,~~,......TTTTT.....................RRRRRRRRRTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTTTMMMMMMMMMMMMMM",
+   "RRTTTTTTTTTTTTTTTTTTTTTTTTTTTT...,~~.......TTTTT......................RRRRRRRRTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT..TTT.MMMMMMMMMMMMMM",
+   "RRTTTTTTTTTTTTTTTTTTTTTTTTTTTT..,.~~,..TTTTTTTT.......................RRRRRRRRTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....OMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,~~T,TTTTTTTTTT........................RRRRRR.TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT....OMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~TTTTTTTTTTT................................TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT...MMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,.~~TTTTTTTTTTTT...............................TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTTOMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTTT.~~,.TTT.TTTTTTTTT..............RR.......T......TRRTT.TTTTTTTTTTT..TTTTTTTTTTTTOMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,.~~,.......TTTTTTTTTT........RRRRRR......TT.....TRRR...TTTTTTTTT.....TTTTTTTTTTMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,~~,,........TTTTTTTTTTT....RRRRRRRRR....TTT.....TRRR....TTTTTTT.........TTTTTMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT,~~,.........TRRRTTTTTTTT...RRRRRRRRR....TT.......RRR........TT............TTMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTT,,~~,.........TTTTTTTTTTTTTTTRRRRRRRRRTTTTTT.......RRR......................TMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~,,..TT.....TTT...TTTTTTTTTTRRRRRRRRTTTTTT................................OMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTTT~~,..TTT.....TTT...TTTTTTTTTTTTRRRRRTTTTTTT...............................OMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTT,~~,...TT......T....TTTTTTTTTTTTTTTTTTTTTTTT...............................MMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTTTT,~~.................TTTTTTTTTTTTTTTTTTTTTTT................................OMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTTRRR,~~T................TTTTTTTTTTTTTTTTTTTTTTT................................OMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTRRRRR~~TT......TT.......TTTTTTTTTTTTTTTTTTTTTT..................RR..........TTTOMMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTRRRR,~~TT...............TTTTTTTTTTTTTTTTTTTTTT.................RMMR....OOTTTTTTTOMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTRRRRR~~RTT..............TTTTTTTTTTTTTTTTTTTTTT................OMMMMMOOOMMMTTTTTTOMMMMMMMMMMMMMMMMMMMMMM",
+   "TTTTTTTTTTTTTTTTTTTTTTTTTRRRR,~~TTT.............TTTTTTTTTTTTTTTTTTTTTT................TTMMMMMMMMMMMMTTTTTOMMMMMMMMMMMMMMMMMMMMMM"
   ],
   "startBuildings": [
    {
@@ -9639,6 +10688,49 @@
      "level": 10,
      "name": "Master Miner",
      "description": "The mountain gives up its treasure.",
+     "bonus": 0.25
+    }
+   ]
+  },
+  {
+   "job": "smelting",
+   "title": "Smelter",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Steady Bellows",
+     "description": "Keeps the fire at an even heat.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Clean Pour",
+     "description": "Less metal lost in the mould.",
+     "bonus": 0.1
+    },
+    {
+     "level": 6,
+     "name": "Charcoal Craft",
+     "description": "Knows which wood burns hottest.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "Tin Sense",
+     "description": "Mixes copper and tin by eye.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "smelting",
+       "value": 1.05
+      }
+     ]
+    },
+    {
+     "level": 10,
+     "name": "Master Smelter",
+     "description": "Bronze bright as the sun.",
      "bonus": 0.25
     }
    ]

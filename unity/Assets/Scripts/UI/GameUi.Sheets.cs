@@ -85,7 +85,7 @@ namespace Founders.UI
             AddRegion(sheetTabsBottom, () => WindowPanel && store.ActivePanel == Panel.Objectives ? $"g{goalsTab}" : "", BuildBottomTabs);
             sheetLayer.Add(sheetTabsBottom);
 
-            backArrow = E.Icon("back", 54).Abs();
+            backArrow = E.Back().Abs();
             backArrow.name = "back";
             Tap(backArrow, () => store.ActivePanel = Panel.None);
             sheetLayer.Add(backArrow);
@@ -141,6 +141,9 @@ namespace Founders.UI
                 pendingTab = null;
                 if (open) Pop(store.ActivePanel == Panel.Build ? drawer : sheet);
             }
+            // A dialog opened from a window (portrait, rename, bind account…) stands alone: the window's title and
+            // tabs would otherwise show around its edges.
+            if (ModalOpen) open = false;
             if (open != sheetShown)
             {
                 sheetShown = open;
@@ -314,7 +317,7 @@ namespace Founders.UI
                            string.Join("", G.Content.Milestones.SelectMany(m => G.MilestoneRequirements(m.Id)).Select(s => s.Met ? "1" : "0"));
                 case Panel.Map:
                     return $"{G.State.ActiveExpedition?.RegionId}|{string.Join(",", G.State.ExploredRegions)}|{G.State.Legacy.Count}|" +
-                           string.Join("", G.Content.Regions.Select(r => G.State.Resources.Covers(r.Cost) ? "1" : "0"));
+                           string.Join("", G.Content.Regions.Select(r => G.State.Resources.Covers(G.ExpeditionCost(r)) ? "1" : "0"));
                 case Panel.Profile:
                     return ProfileKey();
                 default:
@@ -378,17 +381,16 @@ namespace Founders.UI
         /// <summary>A reward/resource cell with the amount at the bottom (the kit's rarity cells).</summary>
         static VisualElement RewardCell(string icon, E.Cell kind, string amount, float size = 48)
         {
-            var c = E.Slot(icon, size, kind, 0.58f);
-            c.style.justifyContent = Justify.FlexStart;
-            c.ElementAt(0).style.marginTop = 3;
-            if (amount != null)
-            {
-                // The amount sits on the cell's lower edge and may reach past its sides a little (like the kit's "80,000").
-                var l = E.T(amount, Theme.Small).Align(TextAnchor.MiddleCenter).Abs(-6, null, -6, 1);
-                l.style.whiteSpace = WhiteSpace.NoWrap;
-                c.Add(l);
-            }
-            return c;
+            var c = E.Slot(icon, size, kind, 0.62f);
+            if (amount == null) return c;
+            // The amount stands under the cell, clear of its frame.
+            var col = E.Div().Col(Align.Center).Ignore();
+            col.style.width = size + 12;
+            col.Add(c);
+            var l = E.T(amount, Theme.Small).Align(TextAnchor.MiddleCenter).Margin(2);
+            l.style.whiteSpace = WhiteSpace.NoWrap;
+            col.Add(l);
+            return col;
         }
 
         // MARK: - People: Work
@@ -403,6 +405,7 @@ namespace Founders.UI
             JobType.Woodcutting => "axe",
             JobType.Stonecutting => "stone",
             JobType.Mining => "pickaxe",
+            JobType.Smelting => "flame",
             JobType.Crafting => "settings",
             JobType.Construction => "build",
             JobType.Healing => "sick",
@@ -580,6 +583,7 @@ namespace Founders.UI
             JobType.Woodcutting => "Woodcutter",
             JobType.Stonecutting => "Quarrier",
             JobType.Mining => "Miner",
+            JobType.Smelting => "Smelter",
             JobType.Crafting => "Toolmaker",
             JobType.Construction => "Builder",
             JobType.Healing => "Healer",
@@ -657,9 +661,14 @@ namespace Founders.UI
             if (current == null) { host.Add(E.Ink("The story has not begun yet.")); return; }
             // Banner: the chapter on dark wood, with the story button.
             // The kit's chapter banner: dark wood, "Chapter N" big, the title under it, the story button on the right.
-            var banner = E.Div().Row().Radius(10).Border(Theme.Outline, 2.5f).Pad(10, 12).Margin(0, 0, 8);
-            banner.BgImage(Theme.Gradient("banner", false, Theme.Hex("#4A2E1A"), Theme.Hex("#8A5A32")));
-            banner.AddToClassList("surf-dark");
+            var banner = E.Div().Row().Pad(10, 12).Margin(0, 0, 8);
+            if (Theme.KitLook) banner.Skin("section");
+            else
+            {
+                banner.Radius(10).Border(Theme.Outline, 2.5f);
+                banner.BgImage(Theme.Gradient("banner", false, Theme.Hex("#4A2E1A"), Theme.Hex("#8A5A32")));
+                banner.AddToClassList("surf-dark");
+            }
             banner.style.minHeight = 92;
             float art = Portrait ? 48 : 60;
             banner.Add(E.Icon("campfire", art));
@@ -785,7 +794,9 @@ namespace Founders.UI
             var head = E.Div().Row().Ignore();
             head.Add(E.Icon("world", 30));
             head.Add(E.T(G.State.SettlementName, Theme.H2).Flex().Margin(0, 0, 0, 8));
-            head.Add(E.T(G.Content.Map.Name ?? "", Theme.Body, Theme.Pale).NoShrink().Margin(0, 0, 0, 8));
+            // The map's name as words ("riverside_clearing" → "Riverside Clearing").
+            string mapName = CultureInfo.InvariantCulture.TextInfo.ToTitleCase((G.Content.Map.Name ?? "").Replace('_', ' '));
+            head.Add(E.T(mapName, Theme.Body, Theme.Pale).NoShrink().Margin(0, 0, 0, 8));
             info.Add(head);
             var traits = E.Div().Row().Ignore().Margin(6);
             traits.style.flexWrap = Wrap.Wrap;
@@ -799,7 +810,12 @@ namespace Founders.UI
             host.Add(info);
 
             var active = G.State.ActiveExpedition;
-            foreach (var region in G.Content.Regions.Where(r => !r.RevealedAtStart))
+            // The lands next to what is known, nearest first; then the lands already explored.
+            var lands = G.Content.Regions.Where(r => !r.Home && (G.IsFrontier(r) || G.State.ExploredRegions.Contains(r.Id) || active?.RegionId == r.Id))
+                                 .OrderBy(r => G.State.ExploredRegions.Contains(r.Id) ? 1 : 0).ThenBy(r => G.RegionDistance(r)).ThenBy(r => r.Y).ThenBy(r => r.X);
+            int unknown = G.Content.Regions.Count(r => !r.Home && !G.State.ExploredRegions.Contains(r.Id) && !G.IsFrontier(r));
+            if (unknown > 0) host.Add(E.Ink($"{unknown} more lands lie beyond, out of the scouts' reach for now.", Theme.Body, Theme.Pale).Margin(4, 0, 8));
+            foreach (var region in lands)
             {
                 bool explored = G.State.ExploredRegions.Contains(region.Id);
                 var card = Block(region.Name, out var rows, explored ? E.T("Explored", Theme.Num, Theme.Up) : null);
@@ -814,15 +830,17 @@ namespace Founders.UI
                     r.Add(Live(() => Fmt.Clock(G.State.ActiveExpedition?.RemainingSeconds ?? 0), Theme.Num));
                     rows.Add(r);
                     rows.Add(LiveBar(() => { var e = G.State.ActiveExpedition; return e == null ? 1 : 1 - e.RemainingSeconds / Math.Max(1, e.TotalSeconds); }, 14).Margin(0, 0, 8));
+                    rows.Add(SpeedupRow(SpeedupTask.Expedition));
                 }
                 else if (!explored)
                 {
                     var bottom = E.Line(true, 58);
-                    bottom.Add(CostLine(region.Cost).Grow());
-                    bool can = active == null && G.State.Resources.Covers(region.Cost);
+                    var cost = G.ExpeditionCost(region);
+                    bottom.Add(CostLine(cost).Grow());
+                    bool can = active == null && G.State.Resources.Covers(cost);
                     string id = region.Id;
                     bottom.Add(E.Button(active != null ? "Scouts busy" : "Send scouts", can ? Act(() => store.Explore(id)) : null,
-                                        can ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 16, SubLine("clock", Fmt.Clock(region.ExpeditionSeconds)), 170));
+                                        can ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH, null, 16, SubLine("clock", Fmt.Clock(G.ExpeditionSeconds(region))), 170));
                     rows.Add(bottom);
                 }
                 host.Add(card);
@@ -843,7 +861,7 @@ namespace Founders.UI
             rail.Add(E.Icon("sparkle", 24).Margin(4));
             if (!last)
             {
-                var l = E.Div().Ignore().Bg(Theme.Wood4);
+                var l = E.Div().Ignore().Bg(Theme.KitLook ? Theme.Rim : Theme.Wood4);
                 l.style.width = 3;
                 l.style.flexGrow = 1;
                 l.style.marginTop = 2;

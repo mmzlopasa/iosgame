@@ -6,7 +6,7 @@ namespace Founders.Core
 {
     // MARK: - Basic enums
 
-    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming, Fishing, Hunting, Mining, Herding, Healing }
+    public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming, Fishing, Hunting, Mining, Herding, Healing, Smelting }
 
     public enum TerrainType { Grass, Forest, Rock, Water, Sand, Mountain, Ore }
 
@@ -14,7 +14,7 @@ namespace Founders.Core
     {
         public static readonly JobType[] Jobs =
             { JobType.Foraging, JobType.Farming, JobType.Herding, JobType.Fishing, JobType.Hunting, JobType.Woodcutting, JobType.Stonecutting, JobType.Mining,
-              JobType.Crafting, JobType.Construction, JobType.Research, JobType.Healing };
+              JobType.Smelting, JobType.Crafting, JobType.Construction, JobType.Research, JobType.Healing };
 
         public static string Id(this JobType j)
         {
@@ -31,6 +31,7 @@ namespace Founders.Core
                 case JobType.Mining: return "mining";
                 case JobType.Herding: return "herding";
                 case JobType.Healing: return "healing";
+                case JobType.Smelting: return "smelting";
                 default: return "research";
             }
         }
@@ -186,6 +187,7 @@ namespace Founders.Core
         ObjectiveCompleted,     // id
         MilestoneReached,       // id
         RegionExplored,         // id
+        RegionsExploredAtLeast, // amount (lands explored beyond the home clearing)
         DistinctJobsAtLeast,    // amount (jobs with at least one worker)
         FoodBalancePositive,    // net food rate > 0
         YearAtLeast,            // amount (game years since founding; one year = four seasons)
@@ -198,6 +200,7 @@ namespace Founders.Core
         SickAtMost,             // amount (people who are ill)
         LawEnacted,             // id
         DiscontentAtMost,       // amount
+        MadeAtLeast,            // resource, amount (made by recipes since the founding, e.g. bronze cast)
     }
 
     public sealed class Condition
@@ -601,6 +604,8 @@ namespace Founders.Core
         public string Id, Name, Description;
         public int X, Y, Width, Height;
         public bool RevealedAtStart;
+        /// <summary>The land around the campfire: it moves to wherever the player founds the settlement.</summary>
+        public bool Home;
         public ResourceBundle Cost;
         public double ExpeditionSeconds;
         public string LegacyText;
@@ -620,6 +625,7 @@ namespace Founders.Core
             Description = o.Str("description"),
             X = o.Int("x"), Y = o.Int("y"), Width = o.Int("width"), Height = o.Int("height"),
             RevealedAtStart = o.Bool("revealedAtStart"),
+            Home = o.OptBool("home", false),
             Cost = ResourceBundle.FromJson(o.OptObj("cost")),
             ExpeditionSeconds = o.Num("expeditionSeconds"),
             LegacyText = o.Str("legacyText"),
@@ -674,6 +680,12 @@ namespace Founders.Core
         /// <summary>A second good made alongside the output (hunters bring hides).</summary>
         public ResourceType? Byproduct;
         public double ByproductRatio;
+        /// <summary>
+        /// A recipe: what one unit of output takes (e.g. smelting: 2 ore + 1 wood → 1 bronze). A job with inputs
+        /// only works while the stockpile holds them and there is room for the output; see <see cref="Game.Processing"/>.
+        /// </summary>
+        public ResourceBundle Inputs;
+        public bool IsRecipe => !Inputs.IsZero;
 
         internal static JobConfig FromJson(JObj o) => new JobConfig
         {
@@ -685,6 +697,7 @@ namespace Founders.Core
             UnlimitedSlots = o.Bool("unlimitedSlots"),
             Byproduct = o.Has("byproduct") ? ResourceTypes.Parse(o.Str("byproduct")) : (ResourceType?)null,
             ByproductRatio = o.OptNum("byproductRatio") ?? 0,
+            Inputs = o.Has("inputs") ? ResourceBundle.FromJson(o.Obj("inputs")) : ResourceBundle.Zero,
         };
     }
 

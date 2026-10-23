@@ -47,6 +47,8 @@ namespace Founders.UI
             // The cloud's choice and the profile's dialogs come first: they answer the player's own taps.
             string profile = ProfileDialogKey();
             if (profile != "") return profile;
+            string speed = SpeedupDialogKey();
+            if (speed != "") return speed;
             if (store.Celebration != null) return "ms|" + store.Celebration;
             if (store.Offline != null) return "wb";
             if (G.PendingStory != null) return "story|" + G.PendingStory.Id;
@@ -75,6 +77,7 @@ namespace Founders.UI
             host.Add(frame);
             VisualElement card;
             if (key.StartsWith("pd|", System.StringComparison.Ordinal) || key.StartsWith("cloud|", System.StringComparison.Ordinal)) card = ProfileDialogCard();
+            else if (key.StartsWith("sp|", System.StringComparison.Ordinal)) card = SpeedupCard();
             else if (key.StartsWith("ms|", System.StringComparison.Ordinal)) card = MilestoneCard();
             else if (key == "wb") card = WelcomeCard();
             else if (petitionShowing) card = PetitionCard();
@@ -244,13 +247,17 @@ namespace Founders.UI
             // Gathered: the kit's reward cells with the amount at the bottom.
             var gathered = E.Section("Gathered", out var rows);
             gathered.style.marginTop = 8;
+            // Only what changed, centred in the section.
             var cells = E.Div().Row().Ignore().Margin(10, 0, 8);
             cells.style.flexWrap = Wrap.Wrap;
+            cells.style.justifyContent = Justify.Center;
             foreach (var type in ResourceTypes.All)
             {
                 double v = report.Gained[type];
-                var cell = RewardCell(IconFor(type), CellFor(type), Fmt.Signed(v) == "0" ? "0" : (v < 0 ? "−" : "+") + Fmt.Compact(System.Math.Abs(v)), 58);
-                cell.style.marginRight = 10;
+                if (Fmt.Signed(v) == "0") continue;
+                var cell = RewardCell(IconFor(type), CellFor(type), (v < 0 ? "−" : "+") + Fmt.Compact(System.Math.Abs(v)), 50);
+                cell.style.marginLeft = 6;
+                cell.style.marginRight = 6;
                 if (v < -0.5) cell.Add(E.Icon("alert", 22).Abs(null, -6, -6));
                 cells.Add(cell);
             }
@@ -283,9 +290,11 @@ namespace Founders.UI
             var c = DialogShell(ev.Title, DialogW, out var body, out var foot);
             // Left: the scene and the story.
             var left = E.Div().Col().Ignore().Size(DialogArtW);
-            var art = E.Div().Row().Center().Radius(10).Border(Theme.Outline, 2.5f).Ignore();
+            var art = E.Div().Row().Center().Ignore();
             art.style.height = Portrait ? 76 : 90;
-            art.BgImage(Theme.Gradient("eventart", true, Theme.Hex("#8A5A32"), Theme.Hex("#4A2E1A")));
+            // The kit look: the scene in the dark inset; the game's own: a wooden frame.
+            if (Theme.KitLook) art.Skin("section");
+            else art.Radius(10).Border(Theme.Outline, 2.5f).BgImage(Theme.Gradient("eventart", true, Theme.Hex("#8A5A32"), Theme.Hex("#4A2E1A")));
             art.Add(E.Icon("campfire", 68));
             left.Add(art);
             left.Add(E.Ink(ev.Text, Theme.Body).Margin(8));

@@ -424,6 +424,14 @@ namespace FoundersEditor
 
         static void GenerateSky(JObj manifest)
         {
+            // The nature packs' own sky when they are in the project (it lights the scene as well).
+            var kitSky = NatureKitSetup.FindSky();
+            if (kitSky != null)
+            {
+                SkyCube = null;
+                SkyMaterial = Save(new Material(kitSky) { name = "Sky" }, $"{Materials}/Sky.mat");
+                return;
+            }
             SkyCube = AssetDatabase.LoadAssetAtPath<Cubemap>("Assets/Art/Sky/Sky.hdr");
             var shader = Shader.Find("Skybox/Cubemap");
             var sky = new Material(shader) { name = "Sky" };

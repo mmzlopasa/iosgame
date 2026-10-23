@@ -43,6 +43,22 @@ def mul(a, k):
 
 INK = lin("#2B1A0E")
 
+# The painted look of the reference sheet (chunky hand-painted props: soft matte paint with visible
+# brush texture, a teal rim light on the far and lower edges, small soft highlights instead of gloss).
+# Every paint() material goes through these, so the whole icon set changes together.
+STYLE = {
+    "spec": 0.45,        # gloss multiplier (painted highlights, not lacquer)
+    "rough": 0.22,       # added roughness
+    "rim": 1.55,         # rim multiplier
+    "rim_col": "#7DE3F0",  # teal rim, like the reference's metal and wood edges
+    "bounce": 0.42,      # teal bounce light on the lower left edges
+    "brush": 0.16,       # painted brush texture (value variation)
+    "edge": 0.75,        # silhouette darkening multiplier
+    "light": 0.6,        # how far lit tones go towards cream (the reference keeps colour in the light)
+    "shade": 0.82,       # deeper, richer shadow tones
+    "metal_tint": "#7F98A6",  # metals read as painted blue-grey iron, not chrome
+}
+
 # ---------------------------------------------------------------- scene / camera / lights
 STATE = {"L": Vector((-0.5, -0.4, 0.75)).normalized(), "cam": None}
 
@@ -363,6 +379,17 @@ def paint(name, color, shade=0.5, light=0.28, hue_dark="#3E1A66", light_col="#FF
     gradient x soft AO, plus a cool rim on the far side, emitted as is (so it is exactly the painted
     colour), with a glossy layer on top for real highlights from the key light."""
     base = lin(color) if isinstance(color, str) else color
+    spec *= STYLE["spec"]
+    light *= STYLE["light"]
+    shade *= STYLE["shade"]
+    if metal and base[2] >= base[0] * 0.9:  # silver/steel (not gold or copper): painted blue-grey iron
+        base = mix(base, lin(STYLE["metal_tint"]), 0.6)
+        light_col = "#DDF6FF"
+    rough = min(1.0, rough + STYLE["rough"])
+    edge *= STYLE["edge"]
+    if rim > 0:
+        rim = rim * STYLE["rim"]
+        rim_col = STYLE["rim_col"]
     m = bpy.data.materials.new(name)
     m.use_nodes = True
     nt = m.node_tree
@@ -427,6 +454,28 @@ def paint(name, color, shade=0.5, light=0.28, hue_dark="#3E1A66", light_col="#FF
         nt.links.new(col, mx.inputs["A"])
         nt.links.new(ti.outputs["Color"], mx.inputs["B"])
         col = mx.outputs["Result"]
+    if STYLE["brush"] > 0:  # painted brush texture: stretched noise strokes lighten/darken the paint
+        btc = nt.nodes.new("ShaderNodeTexCoord")
+        bmp = nt.nodes.new("ShaderNodeMapping")
+        bmp.inputs["Scale"].default_value = (1.0, 1.0, 3.2)
+        bmp.inputs["Rotation"].default_value = (0.4, 0.3, 0.7)
+        nt.links.new(btc.outputs["Object"], bmp.inputs["Vector"])
+        bn = nt.nodes.new("ShaderNodeTexNoise")
+        bn.inputs["Scale"].default_value = 3.5
+        bn.inputs["Detail"].default_value = 6
+        bn.inputs["Roughness"].default_value = 0.62
+        nt.links.new(bmp.outputs["Vector"], bn.inputs["Vector"])
+        bmr = nt.nodes.new("ShaderNodeMapRange")
+        bmr.inputs["From Min"].default_value = 0.3
+        bmr.inputs["From Max"].default_value = 0.7
+        bmr.inputs["To Min"].default_value = 1 - STYLE["brush"]
+        bmr.inputs["To Max"].default_value = 1 + STYLE["brush"]
+        nt.links.new(bn.outputs["Fac"], bmr.inputs["Value"])
+        bsc = nt.nodes.new("ShaderNodeVectorMath")
+        bsc.operation = "SCALE"
+        nt.links.new(col, bsc.inputs[0])
+        nt.links.new(bmr.outputs["Result"], bsc.inputs["Scale"])
+        col = bsc.outputs["Vector"]
     # screen-space vertical gradient (finish() sets the range once the frame is known)
     pos_dot = nt.nodes.new("ShaderNodeVectorMath")
     pos_dot.operation = "DOT_PRODUCT"
@@ -485,7 +534,7 @@ def paint(name, color, shade=0.5, light=0.28, hue_dark="#3E1A66", light_col="#FF
         nt.links.new(rd, rclamp.inputs["Value"])
         fr = nt.nodes.new("ShaderNodeMath")
         fr.operation = "POWER"
-        fr.inputs[1].default_value = 1.6
+        fr.inputs[1].default_value = 2.6
         nt.links.new(lw.outputs["Facing"], fr.inputs[0])
         rm = nt.nodes.new("ShaderNodeMath")
         rm.operation = "MULTIPLY"
@@ -500,6 +549,33 @@ def paint(name, color, shade=0.5, light=0.28, hue_dark="#3E1A66", light_col="#FF
         mx.blend_type = "SCREEN"
         mx.inputs["B"].default_value = (*mix(lin(rim_col), lite, 0.25), 1)
         nt.links.new(rs.outputs[0], mx.inputs["Factor"])
+        nt.links.new(col, mx.inputs["A"])
+        col = mx.outputs["Result"]
+    if rim > 0 and STYLE["bounce"] > 0:  # teal bounce on the lower edges (the reference's under-glow)
+        fwd, right, up = STATE["basis"]
+        B = (-right * 0.35 - up * 0.85 + fwd * 0.25).normalized()
+        bd = _dot_const(nt, normal, B)
+        bcl = nt.nodes.new("ShaderNodeMapRange")
+        bcl.inputs["From Min"].default_value = 0.1
+        bcl.inputs["From Max"].default_value = 0.8
+        nt.links.new(bd, bcl.inputs["Value"])
+        bf = nt.nodes.new("ShaderNodeMath")
+        bf.operation = "POWER"
+        bf.inputs[1].default_value = 2.2
+        nt.links.new(lw.outputs["Facing"], bf.inputs[0])
+        bm_ = nt.nodes.new("ShaderNodeMath")
+        bm_.operation = "MULTIPLY"
+        nt.links.new(bf.outputs[0], bm_.inputs[0])
+        nt.links.new(bcl.outputs["Result"], bm_.inputs[1])
+        bs_ = nt.nodes.new("ShaderNodeMath")
+        bs_.operation = "MULTIPLY"
+        bs_.inputs[1].default_value = STYLE["bounce"] * min(1.0, rim)
+        nt.links.new(bm_.outputs[0], bs_.inputs[0])
+        mx = nt.nodes.new("ShaderNodeMix")
+        mx.data_type = "RGBA"
+        mx.blend_type = "SCREEN"
+        mx.inputs["B"].default_value = (*lin(STYLE["rim_col"]), 1)
+        nt.links.new(bs_.outputs[0], mx.inputs["Factor"])
         nt.links.new(col, mx.inputs["A"])
         col = mx.outputs["Result"]
     em = nt.nodes.new("ShaderNodeEmission")

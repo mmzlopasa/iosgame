@@ -106,7 +106,7 @@ namespace Founders.Tests
                         Assert.That(cells.ContainsKey((x, y)), Is.False, $"{at} {def.Id} #{b.Id} overlaps #{(cells.TryGetValue((x, y), out var o) ? o : -1)} at {x},{y}");
                         cells[(x, y)] = b.Id;
                         var terrain = g.TerrainNow(x, y);
-                        Assert.That(terrain.HasValue && def.AllowedTerrain.Contains(terrain.Value), Is.True,
+                        Assert.That(terrain.HasValue && Game.AllowsTerrain(def.AllowedTerrain, terrain.Value), Is.True,
                             $"{at} {def.Id} #{b.Id} stands on {terrain} at {x},{y}");
                         Assert.That(g.BuildingIdAt(x, y), Is.EqualTo(b.Id), at);
                     }
@@ -231,7 +231,7 @@ namespace Founders.Tests
             more?.Invoke(c);
         }, full: true);
 
-        static readonly ResourceBundle Plenty = new ResourceBundle(20_000, 20_000, 20_000, 20_000, 20_000, 20_000);
+        static readonly ResourceBundle Plenty = new ResourceBundle(20_000, 20_000, 20_000, 20_000, 20_000, 20_000, 20_000);
 
         static IEnumerable<(int x, int y)> CellsByDistance(Game g, int cx, int cy)
         {
@@ -413,8 +413,9 @@ namespace Founders.Tests
                 Expect.Success(g.SetWorkers(job, 0));
             }
 
-            // Explore the whole valley.
-            foreach (var region in g.Content.Regions.Where(r => !r.RevealedAtStart).OrderBy(r => r.Cost.Entries.Sum(kv => kv.Value)))
+            // Explore the whole valley, land by land outward from the camp.
+            Expect.Failure(g.StartExpedition(g.Content.Regions.First(r => !r.RevealedAtStart && !g.IsFrontier(r)).Id), GameError.RegionNotAdjacent);
+            while (g.Content.Regions.FirstOrDefault(r => !g.State.ExploredRegions.Contains(r.Id) && g.IsFrontier(r)) is RegionDefinition region)
             {
                 g.DebugGrant(Plenty);
                 Expect.Success(g.StartExpedition(region.Id));
@@ -716,7 +717,7 @@ namespace Founders.Tests
                 }
                 if (g.State.ActiveExpedition == null)
                 {
-                    var region = g.Content.Regions.FirstOrDefault(r => !g.State.ExploredRegions.Contains(r.Id) && g.State.Resources.Covers(r.Cost) && g.State.Resources.Food > r.Cost.Food + 40);
+                    var region = g.Content.Regions.FirstOrDefault(r => g.IsFrontier(r) && g.State.Resources.Covers(g.ExpeditionCost(r)) && g.State.Resources.Food > g.ExpeditionCost(r).Food + 40);
                     if (region != null) Expect.Success(g.StartExpedition(region.Id));
                 }
 

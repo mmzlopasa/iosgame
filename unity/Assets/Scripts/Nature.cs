@@ -116,7 +116,7 @@ namespace Founders
     /// </summary>
     public class NatureField : MonoBehaviour
     {
-        sealed class Part
+        internal sealed class Part
         {
             public Mesh Mesh;
             public int SubMesh;
@@ -137,7 +137,22 @@ namespace Founders
             public bool Tree;
             public bool NearCamera, Blocked;
             public readonly List<InstanceSet> Sets = new List<InstanceSet>(4);
+            /// <summary>The simple far version of a kit tree (its last LOD), drawn instead of <see cref="Sets"/> from afar.</summary>
+            public List<InstanceSet> FarSets;
+            public bool Far;
         }
+
+        /// <summary>A kit prefab cut into instanced parts: the detailed model and its far LOD.</summary>
+        internal sealed class KitModel
+        {
+            public List<Part> Near = new List<Part>();
+            public List<Part> Far = new List<Part>();
+            public Bounds Bounds;
+        }
+
+        static readonly Dictionary<GameObject, KitModel> kitModels = new Dictionary<GameObject, KitModel>();
+        /// <summary>Kit trees further than this from the camera are drawn with their simple far model.</summary>
+        public const float FarDistance = 55f;
 
         readonly Dictionary<(Mesh, int, Material, bool), InstanceSet> sets = new Dictionary<(Mesh, int, Material, bool), InstanceSet>();
         readonly List<InstanceSet> drawOrder = new List<InstanceSet>();
@@ -231,6 +246,92 @@ namespace Founders
             return models[id] = parts;
         }
 
+        // MARK: - Nature packs (Ultimate Nature PRO and Starter)
+
+        public enum Fit { Height, Width }
+
+        internal static KitModel Kit(GameObject prefab)
+        {
+            if (kitModels.TryGetValue(prefab, out var model)) return model;
+            model = new KitModel();
+            var kit = NatureKit.Current;
+            var rootInverse = prefab.transform.worldToLocalMatrix;
+            var lod = prefab.GetComponentInChildren<LODGroup>(true);
+            var lods = lod != null ? lod.GetLODs() : null;
+            IEnumerable<Renderer> near, far = null;
+            if (lods != null && lods.Length > 0)
+            {
+                near = lods[0].renderers;
+                if (lods.Length > 1) far = lods[lods.Length - 1].renderers;
+            }
+            else near = prefab.GetComponentsInChildren<MeshRenderer>(true);
+            bool first = true;
+            void Collect(IEnumerable<Renderer> renderers, List<Part> into, bool measure)
+            {
+                if (renderers == null) return;
+                foreach (var r in renderers)
+                {
+                    if (r == null || !(r is MeshRenderer)) continue;
+                    var mf = r.GetComponent<MeshFilter>();
+                    if (mf == null || mf.sharedMesh == null) continue;
+                    var local = rootInverse * r.transform.localToWorldMatrix;
+                    var mats = r.sharedMaterials;
+                    for (int i = 0; i < mf.sharedMesh.subMeshCount; i++)
+                    {
+                        var src = i < mats.Length ? mats[i] : null;
+                        var mat = kit != null ? kit.Convert(src) : src;
+                        if (mat == null) continue;
+                        into.Add(new Part { Mesh = mf.sharedMesh, SubMesh = i, Local = local, Material = mat, Shadows = r.shadowCastingMode != ShadowCastingMode.Off });
+                    }
+                    if (!measure) continue;
+                    var b = mf.sharedMesh.bounds;
+                    for (int c = 0; c < 8; c++)
+                    {
+                        var corner = local.MultiplyPoint3x4(b.center + Vector3.Scale(b.extents, new Vector3((c & 1) == 0 ? -1 : 1, (c & 2) == 0 ? -1 : 1, (c & 4) == 0 ? -1 : 1)));
+                        if (first) { model.Bounds = new Bounds(corner, Vector3.zero); first = false; }
+                        else model.Bounds.Encapsulate(corner);
+                    }
+                }
+            }
+            Collect(near, model.Near, true);
+            Collect(far, model.Far, false);
+            return kitModels[prefab] = model;
+        }
+
+        /// <summary>
+        /// One object of the nature packs, scaled so its height (or width) is <paramref name="size"/>
+        /// metres, standing on the ground at <paramref name="position"/>. Trees switch to their far
+        /// model away from the camera.
+        /// </summary>
+        public void AddKit(GameObject prefab, string id, Vector3 position, float size, Fit fit, float yaw, int cx, int cy,
+                           bool tree = false, bool castShadows = true, Material tint = null, float sink = 0f)
+        {
+            if (prefab == null) return;
+            var model = Kit(prefab);
+            if (model.Near.Count == 0) return;
+            var b = model.Bounds;
+            float measure = fit == Fit.Height ? b.size.y : Mathf.Max(b.size.x, b.size.z);
+            float scale = size / Mathf.Max(0.01f, measure);
+            // The model's lowest point on the ground (a little sunk for rocks so they sit in it).
+            var pos = position + Vector3.up * (-b.min.y * scale - sink * b.size.y * scale);
+            float radius = tree ? TrunkRadius : 0.5f * Mathf.Max(b.size.x, b.size.z) * scale;
+            var item = NewItem(position, b.size.y * scale, cx, cy, tree, id, radius);
+            var root = Matrix4x4.TRS(pos, Quaternion.Euler(0, yaw, 0), Vector3.one * scale);
+            foreach (var p in model.Near)
+                Add(item, Set(p.Mesh, p.SubMesh, tint != null ? tint : p.Material, castShadows && p.Shadows), root * p.Local);
+            if (tree && model.Far.Count > 0)
+            {
+                item.FarSets = new List<InstanceSet>(model.Far.Count);
+                foreach (var p in model.Far)
+                {
+                    var set = Set(p.Mesh, p.SubMesh, tint != null ? tint : p.Material, false);
+                    set.Add(root * p.Local, item.Index);
+                    if (!item.FarSets.Contains(set)) item.FarSets.Add(set);
+                }
+                item.Far = true;
+            }
+        }
+
         // MARK: - Work targets (where people cut, quarry and pick)
 
         /// <summary>Trunk radius of the billboard trees (people stand at the trunk, not at the crown).</summary>
@@ -245,8 +346,8 @@ namespace Founders
             public string Id;
         }
 
-        static bool IsRock(string id) => id != null && (id.StartsWith("sn_rock") || id.Contains("boulder") || id.StartsWith("k_rock") || id.StartsWith("rock_"));
-        static bool IsBush(string id) => id == "sn_bush";
+        static bool IsRock(string id) => id != null && (id.StartsWith("sn_rock") || id.Contains("boulder") || id.StartsWith("k_rock") || id.StartsWith("rock_") || id == "kit_rock");
+        static bool IsBush(string id) => id == "sn_bush" || id == "kit_berry_bush";
 
         /// <summary>
         /// What a job works at in a cell: "tree", "rock" or "bush". Returns the biggest one still
@@ -296,6 +397,9 @@ namespace Founders
         public void Build()
         {
             foreach (var set in drawOrder) set.Build();
+            // Kit trees start with their far model; the camera check brings the detailed ones in.
+            foreach (var item in trees)
+                if (item.FarSets != null) Apply(item);
         }
 
         /// <summary>
@@ -329,7 +433,13 @@ namespace Founders
         void Apply(Item item)
         {
             bool hidden = item.Blocked || item.NearCamera;
-            foreach (var set in item.Sets) set.SetHidden(item.Index, hidden);
+            if (item.FarSets == null)
+            {
+                foreach (var set in item.Sets) set.SetHidden(item.Index, hidden);
+                return;
+            }
+            foreach (var set in item.Sets) set.SetHidden(item.Index, hidden || item.Far);
+            foreach (var set in item.FarSets) set.SetHidden(item.Index, hidden || !item.Far);
         }
 
         /// <summary>
@@ -367,11 +477,14 @@ namespace Founders
             if (cam == null) return;
             var c = cam.transform.position;
             var fwd = cam.transform.forward;
+            const float far2 = FarDistance * FarDistance;
             foreach (var tv in trees)
             {
                 bool hide = !KeepNearCamera && Occludes(c, fwd, tv.Position, tv.Height);
-                if (hide == tv.NearCamera) continue;
+                bool far = tv.FarSets != null && (tv.Position - c).sqrMagnitude > far2;
+                if (hide == tv.NearCamera && far == tv.Far) continue;
                 tv.NearCamera = hide;
+                tv.Far = far;
                 Apply(tv);
             }
         }

@@ -20,13 +20,19 @@ namespace Founders
             public InstanceSet Side, TopSet;
         }
 
-        const float Radius = 96f;   // covers the whole valley (64 m half-width, corners at ~91 m)
-        // Tufts are sent to the GPU every frame: fewer, slightly bigger ones keep the meadow look at 60 fps.
-        const float Step = 1.0f;
+        /// <summary>Reaches the corners of the valley (half its width times √2).</summary>
+        float Radius;
+        // Tufts are sent to the GPU every frame: on a big valley they stand further apart, so their
+        // number (and the frame rate) stays what it was on the first, small valley.
+        float Step;
         Mesh mesh, flat;
         Layer grass, flowers;
         WorldTerrain ground;
         Game game;
+
+        // With the nature packs: their grass and flower clumps instead of the photo cards.
+        List<NatureField.KitModel> kitGrass, kitFlowers;
+        readonly Dictionary<(Mesh, int, Material), InstanceSet> kitSets = new Dictionary<(Mesh, int, Material), InstanceSet>();
 
         public void Init(WorldTerrain ground, Game game)
         {
@@ -36,6 +42,15 @@ namespace Founders
             flat = FlatMesh();
             grass = NewLayer("GrassTuft");
             flowers = NewLayer("Wildflowers");
+            var kit = NatureKit.Current;
+            if (kit != null && kit.Has("grass"))
+            {
+                kitGrass = kit.Group("grass").ConvertAll(NatureField.Kit);
+                kitFlowers = kit.Group("flowers").ConvertAll(NatureField.Kit);
+            }
+            float half = Mathf.Max(game.Content.Map.Width, game.Content.Map.Height) * Grid.CellSize * 0.5f;
+            Radius = Mathf.Max(96f, half * 1.42f);
+            Step = Mathf.Max(1f, Radius / 96f) * (kitGrass != null ? 1.6f : 1f);
             Rebuild();
         }
 
@@ -53,7 +68,8 @@ namespace Founders
         /// <summary>Re-scatters grass (call when buildings, roads or decorations change).</summary>
         public void Rebuild()
         {
-            if (grass.Material == null) return;
+            if (grass.Material == null && kitGrass == null) return;
+            kitSets.Clear();
             // Shared materials, so the season tint reaches the grass and the farm crops alike.
             foreach (var layer in new[] { grass, flowers })
             {
@@ -87,7 +103,7 @@ namespace Founders
                         _ => 0f,
                     };
                     // Thinner far from the valley centre (it is barely visible there).
-                    density *= Mathf.Lerp(1f, 0.45f, Mathf.InverseLerp(64f, Radius, d));
+                    density *= Mathf.Lerp(1f, 0.45f, Mathf.InverseLerp(Radius * 0.66f, Radius, d));
                     if (roll > density) continue;
                     if (used.Contains((cx, cy))) continue;
                     float y = ground.HeightAt(p);
@@ -95,6 +111,12 @@ namespace Founders
                     p.y = y - 0.02f;
 
                     bool flower = roll < density * 0.05f;
+                    if (kitGrass != null)
+                    {
+                        var models = flower && kitFlowers.Count > 0 ? kitFlowers : kitGrass;
+                        AddKit(models[rng.Next(models.Count)], p, (flower ? 0.35f : 0.4f) * size, yaw * 2f, index++);
+                        continue;
+                    }
                     var layer = flower ? flowers : grass;
                     float h = flower ? 0.32f * size : 0.3f * size;
                     var m = Matrix4x4.TRS(p, Quaternion.Euler(0, yaw, 0), new Vector3(h * layer.Aspect, h, h * layer.Aspect));
@@ -108,10 +130,31 @@ namespace Founders
                 layer.Side?.Build();
                 layer.TopSet?.Build();
             }
+            foreach (var set in kitSets.Values) set.Build();
+        }
+
+        /// <summary>One clump of the packs, scaled to the height wanted and standing on the ground.</summary>
+        void AddKit(NatureField.KitModel model, Vector3 p, float height, float yaw, int index)
+        {
+            var b = model.Bounds;
+            if (model.Near.Count == 0 || b.size.y < 0.001f) return;
+            float scale = height / b.size.y;
+            var root = Matrix4x4.TRS(p - Vector3.up * (b.min.y * scale), Quaternion.Euler(0, yaw, 0), Vector3.one * scale);
+            foreach (var part in model.Near)
+            {
+                var key = (part.Mesh, part.SubMesh, part.Material);
+                if (!kitSets.TryGetValue(key, out var set)) kitSets[key] = set = new InstanceSet(part.Mesh, part.SubMesh, part.Material, false);
+                set.Add(root * part.Local, index);
+            }
         }
 
         void Update()
         {
+            if (kitSets.Count > 0)
+            {
+                foreach (var set in kitSets.Values) set.Draw();
+                return;
+            }
             if (mesh == null || grass?.Side == null) return;
             // The strategy camera looks down, so each tuft is a top-view card plus two crossed side cards.
             grass.TopSet?.Draw();

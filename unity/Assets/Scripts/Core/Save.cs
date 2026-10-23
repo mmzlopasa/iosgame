@@ -89,6 +89,7 @@ namespace Founders.Core
             if (!Finite(s.SimTime) || s.SimTime < 0) problems.Add("invalid simTime");
             if (!Finite(s.LastUpdateWallTime)) problems.Add("invalid lastUpdateWallTime");
             if (content.Epoch(s.EpochId) == null) problems.Add($"unknown epoch {s.EpochId}");
+            if (!string.IsNullOrEmpty(s.MapName) && s.MapName != content.Map.Name) problems.Add($"settlement was founded on another map ({s.MapName})");
             var ids = new HashSet<int>();
             foreach (var b in s.Buildings)
             {
@@ -101,6 +102,11 @@ namespace Founders.Core
             if (s.ActiveResearch != null && content.Technology(s.ActiveResearch.TechId) == null)
                 problems.Add($"unknown research {s.ActiveResearch.TechId}");
             foreach (var r in s.ExploredRegions) if (content.Region(r) == null) problems.Add($"unknown region {r}");
+            foreach (var kv in s.Speedups)
+            {
+                if (!Speedups.TryParse(kv.Key, out _, out _)) problems.Add($"unknown speed-up {kv.Key}");
+                if (kv.Value < 0) problems.Add($"negative speed-up count {kv.Key}");
+            }
             if (s.PendingEventId != null && content.Event(s.PendingEventId) == null) problems.Add($"unknown event {s.PendingEventId}");
             return problems;
         }

@@ -96,6 +96,8 @@ namespace Founders.Tests
             game.State.Chapter = 3;
             Assert.That(game.CanClaimMilestone("first_civilization"), Is.False, "the Bronze Dawn needs the heart at level 20");
             game.State.Buildings.First(b => b.DefinitionId == "campfire").Level = 20;
+            Assert.That(game.CanClaimMilestone("first_civilization"), Is.False, "the Bronze Dawn needs the first cast bronze");
+            game.State.Made["bronze"] = 20;
             Assert.That(game.CanClaimMilestone("first_civilization"), Is.True,
                 string.Join(", ", game.MilestoneRequirements("first_civilization").Where(r => !r.Met).Select(r => r.Text)));
             Expect.Success(game.ClaimMilestone("first_civilization"));

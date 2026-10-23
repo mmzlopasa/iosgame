@@ -157,11 +157,40 @@ sudo mkdir -p /var/backups/founders
 echo '0 3 * * * root mysqldump --single-transaction founders | gzip > /var/backups/founders/founders-$(date +\%F).sql.gz && find /var/backups/founders -mtime +14 -delete' | sudo tee /etc/cron.d/founders-backup
 ```
 
+## 9. Admin stranica (svi igrači)
+
+Na adresi **https://tvoja-domena/admin** (npr. https://founders.scyde.dev/admin) je stranica za upravljanje igračima:
+
+- popis svih igrača s traženjem (ime osnivača, naselje, korisničko ime, ID),
+- uređivanje: ime osnivača, portret, okvir, ime naselja, broj ljudi, resursi; u kartici **Napredno** cijeli save,
+- račun: promjena korisničkog imena, nova lozinka, odjava sa svih uređaja, odvezivanje računa, brisanje igrača,
+- **Kopije**: prije svake promjene sama spremi kopiju savea (zadnjih 30 po igraču) i možeš je vratiti jednim klikom.
+
+Prije spremanja provjeri je li save ispravan, pa igra neće odbiti uređeni save. Igrač zatim u igri otvori
+Settings → Cloud Save → Load from cloud.
+
+**Uključivanje** (jednom). Smisli dugu lozinku (barem 12 znakova) i upiši je umjesto `OVDJE-ADMIN-LOZINKA`:
+
+```bash
+cd /opt/iosgame && sudo git pull
+sudo cp server/cloud/server.js server/cloud/admin.js server/cloud/admin.html server/cloud/test-admin.js server/cloud/schema.sql /opt/founders-cloud/
+sudo mysql < /opt/founders-cloud/schema.sql
+echo 'ADMIN_PASSWORD=OVDJE-ADMIN-LOZINKA' | sudo tee -a /etc/founders-cloud.env
+sudo systemctl restart founders-cloud
+```
+
+Otvori https://tvoja-domena/admin i prijavi se tom lozinkom. Prijava traje 12 sati. Nakon 10 krivih lozinki u 15
+minuta prijava se privremeno blokira. Lozinku mijenjaš u `/etc/founders-cloud.env` (`sudo nano /etc/founders-cloud.env`),
+pa `sudo systemctl restart founders-cloud`. Bez `ADMIN_PASSWORD` stranica je isključena.
+
+Provjera na serveru: `cd /opt/founders-cloud && sudo ADMIN_PASSWORD='OVDJE-ADMIN-LOZINKA' node test-admin.js`. Treba ispisati `admin: all checks passed`.
+
 ## Nadogradnja servera kasnije
 
 ```bash
 cd /opt/iosgame && sudo git pull
-sudo cp server/cloud/server.js server/cloud/package*.json /opt/founders-cloud/
+sudo cp server/cloud/server.js server/cloud/admin.js server/cloud/admin.html server/cloud/schema.sql server/cloud/package*.json /opt/founders-cloud/
+sudo mysql < /opt/founders-cloud/schema.sql
 cd /opt/founders-cloud && sudo npm ci --omit=dev && sudo systemctl restart founders-cloud
 ```
 

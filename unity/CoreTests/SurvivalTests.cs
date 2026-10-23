@@ -359,15 +359,17 @@ namespace Founders.Tests
             var (game, clock) = Calm();
             game.TestGrant(new ResourceBundle(food: 100, wood: 100));
             int before = game.State.Population;
-            var region = game.Content.Region("west_woods");
+            var region = game.Content.Region("land_0_0");
+            Assert.That(region.Survivors, Is.GreaterThan(0));
             Expect.Success(game.StartExpedition(region.Id));
-            game.Run(region.ExpeditionSeconds + 1, clock);
+            game.Run(game.ExpeditionSeconds(region) + 1, clock);
             Assert.That(game.State.Population, Is.EqualTo(before + region.Survivors));
             Assert.That(game.State.People.Count, Is.EqualTo(game.State.Population));
-            var ridge = game.Content.Region("north_forest");
+            var ridge = game.Content.Region("land_0_1");
+            Assert.That(ridge.Loot.Wood, Is.GreaterThan(0));
             double wood = game.State.Resources.Wood;
             Expect.Success(game.StartExpedition(ridge.Id));
-            game.Run(ridge.ExpeditionSeconds + 1, clock);
+            game.Run(game.ExpeditionSeconds(ridge) + 1, clock);
             Assert.That(game.State.Resources.Wood, Is.GreaterThan(wood));
         }
 

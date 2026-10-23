@@ -30,7 +30,7 @@ namespace Founders.UI
         /// <summary>The menu hexagons and the room each takes (its label hangs under the lower point).</summary>
         const float TileSize = 48;
         const float TileH = 58;
-        const float TileGap = 2;
+        const float TileGap = 6;
         /// <summary>Width of the right column (a hexagon and its label's overhang).</summary>
         const float TileColW = TileSize + 16;
         const float BuildButton = 72;
@@ -89,7 +89,7 @@ namespace Founders.UI
             AddRegion(contextPanel, ContextKey, BuildContext);
 
             // Portrait: the back arrow under the card's bottom sheet (it closes the card, like the kit's).
-            cardBack = E.Icon("back", 54).Abs();
+            cardBack = E.Back().Abs();
             cardBack.name = "card-back";
             Tap(cardBack, CloseContext);
 
@@ -110,21 +110,22 @@ namespace Founders.UI
         /// <summary>Places the HUD pieces inside the safe area and hides what a popup covers (every tick; cheap).</summary>
         void LayoutHud()
         {
-            bool sheet = SheetOpen, card = ContextOpen;
+            bool sheet = SheetOpen, card = ContextOpen, modal = ModalOpen;
+            toastLayer.Hidden(modal);
             float l = SafeLeft + 8, r = SafeRight + 8, top = SafeTop;
             topRowCount = Portrait ? TopRows().Count : 2;
             Place(topHost, l, top + 4, r, null);
             float shade = Portrait ? BarBottom + (TopCompact ? 14 : PlayerBlockH + 18) : 84;
             if (!Mathf.Approximately(topShade.style.height.value.value, shade)) topShade.style.height = shade;
-            if (Portrait) LayoutHudPortrait(sheet, card, l, r);
+            if (Portrait) LayoutHudPortrait(sheet || modal, card, l, r);
             else
             {
                 Place(leftHost, l, top + RailY, null, null);
                 Place(timersHost, null, top + RailY, r + TileColW + 8, null);
                 Place(tilesHost, null, top + TilesY, r, null);
                 Place(bottomHost, l, null, SafeRight + 6, BottomPad + 4);
-                tilesHost.Hidden(sheet);
-                bottomHost.Hidden(sheet);
+                tilesHost.Hidden(sheet || modal);
+                bottomHost.Hidden(sheet || modal);
                 // Notices between whatever occupies the two sides.
                 float leftEdge = l + (card ? CardW : LeftRailW) + 10;
                 float rightEdge = r + TileColW + 8 + (card ? 0 : TimersW + 10);
@@ -137,8 +138,8 @@ namespace Founders.UI
                 contextPanel.style.maxHeight = maxCard;
                 cardBack.Hidden(true);
             }
-            leftHost.Hidden(sheet || card);
-            timersHost.Hidden(sheet || card);
+            leftHost.Hidden(sheet || card || modal);
+            timersHost.Hidden(sheet || card || modal);
             UpdateViewShift(card && !sheet);
         }
 
@@ -226,6 +227,7 @@ namespace Founders.UI
             ResourceType.Stone => "stone",
             ResourceType.Ore => "ore",
             ResourceType.Hides => "hides",
+            ResourceType.Bronze => "bronze",
             _ => "knowledge",
         };
 
@@ -237,6 +239,7 @@ namespace Founders.UI
             ResourceType.Stone => E.Cell.Common,
             ResourceType.Ore => E.Cell.Rare,
             ResourceType.Hides => E.Cell.Legendary,
+            ResourceType.Bronze => E.Cell.Rare,
             _ => E.Cell.Epic,
         };
 
@@ -269,7 +272,7 @@ namespace Founders.UI
         /// <summary>A red notification badge in the top-right corner of a parent.</summary>
         static VisualElement CornerBadge(string text, float size = 20) => E.Badge(text, true, size).Abs(null, -6, -6);
 
-        static readonly ResourceType[] StripOrder = { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Knowledge, ResourceType.Ore, ResourceType.Hides };
+        static readonly ResourceType[] StripOrder = { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Knowledge, ResourceType.Ore, ResourceType.Hides, ResourceType.Bronze };
 
         // MARK: - Top: the player block and the resource counters (the blue kit)
 
@@ -292,7 +295,8 @@ namespace Founders.UI
         static float ChipW(string text) => 7 + (ChipH - 6) + 4 + Theme.TextWidth(text + "0", Theme.Body) + 10;
 
         /// <summary>Compact (one row, no player block) while a window, a card or the build strip is open: the popup needs the height.</summary>
-        bool TopCompact => SheetOpen || ContextOpen;
+        // A dialog (event, milestone, welcome back…) also gets the one-row bar: nothing of the HUD may peek out around it.
+        bool TopCompact => SheetOpen || ContextOpen || ModalOpen;
 
         /// <summary>Width of the player block: the hexagon frame, the name, the rank and the hope bar.</summary>
         const float PlayerNameW = 156;
@@ -312,7 +316,8 @@ namespace Founders.UI
             {
                 if (t == ResourceType.Hides && G.State.Resources.Hides < 1) continue;
                 if (t == ResourceType.Ore && G.State.Resources.Ore < 1) continue;
-                int drop = t == ResourceType.Hides ? 9 : t == ResourceType.Ore ? 8 : t == ResourceType.Knowledge ? 3 : t == ResourceType.Stone ? 2 : 0;
+                if (t == ResourceType.Bronze && G.State.Resources.Bronze < 1) continue;
+                int drop = t == ResourceType.Bronze ? 10 : t == ResourceType.Hides ? 9 : t == ResourceType.Ore ? 8 : t == ResourceType.Knowledge ? 3 : t == ResourceType.Stone ? 2 : 0;
                 list.Add(new TopItem(t.ToString(), CounterW(Fmt.Compact(G.State.Resources[t]), PlusFor(t)), drop));
             }
             list.Add(new TopItem("clock", ChipW("00:00"), 7));
@@ -391,7 +396,7 @@ namespace Founders.UI
             if (!Portrait)
             {
                 bar.Add(E.Div().Grow().Ignore());
-                bar.Add(E.HudSquare("settings", Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
+                bar.Add(E.Settings(Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
                 host.Add(bar);
                 return;
             }
@@ -599,7 +604,7 @@ namespace Founders.UI
         string TimersKey()
         {
             var builds = string.Join(",", G.State.Buildings.Where(b => b.Status != BuildingStatus.Complete).Select(b => b.Id));
-            return $"{G.State.ActiveResearch?.TechId}|{G.State.ActiveExpedition?.RegionId}|{builds}|{MaxTimers()}|{G.IsStoked}";
+            return $"{G.State.ActiveResearch?.TechId}|{G.State.ActiveExpedition?.RegionId}|{builds}|{MaxTimers()}|{G.IsStoked}|{G.State.Speedups.Count}";
         }
 
         void BuildTimers(VisualElement host)
@@ -610,14 +615,14 @@ namespace Founders.UI
             {
                 var tech = G.Content.Technology(r.TechId);
                 cards.Add(TimerCard("knowledge", tech?.Name ?? r.TechId, () => 1 - r.RemainingSeconds / Math.Max(1, r.TotalSeconds),
-                    () => Fmt.Clock(r.RemainingSeconds), E.FillKind.Blue, () => store.ActivePanel = Panel.Research));
+                    () => Fmt.Clock(r.RemainingSeconds), E.FillKind.Blue, () => store.ActivePanel = Panel.Research, SpeedupTask.Research));
             }
             var e = G.State.ActiveExpedition;
             if (e != null)
             {
                 var region = G.Content.Regions.FirstOrDefault(x => x.Id == e.RegionId);
                 cards.Add(TimerCard("compass", region?.Name ?? e.RegionId, () => 1 - e.RemainingSeconds / Math.Max(1, e.TotalSeconds),
-                    () => Fmt.Clock(e.RemainingSeconds), E.FillKind.Green, () => { mapTab = 0; store.ActivePanel = Panel.Map; }));
+                    () => Fmt.Clock(e.RemainingSeconds), E.FillKind.Green, () => { mapTab = 0; store.ActivePanel = Panel.Map; }, SpeedupTask.Expedition));
             }
             if (G.IsStoked && G.Heart != null)
             {
@@ -632,13 +637,14 @@ namespace Founders.UI
                 int id = b.Id;
                 cards.Add(TimerCard(b.Status == BuildingStatus.Upgrading ? "level_up" : "build", def?.Name ?? b.DefinitionId,
                     () => G.State.Building(id)?.Progress ?? 1, () => Fmt.Clock(G.EstimatedSeconds(G.State.Building(id)?.RemainingWork ?? 0)),
-                    E.FillKind.Gold, () => store.FocusBuilding(id)));
+                    E.FillKind.Gold, () => store.FocusBuilding(id), SpeedupTask.Building(id)));
             }
             foreach (var c in cards.Take(MaxTimers())) host.Add(c);
         }
 
         /// <summary>A running job: icon, name and time left over a thin bar.</summary>
-        VisualElement TimerCard(string icon, string name, Func<double> progress, Func<string> left, E.FillKind fill, Action onTap)
+        VisualElement TimerCard(string icon, string name, Func<double> progress, Func<string> left, E.FillKind fill, Action onTap,
+                                SpeedupTask? speedup = null)
         {
             // A navy HUD capsule with the job's icon overlapping its left end (like the counters).
             var c = E.HudCapsule(TimerH).Pad(4, 12, 5, E.CounterIconRoom + 6);
@@ -650,7 +656,7 @@ namespace Founders.UI
             c.Add(E.Icon(icon, 34).Abs(-8, 2));
             var col = E.Div().Col().Grow().Ignore();
             // The name on its own line (it wraps rather than being cut), the bar and the time left under it.
-            col.Add(E.T(name, Theme.Small).Fit(TimersW - 12 - E.CounterIconRoom - 6));
+            col.Add(E.T(name, Theme.Small).Fit(TimersW - 12 - E.CounterIconRoom - 6 - (speedup != null ? 30 : 0)));
             var line = E.Div().Row().Ignore();
             line.style.marginTop = 1;
             var bar = LiveBar(progress, 9, fill == E.FillKind.Blue ? E.FillKind.Hud : fill).Grow();
@@ -658,6 +664,8 @@ namespace Founders.UI
             line.Add(Live(left, Theme.Small).NoShrink().Margin(0, 0, 0, 5));
             col.Add(line);
             c.Add(col);
+            // A speed-up button at the right end (a tap on it opens the speed-ups, elsewhere goes to the job).
+            if (speedup != null) c.Add(SpeedupButton(speedup.Value, 26).NoShrink().Margin(0, 0, 0, 4));
             Tap(c, onTap);
             return c;
         }
@@ -675,7 +683,7 @@ namespace Founders.UI
                 // Portrait: the settings button tops the column (the bar above has the whole width for the counters).
                 var cell = E.Div().Row().Center().Ignore().Size(TileColW);
                 cell.style.marginBottom = 8;
-                cell.Add(E.HudSquare("settings", Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
+                cell.Add(E.Settings(Act(() => store.ActivePanel = Panel.Settings), HudSquareSize));
                 host.Add(cell);
             }
             host.Add(MenuTile("goals", "Goals", MilestoneReady() ? "!" : null, () => { goalsTab = 0; store.ActivePanel = Panel.Objectives; }));
@@ -781,7 +789,7 @@ namespace Founders.UI
             float room = maxWidth - 6 - E.CounterIconRoom - 4 - 14 - 6;
             var line = LiveFit(() =>
             {
-                if (store.Toasts.Count > 0) return store.Toasts[store.Toasts.Count - 1].Notice.Message;
+                // The latest entry of the village's story (the news itself shows as a toast, never twice).
                 var last = G.State.Legacy.LastOrDefault();
                 return last != null ? last.Title : $"{G.CurrentChapter?.Title ?? G.StageName}";
             }, Theme.Small + 1, room, null, Theme.Small);
@@ -821,10 +829,11 @@ namespace Founders.UI
             }
             // Landscape: newest first from the top; portrait: notices rise from the bottom, newest last. Either way,
             // if the column ever runs out of height, the oldest is the one cut.
-            int n = store.Toasts.Count;
-            for (int k = 0; k < n; k++)
+            // At most the two newest at once, so the village stays in view.
+            int n = store.Toasts.Count, first = Mathf.Max(0, n - 2);
+            for (int k = 0; k < n - first; k++)
             {
-                var toast = store.Toasts[Portrait ? k : n - 1 - k];
+                var toast = store.Toasts[Portrait ? first + k : n - 1 - k];
                 string icon = toast.Notice.Kind switch
                 {
                     NoticeKind.Success => "check",

@@ -42,14 +42,16 @@ def icon(name, **cam):
 
 # ---------------------------------------------------------------- shared materials (made per scene)
 PAL = {
-    "wood": dict(color="#C0692F", hue_dark="#4A1440", spec=0.2, rough=0.45),
-    "wood_dark": dict(color="#8E4A22", hue_dark="#3A0C30", spec=0.18, rough=0.5),
+    "wood": dict(color="#B85A2E", hue_dark="#4A1440", spec=0.2, rough=0.45,
+                 pattern=("streaks", 4.0, "#6A2614", 0.5, 0.75)),
+    "wood_dark": dict(color="#8E4422", hue_dark="#3A0C30", spec=0.18, rough=0.5,
+                      pattern=("streaks", 4.0, "#4A160C", 0.5, 0.75)),
     "wood_light": dict(color="#F2B66A", light=0.32, hue_dark="#8A3A30", spec=0.2),
     "bark": dict(color="#9C4E22", hue_dark="#3A0C30", spec=0.15, rough=0.6),
     "handle": dict(color="#D08038", hue_dark="#5A1A30", spec=0.35, rough=0.3),
-    "steel": dict(color="#B9C6D2", hue_dark="#2A2C66", shade=0.48, light=0.45, light_col="#FFFFFF", spec=0.7,
+    "steel": dict(color="#A9BCC4", hue_dark="#2A2C66", shade=0.48, light=0.45, light_col="#FFFFFF", spec=0.7,
                   rough=0.18, metal=True),
-    "iron": dict(color="#5E6878", hue_dark="#1A1A40", shade=0.5, light=0.3, spec=0.6, rough=0.22, metal=True),
+    "iron": dict(color="#6C7E88", hue_dark="#1A1A40", shade=0.5, light=0.3, spec=0.6, rough=0.22, metal=True),
     "gold": dict(color="#FFC21F", hue_dark="#8A2A0A", shade=0.55, light=0.5, light_col="#FFFBD0", spec=0.85,
                  rough=0.16, metal=True),
     "red": dict(color="#EC3B2E", hue_dark="#5A0A40", spec=0.5, rough=0.2, light_col="#FFD8B0"),

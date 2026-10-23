@@ -12,7 +12,21 @@ namespace Founders.Core
         public double Spoilage;
         public bool CraftingActive;
         public double CraftingBonus;
+        /// <summary>State of every recipe job (smelting…) in this snapshot.</summary>
+        public Dictionary<JobType, ProcessingStatus> Processing = new Dictionary<JobType, ProcessingStatus>();
         public ResourceBundle Net => Production - Consumption;
+    }
+
+    /// <summary>Why a recipe job is or is not making its good.</summary>
+    public enum ProcessingState { Working, NoWorkers, MissingInput, OutputFull }
+
+    public struct ProcessingStatus
+    {
+        public ProcessingState State;
+        /// <summary>The input that ran out (MissingInput), or the one that limits the work most.</summary>
+        public ResourceType? Missing;
+        /// <summary>Output per second now, and what the workers could make with every input at hand.</summary>
+        public double Rate, Capacity;
     }
 
     public struct CraftingStatus
@@ -128,9 +142,18 @@ namespace Founders.Core
         /// <summary>Current per-second economy.</summary>
         public EconomySnapshot Economy() => EconomyCore(ApprovalProductivity(CurrentApproval));
 
-        /// <summary>The economy at a given work speed (approval uses the neutral speed to avoid a loop).</summary>
-        EconomySnapshot EconomyCore(double productivity)
+        /// <summary>The economy for a simulation step of <paramref name="dt"/> seconds (recipes are limited to what that step can take).</summary>
+        EconomySnapshot Economy(double dt) => EconomyCore(ApprovalProductivity(CurrentApproval), dt);
+
+        /// <summary>What a recipe job is doing now (for the UI: "no ore", "storage full"…).</summary>
+        public ProcessingStatus Processing(JobType job) =>
+            Economy().Processing.TryGetValue(job, out var st) ? st : new ProcessingStatus { State = ProcessingState.NoWorkers };
+
+        /// <summary>The economy at a given work speed (approval uses the neutral speed to avoid a loop).
+        /// <paramref name="dt"/> is the step the recipes must be able to pay for (the normal step when shown).</summary>
+        EconomySnapshot EconomyCore(double productivity, double dt = 0)
         {
+            if (!(dt > 0)) dt = Content.Balance.SimulationStepSeconds;
             var b = Content.Balance;
             var snap = new EconomySnapshot();
             var crafting = GetCraftingStatus();
@@ -140,7 +163,7 @@ namespace Founders.Core
             var production = new ResourceBundle();
             foreach (var cfg in b.Jobs)
             {
-                if (cfg.Output == null) continue;
+                if (cfg.Output == null || cfg.IsRecipe) continue;
                 double made = SkilledWorkers(cfg.Job) * RatePerWorker(cfg.Job, productivity);
                 // Shown as stopped when nothing is left within reach; the simulation takes what it finds (AdvanceNodes).
                 if (!simulating && exhaustedJobs.Contains(cfg.Job)) made = 0;
@@ -154,8 +177,67 @@ namespace Founders.Core
             snap.Spoilage = Math.Max(0, State.Resources.Food - ProtectedFood()) * b.SpoilageRatePerSecond * Multiplier(EffectKind.SpoilageMultiplier);
             consumption.Food += snap.Spoilage;
             consumption.Wood = FuelPerSecond;
-            snap.Consumption = consumption + crafting.Input;
+            consumption += crafting.Input;
+            ApplyRecipes(snap, ref production, ref consumption, productivity, dt);
+            snap.Production = production;
+            snap.Consumption = consumption;
             return snap;
+        }
+
+        /// <summary>
+        /// Recipe jobs turn inputs into a good. They only use what is in the stockpile at the start of the step,
+        /// after everything else that step consumes (food, firewood, crafting), and stop when the output has no
+        /// room left. Goods gathered in the same step are not used, so a recipe can never spend what the land
+        /// later fails to deliver; nothing is ever made from nothing and no stock goes below zero.
+        /// Prototype simplification: one shared stockpile, no carrying between buildings (docs/TECHNICAL_ARCHITECTURE.md).
+        /// </summary>
+        void ApplyRecipes(EconomySnapshot snap, ref ResourceBundle production, ref ResourceBundle consumption, double productivity, double dt)
+        {
+            var caps = StorageCapacity();
+            foreach (var cfg in Content.Balance.Jobs)
+            {
+                if (cfg.Output == null || !cfg.IsRecipe) continue;
+                var status = new ProcessingStatus();
+                double capacity = SkilledWorkers(cfg.Job) * RatePerWorker(cfg.Job, productivity);
+                status.Capacity = capacity;
+                if (capacity <= 0)
+                {
+                    status.State = ProcessingState.NoWorkers;
+                    snap.Processing[cfg.Job] = status;
+                    continue;
+                }
+                double rate = capacity;
+                foreach (var input in cfg.Inputs.Entries)
+                {
+                    double left = Math.Max(0, State.Resources[input.Key] - consumption[input.Key] * dt);
+                    double affordable = left / (input.Value * dt);
+                    if (affordable < rate) { rate = affordable; status.Missing = input.Key; }
+                }
+                var output = cfg.Output.Value;
+                double room = Math.Max(0, caps[output] - State.Resources[output] - (production[output] - consumption[output]) * dt) / dt;
+                bool full = room < rate;
+                if (full) rate = room;
+                if (rate < 1e-9) rate = 0;
+
+                status.Rate = rate;
+                status.State = rate <= 0 ? (full ? ProcessingState.OutputFull : ProcessingState.MissingInput)
+                    : full ? ProcessingState.OutputFull : ProcessingState.Working;
+                if (status.State == ProcessingState.OutputFull) status.Missing = null;
+                snap.Processing[cfg.Job] = status;
+                production[output] += rate;
+                consumption += cfg.Inputs * rate;
+            }
+        }
+
+        /// <summary>Counts what the recipes made (for goals such as "cast the first bronze").</summary>
+        void RecordMade(EconomySnapshot snap, double dt)
+        {
+            foreach (var kv in snap.Processing)
+            {
+                if (kv.Value.Rate <= 0) continue;
+                var output = Content.JobConfig(kv.Key).Output.Value.Id();
+                State.Made[output] = (State.Made.TryGetValue(output, out var v) ? v : 0) + kv.Value.Rate * dt;
+            }
         }
 
         // MARK: - Jobs

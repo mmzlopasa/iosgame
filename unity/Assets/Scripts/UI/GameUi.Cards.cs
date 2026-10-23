@@ -21,6 +21,7 @@ namespace Founders.UI
 
         string ContextKey()
         {
+            if (store.Founding) return $"found|{store.FoundingFire}|{store.FoundingCell}|{store.FoundingIssue()}";
             if (store.DecoratingId != null)
             {
                 var d = G.Content.Decoration(store.DecoratingId);
@@ -63,7 +64,8 @@ namespace Founders.UI
 
         void BuildContext(VisualElement host)
         {
-            if (store.DecoratingId != null) DecorationCard(host);
+            if (store.Founding) FoundingCard(host);
+            else if (store.DecoratingId != null) DecorationCard(host);
             else if (store.PlacingBuildingId != null) PlacementCard(host);
             else if (store.SelectedBuildingId != null) BuildingCard(host);
             else if (store.SelectedNode != null) NodeCard(host);
@@ -267,6 +269,36 @@ namespace Founders.UI
                                     afford ? SubLine("clock", Fmt.Clock(G.EstimatedSeconds(def.BuildSeconds))) : CostSub(def.Cost)), foot));
         }
 
+        // MARK: - Founding
+
+        /// <summary>A new game: first where the campfire burns, then where the first shelters stand.</summary>
+        void FoundingCard(VisualElement host)
+        {
+            bool fireChosen = store.FoundingFire != null;
+            string issue = store.FoundingIssue();
+            bool ok = issue == null;
+            CardShell(host, fireChosen ? "Raise the shelters" : "Light the campfire", null, store.BackFounding, out var body, out var foot);
+            var head = E.Div().Row(0, Align.FlexStart).Ignore();
+            head.Add(E.Slot(fireChosen ? "home" : "campfire", 64, E.Cell.Epic));
+            var col = E.Div().Col().Grow().Ignore();
+            col.style.marginLeft = 10;
+            col.Add(E.Ink(fireChosen
+                ? "Tap where your people raise their first three shelters, close to the fire's warmth."
+                : "Your band has found a valley. Tap the land where the campfire should burn: the land around it will be yours to build on.", Theme.Body));
+            head.Add(col);
+            body.Add(head);
+            var status = E.Inset().Row().Margin(8);
+            status.Add(E.Icon(ok ? "check" : "alert", 24).NoShrink());
+            var msg = E.T(ok ? (fireChosen ? "Good, dry ground near the fire." : "A good place to settle.") : issue, Theme.Body, ok ? (Color?)null : Theme.Bad).Flex();
+            msg.style.marginLeft = 8;
+            status.Add(msg);
+            body.Add(status);
+            body.Add(E.Ink("Forests, rocks and ore around the camp are resources: you may build over them, but what you build over is gone.", Theme.Small, Theme.Pale).Margin(6));
+            if (fireChosen) foot.Add(Share(E.Button("Back", Act(store.BackFounding), E.Kind.Red), foot));
+            foot.Add(Share(E.Button(fireChosen ? "Settle here" : "Light the fire here", ok ? Act(store.ConfirmFounding) : null,
+                                    ok ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH), foot));
+        }
+
         // MARK: - Decorations (roads, fences, lights…)
 
         void DecorationCard(VisualElement host)
@@ -366,7 +398,7 @@ namespace Founders.UI
                 string verb = n.Terrain == TerrainType.Forest ? "Send woodcutters" : n.Terrain == TerrainType.Rock ? "Send quarriers"
                     : n.Terrain == TerrainType.Ore ? "Send miners" : n.Terrain == TerrainType.Water ? "Send fishers" : "Send foragers";
                 string tool = n.Terrain == TerrainType.Forest ? "axe" : n.Terrain == TerrainType.Water ? "spear" : n.Terrain == TerrainType.Grass ? "food" : "pickaxe";
-                if (n.Ordered) Lead(E.Square("close", Act(() => store.ToggleHarvest(x, y)), E.Kind.Brown, Theme.ButtonH), foot);
+                if (n.Ordered) Lead(E.Square("trash", Act(() => store.ToggleHarvest(x, y)), E.Kind.Brown, Theme.ButtonH), foot);
                 foot.Add(Share(E.Button(verb, Act(() => store.SendGatherer(x, y)), E.Kind.Green, Theme.ButtonH, tool, 16, null, CardW - 20 - (n.Ordered ? Theme.ButtonH + 8 : 0)), foot));
             }
             else foot.Hidden(true);
@@ -422,6 +454,7 @@ namespace Founders.UI
                 tr.Add(E.T("Time left", Theme.Body).Flex());
                 tr.Add(Live(() => Fmt.Clock(G.EstimatedSeconds(G.State.Building(id)?.RemainingWork ?? 0)), Theme.Num));
                 rows.Add(tr);
+                rows.Add(SpeedupRow(SpeedupTask.Building(id)));
                 body.Add(sec);
             }
 
@@ -640,6 +673,7 @@ namespace Founders.UI
                 if (workers == 0) return sick > 0 ? $"{sick} ill and nobody tends them" : "Tends the sick: they get well quickly";
                 return sick == 0 ? $"Nobody is ill · room for {care}" : $"Tending {Math.Min(sick, care)} of {sick} ill · room for {care}";
             }
+            if (config.IsRecipe && config.Output.HasValue) return RecipeText(config, workers);
             if (config.Output.HasValue)
             {
                 double each = G.RatePerWorker(job) * 60;
@@ -657,6 +691,24 @@ namespace Founders.UI
                         : "Needs wood and stone to work";
                 default:
                     return config.Description;
+            }
+        }
+
+        /// <summary>A recipe job: what it takes and makes, and why it stands still (no ore, store full…).</summary>
+        string RecipeText(JobConfig config, int workers)
+        {
+            var output = config.Output.Value;
+            string recipe = string.Join(" + ", config.Inputs.Entries.Select(e => $"{e.Value:0.#} {e.Key.DisplayName()}")) + $" → 1 {output.DisplayName()}";
+            if (workers == 0 || econ == null || !econ.Processing.TryGetValue(config.Job, out var st)) return recipe;
+            switch (st.State)
+            {
+                case ProcessingState.OutputFull:
+                    return $"Stopped: the {output.DisplayName()} store is full";
+                case ProcessingState.MissingInput:
+                    return st.Missing.HasValue ? $"Stopped: no {st.Missing.Value.DisplayName()} · {recipe}" : $"Stopped · {recipe}";
+                default:
+                    string made = string.Format(CultureInfo.InvariantCulture, "{0} {1:0.0}/m", output.DisplayName(), st.Rate * 60);
+                    return st.Rate + 1e-9 < st.Capacity && st.Missing.HasValue ? $"{made} · short of {st.Missing.Value.DisplayName()}" : $"{made} · {recipe}";
             }
         }
     }

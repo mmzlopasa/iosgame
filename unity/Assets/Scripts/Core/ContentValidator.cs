@@ -53,6 +53,15 @@ namespace Founders.Core
             if (!b.StartResources.IsValid) problems.Add("startResources must be non-negative");
             foreach (var job in Enums.Jobs)
                 if (c.JobConfig(job) == null) problems.Add($"balance.jobs is missing job '{job.Id()}'");
+            foreach (var cfg in b.Jobs.Where(j => j.IsRecipe))
+            {
+                // A recipe turns its inputs into one output; it must not feed on itself or take negative amounts.
+                if (cfg.Output == null) problems.Add($"recipe job '{cfg.Job.Id()}' has inputs but no output");
+                else if (cfg.Inputs[cfg.Output.Value] > 0) problems.Add($"recipe job '{cfg.Job.Id()}' uses its own output");
+                if (!cfg.Inputs.IsValid) problems.Add($"recipe job '{cfg.Job.Id()}' has negative inputs");
+                if (cfg.Inputs.Knowledge > 0) problems.Add($"recipe job '{cfg.Job.Id()}' cannot use knowledge");
+                if (cfg.Byproduct.HasValue) problems.Add($"recipe job '{cfg.Job.Id()}' cannot have a byproduct");
+            }
             if (b.StartAssignments.Sum(s => s.Count) > b.StartPopulation) problems.Add("startAssignments exceed startPopulation");
 
             // Map
@@ -143,6 +152,11 @@ namespace Founders.Core
                             break;
                         case ConditionKind.ResourceAtLeast:
                             if (cond.Resource == null) problems.Add($"{owner}: resourceAtLeast needs a resource");
+                            break;
+                        case ConditionKind.MadeAtLeast:
+                            if (cond.Resource == null) problems.Add($"{owner}: madeAtLeast needs a resource");
+                            else if (!b.Jobs.Any(j => j.IsRecipe && j.Output == cond.Resource))
+                                problems.Add($"{owner}: no recipe makes {cond.Resource.Value.Id()}");
                             break;
                     }
                 }
@@ -253,6 +267,8 @@ namespace Founders.Core
             foreach (var r in c.Regions)
                 if (r.X < 0 || r.Y < 0 || r.X + r.Width > map.Width || r.Y + r.Height > map.Height)
                     problems.Add($"region '{r.Id}' lies outside the map");
+            if (c.Regions.Count(r => r.Home) > 1) problems.Add("only one region can be the home clearing");
+            if (!c.Map.StartBuildings.Any(b => b.BuildingId == "campfire")) problems.Add("the map must suggest where the campfire goes");
             if (!c.Regions.Any(r => r.RevealedAtStart)) problems.Add("at least one region must be revealed at start");
 
             return problems;

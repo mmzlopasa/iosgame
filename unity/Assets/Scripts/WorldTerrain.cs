@@ -14,11 +14,13 @@ namespace Founders
     /// </summary>
     public sealed class WorldTerrain
     {
-        public const float Size = 256f;     // the 128 m valley plus 64 m of surrounding land on each side
+        /// <summary>Side of the terrain in metres: the valley plus 64 m of surrounding land on each side.</summary>
+        public static float Size { get; private set; } = 384f;
         const float HeightRange = 90f;
         const float BaseDepth = 5f;          // world y = 0 sits this far above the terrain bottom
-        const int HeightRes = 513;
-        const int SplatRes = 512;
+        /// <summary>Heightmap samples per side (2^n + 1): about 0.4 m apart, so river banks stay round.</summary>
+        static int HeightRes = 1025;
+        static int SplatRes = 1024;
         public const float WaterLevel = -0.38f;
 
         static readonly string[] LayerNames = { "Grass", "ForestFloor", "Mud", "Sand", "Riverbed", "RockGround" };
@@ -51,6 +53,9 @@ namespace Founders
         public WorldTerrain(MapDefinition map, Transform parent)
         {
             this.map = map;
+            Size = Mathf.Max(map.Width, map.Height) * Grid.CellSize + 128f;
+            HeightRes = Size <= 256f ? 513 : 1025;
+            SplatRes = HeightRes - 1;
             var center = Grid.CellCenter((map.Width - 1) * 0.5f, (map.Height - 1) * 0.5f);
             origin = new Vector3(center.x - Size * 0.5f, -BaseDepth, center.z - Size * 0.5f);
 
@@ -61,7 +66,7 @@ namespace Founders
             var layers = new List<TerrainLayer>();
             foreach (var n in OutputLayers)
             {
-                var l = Resources.Load<TerrainLayer>("TerrainLayers/" + n);
+                var l = NatureKit.Current?.GroundFor(n) ?? Resources.Load<TerrainLayer>("TerrainLayers/" + n);
                 if (l == null) l = new TerrainLayer { diffuseTexture = Texture2D.grayTexture, tileSize = new Vector2(5, 5) };
                 // The player's own ground (Custom/Textures/Terrain/<Layer>.png, optional <Layer>_normal.png).
                 var albedo = CustomAssets.Texture("Textures/Terrain/" + n);

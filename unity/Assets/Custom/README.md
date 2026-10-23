@@ -134,6 +134,19 @@ Ograničenja: tvoji likovi ne drže alat u ruci (sjekiru, motiku); trupci i koš
 - **Velike slike** `UI/Images/<ime>.png`: `logo_mark` (logo), `loading_bg` (pozadina učitavanja), `glow`.
 - Font se (za sada) ne može zamijeniti.
 
+## 7a. Adventure UI Kit (Unity Asset Store)
+
+Igra sama stavlja **Adventure UI Kit** (Smashy Tech) na sučelje: okvire prozora, gumbe, kartice, trake, utore i male ikone (zatvori, natrag, postavke, plus…). Ikone resursa, zgrada i ljudi ostaju naše, oslikane.
+
+1. U Unityju: *Window → Package Manager → My Assets → Adventure UI Kit → Download → Import* (sve).
+2. Izbornik **FOUNDERS → Adventure UI Kit → Apply**. Igra pronađe mapu kita (ime sadrži „Adventure”), odabere slike po imenima datoteka i javi što je uzela. Izbor je zapisan u `Assets/Custom/AdventureUiKit.txt` – tu možeš promijeniti bilo koju sliku (ili napisati `none` da ostane naša) i ponovno kliknuti *Apply*.
+3. Ono što kit nema ostaje u izgledu igre.
+4. Builds na GitHubu ovo rade same prije svakog builda – dovoljno je da je kit u repozitoriju.
+
+> ⚠️ Kit je pod licencom Asset Storea: **ne smije biti u ovom javnom repozitoriju** (mapa `unity/Assets/Adventure UI Kit/` je u `.gitignore`). Za buildove na GitHubu kit je u zasebnom **privatnom** repozitoriju `mmzlopasa/iosgame-uikit` (mapa `Kit/Adventure UI Kit/`), a workflowi ga preuzimaju sa secretom `KIT_TOKEN`. Bez tog secreta igra se gradi u svom izgledu.
+
+*English:* import the kit anywhere under `Assets` (folder name containing "Adventure"); `FoundersEditor.AdventureUiKit` (menu **FOUNDERS → Adventure UI Kit → Apply**, and automatically in `BuildScript.Generate`) maps its sprites to the game's skins and interface glyphs by file/sprite name, copies them to `Assets/Generated/Resources/Kit/UI/{Skin,Icons}` with the kit's own 9-slice borders (`slices.txt`), and writes the choices to `Assets/Custom/AdventureUiKit.txt` for correction. Lookup order at runtime: Custom → Kit → the game's own.
+
 ## 8. Tlo (`Textures/Terrain/`)
 
 `Grass.png`, `Mud.png`, `Sand.png`, `RockGround.png` – bešavna (seamless) tekstura koja se ponavlja svakih 5 m, npr. 1024×1024 px. Normal map po želji: `Grass_normal.png`.
@@ -265,7 +278,9 @@ Za ukras / For a decoration: `deco_dirt_path`, `deco_stone_road`, `deco_wooden_b
 
 ### Ikone sučelja / UI icons – `UI/Icons/<ime>.png` (kvadratne, 128×128 px)
 
-`alert`, `approval`, `arrow`, `autumn`, `axe`, `back`, `bell`, `build`, `campfire`, `check`, `clock`, `close`, `compass`, `copy`, `customs`, `discontent`, `eye`, `eye_off`, `face_f1`, `face_f2`, `face_f3`, `face_m1`, `face_m2`, `face_m3`, `fence`, `fish`, `flame`, `food`, `goals`, `hides`, `home`, `info`, `knowledge`, `landmark`, `lantern`, `law_apprentices`, `law_bitter_remedies`, `law_burial_rites`, `law_dawn_to_dusk`, `law_day_of_rest`, `law_elders_council`, `law_fire_wardens`, `law_harvest_festival`, `law_hearty_meals`, `law_long_days`, `law_shared_stew`, `law_story_nights`, `law_watch_the_sick`, `law_watchmen`, `legacy`, `level_up`, `lock`, `minus`, `moon`, `next`, `ore`, `people`, `pickaxe`, `plus`, `research`, `road`, `rotate`, `settings`, `sick`, `sparkle`, `spear`, `spring`, `stone`, `storage`, `summer`, `thermometer`, `trash`, `tree`, `trophy`, `user`, `wheat`, `winter`, `wood`, `world`
+`alert`, `approval`, `arrow`, `autumn`, `axe`, `back`, `bell`, `bronze`, `build`, `campfire`, `check`, `clock`, `close`, `compass`, `copy`, `customs`, `discontent`, `eye`, `eye_off`, `face_f1`, `face_f2`, `face_f3`, `face_m1`, `face_m2`, `face_m3`, `fence`, `fish`, `flame`, `food`, `goals`, `hides`, `home`, `info`, `knowledge`, `landmark`, `lantern`, `law_apprentices`, `law_bitter_remedies`, `law_burial_rites`, `law_dawn_to_dusk`, `law_day_of_rest`, `law_elders_council`, `law_fire_wardens`, `law_harvest_festival`, `law_hearty_meals`, `law_long_days`, `law_shared_stew`, `law_story_nights`, `law_watch_the_sick`, `law_watchmen`, `legacy`, `level_up`, `lock`, `minus`, `moon`, `next`, `ore`, `people`, `pickaxe`, `plus`, `research`, `road`, `rotate`, `settings`, `sick`, `sparkle`, `spear`, `spring`, `stone`, `storage`, `summer`, `thermometer`, `trash`, `tree`, `trophy`, `user`, `wheat`, `winter`, `wood`, `world`
+
+Neobavezne (igra ih koristi samo ako ih dodaš) / Optional (used only when you add them): `speedup_general`, `speedup_construction`, `speedup_research`, `speedup_exploration` – ikone ubrzanja / speed-up item icons (bez njih / without them: `sparkle`, `build`, `knowledge`, `compass`).
 
 ### Okviri i gumbi / UI skins (9-slice) – `UI/Skin/<ime>.png`
 

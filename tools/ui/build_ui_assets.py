@@ -286,6 +286,10 @@ def build_images():
 FONT_BASE = "https://raw.githubusercontent.com/google/fonts/main/ofl/"
 FONTS = {"ChangaOne-Regular.ttf": "changaone/ChangaOne-Regular.ttf"}
 FONT_LICENSE = ("changaone/OFL.txt", "OFL-ChangaOne.txt")
+# The Adventure UI Kit's display face (Apache 2.0, Google Fonts), checked in with its vertical metrics
+# re-centred on the capitals (so a one-line label sits in the middle of its box) and its tiny "%" removed (the
+# fallback face draws it): titles, buttons, labels.
+DISPLAY_FONT = "LuckiestGuy-Regular.ttf"
 
 
 def build_fonts():
@@ -294,10 +298,10 @@ def build_fonts():
     os.makedirs(LICENSES, exist_ok=True)
     # Only the kit's font ships now: earlier faces are removed with their licences.
     for old in glob.glob(os.path.join(out, "*")):
-        if os.path.basename(old) not in FONTS and not old.endswith(".txt"):
+        if os.path.basename(old) not in FONTS and os.path.basename(old) != DISPLAY_FONT and not old.endswith(".txt"):
             os.remove(old)
     for old in glob.glob(os.path.join(LICENSES, "OFL-*.txt")):
-        if os.path.basename(old) != FONT_LICENSE[1]:
+        if os.path.basename(old) not in (FONT_LICENSE[1], "Apache-LuckiestGuy.txt"):
             os.remove(old)
     for name, path in FONTS.items():
         urllib.request.urlretrieve(FONT_BASE + path, os.path.join(out, name))
@@ -314,12 +318,18 @@ EXTRA_CHARS = "·−×°–—’…%"
 
 def write_generated():
     from fontTools.ttLib import TTFont
-    font = TTFont(os.path.join(OUT, "Fonts", "ChangaOne-Regular.ttf"))
+    font = TTFont(os.path.join(OUT, "Fonts", DISPLAY_FONT))
     cmap, hmtx, upm = font.getBestCmap(), font["hmtx"], font["head"].unitsPerEm
+    # Characters the display face leaves out (its "%" is tiny, so it was dropped) are drawn by Changa One.
+    back = TTFont(os.path.join(OUT, "Fonts", "ChangaOne-Regular.ttf"))
+    bcmap, bhmtx, bupm = back.getBestCmap(), back["hmtx"], back["head"].unitsPerEm
 
     def adv(ch):
         g = cmap.get(ord(ch))
-        return hmtx[g][0] / upm if g else 0.6
+        if g:
+            return hmtx[g][0] / upm
+        g = bcmap.get(ord(ch))
+        return bhmtx[g][0] / bupm if g else 0.6
 
     ascii_adv = ", ".join(f"{adv(chr(c)):.3f}f" for c in range(32, 127))
     extra = "\n".join(f'                case \'{c}\': return {adv(c):.3f}f;' for c in EXTRA_CHARS)
@@ -349,7 +359,7 @@ namespace Founders.UI
         /// <summary>Skins whose middle and edges repeat (tiled) instead of stretching: real wood and parchment.</summary>
         public static readonly HashSet<string> Tiled = new HashSet<string> {{ {tiled} }};
 
-        /// <summary>Advance widths (em) of Changa One for ' '..'~'.</summary>
+        /// <summary>Advance widths (em) of the display face (Luckiest Guy) for ' '..'~'.</summary>
         static readonly float[] Ascii = {{ {ascii_adv} }};
 
         /// <summary>Advance of a character in em (0.6 for anything not measured).</summary>

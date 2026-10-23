@@ -31,7 +31,13 @@ namespace FoundersEditor
             ConfigurePlayer();
             AssetDatabase.Refresh();
             ArtSetup.Run();
+            // The licensed nature packs, when they are in the project (see NatureKitSetup).
+            try { NatureKitSetup.Run(); }
+            catch (Exception e) { Debug.LogWarning("[FOUNDERS] nature packs could not be prepared: " + e); }
             UiSetup.Run();
+            // The Adventure UI Kit, when imported: its panels, buttons and glyphs on the game's interface.
+            try { Debug.Log(AdventureUiKit.Apply(writeMap: false)); }
+            catch (Exception e) { Debug.LogWarning("[FOUNDERS] Adventure UI Kit failed, the game's own look is used: " + e); }
             // The player's own art (Assets/Custom): prepare it and list what the build will use.
             try
             {

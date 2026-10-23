@@ -35,6 +35,7 @@ namespace Founders
             this.ui = ui;
             outDir = Path.Combine(Application.persistentDataPath, "captures");
             Directory.CreateDirectory(outDir);
+            File.Delete(Path.Combine(outDir, "layout_audit.txt"));
             StartCoroutine(Tour());
         }
 
@@ -182,6 +183,25 @@ namespace Founders
             yield return null;
             yield return new WaitForSeconds(0.6f);
             Debug.Log($"[FOUNDERS] captured {name}");
+            if (ui) Audit(name);
+        }
+
+        /// <summary>Writes the layout mistakes on this screen (see LayoutAudit) to captures/layout_audit.txt.</summary>
+        void Audit(string name)
+        {
+            try
+            {
+                var found = LayoutAudit.Check(this.ui.Root);
+                var sb = new System.Text.StringBuilder();
+                sb.Append("== ").Append(name).Append(found.Count == 0 ? " ok" : $" {found.Count} problem(s)").Append('\n');
+                foreach (var f in found) sb.Append("  ").Append(f).Append('\n');
+                File.AppendAllText(Path.Combine(outDir, "layout_audit.txt"), sb.ToString());
+                if (found.Count > 0) Debug.LogWarning($"[FOUNDERS] layout {name}: {found.Count} problem(s)");
+            }
+            catch (System.Exception ex)
+            {
+                Debug.LogWarning($"[FOUNDERS] layout audit {name} failed: {ex.Message}");
+            }
         }
 
         /// <summary>
@@ -624,12 +644,29 @@ namespace Founders
                     if (option != null) game.ResolveEvent(option.Id);
                 }
             }
-            foreach (var id in new[] { "farm_field", "farm_field", "granary", "pottery_kiln", "animal_pen", "pasture", "copper_smelter", "bronze_workshop" })
+            foreach (var id in new[] { "farm_field", "farm_field", "granary", "pottery_kiln", "animal_pen", "pasture", "copper_smelter" })
             {
                 Build(id);
                 store.Refresh();
                 yield return null;
             }
+            // The first chain: smelters cast bronze from ore and wood (the workshop and the Bronze Dawn need it).
+            game.State.Population = Mathf.Max(game.State.Population, 20);
+            game.DebugGrant(new ResourceBundle(food: 200, wood: 120, ore: 100));
+            game.SetWorkers(JobType.Smelting, Mathf.Min(game.JobCapacity(JobType.Smelting), game.IdleWorkers + game.State.Assignments[JobType.Smelting]));
+            for (int i = 0; i < 6 && game.Made(ResourceType.Bronze) < 25; i++) game.DebugFastForward(120);
+            var smelter = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "copper_smelter");
+            if (smelter != null)
+            {
+                store.SelectedBuildingId = smelter.Id;
+                store.Refresh();
+                Focus(Grid.CellCenter(smelter.X, smelter.Y), 14f);
+                yield return Shot("06a_smelter", true);
+                store.SelectedBuildingId = null;
+            }
+            Build("bronze_workshop");
+            store.Refresh();
+            yield return null;
             var woven = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "shelter");
             if (woven != null) { woven.DefinitionId = "daub_house"; woven.History.Add("daub_house"); }
             game.State.Population = Mathf.Max(game.State.Population, 20);
@@ -899,6 +936,24 @@ namespace Founders
             store.Offline = report;
             yield return Shot("18_welcome_back", true);
             store.Offline = null;
+
+            // Speed-ups: a running job and the window that uses them on it.
+            if (game.State.ActiveResearch == null)
+            {
+                var tech = game.Content.Technologies.FirstOrDefault(t => game.GetResearchStatus(t.Id).State == ResearchState.Available);
+                if (tech != null)
+                {
+                    game.DebugGrant(tech.Cost);
+                    store.StartResearch(tech.Id);
+                }
+            }
+            var job = game.State.ActiveResearch != null ? SpeedupTask.Research : game.SpeedupTasks().FirstOrDefault();
+            if (game.IsRunning(job))
+            {
+                ui.ShowSpeedups(job);
+                yield return Shot("19_speedup", true);
+                ui.HideSpeedups();
+            }
 
         }
     }

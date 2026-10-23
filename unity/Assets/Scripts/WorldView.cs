@@ -116,6 +116,8 @@ namespace Founders
             villagers.Clear();
             children.Clear();
             ghostKey = "";
+            foundingGhost.Clear();
+            foundingKey = "";
             selectionKey = -1;
             splatKey = null;
 
@@ -135,8 +137,9 @@ namespace Founders
         void BuildWater()
         {
             var center = Grid.CellCenter((store.Game.Content.Map.Width - 1) * 0.5f, (store.Game.Content.Map.Height - 1) * 0.5f);
+            var kitWater = NatureKit.Current?.Water;
             var water = Parts.Prim(PrimitiveType.Quad, transform, new Vector3(center.x, WorldTerrain.WaterLevel, center.z),
-                                   new Vector3(WorldTerrain.Size, WorldTerrain.Size, 1f), Palette.Get("Water"), new Vector3(90, 0, 0), false);
+                                   new Vector3(WorldTerrain.Size, WorldTerrain.Size, 1f), kitWater != null ? kitWater : Palette.Get("Water"), new Vector3(90, 0, 0), false);
             water.name = "Water";
             water.GetComponent<Renderer>().receiveShadows = true;
         }
@@ -149,6 +152,7 @@ namespace Founders
         void BuildNature()
         {
             var map = store.Game.Content.Map;
+            var kit = NatureKit.Current;
             nature = Parts.Group("Nature", transform, Vector3.zero).AddComponent<NatureField>();
             for (int cy = -NatureMargin; cy < map.Height + NatureMargin; cy++)
             {
@@ -159,7 +163,8 @@ namespace Founders
                     // Outside the map only some cells get props (far away nobody counts them).
                     if (!inside && (cx + cy) % 2 != 0) continue;
                     var rng = new System.Random(cx * 73856093 ^ cy * 19349663 ^ 0x5bd1e995);
-                    PopulateCell(type, cx, cy, rng, inside);
+                    if (kit != null) PopulateKitCell(kit, type, cx, cy, rng, inside);
+                    else PopulateCell(type, cx, cy, rng, inside);
                 }
             }
             nature.Build();
@@ -255,6 +260,175 @@ namespace Founders
             }
         }
 
+
+        // MARK: - Nature from the packs (Ultimate Nature PRO and Starter)
+
+        static readonly Dictionary<string, Material> kitTints = new Dictionary<string, Material>();
+
+        /// <summary>A recoloured copy of a kit rock's material: rusty iron ore, green copper ore, red berries.</summary>
+        static Material KitTint(NatureKit kit, string key, Color color)
+        {
+            if (kitTints.TryGetValue(key, out var m) && m != null) return m;
+            var rock = kit.Group("rock").FirstOrDefault();
+            var src = rock != null ? rock.GetComponentInChildren<MeshRenderer>(true)?.sharedMaterial : null;
+            src = src != null ? kit.Convert(src) : Palette.Get("Earth");
+            m = new Material(src) { name = key, enableInstancing = true };
+            if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", color);
+            return kitTints[key] = m;
+        }
+
+        int NeighbourCount(int cx, int cy, TerrainType t)
+        {
+            int n = 0;
+            for (int dy = -1; dy <= 1; dy++)
+                for (int dx = -1; dx <= 1; dx++)
+                    if ((dx != 0 || dy != 0) && Ground.CellType(cx + dx, cy + dy) == t) n++;
+            return n;
+        }
+
+        /// <summary>
+        /// The valley drawn with the nature packs only. Sizes are real-world metres (a cell is 2 m):
+        /// firs on the cold, high and northern ground, oaks and birches in the warm lowlands and by
+        /// the water, undergrowth under the trees, boulders on the stony hills, cliffs on the
+        /// mountains, reeds and lilies along the river and the lake, flowers in the meadows.
+        /// </summary>
+        void PopulateKitCell(NatureKit kit, TerrainType type, int cx, int cy, System.Random rng, bool inside)
+        {
+            float yaw() => (float)rng.NextDouble() * 360f;
+            float r01() => (float)rng.NextDouble();
+            var c = Grid.CellCenter(cx, cy);
+            void Put(string group, Vector3 p, float size, NatureField.Fit fit = NatureField.Fit.Height, string id = null,
+                     bool shadows = true, Material tint = null, float sink = 0f)
+            {
+                var prefab = kit.Pick(group, rng);
+                if (prefab != null) nature.AddKit(prefab, id ?? "kit_" + group, p, size, fit, yaw(), cx, cy, false, shadows, tint, sink);
+            }
+            void Tree(string group, Vector3 p, float height)
+            {
+                var prefab = kit.Pick(group, rng);
+                if (prefab != null) nature.AddKit(prefab, "kit_tree", p, height, NatureField.Fit.Height, yaw(), cx, cy, true);
+            }
+            // Which trees grow here: firs in the north, the hills and the mountains' feet; broadleaf and birch elsewhere.
+            float cold = Mathf.PerlinNoise(cx * 0.06f + 7.3f, cy * 0.06f + 2.1f) + Mathf.Clamp01((24f - cy) / 40f) * 0.35f;
+            string Species()
+            {
+                if (cold > 0.62f || NeighbourCount(cx, cy, TerrainType.Mountain) > 0) return "fir";
+                if (NeighbourCount(cx, cy, TerrainType.Water) > 0 && rng.Next(2) == 0) return "birch";
+                float pick = r01();
+                return pick < 0.35f ? "fir" : pick < 0.72f ? "broadleaf" : "birch";
+            }
+            float Height(string species) => species == "fir" ? 8f + r01() * 4f : species == "birch" ? 7f + r01() * 3f : 6.5f + r01() * 3f;
+
+            switch (type)
+            {
+                case TerrainType.Forest:
+                {
+                    // Beyond the map only some of the woods get trees: the valley walls read as woods, not a wall.
+                    if (!inside && rng.Next(3) == 0) break;
+                    int count = inside && rng.Next(6) == 0 ? 2 : 1;
+                    for (int i = 0; i < count; i++)
+                    {
+                        if (rng.Next(40) == 0) { Tree("dead_tree", Jitter(c, rng, 1.5f), 6f + r01() * 3f); continue; }
+                        var species = Species();
+                        Tree(species, Jitter(c, rng, 1.5f), Height(species) * (count == 2 ? 0.85f : 1f));
+                    }
+                    if (!inside) break;
+                    // Undergrowth: ferns and bushes in the shade, mushrooms, fallen wood.
+                    if (rng.Next(2) == 0) Put("fern", Jitter(c, rng, 1.7f), 0.5f + r01() * 0.4f, shadows: false);
+                    if (rng.Next(5) == 0) Put("bush", Jitter(c, rng, 1.6f), 0.9f + r01() * 0.5f);
+                    if (rng.Next(7) == 0) Put("mushroom", Jitter(c, rng, 1.6f), 0.15f + r01() * 0.1f, shadows: false);
+                    int wood = rng.Next(14);
+                    if (wood == 0) Put("log", Jitter(c, rng, 1.2f), 2.2f + r01() * 1.2f, NatureField.Fit.Width);
+                    else if (wood == 1) Put("stump", Jitter(c, rng, 1.4f), 0.5f + r01() * 0.3f);
+                    else if (wood < 4) Put("branch", Jitter(c, rng, 1.6f), 0.8f + r01() * 0.6f, NatureField.Fit.Width, shadows: false);
+                    break;
+                }
+                case TerrainType.Rock:
+                {
+                    // Boulders here and there; the stony hills show their gravel between them.
+                    if (rng.Next(10) < 4) Put("rock", Jitter(c, rng, 0.8f), 1.1f + r01() * 0.9f, NatureField.Fit.Width, "kit_rock", sink: 0.12f);
+                    if (rng.Next(3) == 0) Put("pebble", Jitter(c, rng, 1.6f), 0.3f + r01() * 0.35f, NatureField.Fit.Width, shadows: false, sink: 0.1f);
+                    if (rng.Next(6) == 0) Put("grass", Jitter(c, rng, 1.4f), 0.35f + r01() * 0.2f, shadows: false);
+                    if (rng.Next(12) == 0) Put("bush_dead", Jitter(c, rng, 1.4f), 0.7f + r01() * 0.4f);
+                    break;
+                }
+                case TerrainType.Ore:
+                {
+                    // Veins of rusty iron and green copper stone at the mountain foot.
+                    var ore = rng.Next(4) == 0 ? KitTint(kit, "KitCopperOre", new Color(0.62f, 0.85f, 0.7f)) : KitTint(kit, "KitIronOre", new Color(0.95f, 0.58f, 0.42f));
+                    Put("rock", Jitter(c, rng, 0.9f), 0.9f + r01() * 0.6f, NatureField.Fit.Width, "kit_rock", tint: ore, sink: 0.15f);
+                    for (int i = 0; i < 2; i++) Put("pebble", Jitter(c, rng, 1.6f), 0.3f + r01() * 0.3f, NatureField.Fit.Width, shadows: false, tint: ore, sink: 0.1f);
+                    break;
+                }
+                case TerrainType.Mountain:
+                {
+                    var p = Jitter(c, rng, 1.6f);
+                    // Firs climb the lower slopes; cliffs and scree above.
+                    if (p.y < 7f && rng.Next(3) == 0) Tree("fir", p, 7f + r01() * 3f);
+                    else if (rng.Next(4) == 0) Put("cliff", p, 3f + r01() * 3f, NatureField.Fit.Width, "kit_cliff", sink: 0.2f);
+                    else if (rng.Next(3) == 0) Put("rock", p, 1.2f + r01() * 1.4f, NatureField.Fit.Width, "kit_rock", sink: 0.15f);
+                    break;
+                }
+                case TerrainType.Sand:
+                {
+                    // Reeds where the bank meets the water, pebbles and driftwood on the beach.
+                    if (NeighbourCount(cx, cy, TerrainType.Water) > 0 && rng.Next(2) == 0) Put("reeds", Jitter(c, rng, 1.4f), 1.0f + r01() * 0.6f, shadows: false);
+                    if (rng.Next(3) == 0) Put("pebble", Jitter(c, rng, 1.6f), 0.25f + r01() * 0.3f, NatureField.Fit.Width, shadows: false, sink: 0.1f);
+                    if (rng.Next(12) == 0) Put("branch", Jitter(c, rng, 1.4f), 1.0f + r01() * 0.6f, NatureField.Fit.Width, shadows: false);
+                    break;
+                }
+                case TerrainType.Water:
+                {
+                    // Water lilies in the quiet water of the lake (not in the running river).
+                    if (inside && NeighbourCount(cx, cy, TerrainType.Water) >= 7 && rng.Next(9) == 0)
+                    {
+                        var p = c + new Vector3((r01() - 0.5f) * 1.4f, 0f, (r01() - 0.5f) * 1.4f);
+                        p.y = WorldTerrain.WaterLevel + 0.01f;
+                        Put("lily", p, 0.6f + r01() * 0.4f, NatureField.Fit.Width, shadows: false);
+                    }
+                    break;
+                }
+                case TerrainType.Grass:
+                {
+                    // Berry bushes the foragers pick (the same cells the game counts as food).
+                    var berries = store.Game.NodeKinds.FirstOrDefault(k => k.Id == "berries" && k.Capacity > 0);
+                    if (inside && berries != null && Game.HasFeature(berries, cx, cy))
+                    {
+                        var p = Jitter(c, rng, 0.9f);
+                        var bush = kit.Pick("bush", rng);
+                        if (bush != null) nature.AddKit(bush, "kit_berry_bush", p, 1.0f + r01() * 0.3f, NatureField.Fit.Height, yaw(), cx, cy);
+                        var berry = KitTint(kit, "KitBerry", new Color(0.78f, 0.12f, 0.22f));
+                        for (int i = 0; i < 9; i++)
+                            Put("pebble", p + new Vector3((r01() - 0.5f) * 0.9f, 0.45f + r01() * 0.4f, (r01() - 0.5f) * 0.9f), 0.07f,
+                                NatureField.Fit.Width, "kit_berry", false, berry);
+                        break;
+                    }
+                    // Young trees spread from the forest's edge.
+                    if (NeighbourCount(cx, cy, TerrainType.Forest) >= 3 && rng.Next(7) == 0)
+                    {
+                        Tree(cold > 0.55f ? "fir_young" : "birch", Jitter(c, rng, 1.4f), cold > 0.55f ? 2.5f + r01() * 1.5f : 4.5f + r01() * 1.5f);
+                        break;
+                    }
+                    // Open meadow: shrubs and flowers, no trees, so the player decides what goes where.
+                    int r = rng.Next(16);
+                    if (r == 0) Put("bush", Jitter(c, rng, 1.4f), 0.8f + r01() * 0.5f);
+                    else if (r == 1) Put("bush_flower", Jitter(c, rng, 1.4f), 0.8f + r01() * 0.4f);
+                    else if (r == 2 && !inside && rng.Next(2) == 0) Tree("broadleaf", Jitter(c, rng, 1.4f), 7f + r01() * 2f);
+                    else if (r < 6)
+                    {
+                        // A little patch of the same flower.
+                        var flower = kit.Pick("flowers", rng);
+                        var p0 = Jitter(c, rng, 1.2f);
+                        int n = 2 + rng.Next(4);
+                        for (int i = 0; i < n && flower != null; i++)
+                            nature.AddKit(flower, "kit_flowers", Jitter(p0, rng, 0.8f), 0.3f + r01() * 0.2f, NatureField.Fit.Height, yaw(), cx, cy, false, false);
+                    }
+                    else if (r == 6) Put("clover", Jitter(c, rng, 1.4f), 0.25f, NatureField.Fit.Height, shadows: false);
+                    else if (r == 7) Put("grass_tall", Jitter(c, rng, 1.4f), 0.6f + r01() * 0.3f, shadows: false);
+                    break;
+                }
+            }
+        }
 
         // MARK: - Sync
 
@@ -447,6 +621,7 @@ namespace Founders
             RepaintGround(game, initial);
             UpdateSelection();
             UpdateGhost();
+            UpdateFoundingGhost();
             UpdateVillagers(game);
         }
 
@@ -816,6 +991,51 @@ namespace Founders
                                   1, new Vector2(def.Footprint.Width, def.Footprint.Height) * Grid.CellSize);
             if (!valid) preview.transform.localScale = new Vector3(1f, 0.6f, 1f);
             ghost.Add(preview);
+        }
+
+        // MARK: - Founding ghost (where the campfire and the first shelters will stand)
+
+        readonly List<GameObject> foundingGhost = new List<GameObject>();
+        string foundingKey = "";
+
+        void UpdateFoundingGhost()
+        {
+            var cell = store.Founding ? store.FoundingCell : null;
+            var fire = store.FoundingFire;
+            string issue = cell == null ? null : store.FoundingIssue();
+            string key = cell == null ? "" : $"{cell}|{fire}|{issue == null}";
+            if (key == foundingKey) return;
+            foundingKey = key;
+            foreach (var go in foundingGhost) Destroy(go);
+            foundingGhost.Clear();
+            if (cell == null) return;
+            var game = store.Game;
+            var campfire = game.Content.Building("campfire");
+            var shelter = game.Content.Building("shelter");
+            void Ghost(BuildingDefinition def, int x, int y, bool valid)
+            {
+                if (def == null) return;
+                foundingGhost.Add(Marker(x, y, valid ? "GhostOk" : "GhostBad"));
+                var center = Ground.OnGround(Grid.CellCenter(x, y));
+                center.y = Mathf.Max(center.y, WorldTerrain.WaterLevel + 0.12f);
+                var preview = Parts.Group("FoundingGhost", overlayRoot, center, 0f);
+                BuildingModels.Create(def.Sprite, preview.transform, valid ? null : Palette.Get("GhostBad"), Grid.CellSize, 1,
+                                      new Vector2(def.Footprint.Width, def.Footprint.Height) * Grid.CellSize);
+                if (!valid) preview.transform.localScale = new Vector3(1f, 0.6f, 1f);
+                foundingGhost.Add(preview);
+            }
+            bool ok = issue == null;
+            if (fire is (int fx, int fy))
+            {
+                Ghost(campfire, fx, fy, true);
+                foreach (var (x, y) in game.SettlementCells(cell.Value.x, cell.Value.y)) Ghost(shelter, x, y, ok);
+                // The warmth of the fire: the shelters must stand inside this square.
+                int r = Game.SettlementReach;
+                for (int d = -r; d <= r; d++)
+                    foreach (var (x, y) in new[] { (fx + d, fy - r), (fx + d, fy + r), (fx - r, fy + d), (fx + r, fy + d) })
+                        if (game.IsSettleable(x, y)) foundingGhost.Add(Marker(x, y, "Select"));
+            }
+            else Ghost(campfire, cell.Value.x, cell.Value.y, ok);
         }
 
         // MARK: - Villagers
@@ -1392,6 +1612,7 @@ namespace Founders
                 case JobType.Healing:
                     return HealTask(game, index, site, from, center, task);
                 case JobType.Crafting:
+                case JobType.Smelting:
                     task.Spot = BesideBuilding(site, from, index);
                     task.Face = center;
                     task.Action = "Work";

@@ -25,6 +25,9 @@ namespace Founders.Core
     {
         // MARK: - Conditions
 
+        /// <summary>How much of a good the recipes have made since the founding.</summary>
+        public double Made(ResourceType r) => State.Made.TryGetValue(r.Id(), out var v) ? v : 0;
+
         public bool IsMet(Condition c)
         {
             double amount = c.Amount ?? 1;
@@ -42,6 +45,7 @@ namespace Founders.Core
                 case ConditionKind.ObjectiveCompleted: return State.CompletedObjectives.Contains(id);
                 case ConditionKind.MilestoneReached: return State.ReachedMilestones.Contains(id);
                 case ConditionKind.RegionExplored: return State.ExploredRegions.Contains(id);
+                case ConditionKind.RegionsExploredAtLeast: return LandsExplored >= amount;
                 case ConditionKind.DistinctJobsAtLeast: return Enums.Jobs.Count(j => State.Assignments[j] > 0) >= amount;
                 case ConditionKind.FoodBalancePositive: return Economy().Net.Food > 0;
                 case ConditionKind.YearAtLeast: return Year >= amount;
@@ -54,6 +58,7 @@ namespace Founders.Core
                 case ConditionKind.SickAtMost: return SickCount <= amount;
                 case ConditionKind.LawEnacted: return State.Laws.Contains(id);
                 case ConditionKind.DiscontentAtMost: return State.Discontent <= amount + 1e-9;
+                case ConditionKind.MadeAtLeast: return c.Resource.HasValue && Made(c.Resource.Value) + 1e-9 >= amount;
                 default: return false;
             }
         }
@@ -69,6 +74,11 @@ namespace Founders.Core
                     var r = c.Resource ?? ResourceType.Food;
                     return $"{r.DisplayName()} {(int)Math.Floor(State.Resources[r])}/{amount}";
                 }
+                case ConditionKind.MadeAtLeast:
+                {
+                    var r = c.Resource ?? ResourceType.Bronze;
+                    return $"Make {r.DisplayName()} {(int)Math.Floor(Made(r) + 1e-9)}/{amount}";
+                }
                 case ConditionKind.BuildingCount:
                     return $"{Content.Building(id)?.Name ?? (c.Id ?? "?")} {Count(id)}/{amount}";
                 case ConditionKind.HousingAtLeast: return $"Housing {HousingCapacity()}/{amount}";
@@ -79,6 +89,7 @@ namespace Founders.Core
                 case ConditionKind.ObjectiveCompleted: return $"Complete {Content.Objective(id)?.Title ?? "?"}";
                 case ConditionKind.MilestoneReached: return $"Reach {Content.Milestone(id)?.Name ?? "?"}";
                 case ConditionKind.RegionExplored: return $"Explore {Content.Region(id)?.Name ?? "?"}";
+                case ConditionKind.RegionsExploredAtLeast: return $"Lands explored {LandsExplored}/{amount}";
                 case ConditionKind.DistinctJobsAtLeast:
                     return $"Jobs in use {Enums.Jobs.Count(j => State.Assignments[j] > 0)}/{amount}";
                 case ConditionKind.FoodBalancePositive:
@@ -129,6 +140,7 @@ namespace Founders.Core
                     if (obj.Reward.HasValue) Apply(new Effect(EffectKind.GrantResources) { Resources = obj.Reward }, obj.Id);
                     string rewardText = obj.Reward.HasValue ? $" Reward: {obj.Reward.Value.ShortDescription}" : "";
                     Notice(NoticeKind.Success, $"Objective complete: {obj.Title}.{rewardText}");
+                    GrantSpeedups(Speedups.ObjectiveCompleted, "Goal reached!");
                     changed = true;
                 }
             }
@@ -173,6 +185,7 @@ namespace Founders.Core
             NormalizeAssignments();
             AddLegacy("milestone", ms.Name, ms.LegacyText, id);
             Notice(NoticeKind.Milestone, $"{ms.Name}! {ms.Description}");
+            GrantSpeedups(Speedups.MilestoneReached, $"{ms.Name}!");
             EvaluateProgress();
             return GameResult.Success;
         }
@@ -231,6 +244,14 @@ namespace Founders.Core
             if (active == null) return;
             active.RemainingSeconds -= dt;
             if (active.RemainingSeconds > 1e-9) return;
+            CompleteResearch();
+        }
+
+        /// <summary>Finishes the running research (its time ran out or speed-ups covered it).</summary>
+        void CompleteResearch()
+        {
+            var active = State.ActiveResearch;
+            if (active == null) return;
             State.ActiveResearch = null;
             if (State.Researched.Contains(active.TechId)) return;
             State.Researched.Add(active.TechId);
@@ -238,6 +259,7 @@ namespace Founders.Core
             string name = tech?.Name ?? active.TechId;
             Notice(NoticeKind.Success, $"Research complete: {name}!");
             AddLegacy("technology", $"Discovered {name}", tech?.Description ?? "", active.TechId);
+            GrantSpeedups(Speedups.ResearchFinished, "Discovery!");
         }
 
         // MARK: - Events
@@ -314,11 +336,14 @@ namespace Founders.Core
             if (region == null) return GameError.UnknownContent(regionId);
             if (State.ExploredRegions.Contains(regionId)) return GameError.RegionAlreadyExplored;
             if (State.ActiveExpedition != null) return GameError.ExpeditionInProgress;
-            if (!State.Resources.Covers(region.Cost)) return GameError.Unaffordable(State.Resources.Shortfall(region.Cost));
-            State.Resources = State.Resources - region.Cost;
+            if (!IsFrontier(region)) return GameError.RegionNotAdjacent;
+            var cost = ExpeditionCost(region);
+            if (!State.Resources.Covers(cost)) return GameError.Unaffordable(State.Resources.Shortfall(cost));
+            State.Resources = State.Resources - cost;
+            double seconds = ExpeditionSeconds(region);
             State.ActiveExpedition = new ActiveExpedition
             {
-                RegionId = regionId, RemainingSeconds = region.ExpeditionSeconds, TotalSeconds = region.ExpeditionSeconds,
+                RegionId = regionId, RemainingSeconds = seconds, TotalSeconds = seconds,
             };
             Notice(NoticeKind.Info, $"Scouts set out for {region.Name}.");
             return GameResult.Success;
@@ -330,6 +355,14 @@ namespace Founders.Core
             if (exp == null) return;
             exp.RemainingSeconds -= dt;
             if (exp.RemainingSeconds > 1e-9) return;
+            CompleteExpedition();
+        }
+
+        /// <summary>Brings the scouts home (their time ran out or speed-ups covered it).</summary>
+        void CompleteExpedition()
+        {
+            var exp = State.ActiveExpedition;
+            if (exp == null) return;
             State.ActiveExpedition = null;
             var region = Content.Region(exp.RegionId);
             if (State.ExploredRegions.Contains(exp.RegionId) || region == null) return;
@@ -350,6 +383,7 @@ namespace Founders.Core
             }
             if (!string.IsNullOrEmpty(region.Finding)) Notice(NoticeKind.Info, region.Finding);
             AddLegacy("exploration", $"Explored {region.Name}", region.LegacyText, region.Id);
+            GrantSpeedups(Speedups.RegionExplored, "New land explored!");
         }
     }
 }

@@ -31,3 +31,15 @@ CREATE TABLE IF NOT EXISTS saves (
   PRIMARY KEY (player_id, save_key),
   FOREIGN KEY (player_id) REFERENCES players(id) ON DELETE CASCADE
 ) ENGINE=InnoDB;
+
+-- Copies of a save made by the admin page before it changes or deletes anything (the last 30 per player).
+-- No foreign key: the copy stays even after the player is deleted.
+CREATE TABLE IF NOT EXISTS save_backups (
+  id          BIGINT       NOT NULL AUTO_INCREMENT PRIMARY KEY,
+  player_id   CHAR(32)     NOT NULL,
+  save_key    VARCHAR(64)  NOT NULL,
+  value       LONGTEXT     NOT NULL,
+  note        VARCHAR(100) NOT NULL DEFAULT '',
+  created_at  DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  INDEX (player_id)
+) ENGINE=InnoDB;

@@ -612,12 +612,10 @@ namespace Founders.UI
             {
                 int k = (int)e;
                 var c = E.Div().Col(Align.Center).Grow().Ignore();
-                var cell = E.Slot("people", 52, ExposureCell(e), 0.55f);
-                cell.style.justifyContent = Justify.FlexStart;
-                cell.ElementAt(0).style.marginTop = 3;
-                var n = Live(() => Warm.People[k].ToString(Inv), Theme.Body).Align(TextAnchor.MiddleCenter).Abs(-4, null, -4, 1);
-                cell.Add(n);
+                var cell = E.Slot("people", 52, ExposureCell(e), 0.62f);
                 c.Add(cell);
+                // The count under the cell, clear of its frame, then the name.
+                c.Add(Live(() => Warm.People[k].ToString(Inv), Theme.H2).Align(TextAnchor.MiddleCenter).Margin(2));
                 c.Add(E.T(e.ToString(), Theme.Body, ExposureColor(e)).Margin(3));
                 grid.Add(c);
             }
@@ -748,8 +746,8 @@ namespace Founders.UI
                     foreach (var o in laws)
                         if (!done.Contains(o.Law.Id) && Excludes(s.Law, o.Law)) { group.Add(o); done.Add(o.Law.Id); }
                     if (group.Count == 1) { col.Add(LawNode(s, colW)); continue; }
-                    var box = E.Div().Col().Ignore().Radius(12).Border(Theme.Wood4, 2f).Pad(4).Margin(0, 0, 8);
-                    box.style.backgroundColor = Theme.Alpha(Theme.Wood4, 0.18f);
+                    var box = E.Div().Col().Ignore().Radius(12).Border(Theme.KitLook ? Theme.Rim : Theme.Wood4, 2f).Pad(4).Margin(0, 0, 8);
+                    box.style.backgroundColor = Theme.KitLook ? new Color(0.06f, 0.03f, 0.11f, 0.35f) : Theme.Alpha(Theme.Wood4, 0.18f);
                     for (int i = 0; i < group.Count; i++)
                     {
                         if (i > 0) box.Add(OrConnector());
@@ -763,12 +761,8 @@ namespace Founders.UI
             }
             body.Add(board);
 
-            var side = E.Scroll(ScrollViewMode.Vertical);
-            side.style.width = LawDetailW;
-            side.style.flexShrink = 0;
-            side.style.marginLeft = 8;
-            side.contentContainer.style.paddingBottom = 6;
-            side.Add(LawDetail(statuses.First(s => s.Law.Id == selectedLaw), LawDetailW));
+            var side = SidePane(LawDetailW, out var sideScroll, out var sideFoot);
+            sideScroll.Add(LawDetail(statuses.First(s => s.Law.Id == selectedLaw), LawDetailW, sideFoot));
             body.Add(side);
             host.Add(body);
         }
@@ -802,8 +796,8 @@ namespace Founders.UI
                     foreach (var o in laws)
                         if (!done.Contains(o.Law.Id) && Excludes(st.Law, o.Law)) { group.Add(o); done.Add(o.Law.Id); }
                     if (group.Count == 1) { scroll.Add(LawNode(st, colW)); continue; }
-                    var box = E.Div().Col().Ignore().Radius(12).Border(Theme.Wood4, 2f).Pad(4).Margin(0, 0, 8);
-                    box.style.backgroundColor = Theme.Alpha(Theme.Wood4, 0.18f);
+                    var box = E.Div().Col().Ignore().Radius(12).Border(Theme.KitLook ? Theme.Rim : Theme.Wood4, 2f).Pad(4).Margin(0, 0, 8);
+                    box.style.backgroundColor = Theme.KitLook ? new Color(0.06f, 0.03f, 0.11f, 0.35f) : Theme.Alpha(Theme.Wood4, 0.18f);
                     for (int i = 0; i < group.Count; i++)
                     {
                         if (i > 0) box.Add(OrConnector());
@@ -912,7 +906,7 @@ namespace Founders.UI
             return list;
         }
 
-        VisualElement LawDetail(LawStatus st, float detailW)
+        VisualElement LawDetail(LawStatus st, float detailW, VisualElement foot = null)
         {
             var law = st.Law;
             var card = E.Inset().Col().Pad(10, 10);
@@ -964,15 +958,17 @@ namespace Founders.UI
                 default:
                     if (confirmLaw == id)
                     {
-                        bottom.Add(Notice("alert", $"A custom is for good: once signed, {law.Name} can never be revoked.", true).Margin(0));
-                        var buttons = E.Div().Row().Ignore().Margin(8);
+                        // The warning goes with the description (it scrolls); only the two buttons stay pinned.
+                        var warn = Notice("alert", $"A custom is for good: once signed, {law.Name} can never be revoked.", true).Margin(foot != null ? 8 : 0);
+                        if (foot != null) card.Add(warn); else bottom.Add(warn);
+                        var buttons = E.Div().Row().Ignore().Margin(foot != null ? 0 : 8);
                         float half = (detailW - 20 - 8) / 2;
                         buttons.Add(Share(E.Button("Cancel", Act(() => confirmLaw = null), E.Kind.Red, Theme.ButtonH, null, 16, null, half), buttons));
                         buttons.Add(Share(E.Button("Sign", Act(() =>
                         {
                             confirmLaw = null;
                             store.SignLaw(id);
-                        }), E.Kind.Green, Theme.ButtonH, "customs", 16, null, half), buttons));
+                        }), E.Kind.Green, Theme.ButtonH, null, 16, null, half), buttons));
                         bottom.Add(buttons);
                     }
                     else if (G.LawCooldownLeft > 0)
@@ -987,7 +983,8 @@ namespace Founders.UI
                         bottom.Add(E.Button("Sign the custom", Act(() => confirmLaw = id), E.Kind.Green, Theme.ButtonH, "customs", 16, null, detailW - 20));
                     break;
             }
-            card.Add(bottom);
+            if (foot != null) { bottom.style.marginTop = 0; foot.Add(bottom); foot.Hidden(bottom.childCount == 0); }
+            else card.Add(bottom);
             return card;
         }
 
@@ -1002,9 +999,11 @@ namespace Founders.UI
             var c = DialogShell(p.Title, DialogW, out var body, out var foot);
             // Left: the people's words and the mood (portrait: on top).
             var left = E.Div().Col().Ignore().Size(DialogArtW);
-            var art = E.Div().Row().Center().Radius(10).Border(Theme.Outline, 2.5f).Ignore();
+            var art = E.Div().Row().Center().Ignore();
             art.style.height = Portrait ? 76 : 90;
-            art.BgImage(Theme.Gradient("petitionart", true, Theme.Hex("#8A5A32"), Theme.Hex("#4A2E1A")));
+            // The kit look: the scene in the dark inset; the game's own: a wooden frame.
+            if (Theme.KitLook) art.Skin("section");
+            else art.Radius(10).Border(Theme.Outline, 2.5f).BgImage(Theme.Gradient("petitionart", true, Theme.Hex("#8A5A32"), Theme.Hex("#4A2E1A")));
             art.Add(E.Icon("people", 60));
             art.Add(E.Icon("discontent", 38).Margin(0, 0, 0, -8));
             left.Add(art);
