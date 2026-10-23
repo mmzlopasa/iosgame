@@ -14,10 +14,10 @@ namespace Founders.UI
     /// in white with a dark plum outline for every label, title, button and number; sentences use Changa One.
     /// Without the kit in the project the game's own skins stand in, with the same layout.
     ///
-    /// Sizes are in panel units: a phone screen is <see cref="GameUi.PhoneShortSide"/> (446) units across its short
+    /// Sizes are in panel units: a phone screen is <see cref="GameUi.PhoneShortSide"/> (500) units across its short
     /// side in either orientation (fewer on a small phone, so nothing drops under <see cref="GameUi.MinPointsPerUnit"/>
     /// points per unit), so text and buttons keep their physical size when the phone turns; see
-    /// <see cref="GameUi.ShortSideUnits"/>. One unit is ~0.88 iOS points: Small text (12) is never under 10.5 pt and
+    /// <see cref="GameUi.ShortSideUnits"/>. One unit is ~0.78 iOS points: Small text (12) is never under 9.4 pt and
     /// taps are at least <see cref="MinTap"/> units (40 pt) thanks to <see cref="Ux.HitSlop"/>. The skins (9-slice
     /// textures) and the font advances come from tools/ui/build_ui_assets.py through <see cref="UiGenerated"/>.
     /// </summary>
@@ -70,7 +70,7 @@ namespace Founders.UI
         public static readonly Color RowLine = new Color(0.50f, 0.43f, 0.60f, 0.45f);
         public static readonly Color Scrim = new Color(0.06f, 0.03f, 0.10f, 0.50f);
 
-        // MARK: - Type scale and metrics (panel units; a phone is 446 across its short side, ~0.88 pt per unit)
+        // MARK: - Type scale and metrics (panel units; a phone is 500 across its short side, ~0.78 pt per unit)
 
         /// <summary>Window and card titles on the wooden plank.</summary>
         public const float H1 = 20;

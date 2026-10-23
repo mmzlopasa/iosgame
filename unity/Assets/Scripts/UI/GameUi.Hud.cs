@@ -583,11 +583,14 @@ namespace Founders.UI
 
         // MARK: - Left rail: the goal and a promise
 
+        const bool ShowGoalCard = false;
+
         string LeftKey() => $"{G.CurrentObjective?.Id}|{G.State.ActivePetition?.PetitionId}";
 
         void BuildLeft(VisualElement host)
         {
-            var o = G.CurrentObjective;
+            // The goal is no longer pinned on the screen (it hid the town): the Goals tile opens it.
+            var o = ShowGoalCard ? G.CurrentObjective : null;
             if (o != null)
             {
                 var card = E.Panel().Pad(7, 11, 11, 11);
