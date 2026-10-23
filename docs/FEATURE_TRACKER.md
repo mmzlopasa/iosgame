@@ -36,6 +36,7 @@
 | UI | HUD, build menu, people, research, goals, map, cards | ✅ | `UI/` |
 | UI | Recipe status on job rows and building cards | 🟡 | `GameUi.Cards.RecipeText` (compiles; screenshot pending) |
 | UI | Economy overview panel | ⬜ | |
+| Economy | Needs (food, water, goods), house tiers, taxes in coins, tax level | ✅ | `GameNeeds.cs`, `NeedsTests` |
 | Save | Versioned local save, validation, corruption recovery | ✅ | `Save.cs`, `SaveTests` |
 | Save | Cloud save on own server | ✅ | `CloudSave.cs`, `server/cloud` |
 | Profile | Founder profile, achievements, settings | ✅ | `Profile.cs`, `ProfileTests` |

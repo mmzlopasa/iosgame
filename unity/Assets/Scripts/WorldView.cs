@@ -1616,6 +1616,7 @@ namespace Founders
                 case JobType.Sawing:
                 case JobType.Toolmaking:
                 case JobType.Baking:
+                case JobType.Weaving:
                     task.Spot = BesideBuilding(site, from, index);
                     task.Face = center;
                     task.Action = "Work";

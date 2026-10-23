@@ -99,6 +99,14 @@ code; mountains only along edges (plus an inland massif at 4–5), ore at their 
 every valley keeps water (a pond at least), wood, stone and ore, and a valid start. The save keeps
 only the map's name (`gen_<code>`): the valley and its 64 lands are drawn again on load.
 
+## Needs, house tiers and taxes (Manor Lords / Foundation)
+
+- Homes climb three tiers with their level: **Huts** (Lv.1, need food), **Houses** (Lv.5, also water), **Burgher Houses** (Lv.10, also household goods). Raising a home into a tier needs that tier's water (a well within 6 cells or the river within 3) or market (stall or hall within 10 cells) nearby, so towns grow around wells and markets.
+- Every home pays tax in **Coins** (new treasury, cap 5000): 0.4 / 1.2 / 3 per person per hour by tier; half when a need is missing. Needs met lift approval (up to +6), needs missing lower it (down to −8).
+- Tax level in People › Wellbeing › Homes and taxes: Low (×0.5, +3 approval), Fair, Heavy (×1.6, −8 approval).
+- **Household Goods** are woven at the new **Weaver's Hut** (hide working) from hides and a little wood; burghers use them up only when a market is in reach. New **Market Stall** (permanent settlement) brings markets into the first era.
+- Content: `tools/content/living_town.py`; rules: `Core/GameNeeds.cs` (report cached, the UI asks every frame); tests: `CoreTests/NeedsTests.cs`.
+
 ## Next refinements (to discuss)
 
 1. **Families instead of single people**: housing gives family slots and one family

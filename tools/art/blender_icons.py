@@ -547,6 +547,31 @@ def _tools():
     L.parent(ham, loc=(0, -0.1, 0), rot=(0, 38, 0))
 
 
+@icon("coins", el=16, az=-14)
+def _coins():
+    """Coins (the treasury, from taxes): two stacks of gold and one coin standing in front."""
+    gold = M("gold")
+    for (x, y, n) in ((-0.55, 0.3, 5), (0.5, 0.45, 3)):
+        for k in range(n):
+            cylinder(0.62, 0.2, (x + (k % 2) * 0.03, y, -0.6 + k * 0.22), gold, verts=48, bevel=0.06)
+    disc(0.72, 0.2, gold, loc=(0.1, -0.55, -0.15), bevel=0.07)
+    disc(0.46, 0.06, M("gold", color="#F2A818"), loc=(0.1, -0.68, -0.15), bevel=0.03)
+
+
+@icon("goods", el=18, az=-16)
+def _goods():
+    """Household goods (the weaver's work): a clay pot and a folded roll of cloth."""
+    clay = P("#D8763A", hue_dark="#5A1430", light=0.35, light_col="#FFE0B0", spec=0.3, rough=0.35)
+    lathe([(0.0, -0.9), (0.42, -0.9), (0.7, -0.55), (0.78, -0.1), (0.62, 0.35), (0.38, 0.55), (0.44, 0.72),
+           (0.36, 0.76), (0.0, 0.76)], loc=(-0.5, 0.25, 0), m=clay, verts=48)
+    cloth = P("#3E8FD8", hue_dark="#141A6A", light=0.4, light_col="#E8F6FF", spec=0.3, rough=0.4)
+    stripe = M("cream")
+    box((1.5, 1.1, 0.34), (0.55, -0.25, -0.75), cloth, bevel=0.14, sub=1)
+    box((1.5, 0.2, 0.36), (0.55, -0.25, -0.75), stripe, bevel=0.06)
+    cylinder(0.32, 1.4, (0.55, -0.3, -0.32), cloth, rot=(0, 90, 0), bevel=0.1, sub=1)
+    cylinder(0.33, 0.18, (0.55, -0.3, -0.32), stripe, rot=(0, 90, 0), bevel=0.04)
+
+
 # ---------------------------------------------------------------- nature
 @icon("planks", el=18, az=-16)
 def _planks():

@@ -117,6 +117,7 @@ namespace Founders.Core
             foreach (var t in ResourceTypes.Stored)
                 caps[t] = baseCap * Multiplier(EffectKind.StorageMultiplier, null, t);
             caps.Knowledge = Content.Balance.KnowledgeCap * Multiplier(EffectKind.StorageMultiplier, null, ResourceType.Knowledge);
+            caps.Coins = Content.Balance.TreasuryCap * Multiplier(EffectKind.StorageMultiplier, null, ResourceType.Coins);
             return caps;
         }
 
@@ -219,6 +220,12 @@ namespace Founders.Core
             consumption.Wood = FuelPerSecond;
             consumption += crafting.Input;
             consumption.Tools += ToolWear(dt);
+            if (HasNeeds)
+            {
+                var needs = Needs();
+                production.Coins += needs.TaxPerSecond;
+                consumption.Goods += Math.Min(needs.GoodsPerSecond, State.Resources.Goods / dt);
+            }
             ApplyRecipes(snap, ref production, ref consumption, productivity, dt);
             snap.Production = production;
             snap.Consumption = consumption;

@@ -7,7 +7,7 @@ namespace Founders.Core
     // MARK: - Basic enums
 
     public enum JobType { Foraging, Woodcutting, Stonecutting, Crafting, Construction, Research, Farming, Fishing, Hunting, Mining, Herding, Healing, Smelting,
-                          Sawing, Toolmaking, Baking }
+                          Sawing, Toolmaking, Baking, Weaving }
 
     public enum TerrainType { Grass, Forest, Rock, Water, Sand, Mountain, Ore }
 
@@ -15,7 +15,7 @@ namespace Founders.Core
     {
         public static readonly JobType[] Jobs =
             { JobType.Foraging, JobType.Farming, JobType.Herding, JobType.Fishing, JobType.Hunting, JobType.Woodcutting, JobType.Stonecutting, JobType.Mining,
-              JobType.Smelting, JobType.Sawing, JobType.Toolmaking, JobType.Baking, JobType.Crafting, JobType.Construction, JobType.Research, JobType.Healing };
+              JobType.Smelting, JobType.Sawing, JobType.Toolmaking, JobType.Baking, JobType.Weaving, JobType.Crafting, JobType.Construction, JobType.Research, JobType.Healing };
 
         public static string Id(this JobType j)
         {
@@ -36,6 +36,7 @@ namespace Founders.Core
                 case JobType.Sawing: return "sawing";
                 case JobType.Toolmaking: return "toolmaking";
                 case JobType.Baking: return "baking";
+                case JobType.Weaving: return "weaving";
                 default: return "research";
             }
         }
@@ -274,6 +275,10 @@ namespace Founders.Core
         /// <summary>Lasting effects while the building stands and works (a herb garden keeps sickness away, a
         /// lookout speeds the scouts). Each finished building of the kind adds its effects once.</summary>
         public List<Effect> Effects = new List<Effect>();
+        /// <summary>A market: homes within reach can get household goods (higher house tiers need it).</summary>
+        public bool Market;
+        /// <summary>A source of water for the homes around it (a well house).</summary>
+        public bool Water;
 
         /// <summary>The model shown at a level: the last look whose level has been reached.</summary>
         public string SpriteAt(int level)
@@ -324,6 +329,8 @@ namespace Founders.Core
                 Insulation = o.OptNum("insulation") ?? 0,
                 Heat = o.Has("heat") ? HeatSource.FromJson(o.Obj("heat")) : null,
                 Effects = o.Has("effects") ? o.Objs("effects").Select(Effect.FromJson).ToList() : new List<Effect>(),
+                Market = o.OptBool("market", false),
+                Water = o.OptBool("water", false),
             };
         }
     }
@@ -448,6 +455,8 @@ namespace Founders.Core
         public bool IsBridge;
         /// <summary>Fences and walls: people walk around them.</summary>
         public bool Blocks;
+        /// <summary>Gives water to the homes around it (the well).</summary>
+        public bool Water;
         /// <summary>Braziers and fire pits warm the homes around them.</summary>
         public HeatSource Heat;
 
@@ -465,6 +474,7 @@ namespace Founders.Core
                                                      : new List<TerrainType> { TerrainType.Grass, TerrainType.Sand, TerrainType.Forest },
             IsRoad = o.OptBool("road", false),
             IsBridge = o.OptBool("bridge", false),
+            Water = o.OptBool("water", false),
             Blocks = o.OptBool("blocks", false),
             Heat = o.Has("heat") ? HeatSource.FromJson(o.Obj("heat")) : null,
         };
@@ -810,6 +820,10 @@ namespace Founders.Core
         public HealthConfig Health;
         /// <summary>Discontent, petitions and laws' cooldown (null = always content).</summary>
         public DiscontentConfig Discontent;
+        /// <summary>Needs, house tiers and taxes (null = off).</summary>
+        public NeedsConfig Needs;
+        /// <summary>Most coins the treasury holds.</summary>
+        public double TreasuryCap;
 
         internal static BalanceConfig FromJson(JObj o) => new BalanceConfig
         {
@@ -851,6 +865,8 @@ namespace Founders.Core
             Climate = o.Has("climate") ? ClimateConfig.FromJson(o.Obj("climate")) : null,
             Warmth = o.Has("warmth") ? WarmthConfig.FromJson(o.Obj("warmth")) : null,
             Health = o.Has("health") ? HealthConfig.FromJson(o.Obj("health")) : null,
+            Needs = o.Has("needs") ? NeedsConfig.FromJson(o.Obj("needs")) : null,
+            TreasuryCap = o.OptNum("treasuryCap") ?? 5000,
             Discontent = o.Has("discontent") ? DiscontentConfig.FromJson(o.Obj("discontent")) : null,
         };
     }
@@ -930,6 +946,61 @@ namespace Founders.Core
             StokeSeconds = o.Num("stokeSeconds"), StokeCooldownSeconds = o.Num("stokeCooldownSeconds"),
             StokeHeat = o.Num("stokeHeat"), StokeRadius = o.Num("stokeRadius"), StokeWoodPerSecond = o.Num("stokeWoodPerSecond"),
             StokeApproval = o.OptNum("stokeApproval") ?? 0,
+        };
+    }
+
+    /// <summary>A house tier: from which home level it starts, what it needs and what it pays.</summary>
+    public sealed class HouseTier
+    {
+        public int Level;
+        public string Name;
+        public bool NeedsWater, NeedsGoods;
+        public double TaxPerPersonPerHour;
+
+        internal static HouseTier FromJson(JObj o)
+        {
+            var needs = o.Has("needs") ? o.Strs("needs") : new List<string>();
+            return new HouseTier
+            {
+                Level = o.Int("level"), Name = o.Str("name"), NeedsWater = needs.Contains("water"), NeedsGoods = needs.Contains("goods"),
+                TaxPerPersonPerHour = o.OptNum("taxPerPersonPerHour") ?? 0,
+            };
+        }
+    }
+
+    /// <summary>A tax level the player picks: how much it raises and how people take it.</summary>
+    public sealed class TaxLevel
+    {
+        public string Id, Name;
+        public double Multiplier;
+        public int Approval;
+
+        internal static TaxLevel FromJson(JObj o) => new TaxLevel
+        {
+            Id = o.Str("id"), Name = o.Str("name"), Multiplier = o.Num("multiplier"), Approval = o.OptInt("approval") ?? 0,
+        };
+    }
+
+    /// <summary>Needs of the homes (Manor Lords, Foundation): water and goods for the higher tiers, and taxes.</summary>
+    public sealed class NeedsConfig
+    {
+        /// <summary>Cells from a home to a well (or water building), to the river or lake, and to a market.</summary>
+        public double WaterReach, RiverReach, MarketReach;
+        public double GoodsPerPersonPerSecond;
+        /// <summary>Approval when every home has what it needs, and lost when none has.</summary>
+        public double MetApproval, UnmetApproval;
+        public List<HouseTier> Tiers = new List<HouseTier>();
+        public List<TaxLevel> TaxLevels = new List<TaxLevel>();
+        public string DefaultTax;
+
+        internal static NeedsConfig FromJson(JObj o) => new NeedsConfig
+        {
+            WaterReach = o.Num("waterReach"), RiverReach = o.Num("riverReach"), MarketReach = o.Num("marketReach"),
+            GoodsPerPersonPerSecond = o.Num("goodsPerPersonPerSecond"),
+            MetApproval = o.Num("metApproval"), UnmetApproval = o.Num("unmetApproval"),
+            Tiers = o.Objs("tiers").Select(HouseTier.FromJson).OrderBy(t => t.Level).ToList(),
+            TaxLevels = o.Objs("taxLevels").Select(TaxLevel.FromJson).ToList(),
+            DefaultTax = o.OptStr("defaultTax") ?? "normal",
         };
     }
 

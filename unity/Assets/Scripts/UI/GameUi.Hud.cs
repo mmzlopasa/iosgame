@@ -230,6 +230,8 @@ namespace Founders.UI
             ResourceType.Bronze => "bronze",
             ResourceType.Planks => "planks",
             ResourceType.Tools => "tools",
+            ResourceType.Goods => "goods",
+            ResourceType.Coins => "coins",
             _ => "knowledge",
         };
 
@@ -244,6 +246,8 @@ namespace Founders.UI
             ResourceType.Bronze => E.Cell.Rare,
             ResourceType.Planks => E.Cell.Legendary,
             ResourceType.Tools => E.Cell.Rare,
+            ResourceType.Goods => E.Cell.Uncommon,
+            ResourceType.Coins => E.Cell.Legendary,
             _ => E.Cell.Epic,
         };
 
@@ -277,7 +281,7 @@ namespace Founders.UI
         static VisualElement CornerBadge(string text, float size = 20) => E.Badge(text, true, size).Abs(null, -6, -6);
 
         static readonly ResourceType[] StripOrder = { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Knowledge, ResourceType.Ore, ResourceType.Hides, ResourceType.Bronze,
-                                                              ResourceType.Planks, ResourceType.Tools };
+                                                              ResourceType.Planks, ResourceType.Tools, ResourceType.Goods, ResourceType.Coins };
 
         // MARK: - Top: the player block and the resource counters (the blue kit)
 
@@ -324,7 +328,9 @@ namespace Founders.UI
                 if (t == ResourceType.Bronze && G.State.Resources.Bronze < 1) continue;
                 if (t == ResourceType.Planks && G.State.Resources.Planks < 1) continue;
                 if (t == ResourceType.Tools && G.State.Resources.Tools < 1) continue;
-                int drop = t == ResourceType.Tools ? 12 : t == ResourceType.Planks ? 11 : t == ResourceType.Bronze ? 10 : t == ResourceType.Hides ? 9 : t == ResourceType.Ore ? 8 : t == ResourceType.Knowledge ? 3 : t == ResourceType.Stone ? 2 : 0;
+                if (t == ResourceType.Goods && G.State.Resources.Goods < 1) continue;
+                if (t == ResourceType.Coins && G.State.Resources.Coins < 1) continue;
+                int drop = t == ResourceType.Goods ? 13 : t == ResourceType.Coins ? 4 : t == ResourceType.Tools ? 12 : t == ResourceType.Planks ? 11 : t == ResourceType.Bronze ? 10 : t == ResourceType.Hides ? 9 : t == ResourceType.Ore ? 8 : t == ResourceType.Knowledge ? 3 : t == ResourceType.Stone ? 2 : 0;
                 list.Add(new TopItem(t.ToString(), CounterW(Fmt.Compact(G.State.Resources[t]), PlusFor(t)), drop));
             }
             list.Add(new TopItem("clock", ChipW("00:00"), 7));

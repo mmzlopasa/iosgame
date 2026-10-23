@@ -238,6 +238,7 @@ namespace Founders.Core
             if (!def.Heart)
                 list.Add(new RequirementStatus { Text = $"{HeartName} level {HeartLevel}/{b.Level + 1}", Met = HeartLevel >= b.Level + 1 });
             list.AddRange(Status(next.Requirements));
+            list.AddRange(HomeLevelRequirements(b, def, b.Level + 1));
             return list;
         }
 

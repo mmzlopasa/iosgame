@@ -233,6 +233,7 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 | `hunters_lodge` | Hunter's Lodge (`hunters_lodge`) | 1×1 (2×2 m) |
 | `longhouse` | Longhouse (`longhouse`) | 2×2 (4×4 m) |
 | `lookout_tower` | Lookout Tower (`lookout_tower`) | 1×1 (2×2 m) |
+| `market_stall` | Market Stall (`market_stall`) | 1×1 (2×2 m) |
 | `medieval_bakery` | Bakery (`medieval_bakery`) | 2×2 (4×4 m) |
 | `medieval_barn` | Barn and Paddock (`medieval_barn`) | 3×3 (6×6 m) |
 | `medieval_bathhouse` | Bathhouse (`medieval_bathhouse`) | 2×2 (4×4 m) |
@@ -258,6 +259,7 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 | `toolmaker` | Toolmaker's Shelter (`toolmaker`) | 1×1 (2×2 m) |
 | `toolsmith` | Toolsmith (`toolsmith`) | 1×1 (2×2 m) |
 | `village_hearth` | Village Hearth (`village_hearth`) | 1×1 (2×2 m) |
+| `weavers_hut` | Weaver's Hut (`weavers_hut`) | 1×1 (2×2 m) |
 | `wood_camp` | Wood Gatherers' Camp (`wood_camp`) | 1×1 (2×2 m) |
 | `woven_shelter` | Shelter (`shelter`) od razine / from level 5 – „Hut”<br>Woven Shelter (`woven_shelter`) | 1×1 (2×2 m)<br>1×1 (2×2 m) |
 
@@ -291,9 +293,7 @@ Za ukras / For a decoration: `deco_dirt_path`, `deco_stone_road`, `deco_wooden_b
 
 ### Ikone sučelja / UI icons – `UI/Icons/<ime>.png` (kvadratne, 128×128 px)
 
-`alert`, `approval`, `arrow`, `autumn`, `axe`, `back`, `bell`, `bronze`, `build`, `campfire`, `check`, `clock`, `close`, `compass`, `copy`, `customs`, `discontent`, `eye`, `eye_off`, `face_f1`, `face_f2`, `face_f3`, `face_m1`, `face_m2`, `face_m3`, `fence`, `fish`, `flame`, `food`, `goals`, `hides`, `home`, `info`, `knowledge`, `landmark`, `lantern`, `law_apprentices`, `law_bitter_remedies`, `law_burial_rites`, `law_dawn_to_dusk`, `law_day_of_rest`, `law_elders_council`, `law_fire_wardens`, `law_harvest_festival`, `law_hearty_meals`, `law_long_days`, `law_shared_stew`, `law_story_nights`, `law_watch_the_sick`, `law_watchmen`, `legacy`, `level_up`, `lock`, `minus`, `moon`, `next`, `ore`, `people`, `pickaxe`, `planks`, `plus`, `research`, `road`, `rotate`, `settings`, `sick`, `sparkle`, `spear`, `spring`, `stone`, `storage`, `summer`, `thermometer`, `tools`, `trash`, `tree`, `trophy`, `user`, `wheat`, `winter`, `wood`, `world`
-
-`map_lake`, `map_river`, `map_island`, `map_mountain`, `map_hill`, `map_forest`, `map_ore` – sličice uz klizače generatora mape / swatches beside the map generator's sliders (bez njih / without them: naslikane kružne sličice iz igre / the game's painted round swatches).
+`alert`, `approval`, `arrow`, `autumn`, `axe`, `back`, `bell`, `bronze`, `build`, `campfire`, `check`, `clock`, `close`, `coins`, `compass`, `copy`, `customs`, `discontent`, `eye`, `eye_off`, `face_f1`, `face_f2`, `face_f3`, `face_m1`, `face_m2`, `face_m3`, `fence`, `fish`, `flame`, `food`, `goals`, `goods`, `hides`, `home`, `info`, `knowledge`, `landmark`, `lantern`, `law_apprentices`, `law_bitter_remedies`, `law_burial_rites`, `law_dawn_to_dusk`, `law_day_of_rest`, `law_elders_council`, `law_fire_wardens`, `law_harvest_festival`, `law_hearty_meals`, `law_long_days`, `law_shared_stew`, `law_story_nights`, `law_watch_the_sick`, `law_watchmen`, `legacy`, `level_up`, `lock`, `minus`, `moon`, `next`, `ore`, `people`, `pickaxe`, `planks`, `plus`, `research`, `road`, `rotate`, `settings`, `sick`, `sparkle`, `spear`, `spring`, `stone`, `storage`, `summer`, `thermometer`, `tools`, `trash`, `tree`, `trophy`, `user`, `wheat`, `winter`, `wood`, `world`
 
 ### Okviri i gumbi / UI skins (9-slice) – `UI/Skin/<ime>.png`
 

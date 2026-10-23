@@ -275,6 +275,18 @@
     },
     "ratePerWorkerPerSecond": 0.3,
     "unlimitedSlots": false
+   },
+   {
+    "job": "weaving",
+    "name": "Weaving",
+    "description": "Weave cloth and baskets: 1 Hide and half a Wood make 2 Household Goods.",
+    "output": "goods",
+    "inputs": {
+     "hides": 0.5,
+     "wood": 0.25
+    },
+    "ratePerWorkerPerSecond": 0.04,
+    "unlimitedSlots": false
    }
   ],
   "seasonSeconds": 21600,
@@ -453,7 +465,66 @@
    "keptSeconds": 21600
   },
   "toolBonus": 0.15,
-  "toolWearPerWorkerPerSecond": 0.001
+  "toolWearPerWorkerPerSecond": 0.001,
+  "needs": {
+   "waterReach": 6,
+   "riverReach": 3,
+   "marketReach": 10,
+   "goodsPerPersonPerSecond": 0.0003,
+   "metApproval": 6,
+   "unmetApproval": 8,
+   "tiers": [
+    {
+     "level": 1,
+     "name": "Huts",
+     "needs": [
+      "food"
+     ],
+     "taxPerPersonPerHour": 0.4
+    },
+    {
+     "level": 5,
+     "name": "Houses",
+     "needs": [
+      "food",
+      "water"
+     ],
+     "taxPerPersonPerHour": 1.2
+    },
+    {
+     "level": 10,
+     "name": "Burgher Houses",
+     "needs": [
+      "food",
+      "water",
+      "goods"
+     ],
+     "taxPerPersonPerHour": 3
+    }
+   ],
+   "taxLevels": [
+    {
+     "id": "low",
+     "name": "Low",
+     "multiplier": 0.5,
+     "approval": 3
+    },
+    {
+     "id": "normal",
+     "name": "Fair",
+     "multiplier": 1.0,
+     "approval": 0
+    },
+    {
+     "id": "high",
+     "name": "Heavy",
+     "multiplier": 1.6,
+     "approval": -8
+    }
+   ],
+   "defaultTax": "normal"
+  },
+  "treasuryCap": 5000
  },
  "buildings": [
   {
@@ -6610,7 +6681,7 @@
   {
    "id": "medieval_market",
    "name": "Market Hall",
-   "description": "A tiled hall where the valley trades. Big community boost and extra storage.",
+   "description": "A tiled hall where the valley trades. Big community boost, extra storage, and homes within 10 cells can get Household Goods.",
    "epoch": "epoch_medieval_kingdoms",
    "footprint": {
     "width": 3,
@@ -6742,7 +6813,8 @@
      },
      "buildSeconds": 1818.0
     }
-   ]
+   ],
+   "market": true
   },
   {
    "id": "medieval_mill",
@@ -9591,6 +9663,372 @@
      "buildSeconds": 433.0
     }
    ]
+  },
+  {
+   "id": "weavers_hut",
+   "name": "Weaver's Hut",
+   "description": "A loom and a tanning frame. 2 Weaving jobs turn Hides and a little Wood into Household Goods (cloth, baskets, pots) that the better homes need.",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 35,
+    "stone": 10
+   },
+   "buildSeconds": 40,
+   "sprite": "weavers_hut",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "hide_working",
+   "jobSlots": [
+    {
+     "job": "weaving",
+     "count": 2
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 25,
+      "stone": 8
+     },
+     "buildSeconds": 32.0
+    },
+    {
+     "cost": {
+      "wood": 35,
+      "stone": 10
+     },
+     "buildSeconds": 40.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 12
+     },
+     "buildSeconds": 48.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 15
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 20
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 25
+     },
+     "buildSeconds": 92.0
+    },
+    {
+     "cost": {
+      "wood": 115,
+      "stone": 35,
+      "hides": 9
+     },
+     "buildSeconds": 117.0
+    },
+    {
+     "cost": {
+      "wood": 150,
+      "stone": 45,
+      "hides": 12
+     },
+     "buildSeconds": 150.0
+    },
+    {
+     "cost": {
+      "wood": 195,
+      "stone": 55,
+      "hides": 15
+     },
+     "buildSeconds": 192.0
+    },
+    {
+     "cost": {
+      "wood": 250,
+      "stone": 70,
+      "hides": 20
+     },
+     "buildSeconds": 246.0
+    },
+    {
+     "cost": {
+      "wood": 330,
+      "stone": 95,
+      "hides": 25,
+      "ore": 35
+     },
+     "buildSeconds": 315.0
+    },
+    {
+     "cost": {
+      "wood": 430,
+      "stone": 120,
+      "hides": 35,
+      "ore": 45
+     },
+     "buildSeconds": 404.0
+    },
+    {
+     "cost": {
+      "wood": 560,
+      "stone": 160,
+      "hides": 45,
+      "ore": 55
+     },
+     "buildSeconds": 517.0
+    },
+    {
+     "cost": {
+      "wood": 720,
+      "stone": 210,
+      "hides": 55,
+      "ore": 75
+     },
+     "buildSeconds": 661.0
+    },
+    {
+     "cost": {
+      "wood": 940,
+      "stone": 270,
+      "hides": 75,
+      "ore": 95
+     },
+     "buildSeconds": 846.0
+    },
+    {
+     "cost": {
+      "wood": 1220,
+      "stone": 350,
+      "hides": 95,
+      "ore": 125
+     },
+     "buildSeconds": 1083.0
+    },
+    {
+     "cost": {
+      "wood": 1590,
+      "stone": 450,
+      "hides": 125,
+      "ore": 165
+     },
+     "buildSeconds": 1386.0
+    },
+    {
+     "cost": {
+      "wood": 2050,
+      "stone": 590,
+      "hides": 160,
+      "ore": 210
+     },
+     "buildSeconds": 1775.0
+    },
+    {
+     "cost": {
+      "wood": 2700,
+      "stone": 770,
+      "hides": 210,
+      "ore": 280
+     },
+     "buildSeconds": 2272.0
+    }
+   ]
+  },
+  {
+   "id": "market_stall",
+   "name": "Market Stall",
+   "description": "Awnings and baskets where goods change hands. Homes within 10 cells can get Household Goods.",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 40,
+    "stone": 15
+   },
+   "buildSeconds": 40,
+   "sprite": "market_stall",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "permanent_settlement",
+   "market": true,
+   "community": 2,
+   "levels": [
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 11
+     },
+     "buildSeconds": 32.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 15
+     },
+     "buildSeconds": 40.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 19
+     },
+     "buildSeconds": 48.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 20
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 30
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 40
+     },
+     "buildSeconds": 92.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 50,
+      "hides": 11
+     },
+     "buildSeconds": 117.0
+    },
+    {
+     "cost": {
+      "wood": 170,
+      "stone": 65,
+      "hides": 14
+     },
+     "buildSeconds": 150.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 85,
+      "hides": 18
+     },
+     "buildSeconds": 192.0
+    },
+    {
+     "cost": {
+      "wood": 290,
+      "stone": 110,
+      "hides": 25
+     },
+     "buildSeconds": 246.0
+    },
+    {
+     "cost": {
+      "wood": 380,
+      "stone": 140,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 315.0
+    },
+    {
+     "cost": {
+      "wood": 490,
+      "stone": 185,
+      "hides": 40,
+      "ore": 55
+     },
+     "buildSeconds": 404.0
+    },
+    {
+     "cost": {
+      "wood": 640,
+      "stone": 240,
+      "hides": 50,
+      "ore": 70
+     },
+     "buildSeconds": 517.0
+    },
+    {
+     "cost": {
+      "wood": 830,
+      "stone": 310,
+      "hides": 70,
+      "ore": 90
+     },
+     "buildSeconds": 661.0
+    },
+    {
+     "cost": {
+      "wood": 1080,
+      "stone": 400,
+      "hides": 90,
+      "ore": 120
+     },
+     "buildSeconds": 846.0
+    },
+    {
+     "cost": {
+      "wood": 1400,
+      "stone": 520,
+      "hides": 115,
+      "ore": 155
+     },
+     "buildSeconds": 1083.0
+    },
+    {
+     "cost": {
+      "wood": 1820,
+      "stone": 680,
+      "hides": 150,
+      "ore": 200
+     },
+     "buildSeconds": 1386.0
+    },
+    {
+     "cost": {
+      "wood": 2350,
+      "stone": 890,
+      "hides": 195,
+      "ore": 260
+     },
+     "buildSeconds": 1775.0
+    },
+    {
+     "cost": {
+      "wood": 3050,
+      "stone": 1150,
+      "hides": 250,
+      "ore": 340
+     },
+     "buildSeconds": 2272.0
+    }
+   ]
   }
  ],
  "technologies": [
@@ -9739,7 +10177,12 @@
     "food_preservation",
     "structural_weaving"
    ],
-   "effects": [],
+   "effects": [
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "market_stall"
+    }
+   ],
    "heartLevel": 7
   },
   {
@@ -9781,6 +10224,10 @@
     {
      "kind": "unlockBuilding",
      "buildingId": "smokehouse"
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "weavers_hut"
     }
    ],
    "heartLevel": 5
@@ -12628,13 +13075,14 @@
   {
    "id": "well",
    "name": "Well",
-   "description": "A stone-lined well at the heart of the village.",
+   "description": "A stone-lined well. Homes within 6 cells have water (houses need it).",
    "category": "Monuments",
    "cost": {
     "stone": 15,
     "wood": 5
    },
-   "beauty": 6
+   "beauty": 6,
+   "water": true
   },
   {
    "id": "totem",
@@ -13600,6 +14048,55 @@
       {
        "kind": "approvalBonus",
        "value": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "job": "weaving",
+   "title": "Weaver",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Even Weft",
+     "description": "Cloth without holes.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Dyer",
+     "description": "Colours the town likes.",
+     "bonus": 0.1,
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "level": 6,
+     "name": "Basket Maker",
+     "description": "Nothing is wasted.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "Tanner's Friend",
+     "description": "Uses every scrap of hide.",
+     "bonus": 0.15
+    },
+    {
+     "level": 10,
+     "name": "Master Weaver",
+     "description": "Cloth the traders ask for.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "weaving",
+       "value": 1.05
       }
      ]
     }

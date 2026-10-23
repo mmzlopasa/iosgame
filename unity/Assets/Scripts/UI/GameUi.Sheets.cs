@@ -409,6 +409,7 @@ namespace Founders.UI
             JobType.Sawing => "planks",
             JobType.Toolmaking => "tools",
             JobType.Baking => "wheat",
+            JobType.Weaving => "goods",
             JobType.Crafting => "settings",
             JobType.Construction => "build",
             JobType.Healing => "sick",
@@ -590,6 +591,7 @@ namespace Founders.UI
             JobType.Sawing => "Sawyer",
             JobType.Toolmaking => "Toolsmith",
             JobType.Baking => "Baker",
+            JobType.Weaving => "Weaver",
             JobType.Crafting => "Toolmaker",
             JobType.Construction => "Builder",
             JobType.Healing => "Healer",
@@ -623,6 +625,7 @@ namespace Founders.UI
                 rows.Add(E.StatRow(null, f.Label, (f.Points > 0 ? "+" : f.Points < 0 ? "−" : "") + Math.Abs(f.Points), null, true,
                                    f.Points > 0 ? Theme.Up : f.Points < 0 ? Theme.Bad : Theme.Pale).Also(r => r.style.minHeight = Theme.RowTightH));
             host.Add(card);
+            BuildHomes(host);
             BuildDiscontent(host);
             BuildHealth(host);
 
@@ -650,6 +653,37 @@ namespace Founders.UI
             r2.Add(Live(() => Fmt.PerMinute(-econ.Spoilage), Theme.Num, Theme.Bad));
             urows.Add(r2);
             host.Add(up);
+        }
+
+        /// <summary>Homes by tier, what they lack, the taxes they pay and the tax level.</summary>
+        void BuildHomes(VisualElement host)
+        {
+            var needs = G.Content.Balance.Needs;
+            if (needs == null) return;
+            var card = Block("Homes and taxes", out var rows, Live(() => Fmt.PerMinute(G.Needs().TaxPerSecond), Theme.Num, Theme.Gold));
+            foreach (var tier in needs.Tiers)
+            {
+                var t = tier;
+                string wants = t.NeedsGoods ? "food, water, goods" : t.NeedsWater ? "food, water" : "food";
+                rows.Add(E.StatRow("home", $"{t.Name} (Lv.{t.Level}+) · {wants}",
+                                   G.Needs().Homes.Where(h => h.Tier == t).Sum(h => h.Occupants).ToString(Inv), null, true).Also(r => r.style.minHeight = Theme.RowTightH));
+            }
+            var r = G.Needs();
+            if (r.WithoutWater > 0) rows.Add(Notice("alert", $"{r.WithoutWater} people have no water. Put a well near their homes, or build by the river.", true));
+            if (r.WithoutGoods > 0) rows.Add(Notice("alert", $"{r.WithoutGoods} people lack household goods. They need a market nearby and goods from the Weaver's Hut.", true));
+            rows.Add(E.StatRow("coins", "Treasury", $"{Math.Floor(G.State.Resources.Coins):0}", null, true, Theme.Gold));
+
+            var taxes = E.Div().Row().Margin(8, 0, 4);
+            var current = G.CurrentTax;
+            foreach (var level in needs.TaxLevels)
+            {
+                var id = level.Id;
+                string label = level.Approval == 0 ? level.Name : $"{level.Name} ({(level.Approval > 0 ? "+" : "−")}{Math.Abs(level.Approval)})";
+                var kind = current?.Id == id ? E.Kind.Green : E.Kind.Grey;
+                taxes.Add(E.Button(label, Act(() => G.SetTaxLevel(id)), kind, 40, null, 15).Grow().Margin(0, 3, 0, 3));
+            }
+            rows.Add(taxes);
+            host.Add(card);
         }
 
         // MARK: - Goals (the kit's Chapter Tasks)

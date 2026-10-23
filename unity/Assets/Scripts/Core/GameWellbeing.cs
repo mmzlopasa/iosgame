@@ -127,6 +127,8 @@ namespace Founders.Core
                 if (q != 0) list.Add(new ApprovalFactor("Housing quality", Math.Min(15, q)));
             }
 
+            NeedsApproval(list);
+
             // Gathering places
             int community = OperationalBuildings().Sum(x => x.def.Community ?? 0);
             if (community > 0) list.Add(new ApprovalFactor("Gathering places", Math.Min(15, community)));

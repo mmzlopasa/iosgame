@@ -134,8 +134,10 @@ namespace Founders.Core
             stepEffects = null;
             stepApproval = null;
             stepWarmth = null;
+            stepNeeds = null;
             stepEffects = ActiveEffects();
             stepWarmth = Warmth();
+            stepNeeds = Needs();
             stepApproval = Approval;
             try { Step(dt); }
             finally
@@ -143,6 +145,7 @@ namespace Founders.Core
                 stepEffects = null;
                 stepApproval = null;
                 stepWarmth = null;
+                stepNeeds = null;
             }
         }
 

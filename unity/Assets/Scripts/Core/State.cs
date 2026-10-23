@@ -260,6 +260,8 @@ namespace Founders.Core
         public ActivePetition ActivePetition;
         /// <summary>When the people last petitioned (null = never).</summary>
         public double? LastPetitionSimTime;
+        /// <summary>The tax level the player chose (null = the content's default).</summary>
+        public string TaxLevel;
         /// <summary>Goods made by recipes since the founding, by resource id (e.g. bronze cast).</summary>
         public Dictionary<string, double> Made = new Dictionary<string, double>();
         /// <summary>Speed-ups owned: key (see Speedups.Key) → count.</summary>
@@ -365,6 +367,7 @@ namespace Founders.Core
                     ["petitionId"] = ActivePetition.PetitionId, ["deadlineSimTime"] = ActivePetition.DeadlineSimTime,
                 };
             if (LastPetitionSimTime.HasValue) d["lastPetitionSimTime"] = LastPetitionSimTime.Value;
+            if (TaxLevel != null) d["taxLevel"] = TaxLevel;
             if (Made.Count > 0) d["made"] = Made.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (Speedups.Count > 0) d["speedups"] = Speedups.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (SpeedupStarterGiven) d["speedupStarterGiven"] = true;
@@ -444,6 +447,7 @@ namespace Founders.Core
                 s.ActivePetition = new ActivePetition { PetitionId = ap.Str("petitionId"), DeadlineSimTime = ap.Num("deadlineSimTime") };
             }
             s.LastPetitionSimTime = o.OptNum("lastPetitionSimTime");
+            s.TaxLevel = o.OptStr("taxLevel");
             if (o.Has("made"))
             {
                 var made = o.Obj("made");
