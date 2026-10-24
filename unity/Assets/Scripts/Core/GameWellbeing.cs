@@ -127,8 +127,11 @@ namespace Founders.Core
                 if (q != 0) list.Add(new ApprovalFactor("Housing quality", Math.Min(15, q)));
             }
 
+            NeedsApproval(list);
+            double estates = EstatesApproval(list);
+
             // Gathering places
-            int community = OperationalBuildings().Sum(x => x.def.Community ?? 0);
+            int community = OperationalBuildings().Sum(x => x.def.Community ?? 0) + PartCommunity();
             if (community > 0) list.Add(new ApprovalFactor("Gathering places", Math.Min(15, community)));
 
             // Beauty and order: fences, lanterns, flowers, monuments (Foundation's splendor).
@@ -143,7 +146,7 @@ namespace Founders.Core
             if (Math.Abs(grief) > 0.5) list.Add(new ApprovalFactor("Mourning", (int)Math.Round(grief)));
             if (Math.Abs(stoke) > 0.5) list.Add(new ApprovalFactor("Roaring fire", (int)Math.Round(stoke)));
             if (Math.Abs(promise) > 0.5) list.Add(new ApprovalFactor("Promise kept", (int)Math.Round(promise)));
-            double bonus = ActiveEffects().Where(e => e.Kind == EffectKind.ApprovalBonus).Sum(e => e.Value ?? 0) - laws - grief - stoke - promise;
+            double bonus = ActiveEffects().Where(e => e.Kind == EffectKind.ApprovalBonus).Sum(e => e.Value ?? 0) - laws - grief - stoke - promise - estates;
             if (Math.Abs(bonus) > 0.5) list.Add(new ApprovalFactor("Recent events", (int)Math.Round(bonus)));
 
             // Discontent drags hope down
@@ -155,7 +158,24 @@ namespace Founders.Core
 
         public const int ApprovalBase = 40;
 
-        public int Approval => Math.Max(0, Math.Min(100, ApprovalBase + ApprovalFactors().Sum(f => f.Points)));
+        public int Approval
+        {
+            get
+            {
+                // Asked for many times a frame by the UI (every job's rate): kept until something it depends on changes.
+                var st = State;
+                var key = (st.SimTime, ActiveEffects(), st.Resources, st.Population, st.Assignments.Version, st.Buildings.Count, st.NextBuildingId,
+                           st.Decorations.Count, st.NextDecorationId, st.Discontent, st.FoodShortage, st, st.Modifiers.Count);
+                if (approvalCache.HasValue && approvalKey.Equals(key)) return approvalCache.Value;
+                int value = Math.Max(0, Math.Min(100, ApprovalBase + ApprovalFactors().Sum(f => f.Points)));
+                approvalCache = value;
+                approvalKey = key;
+                return value;
+            }
+        }
+
+        int? approvalCache;
+        (double, List<Effect>, ResourceBundle, int, int, int, int, int, int, double, bool, GameState, int) approvalKey;
 
         /// <summary>Work speed from approval: 0.85 at 0 %, 1.0 at 50 %, 1.15 at 100 %.</summary>
         public double ApprovalProductivity(int approval) => Content.Balance.ApprovalAffectsWork ? 0.85 + 0.003 * approval : 1.0;

@@ -231,7 +231,7 @@ namespace Founders.Tests
             more?.Invoke(c);
         }, full: true);
 
-        static readonly ResourceBundle Plenty = new ResourceBundle(20_000, 20_000, 20_000, 20_000, 20_000, 20_000, 20_000);
+        static readonly ResourceBundle Plenty = new ResourceBundle(20_000, 20_000, 20_000, 20_000, 20_000, 20_000, 20_000, 20_000, 20_000, 20_000, 20_000);
 
         static IEnumerable<(int x, int y)> CellsByDistance(Game g, int cx, int cy)
         {
@@ -288,12 +288,33 @@ namespace Founders.Tests
             return g.State.Building(b.Id);
         }
 
+        /// <summary>A home rising into a better tier needs a well (or the river) and later a market nearby: the player puts them there.</summary>
+        static void ProvideHomeNeeds(Game g, ManualClock clock, PlacedBuilding b)
+        {
+            bool Near(int x, int y, double reach) => Math.Abs(x - b.X) <= reach && Math.Abs(y - b.Y) <= reach;
+            var unmet = g.LevelRequirements(b).Where(r => !r.Met).Select(r => r.Text).ToList();
+            if (unmet.Any(t => t.Contains("well")))
+            {
+                var cell = DecorationCellFor(g, "well", (x, y) => Near(x, y, 3));
+                Assert.That(cell, Is.Not.Null, $"no room for a well by {b.DefinitionId}");
+                g.DebugGrant(Plenty);
+                Expect.Success(g.PlaceDecoration("well", cell.Value.x, cell.Value.y));
+            }
+            if (unmet.Any(t => t.Contains("market")))
+            {
+                if (!g.State.Researched.Contains("permanent_settlement")) g.State.Researched.Add("permanent_settlement");
+                Build(g, clock, "market_stall", 0, (x, y) => Near(x, y, 6));
+            }
+            Assert.That(g.LevelRequirements(b).Where(r => !r.Met && (r.Text.Contains("well") || r.Text.Contains("market"))), Is.Empty);
+        }
+
         static void LevelUp(Game g, ManualClock clock, PlacedBuilding b, int levels)
         {
             for (int i = 0; i < levels && g.NextLevel(b) != null; i++)
             {
                 RunUntil(g, clock, () => g.ActiveConstructionCount() == 0, "queue before level");
                 g.DebugGrant(Plenty);
+                ProvideHomeNeeds(g, clock, b);
                 int level = b.Level;
                 var res = g.UpgradeLevel(b.Id);
                 Assert.That(res.Ok, Is.True, $"{b.DefinitionId} level {level + 1}: {res}");

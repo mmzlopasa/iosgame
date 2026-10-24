@@ -79,6 +79,7 @@ namespace Founders.UI
         {
             ("All", "build"), ("Shelter", "home"), ("Food", "food"), ("Work", "pickaxe"), ("Storage", "storage"),
             ("Roads", "road"), ("Fences", "fence"), ("Lights", "lantern"), ("Nature", "tree"), ("Monuments", "landmark"),
+            ("Zones", "compass"),
         };
 
         void BuildDrawerBuild(VisualElement host)
@@ -183,7 +184,7 @@ namespace Founders.UI
             tabs.contentContainer.style.alignItems = Align.FlexEnd;
             foreach (var (tab, icon) in BuildTabs)
             {
-                if (tab != "All" && !decorCats.Contains(tab) && !G.Content.Buildings.Any(b => b.Buildable && Category(b) == tab)) continue;
+                if (tab == "Zones" ? !G.HasZones : tab != "All" && !decorCats.Contains(tab) && !G.Content.Buildings.Any(b => b.Buildable && Category(b) == tab)) continue;
                 bool on = tab == buildTab;
                 string name = tab;
                 var t = E.Tab(on ? tab : null, on, Act(() => buildTab = name), null, Theme.TabH, Theme.Num, icon);
@@ -198,8 +199,16 @@ namespace Founders.UI
         List<VisualElement> BuildItems(HashSet<string> decorCats)
         {
             var list = new List<VisualElement>();
+            if (buildTab == "Zones")
+            {
+                foreach (var zone in Game.ZoneIds) list.Add(ZoneToolCard(zone));
+                var clear = ItemCard("trash", E.Cell.Common, "Clear zone", false, null);
+                Tap(clear, () => store.BeginDecorating(GameStore.ZoneEraser));
+                list.Add(clear);
+                return list;
+            }
             bool decorTab = decorCats.Contains(buildTab);
-            if (!decorTab)
+            if (!decorTab || G.Content.Buildings.Any(b => b.Buildable && Category(b) == buildTab))
             {
                 var defs = G.Content.Buildings.Where(b => b.Buildable && (buildTab == "All" || Category(b) == buildTab))
                     .OrderBy(b => G.IsUnlocked(b) ? 0 : 1).ToList();
@@ -253,6 +262,33 @@ namespace Founders.UI
                 if (unlocked && !limit) store.BeginPlacement(id);
                 else if (!unlocked) store.ActivePanel = Panel.Research;
             });
+            return card;
+        }
+
+        static string ZoneName(string zone) => zone switch
+        {
+            Game.HomesZone => "Homes", Game.WoodcuttingZone => "Woodcutting", Game.ForestryZone => "Forestry", _ => "Pasture",
+        };
+
+        static string ZoneIcon(string zone) => zone switch
+        {
+            Game.HomesZone => "home", Game.WoodcuttingZone => "axe", Game.ForestryZone => "tree", _ => "wheat",
+        };
+
+        static string ZoneHint(string zone) => zone switch
+        {
+            Game.HomesZone => "When the homes are nearly full, villagers build the best home you can afford here by themselves, along the paths first.",
+            Game.WoodcuttingZone => "Woodcutters near this area fell these trees first.",
+            Game.ForestryZone => "No one cuts trees here, and felled trees grow back twice as fast.",
+            _ => "Every 4 cells of pasture give one more herder a place to work (once you keep animals).",
+        };
+
+        VisualElement ZoneToolCard(string zone)
+        {
+            int cells = G.ZoneCells(zone);
+            var card = ItemCard(ZoneIcon(zone), E.Cell.Rare, ZoneName(zone), false, cells > 0 ? cells.ToString(Inv) : null);
+            card.Add(E.T("Paint", Theme.Small, Theme.Pale).Fit(ItemW - 2).Align(TextAnchor.MiddleCenter));
+            Tap(card, () => store.BeginDecorating(GameStore.ZonePrefix + zone));
             return card;
         }
 

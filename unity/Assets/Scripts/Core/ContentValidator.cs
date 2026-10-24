@@ -100,6 +100,26 @@ namespace Founders.Core
                 }
                 foreach (var look in bld.Looks)
                     if (look.Level < 1 || string.IsNullOrEmpty(look.Sprite)) problems.Add($"building '{bld.Id}' has a broken look");
+                problems.AddRange(ValidateEffects(bld.Effects, $"building '{bld.Id}'", buildingIds));
+                var parts = new HashSet<string>();
+                foreach (var part in bld.Parts)
+                {
+                    string owner = $"building '{bld.Id}' part '{part.Id}'";
+                    // A part may only join parts listed before it, so the plan has no loops.
+                    foreach (var r in part.Requires)
+                        if (!parts.Contains(r)) problems.Add($"{owner} needs '{r}', which is not an earlier part");
+                    if (!parts.Add(part.Id)) problems.Add($"{owner} is listed twice");
+                    if (part.BuildSeconds <= 0 || !part.Cost.IsValid) problems.Add($"{owner} needs buildSeconds > 0 and a valid cost");
+                    if (part.Effects.Any(e => e.Kind == EffectKind.GrantResources || e.Kind == EffectKind.UnlockBuilding || e.DurationSeconds.HasValue))
+                        problems.Add($"{owner} effects must be lasting");
+                    if (part.Estate != null && b.Estates != null && b.Estates.Estates.All(e => e.Id != part.Estate))
+                        problems.Add($"{owner} pleases unknown estate '{part.Estate}'");
+                    problems.AddRange(ValidateEffects(part.Effects, owner, buildingIds));
+                }
+                foreach (var e in bld.Effects)
+                    // A building's effects last while it stands: one-off grants, unlocks and timers do not fit.
+                    if (e.Kind == EffectKind.GrantResources || e.Kind == EffectKind.UnlockBuilding || e.DurationSeconds.HasValue)
+                        problems.Add($"building '{bld.Id}' has a {Enums.FirstLower(e.Kind.ToString())} effect, which only events and research may give");
                 if (bld.SuccessorId != null)
                 {
                     var succ = c.Building(bld.SuccessorId);
@@ -215,6 +235,44 @@ namespace Founders.Core
                 problems.Add("warmth thresholds must be comfortable > cold > freezing");
             if (b.Health != null && (b.Health.RecoverSeconds <= 0 || b.Health.TreatedRecoverSeconds <= 0 || b.Health.DeathSeconds <= 0))
                 problems.Add("health needs recoverSeconds, treatedRecoverSeconds and deathSeconds > 0");
+            if (b.Paths != null && (b.Paths.Threshold <= 0 || b.Paths.MaxWear < b.Paths.Threshold || b.Paths.WearPerPersonPerHour <= 0
+                                    || b.Paths.DecayPerHour < 0 || b.Paths.DecayPerHour >= 1 || b.Paths.WalkCost <= 0 || b.Paths.ConstructionBonus < 0))
+                problems.Add("paths need threshold > 0, maxWear >= threshold, wear > 0, decay in [0, 1), walkCost > 0");
+            if (b.Estates != null)
+            {
+                if (b.Estates.GrantCost <= 0 || b.Estates.GrantFavour <= 0) problems.Add("estates need grantCost and grantFavour > 0");
+                foreach (var e in b.Estates.Estates)
+                {
+                    if (e.Ranks.Count == 0) problems.Add($"estate '{e.Id}' has no ranks");
+                    foreach (var id in e.Buildings.Keys)
+                        if (!buildingIds.Contains(id)) problems.Add($"estate '{e.Id}' counts unknown building '{id}'");
+                    foreach (var r in e.Ranks)
+                    {
+                        if (r.Favour <= 0) problems.Add($"estate '{e.Id}' rank '{r.Name}' needs favour > 0");
+                        if (r.Effects.Any(x => x.Kind == EffectKind.GrantResources || x.Kind == EffectKind.UnlockBuilding || x.DurationSeconds.HasValue))
+                            problems.Add($"estate '{e.Id}' rank '{r.Name}' effects must be lasting boons");
+                        problems.AddRange(ValidateEffects(r.Effects, $"estate '{e.Id}' rank '{r.Name}'", buildingIds));
+                    }
+                }
+            }
+            if (b.Trade != null)
+            {
+                if (b.Trade.RouteAmountPerMinute <= 0 || b.Trade.DealAmount <= 0) problems.Add("trade needs routeAmountPerMinute and dealAmount > 0");
+                var seen = new HashSet<string>();
+                foreach (var n in b.Trade.Neighbours)
+                {
+                    if (!seen.Add(n.Id)) problems.Add($"neighbour '{n.Id}' is listed twice");
+                    if (!n.Buys.IsValid || !n.Sells.IsValid || n.RouteCost < 0) problems.Add($"neighbour '{n.Id}' has negative prices");
+                    if (n.Buys.Coins > 0 || n.Sells.Coins > 0) problems.Add($"neighbour '{n.Id}' cannot trade coins for coins");
+                }
+                // Buying from one village and selling to another must never pay.
+                foreach (var t in ResourceTypes.All)
+                {
+                    double top = b.Trade.Neighbours.Select(n => n.Buys[t]).DefaultIfEmpty(0).Max();
+                    double low = b.Trade.Neighbours.Where(n => n.Sells[t] > 0).Select(n => n.Sells[t]).DefaultIfEmpty(double.MaxValue).Min();
+                    if (top > 0 && top >= low) problems.Add($"trade: {t.Id()} sells for {top} but can be bought for {low}");
+                }
+            }
             foreach (var r in c.Regions)
                 if (r.Survivors < 0 || !r.Loot.IsValid) problems.Add($"region '{r.Id}' has negative survivors or loot");
             foreach (var ev in c.Events)
@@ -298,6 +356,8 @@ namespace Founders.Core
                     case EffectKind.ExperienceMultiplier:
                     case EffectKind.GriefMultiplier:
                     case EffectKind.DeathMultiplier:
+                    case EffectKind.ExpeditionSpeedMultiplier:
+                    case EffectKind.TradePriceMultiplier:
                         if (e.Value == null) problems.Add($"{owner}: {Enums.FirstLower(e.Kind.ToString())} needs value");
                         break;
                     case EffectKind.UnlockBuilding:

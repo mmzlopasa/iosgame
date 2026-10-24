@@ -71,7 +71,7 @@ namespace Founders.Core
                 long h = 17;
                 foreach (long v in new long[] { s.Buildings.Count, s.NextBuildingId, complete, operational, s.Decorations.Count, s.NextDecorationId,
                                                 s.HarvestOrders.Count, s.HarvestOrders.Count > 0 ? s.HarvestOrders[0] : -1, s.ExploredRegions.Count,
-                                                s.NodeCleared.Count, s.ReachedMilestones.Count })
+                                                s.NodeCleared.Count, s.ReachedMilestones.Count, ZonesVersion, s.Zones.Count })
                     h = h * 1000003 + v;
                 return h;
             }
@@ -296,14 +296,14 @@ namespace Founders.Core
                         foreach (var k in kinds) if (k.Terrain == t && HasFeature(k, x, y)) { match = true; break; }
                         if (!match) continue;
                         int key = CellKey(x, y);
-                        if (!seen.Add(key)) continue;
+                        if (ZoneProtects(job, key) || !seen.Add(key)) continue;
                         var n = NodeAt(x, y, job);
                         if (n == null || n.Depleted) continue;
                         // A building or a road on top of a bush, a tree or a rock: nothing to gather there.
                         if (BuildingIdAt(x, y) != null || DecorationAt(x, y) != null) continue;
                         int dx = Math.Max(0, Math.Max(site.X - x, x - (site.X + fp.Width - 1)));
                         int dy = Math.Max(0, Math.Max(site.Y - y, y - (site.Y + fp.Height - 1)));
-                        near.Add((dx * dx + dy * dy, x, y));
+                        near.Add((dx * dx + dy * dy + ZoneGatherRank(job, key) * 100000, x, y));
                     }
             }
             result.AddRange(near.OrderBy(n => n.d).ThenBy(n => n.y).ThenBy(n => n.x).Select(n => (n.x, n.y)));
@@ -370,7 +370,7 @@ namespace Founders.Core
                     int slot = kv.Key / cells, cell = kv.Key % cells;
                     var t = Content.Map.Terrain(cell % Content.Map.Width, cell / Content.Map.Width);
                     var kind = NodeKinds.FirstOrDefault(k => k.Slot == slot && k.Terrain == t);
-                    double regrow = kind?.RegrowSeconds ?? Content.Balance.TreeRegrowSeconds;
+                    double regrow = (kind?.RegrowSeconds ?? Content.Balance.TreeRegrowSeconds) / ZoneRegrowFactor(cell);
                     if (!(regrow > 0 && State.SimTime - kv.Value >= regrow)) continue;
                     // No forest grows back under a house built on the clearing (it would stand in the woods
                     // and be cut down by the woodcutters); it returns once the building is gone.

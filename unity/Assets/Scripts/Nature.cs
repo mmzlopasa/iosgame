@@ -6,66 +6,70 @@ using UnityEngine.Rendering;
 namespace Founders
 {
     /// <summary>
-    /// One mesh + material drawn many times with GPU instancing. Instances are sorted along a
-    /// Z-order curve before they are cut into batches of 1023, so every batch covers a small
-    /// patch of land and Unity can cull it as a whole when it is off screen.
-    /// Single instances can be hidden (and shown again) without rebuilding anything.
+    /// One mesh + material drawn many times with GPU instancing. Instances are grouped by patch of
+    /// land (<see cref="Tile"/> metres square) and cut into batches of at most 1023, so every batch
+    /// covers a small patch that Unity culls as a whole when it is off screen.
+    /// Single instances can be hidden (and shown again) without rebuilding anything: hidden ones
+    /// are left out of what is sent to the GPU, so they cost nothing to draw.
     /// </summary>
     public sealed class InstanceSet
     {
         const int BatchSize = 1023;
-        const float Cell = 16f;
+        const float Tile = 40f;
+
+        sealed class Batch
+        {
+            public Matrix4x4[] All;
+            public bool[] Hidden;
+            public Matrix4x4[] Shown;
+            public int Count;
+            public bool Dirty;
+            public RenderParams Params;
+            public Bounds Bounds;
+        }
 
         public readonly Mesh Mesh;
         public readonly int SubMesh;
         public readonly Material Material;
         readonly ShadowCastingMode shadows;
+        /// <summary>Batches further than this from the camera are not drawn (0 = always drawn).</summary>
+        public float MaxDistance;
         readonly List<(Matrix4x4 m, int owner)> pending = new List<(Matrix4x4, int)>();
-        readonly List<Matrix4x4[]> batches = new List<Matrix4x4[]>();
-        readonly List<Matrix4x4[]> visible = new List<Matrix4x4[]>();
-        readonly List<RenderParams> renderParams = new List<RenderParams>();
+        readonly List<Batch> batches = new List<Batch>();
         readonly Dictionary<int, List<int>> slots = new Dictionary<int, List<int>>();
-        static readonly Matrix4x4 Hidden = Matrix4x4.TRS(new Vector3(0, -1000f, 0), Quaternion.identity, Vector3.zero);
 
-        public InstanceSet(Mesh mesh, int subMesh, Material material, bool castShadows)
+        public InstanceSet(Mesh mesh, int subMesh, Material material, ShadowCastingMode shadows)
         {
             Mesh = mesh;
             SubMesh = subMesh;
             Material = material;
-            shadows = castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off;
+            this.shadows = shadows;
             if (material != null) material.enableInstancing = true;
         }
+
+        public InstanceSet(Mesh mesh, int subMesh, Material material, bool castShadows)
+            : this(mesh, subMesh, material, castShadows ? ShadowCastingMode.On : ShadowCastingMode.Off) { }
 
         public int Count => pending.Count;
 
         public void Add(Matrix4x4 m, int owner) => pending.Add((m, owner));
 
-        static uint Spread(uint x)
-        {
-            x &= 0xffff;
-            x = (x | (x << 8)) & 0x00ff00ff;
-            x = (x | (x << 4)) & 0x0f0f0f0f;
-            x = (x | (x << 2)) & 0x33333333;
-            x = (x | (x << 1)) & 0x55555555;
-            return x;
-        }
-
-        static uint Morton(Vector3 p) =>
-            Spread((uint)Mathf.Clamp(Mathf.FloorToInt(p.x / Cell) + 512, 0, 65535)) |
-            (Spread((uint)Mathf.Clamp(Mathf.FloorToInt(p.z / Cell) + 512, 0, 65535)) << 1);
+        static long TileKey(Vector3 p) =>
+            ((long)(Mathf.FloorToInt(p.z / Tile) + 4096) << 20) | (long)(Mathf.FloorToInt(p.x / Tile) + 4096);
 
         /// <summary>Sorts the added instances into culled batches. Call once after adding.</summary>
         public void Build()
         {
-            pending.Sort((a, b) => Morton(a.m.GetColumn(3)).CompareTo(Morton(b.m.GetColumn(3))));
+            pending.Sort((a, b) => TileKey(a.m.GetColumn(3)).CompareTo(TileKey(b.m.GetColumn(3))));
             batches.Clear();
-            visible.Clear();
-            renderParams.Clear();
             slots.Clear();
             var meshBounds = Mesh.bounds;
-            for (int start = 0; start < pending.Count; start += BatchSize)
+            int start = 0;
+            while (start < pending.Count)
             {
-                int n = Mathf.Min(BatchSize, pending.Count - start);
+                long tile = TileKey(pending[start].m.GetColumn(3));
+                int n = 1;
+                while (n < BatchSize && start + n < pending.Count && TileKey(pending[start + n].m.GetColumn(3)) == tile) n++;
                 var arr = new Matrix4x4[n];
                 var bounds = new Bounds();
                 for (int k = 0; k < n; k++)
@@ -79,15 +83,22 @@ namespace Founders
                     if (!slots.TryGetValue(owner, out var list)) slots[owner] = list = new List<int>(2);
                     list.Add(batches.Count << 10 | k);
                 }
-                batches.Add(arr);
-                visible.Add((Matrix4x4[])arr.Clone());
-                renderParams.Add(new RenderParams(Material)
+                batches.Add(new Batch
                 {
-                    shadowCastingMode = shadows,
-                    receiveShadows = true,
-                    worldBounds = bounds,
-                    layer = 0,
+                    All = arr,
+                    Hidden = new bool[n],
+                    Shown = (Matrix4x4[])arr.Clone(),
+                    Count = n,
+                    Bounds = bounds,
+                    Params = new RenderParams(Material)
+                    {
+                        shadowCastingMode = shadows,
+                        receiveShadows = true,
+                        worldBounds = bounds,
+                        layer = 0,
+                    },
                 });
+                start += n;
             }
         }
 
@@ -96,16 +107,32 @@ namespace Founders
             if (!slots.TryGetValue(owner, out var list)) return;
             foreach (int packed in list)
             {
-                int b = packed >> 10, k = packed & 1023;
-                visible[b][k] = hidden ? Hidden : batches[b][k];
+                var b = batches[packed >> 10];
+                int k = packed & 1023;
+                if (b.Hidden[k] == hidden) continue;
+                b.Hidden[k] = hidden;
+                b.Dirty = true;
             }
         }
 
-        public void Draw()
+        public void Draw(Vector3 camera)
         {
             if (Material == null) return;
-            for (int i = 0; i < visible.Count; i++)
-                Graphics.RenderMeshInstanced(renderParams[i], Mesh, SubMesh, visible[i], visible[i].Length);
+            float max2 = MaxDistance * MaxDistance;
+            foreach (var b in batches)
+            {
+                if (b.Dirty)
+                {
+                    int n = 0;
+                    for (int k = 0; k < b.All.Length; k++)
+                        if (!b.Hidden[k]) b.Shown[n++] = b.All[k];
+                    b.Count = n;
+                    b.Dirty = false;
+                }
+                if (b.Count == 0) continue;
+                if (MaxDistance > 0f && b.Bounds.SqrDistance(camera) > max2) continue;
+                Graphics.RenderMeshInstanced(b.Params, Mesh, SubMesh, b.Shown, b.Count);
+            }
         }
     }
 
@@ -136,10 +163,21 @@ namespace Founders
             public int Cx, Cy;
             public bool Tree;
             public bool NearCamera, Blocked;
+            /// <summary>Stands too close to a building, road or the campfire (see <see cref="SetClearings"/>).</summary>
+            public bool Cleared;
+            public bool Gone => Blocked || Cleared;
             public readonly List<InstanceSet> Sets = new List<InstanceSet>(4);
-            /// <summary>The simple far version of a kit tree (its last LOD), drawn instead of <see cref="Sets"/> from afar.</summary>
+            /// <summary>The simple far version of a kit object (its last LOD), drawn instead of <see cref="Sets"/> from afar.</summary>
             public List<InstanceSet> FarSets;
-            public bool Far;
+            /// <summary>A kit tree's flat card, drawn instead of <see cref="FarSets"/> far away.</summary>
+            public List<InstanceSet> CardSets;
+            /// <summary>The last LOD casting only the shadow of a kit tree close to the camera.</summary>
+            public List<InstanceSet> ShadowSets;
+            /// <summary>Kit objects only: distances (metres from the camera) where it changes to far, to card and disappears.</summary>
+            public float FarAt, CardAt, MaxAt;
+            /// <summary>0 = detailed, 1 = far model, 2 = card, 3 = not drawn.</summary>
+            public int Tier;
+            public bool Shadow;
         }
 
         /// <summary>A kit prefab cut into instanced parts: the detailed model and its far LOD.</summary>
@@ -147,29 +185,46 @@ namespace Founders
         {
             public List<Part> Near = new List<Part>();
             public List<Part> Far = new List<Part>();
+            /// <summary>The flat card of a tree ("&lt;tree&gt;_Card" in the pack), for far away.</summary>
+            public List<Part> Card = new List<Part>();
             public Bounds Bounds;
         }
 
         static readonly Dictionary<GameObject, KitModel> kitModels = new Dictionary<GameObject, KitModel>();
         /// <summary>Kit trees further than this from the camera are drawn with their simple far model.</summary>
-        public const float FarDistance = 55f;
+        public const float FarDistance = 40f;
+        /// <summary>Kit trees further than this are flat cards (and in the fog).</summary>
+        public const float CardDistance = 95f;
+        /// <summary>Nothing of the packs is drawn beyond this (the fog has hidden it).</summary>
+        public const float DrawDistance = 310f;
+        /// <summary>Kit trees closer than this cast a shadow (a little beyond the shadow distance).</summary>
+        const float ShadowReach = 65f;
 
-        readonly Dictionary<(Mesh, int, Material, bool), InstanceSet> sets = new Dictionary<(Mesh, int, Material, bool), InstanceSet>();
         readonly List<InstanceSet> drawOrder = new List<InstanceSet>();
         readonly Dictionary<string, List<Part>> models = new Dictionary<string, List<Part>>();
         readonly List<Item> items = new List<Item>();
         readonly List<Item> trees = new List<Item>();
+        /// <summary>Objects of the packs, which change model with the distance to the camera.</summary>
+        readonly List<Item> kitItems = new List<Item>();
+        Vector3 lastCamera = new Vector3(1e6f, 0, 0);
+        Vector3 lastForward;
+        bool forceCheck = true;
         readonly Dictionary<(int, int), List<Item>> byCell = new Dictionary<(int, int), List<Item>>();
         float nextCameraCheck;
 
         public int Count => items.Count;
 
-        InstanceSet Set(Mesh mesh, int sub, Material material, bool shadows)
+        InstanceSet Set(Mesh mesh, int sub, Material material, bool shadows) =>
+            Set(mesh, sub, material, shadows ? ShadowCastingMode.On : ShadowCastingMode.Off);
+
+        readonly Dictionary<(Mesh, int, Material, ShadowCastingMode), InstanceSet> modeSets = new Dictionary<(Mesh, int, Material, ShadowCastingMode), InstanceSet>();
+
+        InstanceSet Set(Mesh mesh, int sub, Material material, ShadowCastingMode mode)
         {
-            var key = (mesh, sub, material, shadows);
-            if (!sets.TryGetValue(key, out var set))
+            var key = (mesh, sub, material, mode);
+            if (!modeSets.TryGetValue(key, out var set))
             {
-                sets[key] = set = new InstanceSet(mesh, sub, material, shadows);
+                modeSets[key] = set = new InstanceSet(mesh, sub, material, mode);
                 drawOrder.Add(set);
             }
             return set;
@@ -261,7 +316,9 @@ namespace Founders
             IEnumerable<Renderer> near, far = null;
             if (lods != null && lods.Length > 0)
             {
-                near = lods[0].renderers;
+                // The second LOD up close: from the strategy camera it looks the same as the first
+                // at a fraction of the triangles (the first LOD of a tree is ~10 000).
+                near = lods[lods.Length > 2 ? 1 : 0].renderers;
                 if (lods.Length > 1) far = lods[lods.Length - 1].renderers;
             }
             else near = prefab.GetComponentsInChildren<MeshRenderer>(true);
@@ -295,6 +352,12 @@ namespace Founders
             }
             Collect(near, model.Near, true);
             Collect(far, model.Far, false);
+            var card = kit != null ? kit.Prefab(prefab.name + "_Card") : null;
+            if (card != null)
+            {
+                rootInverse = card.transform.worldToLocalMatrix;
+                Collect(card.GetComponentsInChildren<MeshRenderer>(true), model.Card, false);
+            }
             return kitModels[prefab] = model;
         }
 
@@ -304,7 +367,7 @@ namespace Founders
         /// model away from the camera.
         /// </summary>
         public void AddKit(GameObject prefab, string id, Vector3 position, float size, Fit fit, float yaw, int cx, int cy,
-                           bool tree = false, bool castShadows = true, Material tint = null, float sink = 0f)
+                           bool tree = false, bool castShadows = true, Material tint = null, float sink = 0f, Vector2 tilt = default)
         {
             if (prefab == null) return;
             var model = Kit(prefab);
@@ -316,21 +379,58 @@ namespace Founders
             var pos = position + Vector3.up * (-b.min.y * scale - sink * b.size.y * scale);
             float radius = tree ? TrunkRadius : 0.5f * Mathf.Max(b.size.x, b.size.z) * scale;
             var item = NewItem(position, b.size.y * scale, cx, cy, tree, id, radius);
-            var root = Matrix4x4.TRS(pos, Quaternion.Euler(0, yaw, 0), Vector3.one * scale);
+            // Stones lean a little (a boulder never stands as straight as a gravestone).
+            var root = Matrix4x4.TRS(pos, Quaternion.Euler(0, yaw, 0) * Quaternion.Euler(tilt.x, 0, tilt.y), Vector3.one * scale);
+            float height = b.size.y * scale;
+            // Trees cast their shadow with their simplest model (below); other objects with their own.
+            bool shadowOwn = castShadows && !tree;
             foreach (var p in model.Near)
-                Add(item, Set(p.Mesh, p.SubMesh, tint != null ? tint : p.Material, castShadows && p.Shadows), root * p.Local);
-            if (tree && model.Far.Count > 0)
+                Add(item, Set(p.Mesh, p.SubMesh, tint != null ? tint : p.Material, shadowOwn && p.Shadows), root * p.Local);
+            List<InstanceSet> Sets(List<Part> parts, ShadowCastingMode mode)
             {
-                item.FarSets = new List<InstanceSet>(model.Far.Count);
-                foreach (var p in model.Far)
+                var list = new List<InstanceSet>(parts.Count);
+                foreach (var p in parts)
                 {
-                    var set = Set(p.Mesh, p.SubMesh, tint != null ? tint : p.Material, false);
+                    var set = Set(p.Mesh, p.SubMesh, tint != null ? tint : p.Material, mode);
                     set.Add(root * p.Local, item.Index);
-                    if (!item.FarSets.Contains(set)) item.FarSets.Add(set);
+                    if (!list.Contains(set)) list.Add(set);
                 }
-                item.Far = true;
+                return list;
             }
+            if (model.Far.Count > 0) item.FarSets = Sets(model.Far, shadowOwn ? ShadowCastingMode.On : ShadowCastingMode.Off);
+            if (tree)
+            {
+                if (model.Card.Count > 0)
+                {
+                    // The card is a little shorter than the tree it stands for: scale it to the same height.
+                    var cb = Kit(KitCardPrefab(prefab)).Bounds;
+                    float k = cb.size.y > 0.01f ? b.size.y / cb.size.y : 1f;
+                    var cardRoot = Matrix4x4.TRS(pos + Vector3.up * (-cb.min.y * k * scale + b.min.y * scale), Quaternion.Euler(0, yaw, 0), Vector3.one * scale * k);
+                    item.CardSets = new List<InstanceSet>(model.Card.Count);
+                    foreach (var p in model.Card)
+                    {
+                        var set = Set(p.Mesh, p.SubMesh, tint != null ? tint : p.Material, false);
+                        set.Add(cardRoot * p.Local, item.Index);
+                        if (!item.CardSets.Contains(set)) item.CardSets.Add(set);
+                    }
+                }
+                if (castShadows && model.Far.Count > 0) item.ShadowSets = Sets(model.Far, ShadowCastingMode.ShadowsOnly);
+                item.FarAt = FarDistance;
+                item.CardAt = CardDistance;
+                item.MaxAt = DrawDistance;
+            }
+            else
+            {
+                // Small things are not seen from afar; boulders and cliffs are.
+                item.FarAt = height < 0.7f ? 14f : 26f;
+                item.CardAt = DrawDistance;
+                item.MaxAt = height < 0.4f ? 55f : height < 1.5f ? 95f : 170f;
+            }
+            kitItems.Add(item);
         }
+
+        /// <summary>The card prefab of a kit tree (exists when <see cref="KitModel.Card"/> has parts).</summary>
+        static GameObject KitCardPrefab(GameObject tree) => NatureKit.Current.Prefab(tree.name + "_Card");
 
         // MARK: - Work targets (where people cut, quarry and pick)
 
@@ -360,7 +460,7 @@ namespace Founders
             Item best = null;
             foreach (var item in list)
             {
-                if (item.Blocked) continue;
+                if (item.Gone) continue;
                 bool match = kind == "tree" ? item.Tree : kind == "rock" ? IsRock(item.Id) : kind == "bush" && IsBush(item.Id);
                 if (!match) continue;
                 if (best == null || item.Height > best.Height) best = item;
@@ -383,7 +483,7 @@ namespace Founders
                     if (!byCell.TryGetValue((cx + dx, cy + dy), out var list)) continue;
                     foreach (var item in list)
                     {
-                        if (item.Blocked || item.Index == ignore) continue;
+                        if (item.Gone || item.Index == ignore) continue;
                         if (!item.Tree && !IsRock(item.Id) && !IsBush(item.Id)) continue;
                         float r = (item.Tree ? TrunkRadius : item.Radius * 0.8f) + clearance;
                         float ddx = item.Position.x - p.x, ddz = item.Position.z - p.z;
@@ -397,9 +497,13 @@ namespace Founders
         public void Build()
         {
             foreach (var set in drawOrder) set.Build();
-            // Kit trees start with their far model; the camera check brings the detailed ones in.
-            foreach (var item in trees)
-                if (item.FarSets != null) Apply(item);
+            // Kit objects start hidden; the camera check brings in what is near enough, with the right model.
+            foreach (var item in kitItems)
+            {
+                item.Tier = 3;
+                Apply(item);
+            }
+            forceCheck = true;
         }
 
         /// <summary>
@@ -430,16 +534,74 @@ namespace Founders
             }
         }
 
+        // MARK: - Clearings (nothing grows through a floor, a road or the campfire's ring)
+
+        /// <summary>
+        /// Ground kept free of nature: a rectangle on the ground (world x/z; a point for a circle)
+        /// and how far around it things stay away. Trees keep their crown out of it, rocks and
+        /// bushes their whole width; <see cref="Ragged"/> metres of random give make the edge of a
+        /// big clearing look trodden out rather than drawn with a compass.
+        /// </summary>
+        public struct Clearing
+        {
+            public Vector2 Min, Max;
+            public float Margin, Ragged;
+        }
+
+        readonly HashSet<Item> cleared = new HashSet<Item>();
+
+        static float CrownRadius(Item item) => Mathf.Min(2.4f, 0.24f * item.Height);
+
+        /// <summary>Hides everything standing in one of these clearings (and shows again what no longer does).</summary>
+        public void SetClearings(List<Clearing> clearings)
+        {
+            var now = new HashSet<Item>();
+            foreach (var z in clearings)
+            {
+                float reach = z.Margin + z.Ragged + 2.4f;
+                var (x0, y0) = Grid.CellAt(new Vector3(z.Min.x - reach, 0f, z.Max.y + reach));
+                var (x1, y1) = Grid.CellAt(new Vector3(z.Max.x + reach, 0f, z.Min.y - reach));
+                for (int cy = y0; cy <= y1; cy++)
+                    for (int cx = x0; cx <= x1; cx++)
+                    {
+                        if (!byCell.TryGetValue((cx, cy), out var list)) continue;
+                        foreach (var item in list)
+                        {
+                            if (now.Contains(item)) continue;
+                            float dx = Mathf.Max(0f, Mathf.Max(z.Min.x - item.Position.x, item.Position.x - z.Max.x));
+                            float dz = Mathf.Max(0f, Mathf.Max(z.Min.y - item.Position.z, item.Position.z - z.Max.y));
+                            float size = item.Tree ? CrownRadius(item) : item.Height < 0.45f ? 0.15f : item.Radius * 0.8f;
+                            // The same item always gets the same give, so the edge does not flicker.
+                            float give = z.Ragged * ((((uint)item.Index * 2654435761u) >> 8) % 1000u / 1000f);
+                            float r = z.Margin + size - give;
+                            if (r > 0f && dx * dx + dz * dz < r * r) now.Add(item);
+                        }
+                    }
+            }
+            foreach (var item in cleared)
+                if (!now.Contains(item)) { item.Cleared = false; Apply(item); }
+            foreach (var item in now)
+                if (!item.Cleared) { item.Cleared = true; Apply(item); }
+            cleared.Clear();
+            cleared.UnionWith(now);
+        }
+
         void Apply(Item item)
         {
-            bool hidden = item.Blocked || item.NearCamera;
-            if (item.FarSets == null)
+            bool hidden = item.Gone || item.NearCamera;
+            if (item.MaxAt <= 0f)
             {
                 foreach (var set in item.Sets) set.SetHidden(item.Index, hidden);
                 return;
             }
-            foreach (var set in item.Sets) set.SetHidden(item.Index, hidden || item.Far);
-            foreach (var set in item.FarSets) set.SetHidden(item.Index, hidden || !item.Far);
+            // Which model stands for the object at this distance (falling back to the next one that exists).
+            int tier = item.Tier;
+            if (tier == 2 && item.CardSets == null) tier = 1;
+            if (tier == 1 && item.FarSets == null) tier = 0;
+            foreach (var set in item.Sets) set.SetHidden(item.Index, hidden || tier != 0);
+            if (item.FarSets != null) foreach (var set in item.FarSets) set.SetHidden(item.Index, hidden || tier != 1);
+            if (item.CardSets != null) foreach (var set in item.CardSets) set.SetHidden(item.Index, hidden || tier != 2);
+            if (item.ShadowSets != null) foreach (var set in item.ShadowSets) set.SetHidden(item.Index, item.Gone || !item.Shadow);
         }
 
         /// <summary>
@@ -468,7 +630,10 @@ namespace Founders
         /// <summary>Keeps trees near the camera (close-up captures look at people working under them).</summary>
         public static bool KeepNearCamera;
 
-        /// <summary>Hides trees whose crown would fill the screen when the camera flies low over them.</summary>
+        /// <summary>
+        /// Hides trees whose crown would fill the screen when the camera flies low over them, and
+        /// gives every object of the packs the model that fits its distance (or none, far away).
+        /// </summary>
         void UpdateNearCamera()
         {
             if (Time.unscaledTime < nextCameraCheck) return;
@@ -477,22 +642,38 @@ namespace Founders
             if (cam == null) return;
             var c = cam.transform.position;
             var fwd = cam.transform.forward;
-            const float far2 = FarDistance * FarDistance;
+            if (!forceCheck && (c - lastCamera).sqrMagnitude < 0.5f && Vector3.Dot(fwd, lastForward) > 0.9995f) return;
+            forceCheck = false;
+            lastCamera = c;
+            lastForward = fwd;
             foreach (var tv in trees)
             {
+                if (tv.MaxAt > 0f) continue;
                 bool hide = !KeepNearCamera && Occludes(c, fwd, tv.Position, tv.Height);
-                bool far = tv.FarSets != null && (tv.Position - c).sqrMagnitude > far2;
-                if (hide == tv.NearCamera && far == tv.Far) continue;
+                if (hide == tv.NearCamera) continue;
                 tv.NearCamera = hide;
-                tv.Far = far;
                 Apply(tv);
+            }
+            foreach (var item in kitItems)
+            {
+                float d = (item.Position - c).magnitude;
+                int tier = d < item.FarAt ? 0 : d < item.CardAt ? 1 : d < item.MaxAt ? 2 : 3;
+                bool hide = item.Tree && tier < 3 && !KeepNearCamera && Occludes(c, fwd, item.Position, item.Height);
+                bool shadow = item.ShadowSets != null && d < ShadowReach;
+                if (tier == item.Tier && hide == item.NearCamera && shadow == item.Shadow) continue;
+                item.Tier = tier;
+                item.NearCamera = hide;
+                item.Shadow = shadow;
+                Apply(item);
             }
         }
 
         void Update()
         {
             UpdateNearCamera();
-            foreach (var set in drawOrder) set.Draw();
+            var cam = Camera.main;
+            var c = cam != null ? cam.transform.position : Vector3.zero;
+            foreach (var set in drawOrder) set.Draw(c);
         }
     }
 }

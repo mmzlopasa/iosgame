@@ -68,6 +68,13 @@ namespace FoundersEditor
             {
                 var copy = new Material(water) { name = "KitWater" };
                 copy.renderQueue = water.renderQueue;
+                // The pack's water is see-through and mirror-smooth: over the dark riverbed it read as
+                // glossy brown mud, and the low sun drew a glaring streak along every bank. Calmer,
+                // more opaque painted water with no sun highlight and only a faint sheen.
+                if (copy.HasProperty("_BaseColor")) copy.SetColor("_BaseColor", new Color(0.22f, 0.50f, 0.74f, 0.88f));
+                if (copy.HasProperty("_Smoothness")) copy.SetFloat("_Smoothness", 0.12f);
+                if (copy.HasProperty("_SpecularHighlights")) { copy.SetFloat("_SpecularHighlights", 0f); copy.EnableKeyword("_SPECULARHIGHLIGHTS_OFF"); }
+                if (copy.HasProperty("_EnvironmentReflections")) { copy.SetFloat("_EnvironmentReflections", 0f); copy.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF"); }
                 kit.Water = SaveMaterial(copy, $"{MaterialFolder}/KitWater.mat");
             }
 
@@ -154,7 +161,6 @@ namespace FoundersEditor
                 m.SetColor("_BaseColor", Col(src, Color.white, "_MainColor", "_Color", "_BaseColor"));
                 var normal = Tex(src, "_BumpMap", "_NormalMap", "_Normal");
                 if (normal != null) { m.SetTexture("_BumpMap", normal); m.SetFloat("_BumpScale", Num(src, 1f, "_BumpScale", "_NormalStrength")); }
-                m.SetFloat("_Smoothness", Mathf.Min(0.5f, Num(src, 0.2f, "_Smoothness", "_Glossiness")));
                 m.SetFloat("_Metallic", 0f);
                 bool vegetation = shader.Contains("Vegetation");
                 bool cutout = vegetation || src.IsKeywordEnabled("_ALPHATEST_ON") || src.GetTag("RenderType", false) == "TransparentCutout";
@@ -172,8 +178,29 @@ namespace FoundersEditor
                 }
                 BaseShaderGUI.SetMaterialKeywords(m, LitGUI.SetMaterialKeywords);
             }
+            Matte(m);
+            // The packs' stone is pale grey (its moss and snow cover needs their own shader): under the
+            // blue winter and night light it looked like ice or glass. A darker, warmer stone instead.
+            string n = src.name.ToLowerInvariant();
+            if ((n.Contains("rock") || n.Contains("cliff") || n.Contains("mountain") || n.Contains("stone")) && m.HasProperty("_BaseColor"))
+            {
+                var c = m.GetColor("_BaseColor");
+                m.SetColor("_BaseColor", new Color(c.r * 0.66f, c.g * 0.62f, c.b * 0.56f, 1f));
+            }
             m.enableInstancing = true;
             return SaveMaterial(m, file);
+        }
+
+        /// <summary>
+        /// No shine on nature: leaves, bark and stone are matte in the painted look, and skipping the
+        /// highlights and reflections is also cheaper for the iPhone.
+        /// </summary>
+        static void Matte(Material m)
+        {
+            if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", Mathf.Min(m.GetFloat("_Smoothness"), 0.08f));
+            if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0f);
+            if (m.HasProperty("_SpecularHighlights")) { m.SetFloat("_SpecularHighlights", 0f); m.EnableKeyword("_SPECULARHIGHLIGHTS_OFF"); }
+            if (m.HasProperty("_EnvironmentReflections")) { m.SetFloat("_EnvironmentReflections", 0f); m.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF"); }
         }
 
         static string Safe(string s) => new string(s.Select(c => char.IsLetterOrDigit(c) || c == '_' ? c : '_').ToArray());

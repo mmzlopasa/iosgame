@@ -27,8 +27,9 @@ unity/Assets/Custom/
     │   ├── Icons/           ← ikone sučelja          (npr. wood.png, stone.png, food.png)
     │   ├── Skin/            ← okviri, gumbi, trake   (npr. btn_green.png, panel.png)
     │   └── Images/          ← velike slike           (npr. logo_mark.png, loading_bg.png)
-    └── Textures/
-        └── Terrain/         ← tlo                    (npr. Grass.png, Grass_normal.png)
+    ├── Textures/
+    │   └── Terrain/         ← tlo                    (npr. Grass.png, Grass_normal.png)
+    └── Map/                 ← TVOJA MAPA doline      (Map.png, po želji Name.txt)
 ```
 
 ## 2. Pravila za imena (najvažnije!)
@@ -149,9 +150,35 @@ Igra sama stavlja **Adventure UI Kit** (Smashy Tech) na sučelje: okvire prozora
 
 ## 8. Tlo (`Textures/Terrain/`)
 
-`Grass.png`, `Mud.png`, `Sand.png`, `RockGround.png` – bešavna (seamless) tekstura koja se ponavlja svakih 5 m, npr. 1024×1024 px. Normal map po želji: `Grass_normal.png`.
+`Grass.png`, `Mud.png`, `Sand.png`, `RockGround.png` – bešavna (seamless) tekstura koja se ponavlja svakih 5 m, npr. 1024×1024 px. (Tlo se crta potpuno mat, bez sjaja – normal mape poput `Grass_normal.png` se više ne koriste.)
 
 Normal mape se prepoznaju po kraju imena: `_normal`, `_n`, `_nrm`, `_norm`. Isto vrijedi za teksture modela; `_metallic`, `_roughness`, `_ao`, `_mask` se uvoze kao podatkovne (ne-boja) teksture.
+
+## 8a. Tvoja mapa (`Map/`)
+
+Generatora mapa više nema: nova igra počinje na **tvojoj** dolini. Mapu nacrtaš kao sliku u bilo kojem programu za crtanje (Paint, Photoshop, Krita…):
+
+- Ime: **`Map/Map.png`**. Slika je pogled odozgo; **gornji rub slike = sjever**.
+- Najbolje **128×128 piksela**: svaki piksel je jedno polje igre (2 × 2 m), cijela dolina je 256 × 256 m. Veća ili manja slika se sama preračuna na 128×128.
+- Boje (ne moraju biti savršeno točne, igra uzme najbližu):
+
+| Što | Boja | RGB | Hex |
+|---|---|---|---|
+| Livada (gradi se tu) | svijetlozelena | 110, 170, 70 | `#6EAA46` |
+| Šuma (drvo) | tamnozelena | 30, 90, 40 | `#1E5A28` |
+| Voda (rijeka, jezero) | plava | 40, 110, 220 | `#286EDC` |
+| Pijesak (obala) | žuta | 235, 215, 130 | `#EBD782` |
+| Kameno brdo (kamen) | siva | 150, 150, 150 | `#969696` |
+| Planina (ne gradi se) | tamnosiva-smeđa | 80, 70, 65 | `#504641` |
+| Ruda (u podnožju planine) | hrđasto narančasta | 190, 90, 40 | `#BE5A28` |
+| Mjesto za logorsku vatru (prijedlog) | ljubičasta | 255, 0, 255 | `#FF00FF` |
+
+- Ljubičasti piksel je samo **prijedlog** gdje kamera počinje; igrač i dalje sam bira gdje pali vatru. Ako ga nema (ili je na vodi), igra sama nađe dobru čistinu.
+- Ime doline po želji: `Map/Name.txt` s jednim redom teksta (npr. `Green Hollow`).
+- Umjesto slike može i `Map/Map.txt`: 128 redova slova (`.` livada, `T` šuma, `~` voda, `,` pijesak, `R` kameno brdo, `M` planina, `O` ruda, `*` vatra).
+- Zemlje za istraživanje (64 komada 16×16 polja) igra sama izreže i imenuje iz tvoje mape.
+- **Stare igre ostaju na svojoj dolini** (stara dolina i generirane doline se i dalje učitavaju). Tvoja mapa vrijedi za **novu igru**. Ako kasnije promijeniš mapu, igra koja je već na njoj se učita na novoj verziji – ako je neka zgrada sad u vodi, igra pokrene novi kamp i sačuva kopiju.
+- Bez `Map.png` igra koristi svoju dolinu (Long Valley).
 
 ## 9. Provjera
 
@@ -190,7 +217,8 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 | `UI/Icons/` | `<icon name>.png` | UI icons (128×128). Names below. |
 | `UI/Skin/` | `<skin name>.png` | 9-slice frames/buttons; borders below. Any resolution with the same proportions as the game's picture. |
 | `UI/Images/` | `logo_mark`, `loading_bg`, `glow` | Large pictures. |
-| `Textures/Terrain/` | `Grass Mud Sand RockGround` (+ `_normal`) | Seamless ground textures, tiled every 5 m. |
+| `Textures/Terrain/` | `Grass Mud Sand RockGround` (+ `_normal`) | Seamless ground textures, tiled every 5 m. (The game draws the ground matte: normal maps are ignored.) |
+| `Map/` | `Map.png` (or `Map.txt`), optional `Name.txt` | Your own valley: top-down picture, top = north, one pixel per 2 m cell, resampled to 128×128; nearest colour of meadow `#6EAA46`, forest `#1E5A28`, water `#286EDC`, sand `#EBD782`, stony hill `#969696`, mountain `#504641`, ore `#BE5A28`, suggested campfire `#FF00FF`. New settlements start on it (`own_valley`); old saves keep their valley (Long Valley or a generated `gen_<code>`). Lands to explore are cut 16×16 from it (`Core/OwnMap.cs`). |
 
 **How it works:** runtime lookups through `Resources` (`unity/Assets/Scripts/CustomAssets.cs`): `BuildingModels.Create/Decoration`, `Villager.Spawn`, `Thumbnails.Get`, `Theme.Icon/SkinTexture/Image`, `WorldTerrain`. Characters are animated with the Playables API on their Animator (no controller asset), root motion off. Non-URP materials (Standard, Legacy…) are converted to URP/Lit at build time (`.mat` assets) and at runtime (anything left), keeping colour, albedo, normal, metallic, occlusion, emission and cutout/transparency.
 
@@ -211,7 +239,10 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 
 | Ključ (ime datoteke) / Key (file name) | Koristi se za / Used for | Parcela / Plot (cells, metres) |
 |---|---|---|
+| `abbey` | Abbey (`abbey`) | 4×4 (8×8 m) |
+| `ancestor_shrine` | Ancestor Stones (`ancestor_shrine`) | 2×2 (4×4 m) |
 | `animal_pen` | Animal Pen (`animal_pen`) | 1×1 (2×2 m) |
+| `apiary` | Apiary (`apiary`) | 1×1 (2×2 m) |
 | `bronze_workshop` | Bronze Workshop (`bronze_workshop`) | 1×1 (2×2 m) |
 | `campfire` | Campfire (`campfire`) | 1×1 (2×2 m) |
 | `campfire_ring` | Campfire (`campfire`) od razine / from level 5 – „Stone Campfire” | 1×1 (2×2 m) |
@@ -227,24 +258,40 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 | `healers_hut` | Healer's Hut (`healers_hut`) | 1×1 (2×2 m) |
 | `hearth_great` | Village Hearth (`village_hearth`) od razine / from level 25 – „Great Hearth” | 1×1 (2×2 m) |
 | `hearth_pavilion` | Village Hearth (`village_hearth`) od razine / from level 15 – „Hearth Pavilion” | 1×1 (2×2 m) |
+| `herb_garden` | Herb Garden (`herb_garden`) | 1×1 (2×2 m) |
 | `hunters_lodge` | Hunter's Lodge (`hunters_lodge`) | 1×1 (2×2 m) |
 | `longhouse` | Longhouse (`longhouse`) | 2×2 (4×4 m) |
+| `lookout_tower` | Lookout Tower (`lookout_tower`) | 1×1 (2×2 m) |
+| `lords_manor` | Lord's Manor (`lords_manor`) | 4×4 (8×8 m) |
+| `market_stall` | Market Stall (`market_stall`) | 1×1 (2×2 m) |
+| `medieval_bakery` | Bakery (`medieval_bakery`) | 2×2 (4×4 m) |
 | `medieval_barn` | Barn and Paddock (`medieval_barn`) | 3×3 (6×6 m) |
+| `medieval_bathhouse` | Bathhouse (`medieval_bathhouse`) | 2×2 (4×4 m) |
+| `medieval_carpenter` | Carpenter's Yard (`medieval_carpenter`) | 2×2 (4×4 m) |
 | `medieval_church` | Church (`medieval_church`) | 3×6 (6×12 m) |
 | `medieval_cottage` | Shelter (`shelter`) od razine / from level 15 – „Timber House”<br>Woven Shelter (`woven_shelter`) od razine / from level 15 – „Timber House”<br>Daub House (`daub_house`) od razine / from level 15 – „Timber House”<br>Stone Cottage (`medieval_cottage`) | 1×1 (2×2 m)<br>1×1 (2×2 m)<br>1×1 (2×2 m)<br>2×2 (4×4 m) |
 | `medieval_house` | Shelter (`shelter`) od razine / from level 20 – „Two-Storey House”<br>Woven Shelter (`woven_shelter`) od razine / from level 20 – „Two-Storey House”<br>Daub House (`daub_house`) od razine / from level 20 – „Two-Storey House”<br>Stone Cottage (`medieval_cottage`) od razine / from level 10 – „Townhouse”<br>Town House (`medieval_house`) | 1×1 (2×2 m)<br>1×1 (2×2 m)<br>1×1 (2×2 m)<br>2×2 (4×4 m)<br>2×2 (4×4 m) |
 | `medieval_market` | Market Hall (`medieval_market`) | 3×3 (6×6 m) |
 | `medieval_mill` | Watermill (`medieval_mill`) | 2×2 (4×4 m) |
+| `medieval_scriptorium` | Scriptorium (`medieval_scriptorium`) | 2×2 (4×4 m) |
 | `medieval_smithy` | Smithy (`medieval_smithy`) | 2×3 (4×6 m) |
+| `medieval_tavern` | Tavern (`medieval_tavern`) | 2×2 (4×4 m) |
 | `medieval_townhouse` | Longhouse (`longhouse`) od razine / from level 15 – „Great Longhouse”<br>Tall Townhouse (`medieval_townhouse`) | 2×2 (4×4 m)<br>2×3 (4×6 m) |
+| `medieval_warehouse` | Warehouse (`medieval_warehouse`) | 3×3 (6×6 m) |
 | `mine` | Mine (`mine`) | 1×1 (2×2 m) |
 | `pasture` | Pasture (`pasture`) | 2×2 (4×4 m) |
 | `pottery_kiln` | Pottery Kiln (`pottery_kiln`) | 1×1 (2×2 m) |
+| `sawpit` | Sawpit (`sawpit`) | 1×1 (2×2 m) |
 | `shelter` | Shelter (`shelter`) | 1×1 (2×2 m) |
+| `smokehouse` | Smokehouse (`smokehouse`) | 1×1 (2×2 m) |
+| `stone_keep` | Stone Keep (`stone_keep`) | 4×4 (8×8 m) |
 | `stone_site` | Stone Gathering Site (`stone_site`) | 1×1 (2×2 m) |
 | `storage_pit` | Storage Pit (`storage_pit`) | 1×1 (2×2 m) |
 | `toolmaker` | Toolmaker's Shelter (`toolmaker`) | 1×1 (2×2 m) |
+| `toolsmith` | Toolsmith (`toolsmith`) | 1×1 (2×2 m) |
+| `trading_post` | Trading Post (`trading_post`) | 1×1 (2×2 m) |
 | `village_hearth` | Village Hearth (`village_hearth`) | 1×1 (2×2 m) |
+| `weavers_hut` | Weaver's Hut (`weavers_hut`) | 1×1 (2×2 m) |
 | `wood_camp` | Wood Gatherers' Camp (`wood_camp`) | 1×1 (2×2 m) |
 | `woven_shelter` | Shelter (`shelter`) od razine / from level 5 – „Hut”<br>Woven Shelter (`woven_shelter`) | 1×1 (2×2 m)<br>1×1 (2×2 m) |
 
@@ -278,9 +325,7 @@ Za ukras / For a decoration: `deco_dirt_path`, `deco_stone_road`, `deco_wooden_b
 
 ### Ikone sučelja / UI icons – `UI/Icons/<ime>.png` (kvadratne, 128×128 px)
 
-`alert`, `approval`, `arrow`, `autumn`, `axe`, `back`, `bell`, `bronze`, `build`, `campfire`, `check`, `clock`, `close`, `compass`, `copy`, `customs`, `discontent`, `eye`, `eye_off`, `face_f1`, `face_f2`, `face_f3`, `face_m1`, `face_m2`, `face_m3`, `fence`, `fish`, `flame`, `food`, `goals`, `hides`, `home`, `info`, `knowledge`, `landmark`, `lantern`, `law_apprentices`, `law_bitter_remedies`, `law_burial_rites`, `law_dawn_to_dusk`, `law_day_of_rest`, `law_elders_council`, `law_fire_wardens`, `law_harvest_festival`, `law_hearty_meals`, `law_long_days`, `law_shared_stew`, `law_story_nights`, `law_watch_the_sick`, `law_watchmen`, `legacy`, `level_up`, `lock`, `minus`, `moon`, `next`, `ore`, `people`, `pickaxe`, `plus`, `research`, `road`, `rotate`, `settings`, `sick`, `sparkle`, `spear`, `spring`, `stone`, `storage`, `summer`, `thermometer`, `trash`, `tree`, `trophy`, `user`, `wheat`, `winter`, `wood`, `world`
-
-Neobavezne (igra ih koristi samo ako ih dodaš) / Optional (used only when you add them): `speedup_general`, `speedup_construction`, `speedup_research`, `speedup_exploration` – ikone ubrzanja / speed-up item icons (bez njih / without them: `sparkle`, `build`, `knowledge`, `compass`).
+`alert`, `approval`, `arrow`, `autumn`, `axe`, `back`, `bell`, `bronze`, `build`, `campfire`, `check`, `clock`, `close`, `coins`, `compass`, `copy`, `customs`, `discontent`, `eye`, `eye_off`, `face_f1`, `face_f2`, `face_f3`, `face_m1`, `face_m2`, `face_m3`, `fence`, `fish`, `flame`, `food`, `goals`, `goods`, `hides`, `home`, `info`, `knowledge`, `landmark`, `lantern`, `law_apprentices`, `law_bitter_remedies`, `law_burial_rites`, `law_dawn_to_dusk`, `law_day_of_rest`, `law_elders_council`, `law_fire_wardens`, `law_harvest_festival`, `law_hearty_meals`, `law_long_days`, `law_shared_stew`, `law_story_nights`, `law_watch_the_sick`, `law_watchmen`, `legacy`, `level_up`, `lock`, `minus`, `moon`, `next`, `ore`, `people`, `pickaxe`, `planks`, `plus`, `research`, `road`, `rotate`, `settings`, `sick`, `sparkle`, `spear`, `spring`, `stone`, `storage`, `summer`, `thermometer`, `tools`, `trash`, `tree`, `trophy`, `user`, `wheat`, `winter`, `wood`, `world`
 
 ### Okviri i gumbi / UI skins (9-slice) – `UI/Skin/<ime>.png`
 

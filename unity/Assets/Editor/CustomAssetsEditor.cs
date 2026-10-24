@@ -100,6 +100,19 @@ namespace FoundersEditor
             string rel = Rel(assetPath) ?? "";
             string file = Path.GetFileNameWithoutExtension(assetPath).ToLowerInvariant();
             ti.isReadable = false;
+            if (rel.StartsWith("Map/"))
+            {
+                // The player's own valley: every pixel is a cell, read exactly as painted.
+                ti.textureType = TextureImporterType.Default;
+                ti.isReadable = true;
+                ti.mipmapEnabled = false;
+                ti.npotScale = TextureImporterNPOTScale.None;
+                ti.filterMode = FilterMode.Point;
+                ti.wrapMode = TextureWrapMode.Clamp;
+                ti.maxTextureSize = 2048;
+                ti.textureCompression = TextureImporterCompression.Uncompressed;
+                return;
+            }
             if (rel.StartsWith("UI/") || rel.StartsWith("Icons/"))
             {
                 // Pictures for the interface: exact pixels, no power-of-two rescale, real transparency.
@@ -310,6 +323,13 @@ namespace FoundersEditor
                     if (Mathf.Max(size.x, size.y, size.z) < 0.1f) Warn($"{file}: only {Fmt(size)} m - units probably wrong (1 unit = 1 m)");
                     if (tris > 15000) Warn($"{file}: {tris} triangles - heavy for a decoration (keep under ~5000)");
                     foreach (var p in pink) Warn($"{file}: material \"{p}\" is not a URP material - converted to URP/Lit at runtime");
+                }
+                else if (dir == "Map" && image)
+                {
+                    if (name != "Map") { Unknown(file, name, new[] { "Map" }); continue; }
+                    var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(asset);
+                    Ok($"{file}: your own valley ({(tex != null ? $"{tex.width}x{tex.height} px" : "?")}, read as 128x128 cells) - new games start on it");
+                    if (tex != null && (tex.width < 64 || tex.height < 64)) Warn($"{file}: very small - every pixel is a 2 m cell, 128x128 px is one pixel per cell");
                 }
                 else if (dir == "People" && model) CheckPerson(file, asset, Ok, Warn, Note);
                 else if (dir == "People/Animations" && model)

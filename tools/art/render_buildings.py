@@ -110,14 +110,23 @@ def wanted():
     return out
 
 
+# BuildingModels.Detailed: the fire of a detailed model, in the model's space (Unity), as exporter coordinates.
+DETAILED_FIRES = {
+    "shelter": ((-1.3, 0.04, 0.4), 0.3), "pottery_kiln": ((-0.45, 0.12, -0.45), 0.4),
+    "copper_smelter": ((0.0, 1.3, 0.2), 0.5), "bronze_workshop": ((0.45, 0.64, 0.3), 0.3),
+}
+
+
 def jobs_from_fbx():
-    """Local fallback: buildings that are one kit model (BuildingModels.Medieval), straight from the FBX."""
+    """Local fallback: buildings that are one model straight from the FBX - the medieval kit buildings
+    (BuildingModels.Medieval) and the detailed bw_<sprite> buildings (BuildingModels.Detailed)."""
     art = json.load(open(os.path.join(ASSETS, "Art", "Resources", "art_manifest.json")))
     jobs = []
     for key, sprite, deco, metres in wanted():
-        if deco or not sprite.startswith("medieval_") or sprite not in art["models"]:
+        detailed = not deco and ("bw_" + sprite) in art["models"]
+        if not detailed and (deco or not sprite.startswith("medieval_") or sprite not in art["models"]):
             continue
-        model = art["models"][sprite]
+        model = art["models"]["bw_" + sprite if detailed else sprite]
         native = 6.0 if sprite in ("medieval_market", "medieval_church", "medieval_barn") else 4.0
         k = min(1.0, metres / native)
         mats = {}
@@ -134,6 +143,14 @@ def jobs_from_fbx():
                 "doubleSided": bool(t.get("doubleSided")),
             }
         effects = []
+        if detailed:
+            if sprite in DETAILED_FIRES:
+                (x, y, z), scale = DETAILED_FIRES[sprite]
+                effects.append({"kind": "Flames", "position": [-x, y, z], "size": 0.6 * scale})
+            jobs.append({"key": key, "file": file_name(key), "format": "fbx",
+                         "source": os.path.join(ASSETS, model["resource"].replace("Models/", "Art/Resources/Models/") + ".fbx"),
+                         "transform": {"yaw": 0.0, "scale": 1.0}, "materials": mats, "effects": effects})
+            continue
         if sprite == "medieval_smithy":
             # b.Fire(new Vector3(-0.55f, 0.95f, 1.75f), 0.35f) in the model's space (Unity), as exporter coordinates.
             effects.append({"kind": "Flames", "position": [0.55, 0.95, 1.75], "size": 0.6 * 0.35})

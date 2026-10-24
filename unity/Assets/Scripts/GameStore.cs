@@ -28,7 +28,11 @@ namespace Founders
     /// </summary>
     public class GameStore : MonoBehaviour
     {
-        public GameContent Content { get; private set; }
+        /// <summary>The running settlement's content (its own map and lands on a generated valley).</summary>
+        public GameContent Content => Game?.Content ?? baseContent;
+        GameContent baseContent;
+        /// <summary>The content as shipped (the hand-drawn valley).</summary>
+        public GameContent BaseContent => baseContent;
         public Game Game { get; private set; }
         public FileSaveStore SaveStore { get; private set; }
         /// <summary>The founder (name, portrait, frame, play time); kept when the settlement is reset.</summary>
@@ -49,6 +53,9 @@ namespace Founders
         /// <summary>Decoration being laid out (tap or drag on the ground), or "remove" to clear decorations.</summary>
         public string DecoratingId { get; private set; }
         public const string RemoveTool = "remove";
+        /// <summary>Zone brushes are decoration tools named "zone:&lt;zone id&gt;" ("zone:clear" erases).</summary>
+        public const string ZonePrefix = "zone:", ZoneEraser = "zone:clear";
+        public static bool IsZoneTool(string id) => id != null && id.StartsWith(ZonePrefix, StringComparison.Ordinal);
         /// <summary>When true a drag paints decorations (roads, fences) instead of moving the camera.</summary>
         public bool PaintMode { get; private set; }
         public int DecorationRotation { get; private set; }
@@ -76,16 +83,18 @@ namespace Founders
 
             var asset = Resources.Load<TextAsset>("content");
             if (asset == null) throw new InvalidOperationException("FOUNDERS content.json is missing from Resources.");
-            Content = GameContent.Load(asset.text);
+            baseContent = GameContent.Load(asset.text);
+            // The player's own hand-made valley (Custom/Map): new settlements start on it.
+            baseContent.UseOwnMap(CustomAssets.OwnMap());
             SaveStore = new FileSaveStore(Application.persistentDataPath);
             profileStore = new FileProfileStore(Application.persistentDataPath);
 
             string message = null;
-            var outcome = ephemeral ? LoadOutcome.NoSave : SaveStore.Load(Content);
+            var outcome = ephemeral ? LoadOutcome.NoSave : SaveStore.Load(baseContent);
             switch (outcome.Result)
             {
                 case LoadResult.Loaded:
-                    Game = new Game(Content, outcome.State, clock);
+                    Game = new Game(baseContent, outcome.State, clock);
                     break;
                 case LoadResult.Corrupt:
                     Debug.LogWarning($"[FOUNDERS] Corrupt save moved aside: {outcome.Reason}");
@@ -181,7 +190,7 @@ namespace Founders
         // MARK: - Founding (the player chooses where the campfire and the first shelters go)
 
         /// <summary>A new settlement: in capture mode it stands where the map suggests, otherwise the player chooses.</summary>
-        Game NewSettlement() => Ephemeral ? Game.NewGame(Content, clock) : Game.NewUnfoundedGame(Content, clock);
+        Game NewSettlement() => Ephemeral ? Game.NewGame(baseContent.ForNewGame, clock) : Game.NewUnfoundedGame(baseContent.ForNewGame, clock);
 
         /// <summary>True until the campfire is lit and the first shelters stand.</summary>
         public bool Founding => Game != null && !Game.State.Founded;
@@ -348,6 +357,7 @@ namespace Founders
             catch (Exception e) { Debug.LogError($"[FOUNDERS] Reset failed: {e}"); }
             Game = NewSettlement();
             FoundingFire = null;
+            FoundingCell = null;
             PlacingBuildingId = null;
             GhostCell = null;
             SelectedBuildingId = null;
@@ -356,6 +366,7 @@ namespace Founders
             Toasts.Clear();
             ActivePanel = Panel.None;
             World.RebuildAll();
+            Rig.Bounds = MapBounds();
             FocusOnSettlement(false);
             Save();
             Refresh();
@@ -369,8 +380,10 @@ namespace Founders
                 profile.Sessions = Math.Max(profile.Sessions, Profile.Sessions);
                 Profile = profile;
             }
-            Game = new Game(Content, state, clock);
+            Game = new Game(baseContent, state, clock);
             Game.Update();
+            FoundingFire = null;
+            FoundingCell = null;
             PlacingBuildingId = null;
             GhostCell = null;
             SelectedBuildingId = null;
@@ -480,8 +493,21 @@ namespace Founders
             return null;
         }
 
+        /// <summary>The narrator's story box is on screen: only when the player taps for it, never by itself.</summary>
+        public bool StoryOpen;
+
+        /// <summary>Opens the narrator's story box for the waiting chapter (or the given one).</summary>
+        public void OpenStory(string chapterId = null)
+        {
+            if (chapterId != null) Game.State.PendingStory = chapterId;
+            if (Game.State.PendingStory == null) return;
+            StoryOpen = true;
+            Refresh();
+        }
+
         public void DismissStory()
         {
+            StoryOpen = false;
             Game.DismissStory();
             Save();
             Refresh();
@@ -527,7 +553,7 @@ namespace Founders
             DecoratingId = decorationId;
             var def = Content.Decoration(decorationId);
             // Roads and fences are drawn by dragging; single objects are placed by tapping.
-            PaintMode = def != null && (def.IsRoad || def.Category == "Fences");
+            PaintMode = IsZoneTool(decorationId) || def != null && (def.IsRoad || def.Category == "Fences");
             Refresh();
         }
 
@@ -552,7 +578,13 @@ namespace Founders
             if (lastPainted == (x, y) && quiet) return;
             lastPainted = (x, y);
             GameError error;
-            if (DecoratingId == RemoveTool)
+            if (IsZoneTool(DecoratingId))
+            {
+                string zone = DecoratingId == ZoneEraser ? null : DecoratingId.Substring(ZonePrefix.Length);
+                if (Game.ZoneAt(x, y) == zone) return;
+                error = Game.SetZone(x, y, zone).Error;
+            }
+            else if (DecoratingId == RemoveTool)
             {
                 var d = Game.DecorationAt(x, y);
                 if (d == null) return;

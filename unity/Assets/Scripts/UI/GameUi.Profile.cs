@@ -693,8 +693,8 @@ namespace Founders.UI
             if (input != null)
             {
                 var st = input.style;
-                // The kit's input field: the dark inset with a lilac rim and white words (the Profile demo).
-                st.backgroundColor = Theme.KitLook ? Theme.Hex("#1A1029") : Theme.Wood1;
+                // The kit's input field: the dark inset with a blue-grey rim and white words (the Profile demo).
+                st.backgroundColor = Theme.KitLook ? Theme.Hex("#151A24") : Theme.Wood1;
                 st.color = Theme.KitLook ? Color.white : Theme.InkDark;
                 if (Theme.KitLook) { input.Border(Theme.Rim, 2).Radius(12); st.unityFontDefinition = Theme.Display; }
                 st.paddingLeft = 12;

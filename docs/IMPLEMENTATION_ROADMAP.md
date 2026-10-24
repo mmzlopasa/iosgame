@@ -25,10 +25,11 @@ player reaches the village and plays every command).
   inputs, stop on full output, status and reason in the UI, lifetime "made" counters for goals.
 - ✅ **First chain:** Mine → Ore → Copper Smelter (+ wood) → Bronze → Bronze Workshop and the
   Bronze Dawn milestone.
-- ⬜ Bronze tools: a toolmaker recipe (bronze + wood → tools) whose stock raises gatherers'
-  output, replacing the abstract crafting bonus in the Bronze era.
-- ⬜ Medieval chains: sawpit (wood → planks) for cottages and houses; mill and bakery
-  (grain → flour → bread) as a food the market needs; smithy (iron ore + charcoal → iron → tools).
+- ✅ Bronze tools: the Toolsmith (bronze + planks → tools); tools in store raise every gatherer's
+  output by 15 % and wear out as they work (`PresentEraTests`).
+- ✅ Planks: Sawpit (era II) and Carpenter's Yard (medieval), 2 wood → 1 plank; planks build the
+  new medieval buildings. 🟡 Bread: the Bakery bakes food from firewood (a separate flour good is
+  not modelled). ⬜ Smithy iron chain (iron ore + charcoal → iron → tools).
 - ⬜ Economy overview panel: per-resource production, consumption and stock forecast.
 
 Acceptance: production chains run by explicit rules; `RecipeTests` prove no duplication,

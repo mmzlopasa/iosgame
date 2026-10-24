@@ -25,7 +25,7 @@ namespace Founders.UI
             if (store.DecoratingId != null)
             {
                 var d = G.Content.Decoration(store.DecoratingId);
-                return $"deco|{store.DecoratingId}|{store.PaintMode}|{store.DecorationRotation}|{(d == null || G.State.Resources.Covers(d.Cost))}|{G.State.Decorations.Count}";
+                return $"deco|{store.DecoratingId}|{store.PaintMode}|{store.DecorationRotation}|{(d == null || G.State.Resources.Covers(d.Cost))}|{G.State.Decorations.Count}|{G.ZonesVersion}";
             }
             if (store.PlacingBuildingId != null)
             {
@@ -49,7 +49,7 @@ namespace Founders.UI
                 var lv = G.NextLevel(b);
                 string level = $"{b.Level}|{(lv == null ? "" : CoverKey(lv.Cost))}|{G.HasRoadAccess(b)}|{Time.unscaledTime < confirmDemolishUntil}|" +
                                string.Join("", G.LevelRequirements(b).Select(r => r.Met ? "1" : "0"));
-                return $"sel|{b.Id}|{b.DefinitionId}|{b.Status}|{up}|{jobs}|{G.IdleWorkers > 0}|{level}|{(def?.Heart == true ? StokeKey() : "")}";
+                return $"sel|{b.Id}|{b.DefinitionId}|{b.Status}|{up}|{jobs}|{G.IdleWorkers > 0}|{level}|{(def?.Heart == true ? StokeKey() : "")}|{HomeNeedsKey(b)}|{MonumentKey(b, def)}";
             }
             return "none";
         }
@@ -210,6 +210,86 @@ namespace Founders.UI
             return box;
         }
 
+        string MonumentKey(PlacedBuilding b, BuildingDefinition def)
+        {
+            if (def == null || !def.IsMonument) return "";
+            return $"{string.Join(",", b.Parts)}|{b.PendingPart}|{G.ActiveConstructionCount()}|" +
+                   string.Join("", def.Parts.Select(p => G.State.Resources.Covers(p.Cost) ? "1" : "0"));
+        }
+
+        /// <summary>
+        /// The monument's plan (its node tool): every part in stages by what it joins onto, with what it brings,
+        /// its cost and a Build button for the parts that can go up now.
+        /// </summary>
+        void MonumentSection(VisualElement body, PlacedBuilding b, BuildingDefinition def)
+        {
+            var sec = E.Section("Plan", out var rows, E.T($"{b.Parts.Count}/{def.Parts.Count} parts", Theme.Num, Theme.Gold));
+            sec.style.marginTop = 8;
+            var depth = new Dictionary<string, int>();
+            foreach (var p in def.Parts) depth[p.Id] = p.Requires.Count == 0 ? 0 : p.Requires.Max(r => depth.TryGetValue(r, out var d) ? d : 0) + 1;
+            bool sep = false;
+            int id = b.Id;
+            foreach (var p in def.Parts)
+            {
+                var status = G.PartStatus(b, p);
+                var line = E.Line(sep, 64);
+                sep = true;
+                line.style.paddingLeft = depth[p.Id] * 16;
+                if (depth[p.Id] > 0) line.Add(E.T("└", Theme.Body, Theme.Pale).Margin(0, 4));
+                line.Add(E.RowIcon(status == Game.PartState.Built ? "check" : status == Game.PartState.Building ? "build" : status == Game.PartState.Locked ? "lock" : "landmark"));
+                var text = E.Div().Col().Grow().Ignore();
+                text.Add(E.T(p.Name, Theme.Body, status == Game.PartState.Locked ? Theme.Pale : (Color?)null));
+                string info = status == Game.PartState.Locked
+                    ? "After: " + string.Join(", ", p.Requires.Where(r => !b.Parts.Contains(r)).Select(r => def.Part(r)?.Name ?? r))
+                    : p.Description;
+                text.Add(E.Ink(info, Theme.Small, Theme.InkSoft));
+                if (status == Game.PartState.Available) text.Add(CostLine(p.Cost, 13, true).Margin(2));
+                line.Add(text);
+                if (status == Game.PartState.Available)
+                {
+                    bool can = b.Status == BuildingStatus.Complete && G.State.Resources.Covers(p.Cost)
+                               && G.ActiveConstructionCount() < G.Content.Balance.MaxConcurrentConstructions;
+                    string partId = p.Id;
+                    line.Add(E.Button("Build", can ? Act(() => G.AddPart(id, partId)) : null, can ? E.Kind.Orange : E.Kind.Grey, 40, null, 15,
+                                      SubLine("clock", Fmt.Clock(G.EstimatedSeconds(p.BuildSeconds))), 96).Margin(0, 0, 0, 6));
+                }
+                rows.Add(line);
+            }
+            body.Add(sec);
+        }
+
+        HomeNeeds? NeedsOf(PlacedBuilding b)
+        {
+            if (!G.HasNeeds) return null;
+            foreach (var h in G.Needs().Homes) if (h.Building == b) return h;
+            return null;
+        }
+
+        string HomeNeedsKey(PlacedBuilding b)
+        {
+            var h = NeedsOf(b);
+            return h == null ? "" : $"{h.Value.Tier?.Name}{h.Value.Occupants}{h.Value.Food}{h.Value.Water}{h.Value.Market}{h.Value.Goods}";
+        }
+
+        /// <summary>What a home's tier needs and whether it has it, and the tax it pays.</summary>
+        void HomeNeedsSection(VisualElement body, PlacedBuilding b)
+        {
+            var found = NeedsOf(b);
+            if (found == null) return;
+            var h = found.Value;
+            var sec = E.Section($"{h.Tier.Name} · {h.Occupants} living here", out var rows, E.T(Fmt.PerMinute(h.TaxPerSecond), Theme.Num, Theme.Gold));
+            sec.style.marginTop = 8;
+            rows.Add(RequirementRow("food", "Food in store", h.Food, null, false));
+            if (h.Tier.NeedsWater) rows.Add(RequirementRow("home", "A well or the river nearby", h.Water, null, true));
+            if (h.Tier.NeedsGoods)
+            {
+                rows.Add(RequirementRow("coins", "A market nearby", h.Market, null, true));
+                rows.Add(RequirementRow("goods", "Household goods in store", h.Goods, null, true));
+            }
+            if (!h.AllMet) rows.Add(Notice("alert", "Missing needs: this home pays half tax and its people grumble.", true));
+            body.Add(sec);
+        }
+
         /// <summary>A requirement row: the text (wraps if long), then ✓ or Go. The width is no longer needed.</summary>
         VisualElement RequirementRow(string icon, string text, bool met, Action go, bool sep, float width = 0)
         {
@@ -303,6 +383,7 @@ namespace Founders.UI
 
         void DecorationCard(VisualElement host)
         {
+            if (GameStore.IsZoneTool(store.DecoratingId)) { ZoneBrushCard(host); return; }
             bool removing = store.DecoratingId == GameStore.RemoveTool;
             var def = removing ? null : G.Content.Decoration(store.DecoratingId);
             CardShell(host, removing ? "Clear decorations" : def?.Name ?? "Town", null, store.EndDecorating, out var body, out var foot);
@@ -337,6 +418,26 @@ namespace Founders.UI
                 Lead(E.Square("rotate", Act(store.RotatePlacement), E.Kind.Blue, Theme.ButtonH), foot);
             }
             Lead(E.Square("trash", Act(() => store.BeginDecorating(removing ? "dirt_path" : GameStore.RemoveTool)), E.Kind.Brown, Theme.ButtonH), foot);
+            foot.Add(Share(E.Button("Done", Act(store.EndDecorating), E.Kind.Green, Theme.ButtonH, "check"), foot));
+        }
+
+        /// <summary>The zone brush: what the zone does, how much is painted, the eraser and Done.</summary>
+        void ZoneBrushCard(VisualElement host)
+        {
+            bool erasing = store.DecoratingId == GameStore.ZoneEraser;
+            string zone = erasing ? null : store.DecoratingId.Substring(GameStore.ZonePrefix.Length);
+            CardShell(host, erasing ? "Clear zones" : $"{ZoneName(zone)} zone", null, store.EndDecorating, out var body, out var foot);
+            var head = E.Div().Row(0, Align.FlexStart).Ignore();
+            head.Add(E.Slot(erasing ? "trash" : ZoneIcon(zone), 64, erasing ? E.Cell.Common : E.Cell.Rare));
+            var col = E.Div().Col().Grow().Ignore();
+            col.style.marginLeft = 10;
+            col.Add(E.Ink(erasing ? "Drag across painted ground to clear it." : ZoneHint(zone), Theme.Body));
+            col.Add(E.Ink(store.PaintMode ? "Drag to paint. Tap the hand to move the camera." : "Tap a cell to paint it.", Theme.Small, Theme.Pale).Margin(4));
+            if (!erasing) col.Add(E.T($"{G.ZoneCells(zone)} cells painted", Theme.Num, Theme.Gold).Margin(4));
+            head.Add(col);
+            body.Add(head);
+            Lead(E.Square(store.PaintMode ? "road" : "compass", Act(store.TogglePaintMode), store.PaintMode ? E.Kind.Orange : E.Kind.Blue, Theme.ButtonH), foot);
+            Lead(E.Square("trash", Act(() => store.BeginDecorating(erasing ? GameStore.ZonePrefix + Game.HomesZone : GameStore.ZoneEraser)), E.Kind.Brown, Theme.ButtonH), foot);
             foot.Add(Share(E.Button("Done", Act(store.EndDecorating), E.Kind.Green, Theme.ButtonH, "check"), foot));
         }
 
@@ -432,7 +533,8 @@ namespace Founders.UI
             head.Add(E.Slot(BuildingIcon(def, b.Level), 60, CellFor(def)));
             var col = E.Div().Col().Grow().Ignore();
             col.style.marginLeft = 10;
-            string state = complete ? Category(def) : b.Status == BuildingStatus.Upgrading ? "Upgrading" : "Under construction";
+            string state = complete ? Category(def) : b.PendingPart != null ? $"Building the {def.Part(b.PendingPart)?.Name}"
+                : b.Status == BuildingStatus.Upgrading ? "Upgrading" : "Under construction";
             col.Add(E.T(state, Theme.Num, complete ? (Color?)null : Theme.Gold));
             col.Add(E.Ink(def.Description, Theme.Small).Margin(2));
             var next = def.SuccessorId == null ? null : G.Content.Building(def.SuccessorId);
@@ -458,6 +560,7 @@ namespace Founders.UI
                 body.Add(sec);
             }
 
+            if (def.IsMonument && b.IsOperational) MonumentSection(body, b, def);
             StatsSection(body, b, def, canLevel);
             foreach (var slot in def.JobSlots ?? new List<JobSlot>())
                 if (body.Children().All(c => c.name != "workers-" + slot.Job)) body.Add(WorkersSection(slot.Job, b, def, canLevel));
@@ -493,6 +596,8 @@ namespace Founders.UI
                 ready = reqs.All(r => r.Met);
                 can = ready && G.State.Resources.Covers(lv.Cost);
             }
+
+            if (b.IsOperational) HomeNeedsSection(body, b);
 
             // The heart's stoking (its button sits in the footer, as the kit's orange "Finish Now").
             if (def.Heart && G.HasWarmth && (complete || b.IsOperational)) body.Add(FireSection());
@@ -530,6 +635,8 @@ namespace Founders.UI
                 else Lead(E.Square("trash", demolish, E.Kind.Brown, Theme.ButtonH), foot); // remove: the kit's navy secondary
             }
             if (def.Heart && G.HasWarmth && (complete || b.IsOperational)) foot.Add(Share(StokeButton(), foot));
+            if (def.TradeRoutes > 0 && G.HasTrade && b.IsOperational)
+                foot.Add(Share(E.Button("Trade", Act(() => { mapTab = 2; store.ActivePanel = Panel.Map; }), E.Kind.Blue, Theme.ButtonH, "coins"), foot));
             if (target != null && complete)
             {
                 var kind = canRebuild ? (canLevel ? E.Kind.Blue : E.Kind.Orange) : E.Kind.Grey; // yellow when it is the card's primary

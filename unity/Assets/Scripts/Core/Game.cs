@@ -22,7 +22,8 @@ namespace Founders.Core
 
         public Game(GameContent content, GameState state, IGameClock clock)
         {
-            Content = content;
+            // A settlement on a generated valley plays on that valley's map and lands.
+            Content = content.ForMap(state.MapName);
             State = state;
             this.clock = clock;
             SyncPeople(); // older saves had no named people: create them from the population
@@ -83,6 +84,9 @@ namespace Founders.Core
         /// simulated exactly once, so calling this on resume, after a restart or repeatedly can
         /// never grant duplicate production.
         /// </summary>
+        /// <summary>Shortest wall-clock time worth simulating (the rest waits for the next call).</summary>
+        public const double MinUpdateSeconds = 0.1;
+
         public void Update()
         {
             double now = clock.Now();
@@ -99,6 +103,8 @@ namespace Founders.Core
                 State.LastUpdateWallTime = now;
                 return;
             }
+            // A phone calls this every frame: the town moves on ten times a second, which looks the same and costs a tenth.
+            if (elapsed < MinUpdateSeconds) return;
             double simulated = Math.Min(elapsed, Content.Balance.MaxOfflineSeconds);
             State.LastUpdateWallTime = now;
             Advance(simulated);
@@ -133,8 +139,10 @@ namespace Founders.Core
             stepEffects = null;
             stepApproval = null;
             stepWarmth = null;
+            stepNeeds = null;
             stepEffects = ActiveEffects();
             stepWarmth = Warmth();
+            stepNeeds = Needs();
             stepApproval = Approval;
             try { Step(dt); }
             finally
@@ -142,6 +150,7 @@ namespace Founders.Core
                 stepEffects = null;
                 stepApproval = null;
                 stepWarmth = null;
+                stepNeeds = null;
             }
         }
 
@@ -176,6 +185,9 @@ namespace Founders.Core
             AdvanceExpedition(dt);
             AdvanceHealth(dt);
             AdvanceDiscontent(dt);
+            AdvanceEstates(dt);
+            AdvancePaths(dt);
+            AdvanceZones(dt);
             AdvanceGrowth(dt, snapshot.Net.Food);
 
             State.SimTime += dt;
