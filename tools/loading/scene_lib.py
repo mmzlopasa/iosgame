@@ -296,6 +296,7 @@ def _first(d, *keys):
 
 
 _unp_cache = {}
+ROCK_LARGE_DARKEN = 0.55
 CUTOUT = ("leaves", "leaf", "branch", "grass", "fern", "clover", "card", "decal", "petal", "flower", "wheat", "reeds")
 
 
@@ -324,7 +325,11 @@ def unp_material(name):
         tint = main
         if any(k in low for k in ("rock", "cliff", "mountain")):
             tint = (main[0] * 0.56, main[1] * 0.53, main[2] * 0.48)
+            if "large" in low:
+                tint = tuple(c * ROCK_LARGE_DARKEN for c in tint)  # pale texture: reads white in full sun
         m = textured(name, tex, nrm, tint=tint, alpha_clip=cut, closest="palette" in low, normal_strength=0.8)
+    if "rock" in low and "large" in low:
+        m["darkened"] = True
     _unp_cache[name] = m
     return m
 
@@ -420,6 +425,18 @@ def place(col, location, rot_z=0.0, scale=1.0, tilt=(0.0, 0.0)):
 
 
 _game = {}
+
+
+def darken_large_rocks(materials):
+    """Applies ROCK_LARGE_DARKEN to big-boulder materials saved before it existed (a cached world)."""
+    for m in materials:
+        if not m.name.lower().startswith("rock_large") or m.get("darkened") or not m.use_nodes:
+            continue
+        for n in m.node_tree.nodes:
+            if n.type == "MIX" and n.blend_type == "MULTIPLY":
+                c = n.inputs[7].default_value
+                n.inputs[7].default_value = (c[0] * ROCK_LARGE_DARKEN, c[1] * ROCK_LARGE_DARKEN, c[2] * ROCK_LARGE_DARKEN, 1)
+        m["darkened"] = True
 
 
 def forget():

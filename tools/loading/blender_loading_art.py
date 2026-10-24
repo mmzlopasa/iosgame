@@ -712,7 +712,7 @@ def caravan():
     cart(hx - d.x * 2.5, hy - d.y * 2.5, face + 180)
 
 
-HORSE_YAW = 0.0
+HORSE_YAW = 180.0  # the horse model looks down its -y
 
 
 # MARK: - Shots
@@ -722,7 +722,7 @@ SHOT_DEFS = {
     # camera (metres from the hearth), look-at, lens, sun elevation, sun azimuth, ground-cover centre, radius
     "hollow": dict(cam=(-40, -60, 22), look=(10, 30, 10), lens=28, sun=(10, 292), cover=None),
     "village": dict(cam=(-15, -17, 8.5), look=(2, 7, 1.2), lens=30, sun=(16, 286), cover=((-4, 2), 34), dof=24),
-    "caravan": dict(cam=(40, 30.5, 2.8), look=(32.5, 36.5, 1.3), lens=30, sun=(9, 300), cover=((34, 34), 30), dof=9.5),
+    "caravan": dict(cam=(40.5, 30.0, 2.8), look=(33.5, 37.0, 1.3), lens=30, sun=(9, 300), cover=((34, 34), 30), dof=9.5),
     "market": dict(cam=(2.0, 17.0, 2.7), look=(4.5, 28, 1.4), lens=34, sun=(20, 250), cover=((3, 22), 22), dof=10),
     "dusk": dict(cam=(-12, -14, 6.5), look=(2, 6, 1.5), lens=30, sun=(-3, 300), cover=((-4, 2), 30), dof=19),
 }
@@ -823,6 +823,7 @@ def prepare(path):
     if os.path.exists(path):
         bpy.ops.wm.open_mainfile(filepath=path)
         L.forget()
+        L.darken_large_rocks(bpy.data.materials)
         X = np.linspace(-550, 550, (360 if DRAFT else 900) + 1)
         XX, YY = np.meshgrid(X, X)
         XYZ = (XX, YY, height(XX, YY))
