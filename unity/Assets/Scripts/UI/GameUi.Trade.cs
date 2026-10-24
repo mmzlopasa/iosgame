@@ -159,5 +159,15 @@ namespace Founders.UI
             else row.Add(E.Button("Choose", choose, E.Kind.Blue, 40, null, 14, null, 110));
             return row;
         }
+
+        /// <summary>The coins in the treasury (taxes and the caravans' coin deals fill it).</summary>
+        VisualElement TreasuryLine()
+        {
+            var line = E.Line(true);
+            line.Add(E.RowIcon("coins"));
+            line.Add(E.T("Treasury", Theme.Body).Flex());
+            line.Add(Live(() => $"{Math.Floor(G.State.Resources.Coins):0}", Theme.Num, Theme.Gold));
+            return line;
+        }
     }
 }
