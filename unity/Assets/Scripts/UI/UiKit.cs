@@ -8,10 +8,10 @@ using UnityEngine.UIElements;
 namespace Founders.UI
 {
     /// <summary>
-    /// Design tokens of the Founders UI, after the Adventure UI Kit (Smashy Tech): purple stone popups with
+    /// Design tokens of the Founders UI, after the Adventure UI Kit (Smashy Tech): blue-grey stone popups with
     /// vines, the title in orange on the stone (no band), dark inset sections and rows, stone buttons (the
     /// leafy one is the main action), stone squares behind icons, and the kit's display face (Luckiest Guy)
-    /// in white with a dark plum outline for every label, title, button and number; sentences use Changa One.
+    /// in white with a dark navy outline for every label, title, button and number; sentences use Changa One.
     /// Without the kit in the project the game's own skins stand in, with the same layout.
     ///
     /// Sizes are in panel units: a phone screen is <see cref="GameUi.PhoneShortSide"/> (446) units across its short
@@ -25,23 +25,23 @@ namespace Founders.UI
     {
         // MARK: - Palette
 
-        /// <summary>The dark plum of every text outline (the kit's white labels).</summary>
-        public static readonly Color Outline = Hex("#231936");
-        /// <summary>The kit's title orange (its gradient runs #FCB101 → #FB7400) and the deep red outline around it.</summary>
+        /// <summary>The dark navy of every text outline (the kit's white labels).</summary>
+        public static readonly Color Outline = Hex("#161B26");
+        /// <summary>The kit's title orange (its gradient runs #FCB101 → #FB7400) and the deep navy outline around it.</summary>
         public static readonly Color Title = Hex("#FF9E0B");
-        public static readonly Color TitleOutline = Hex("#5E1442");
+        public static readonly Color TitleOutline = Hex("#1B2335");
         /// <summary>Plain sentences on the dark stone.</summary>
-        public static readonly Color Prose = Hex("#EFE8F6");
+        public static readonly Color Prose = Hex("#E9EDF4");
         /// <summary>Quieter sentences on the stone (hints, notes).</summary>
-        public static readonly Color ProseSoft = Hex("#BFB2D6");
-        /// <summary>The light lilac rim of the kit's stone (lines between rows, borders of groups).</summary>
-        public static readonly Color Rim = Hex("#7E6E98");
+        public static readonly Color ProseSoft = Hex("#B4BED0");
+        /// <summary>The light blue-grey rim of the stone (lines between rows, borders of groups).</summary>
+        public static readonly Color Rim = Hex("#6E7D99");
         /// <summary>Plain text on parchment (paragraphs).</summary>
         public static readonly Color InkText = Hex("#5A3A1E");
         public static readonly Color InkDark = Hex("#3F2612");
-        public static readonly Color InkSoft = Hex("#BFB2D6");
+        public static readonly Color InkSoft = Hex("#B4BED0");
         /// <summary>Secondary outlined text (sub-lines, inactive tabs).</summary>
-        public static readonly Color Pale = Hex("#E6DEF2");
+        public static readonly Color Pale = Hex("#DEE4EE");
         /// <summary>"Lv.3" in titles.</summary>
         public static readonly Color Lv = Hex("#D7F25A");
         /// <summary>Next values, gains, met requirements.</summary>
@@ -51,7 +51,7 @@ namespace Founders.UI
         public static readonly Color Gold = Hex("#FFE07A");
         public static readonly Color Icy = Hex("#A9DCFF");
         public static readonly Color Ember = Hex("#FFB066");
-        public static readonly Color Lilac = Hex("#E6C3FF");
+        public static readonly Color Lilac = Hex("#C4D4F2");
 
         // The kit's UI ramp (dark → light) and button colours.
         public static readonly Color Wood5 = Hex("#A17F61");
@@ -67,8 +67,8 @@ namespace Founders.UI
 
         public static readonly Color SectionHead = Hex("#D9A266");
         public static readonly Color SectionLine = Hex("#BF884E");
-        public static readonly Color RowLine = new Color(0.50f, 0.43f, 0.60f, 0.45f);
-        public static readonly Color Scrim = new Color(0.06f, 0.03f, 0.10f, 0.50f);
+        public static readonly Color RowLine = new Color(0.43f, 0.49f, 0.60f, 0.45f);
+        public static readonly Color Scrim = new Color(0.03f, 0.05f, 0.08f, 0.50f);
 
         // MARK: - Type scale and metrics (panel units; a phone is 446 across its short side, ~0.88 pt per unit)
 
@@ -611,7 +611,7 @@ namespace Founders.UI
         public static void Outline(Label l, float size)
         {
             float w = Theme.OutlineFor(size);
-            // The kit's orange titles have a deep red rim; everything else a dark plum one.
+            // The kit's orange titles have a deep navy rim; everything else a darker navy one.
             var rim = l.ClassListContains("title-text") ? Theme.TitleOutline : Theme.Outline;
             l.style.unityTextOutlineWidth = w;
             l.style.unityTextOutlineColor = rim;
@@ -757,7 +757,7 @@ namespace Founders.UI
             var s = Div("section").Col().Skin("section");
             s.style.flexShrink = 0;
             bool kit = Theme.KitLook;
-            // The kit: the head is an orange title on the dark inset over a thin lilac line. The game's own: a tan band.
+            // The kit: the head is an orange title on the dark inset over a thin blue-grey line. The game's own: a tan band.
             var head = Div().Row().Ignore().Pad(0, 10);
             head.AddToClassList("surf-dark");
             head.style.minHeight = Theme.SectionHeadH;
@@ -842,7 +842,7 @@ namespace Founders.UI
             // The kit's buttons speak in capitals.
             var l = Theme.KitLook && (kind == Kind.Green || kind == Kind.Orange) ? Title(label?.ToUpperInvariant(), size) : T(label?.ToUpperInvariant(), size);
             // A locked button is the dark stone, dimmed.
-            if (kind == Kind.Grey && Theme.KitLook) { l.style.color = Theme.ProseSoft; b.style.unityBackgroundImageTintColor = new Color(0.75f, 0.72f, 0.8f, 1f); }
+            if (kind == Kind.Grey && Theme.KitLook) { l.style.color = Theme.ProseSoft; b.style.unityBackgroundImageTintColor = new Color(0.72f, 0.75f, 0.8f, 1f); }
             // Shrinks to the width given; a label still too long at the minimum size wraps onto two lines.
             if (width > 0) l.Fit(width - 22 - (icon != null ? size + 11 : 0), Theme.Small).Align(TextAnchor.MiddleCenter);
             top.Add(l);
@@ -1251,7 +1251,7 @@ namespace Founders.UI
             fade.style.backgroundImage = new StyleBackground(fadeTexture);
             fade.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100));
             // The window's own colour near its bottom (the Adventure UI Kit's stone, or the game's parchment).
-            fade.style.unityBackgroundImageTintColor = Theme.IsKitSkin("panel") ? new Color(0.29f, 0.247f, 0.373f) : Theme.Hex("#E6D2AC");
+            fade.style.unityBackgroundImageTintColor = Theme.IsKitSkin("panel") ? Theme.Hex("#2F394E") : Theme.Hex("#E6D2AC");
             fade.style.display = DisplayStyle.None;
             s.hierarchy.Add(fade);
             void Refresh()

@@ -747,7 +747,7 @@ namespace Founders.UI
                         if (!done.Contains(o.Law.Id) && Excludes(s.Law, o.Law)) { group.Add(o); done.Add(o.Law.Id); }
                     if (group.Count == 1) { col.Add(LawNode(s, colW)); continue; }
                     var box = E.Div().Col().Ignore().Radius(12).Border(Theme.KitLook ? Theme.Rim : Theme.Wood4, 2f).Pad(4).Margin(0, 0, 8);
-                    box.style.backgroundColor = Theme.KitLook ? new Color(0.06f, 0.03f, 0.11f, 0.35f) : Theme.Alpha(Theme.Wood4, 0.18f);
+                    box.style.backgroundColor = Theme.KitLook ? new Color(0.03f, 0.05f, 0.09f, 0.35f) : Theme.Alpha(Theme.Wood4, 0.18f);
                     for (int i = 0; i < group.Count; i++)
                     {
                         if (i > 0) box.Add(OrConnector());
@@ -797,7 +797,7 @@ namespace Founders.UI
                         if (!done.Contains(o.Law.Id) && Excludes(st.Law, o.Law)) { group.Add(o); done.Add(o.Law.Id); }
                     if (group.Count == 1) { scroll.Add(LawNode(st, colW)); continue; }
                     var box = E.Div().Col().Ignore().Radius(12).Border(Theme.KitLook ? Theme.Rim : Theme.Wood4, 2f).Pad(4).Margin(0, 0, 8);
-                    box.style.backgroundColor = Theme.KitLook ? new Color(0.06f, 0.03f, 0.11f, 0.35f) : Theme.Alpha(Theme.Wood4, 0.18f);
+                    box.style.backgroundColor = Theme.KitLook ? new Color(0.03f, 0.05f, 0.09f, 0.35f) : Theme.Alpha(Theme.Wood4, 0.18f);
                     for (int i = 0; i < group.Count; i++)
                     {
                         if (i > 0) box.Add(OrConnector());
