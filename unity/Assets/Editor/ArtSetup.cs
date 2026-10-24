@@ -62,6 +62,12 @@ namespace FoundersEditor
                 ti.alphaTestReferenceValue = 0.5f;
                 ti.wrapMode = file.Contains("_impostor") ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
             }
+            // The detailed buildings' painted atlas (16 tiles of 512 px): kept sharp.
+            if (file.StartsWith("bw_atlas"))
+            {
+                ti.maxTextureSize = file.EndsWith("_mask") ? 1024 : 2048;
+                ti.wrapMode = TextureWrapMode.Clamp;
+            }
         }
 
         void OnPreprocessAudio()

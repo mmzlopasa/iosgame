@@ -22,6 +22,7 @@ namespace Founders
             var b = new Builder(root.transform, tint, tint == null);
             // A monument: its plot and the parts that stand ("lords_manor+great_hall+manor_kitchen").
             if (Monument(b, sprite)) return root;
+            if (Detailed(b, sprite)) return root;
             switch (sprite)
             {
                 case "campfire": Campfire(b); break;
@@ -139,6 +140,28 @@ namespace Founders
                 if (!Effects) return;
                 Founders.Effects.Torch(T, at, scale, lantern);
             }
+        }
+
+        // MARK: - Detailed buildings
+
+        /// <summary>
+        /// The detailed, Foundation-style models (tools/assets/build_detailed_buildings.py): one mesh per
+        /// building, every plank, log end and roof shingle modelled, painted with the shared atlas.
+        /// They replace the assembled look whenever the model "bw_&lt;sprite&gt;" is in the art manifest.
+        /// </summary>
+        static bool Detailed(Builder b, string sprite)
+        {
+            string id = "bw_" + sprite;
+            if (!ModelLibrary.HasModel(id)) return false;
+            b.Model(id, Vector3.zero, 1f);
+            switch (sprite)
+            {
+                case "shelter": b.Fire(new Vector3(-1.3f, 0.04f, 0.4f), 0.3f); break;
+                case "pottery_kiln": b.Fire(new Vector3(-0.45f, 0.12f, -0.45f), 0.4f); break;
+                case "copper_smelter": b.Fire(new Vector3(0f, 1.3f, 0.2f), 0.5f); break;
+                case "bronze_workshop": b.Fire(new Vector3(0.45f, 0.64f, 0.3f), 0.3f); break;
+            }
+            return true;
         }
 
         // MARK: - Buildings
