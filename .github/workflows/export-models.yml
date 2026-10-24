@@ -15,7 +15,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 concurrency:
   group: export-models-${{ github.ref }}
@@ -90,3 +90,16 @@ jobs:
           path: building-models.zip
           if-no-files-found: error
           retention-days: 14
+
+      # Cloud sessions cannot reach the artifact storage, but release assets download fine.
+      - name: Publish the export as the "building-models" release asset
+        if: github.event_name != 'pull_request'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: building-models
+          name: Building models (OBJ export)
+          prerelease: true
+          target_commitish: ${{ github.sha }}
+          body: |
+            OBJ export of every building from `${{ github.ref_name }}` @ ${{ github.sha }} (for offline Blender renders).
+          files: building-models.zip
