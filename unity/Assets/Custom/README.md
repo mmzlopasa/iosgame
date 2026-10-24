@@ -27,8 +27,9 @@ unity/Assets/Custom/
     │   ├── Icons/           ← ikone sučelja          (npr. wood.png, stone.png, food.png)
     │   ├── Skin/            ← okviri, gumbi, trake   (npr. btn_green.png, panel.png)
     │   └── Images/          ← velike slike           (npr. logo_mark.png, loading_bg.png)
-    └── Textures/
-        └── Terrain/         ← tlo                    (npr. Grass.png, Grass_normal.png)
+    ├── Textures/
+    │   └── Terrain/         ← tlo                    (npr. Grass.png, Grass_normal.png)
+    └── Map/                 ← TVOJA MAPA doline      (Map.png, po želji Name.txt)
 ```
 
 ## 2. Pravila za imena (najvažnije!)
@@ -149,9 +150,35 @@ Igra sama stavlja **Adventure UI Kit** (Smashy Tech) na sučelje: okvire prozora
 
 ## 8. Tlo (`Textures/Terrain/`)
 
-`Grass.png`, `Mud.png`, `Sand.png`, `RockGround.png` – bešavna (seamless) tekstura koja se ponavlja svakih 5 m, npr. 1024×1024 px. Normal map po želji: `Grass_normal.png`.
+`Grass.png`, `Mud.png`, `Sand.png`, `RockGround.png` – bešavna (seamless) tekstura koja se ponavlja svakih 5 m, npr. 1024×1024 px. (Tlo se crta potpuno mat, bez sjaja – normal mape poput `Grass_normal.png` se više ne koriste.)
 
 Normal mape se prepoznaju po kraju imena: `_normal`, `_n`, `_nrm`, `_norm`. Isto vrijedi za teksture modela; `_metallic`, `_roughness`, `_ao`, `_mask` se uvoze kao podatkovne (ne-boja) teksture.
+
+## 8a. Tvoja mapa (`Map/`)
+
+Generatora mapa više nema: nova igra počinje na **tvojoj** dolini. Mapu nacrtaš kao sliku u bilo kojem programu za crtanje (Paint, Photoshop, Krita…):
+
+- Ime: **`Map/Map.png`**. Slika je pogled odozgo; **gornji rub slike = sjever**.
+- Najbolje **128×128 piksela**: svaki piksel je jedno polje igre (2 × 2 m), cijela dolina je 256 × 256 m. Veća ili manja slika se sama preračuna na 128×128.
+- Boje (ne moraju biti savršeno točne, igra uzme najbližu):
+
+| Što | Boja | RGB | Hex |
+|---|---|---|---|
+| Livada (gradi se tu) | svijetlozelena | 110, 170, 70 | `#6EAA46` |
+| Šuma (drvo) | tamnozelena | 30, 90, 40 | `#1E5A28` |
+| Voda (rijeka, jezero) | plava | 40, 110, 220 | `#286EDC` |
+| Pijesak (obala) | žuta | 235, 215, 130 | `#EBD782` |
+| Kameno brdo (kamen) | siva | 150, 150, 150 | `#969696` |
+| Planina (ne gradi se) | tamnosiva-smeđa | 80, 70, 65 | `#504641` |
+| Ruda (u podnožju planine) | hrđasto narančasta | 190, 90, 40 | `#BE5A28` |
+| Mjesto za logorsku vatru (prijedlog) | ljubičasta | 255, 0, 255 | `#FF00FF` |
+
+- Ljubičasti piksel je samo **prijedlog** gdje kamera počinje; igrač i dalje sam bira gdje pali vatru. Ako ga nema (ili je na vodi), igra sama nađe dobru čistinu.
+- Ime doline po želji: `Map/Name.txt` s jednim redom teksta (npr. `Green Hollow`).
+- Umjesto slike može i `Map/Map.txt`: 128 redova slova (`.` livada, `T` šuma, `~` voda, `,` pijesak, `R` kameno brdo, `M` planina, `O` ruda, `*` vatra).
+- Zemlje za istraživanje (64 komada 16×16 polja) igra sama izreže i imenuje iz tvoje mape.
+- **Stare igre ostaju na svojoj dolini** (stara dolina i generirane doline se i dalje učitavaju). Tvoja mapa vrijedi za **novu igru**. Ako kasnije promijeniš mapu, igra koja je već na njoj se učita na novoj verziji – ako je neka zgrada sad u vodi, igra pokrene novi kamp i sačuva kopiju.
+- Bez `Map.png` igra koristi svoju dolinu (Long Valley).
 
 ## 9. Provjera
 
@@ -190,7 +217,8 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 | `UI/Icons/` | `<icon name>.png` | UI icons (128×128). Names below. |
 | `UI/Skin/` | `<skin name>.png` | 9-slice frames/buttons; borders below. Any resolution with the same proportions as the game's picture. |
 | `UI/Images/` | `logo_mark`, `loading_bg`, `glow` | Large pictures. |
-| `Textures/Terrain/` | `Grass Mud Sand RockGround` (+ `_normal`) | Seamless ground textures, tiled every 5 m. |
+| `Textures/Terrain/` | `Grass Mud Sand RockGround` (+ `_normal`) | Seamless ground textures, tiled every 5 m. (The game draws the ground matte: normal maps are ignored.) |
+| `Map/` | `Map.png` (or `Map.txt`), optional `Name.txt` | Your own valley: top-down picture, top = north, one pixel per 2 m cell, resampled to 128×128; nearest colour of meadow `#6EAA46`, forest `#1E5A28`, water `#286EDC`, sand `#EBD782`, stony hill `#969696`, mountain `#504641`, ore `#BE5A28`, suggested campfire `#FF00FF`. New settlements start on it (`own_valley`); old saves keep their valley (Long Valley or a generated `gen_<code>`). Lands to explore are cut 16×16 from it (`Core/OwnMap.cs`). |
 
 **How it works:** runtime lookups through `Resources` (`unity/Assets/Scripts/CustomAssets.cs`): `BuildingModels.Create/Decoration`, `Villager.Spawn`, `Thumbnails.Get`, `Theme.Icon/SkinTexture/Image`, `WorldTerrain`. Characters are animated with the Playables API on their Animator (no controller asset), root motion off. Non-URP materials (Standard, Legacy…) are converted to URP/Lit at build time (`.mat` assets) and at runtime (anything left), keeping colour, albedo, normal, metallic, occlusion, emission and cutout/transparency.
 

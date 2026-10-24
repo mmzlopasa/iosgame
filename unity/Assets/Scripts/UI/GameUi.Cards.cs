@@ -375,8 +375,6 @@ namespace Founders.UI
             body.Add(status);
             body.Add(E.Ink("Forests, rocks and ore around the camp are resources: you may build over them, but what you build over is gone.", Theme.Small, Theme.Pale).Margin(6));
             if (fireChosen) foot.Add(Share(E.Button("Back", Act(store.BackFounding), E.Kind.Red), foot));
-            // Back to the map generator for another valley.
-            else Lead(E.Square("world", Act(store.OpenMapChoice), E.Kind.Blue, Theme.ButtonH), foot);
             foot.Add(Share(E.Button(fireChosen ? "Settle here" : "Light the fire here", ok ? Act(store.ConfirmFounding) : null,
                                     ok ? E.Kind.Green : E.Kind.Grey, Theme.ButtonH), foot));
         }

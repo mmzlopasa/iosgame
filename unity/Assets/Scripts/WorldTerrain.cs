@@ -113,18 +113,19 @@ namespace Founders
         /// <summary>
         /// A matte copy of a ground layer. The game's own sand, riverbed and rock layers (the packs
         /// have none for those) were made partly smooth, so the stony hills and the beaches shone
-        /// like wet glass in the sun; painted ground has no shine at all.
+        /// like wet glass in the sun; and the layers' bump maps, stretched down steep slopes, caught
+        /// the light in glossy streaks. Painted ground has no shine and no bumps: flat colour only.
         /// </summary>
         static TerrainLayer Matte(TerrainLayer l)
         {
-            if (l.smoothness <= 0f && l.metallic <= 0f && l.maskMapTexture == null && l.normalScale <= 0.6f) return l;
+            if (l.smoothness <= 0f && l.metallic <= 0f && l.maskMapTexture == null && l.normalMapTexture == null) return l;
             if (matteLayers.TryGetValue(l, out var m) && m != null) return m;
             return matteLayers[l] = new TerrainLayer
             {
                 name = l.name + "_Matte",
                 diffuseTexture = l.diffuseTexture,
-                normalMapTexture = l.normalMapTexture,
-                normalScale = Mathf.Min(l.normalScale, 0.6f),
+                normalMapTexture = null,
+                normalScale = 0f,
                 tileSize = l.tileSize,
                 tileOffset = l.tileOffset,
                 smoothness = 0f,
@@ -323,18 +324,22 @@ namespace Founders
                     worldY[i, j] = y;
                 }
             }
-            // One soft pass removes the cell steps along mountain and hill edges (water stays carved).
-            var smooth = (float[,])worldY.Clone();
-            for (int i = 1; i < HeightRes - 1; i++)
-                for (int j = 1; j < HeightRes - 1; j++)
-                {
-                    if (signedWaterDistance[i, j] < 1.5f) continue;
-                    float sum = 0f;
-                    for (int a = -1; a <= 1; a++)
-                        for (int b = -1; b <= 1; b++) sum += worldY[i + a, j + b];
-                    smooth[i, j] = sum / 9f;
-                }
-            worldY = smooth;
+            // Soft passes remove the cell steps and round the sharp rims along mountain and hill edges
+            // (a crisp rim caught the sun like a polished edge); water stays carved.
+            for (int pass = 0; pass < 3; pass++)
+            {
+                var smooth = (float[,])worldY.Clone();
+                for (int i = 1; i < HeightRes - 1; i++)
+                    for (int j = 1; j < HeightRes - 1; j++)
+                    {
+                        if (signedWaterDistance[i, j] < 1.5f) continue;
+                        float sum = 0f;
+                        for (int a = -1; a <= 1; a++)
+                            for (int b = -1; b <= 1; b++) sum += worldY[i + a, j + b];
+                        smooth[i, j] = sum / 9f;
+                    }
+                worldY = smooth;
+            }
             for (int i = 0; i < HeightRes; i++)
                 for (int j = 0; j < HeightRes; j++)
                     h[i, j] = Mathf.Clamp01((worldY[i, j] + BaseDepth) / HeightRange);

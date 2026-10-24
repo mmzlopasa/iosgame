@@ -534,7 +534,7 @@ namespace Founders.Core
         static bool Open(char[,] g, int x, int y) => Settleable(g, x, y) && (g[y, x] == '.' || g[y, x] == ',');
 
         /// <summary>The same rules as <see cref="Game.CampfireIssue"/>: dry land with room for the shelters.</summary>
-        static bool CampfireFits(char[,] g, int x, int y)
+        internal static bool CampfireFits(char[,] g, int x, int y)
         {
             if (x < 1 || y < 1 || x >= Size - 1 || y >= Size - 1 || !Open(g, x, y)) return false;
             int room = 0;
@@ -545,7 +545,7 @@ namespace Founders.Core
             return room >= 12 && SettlementSpot(g, x, y) != null;
         }
 
-        static (int x, int y)? SettlementSpot(char[,] g, int fx, int fy)
+        internal static (int x, int y)? SettlementSpot(char[,] g, int fx, int fy)
         {
             for (int r = 1; r <= Game.SettlementReach; r++)
                 for (int dy = -r; dy <= r; dy++)
@@ -568,7 +568,7 @@ namespace Founders.Core
         /// The clearing the game suggests: open meadow with wood, stone and water within reach, not too far
         /// from the middle of the valley.
         /// </summary>
-        static (int x, int y)? SuggestStart(char[,] g)
+        internal static (int x, int y)? SuggestStart(char[,] g)
         {
             // Distance (cells, capped) from every cell to the nearest forest, rock and water.
             var dForest = Distance(g, 'T');

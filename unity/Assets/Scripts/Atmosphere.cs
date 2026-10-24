@@ -20,6 +20,8 @@ namespace Founders
 
         GameStore store;
         Light sun;
+        /// <summary>A soft light from the other side, without shadows: slopes facing away from the sun stay painted, never black.</summary>
+        Light fill;
         Material sky;
         float skyExposure = 1f;
         WhiteBalance white;
@@ -44,6 +46,16 @@ namespace Founders
                 white = wb;
                 baseTemperature = wb.temperature.value;
             }
+            // Only fire, embers and lamps glow; sunlit ground and cliff edges never do.
+            if (volume != null && volume.sharedProfile != null && volume.sharedProfile.TryGet(out Bloom bloom))
+                bloom.threshold.value = Mathf.Max(bloom.threshold.value, 1.6f);
+            var fillGo = new GameObject("Fill Light");
+            fillGo.transform.SetParent(transform, false);
+            fill = fillGo.AddComponent<Light>();
+            fill.type = LightType.Directional;
+            fill.shadows = LightShadows.None;
+            fill.color = new Color(0.86f, 0.9f, 1f);
+            fill.intensity = 0.35f;
             BuildSnow();
         }
 
@@ -122,8 +134,14 @@ namespace Founders
             sun.color = Color.Lerp(dayColor, Moon, nightness);
             // A bright moon: the town stays readable at night, the lights still glow.
             sun.intensity = Mathf.Lerp(dayIntensity, 0.95f, nightness);
-            float pitch = p < 0.75f ? Mathf.Lerp(9f, 56f, elevation) : Mathf.Lerp(12f, 48f, nightness);
+            // Never a grazing sun: a low sun lit only the tops of slopes (they shone) and left their faces black.
+            float pitch = p < 0.75f ? Mathf.Lerp(32f, 58f, elevation) : Mathf.Lerp(34f, 50f, nightness);
             sun.transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
+            if (fill != null)
+            {
+                fill.transform.rotation = Quaternion.Euler(40f, yaw + 180f, 0f);
+                fill.intensity = sun.intensity * 0.3f;
+            }
 
             RenderSettings.ambientIntensity = Mathf.Lerp(Mathf.Lerp(0.75f, 1f, elevation), 0.82f, nightness);
             RenderSettings.reflectionIntensity = Mathf.Lerp(1f, 0.3f, nightness);

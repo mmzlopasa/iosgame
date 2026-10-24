@@ -1323,17 +1323,31 @@ namespace Founders.Core
         public MapDefinition Map;
         /// <summary>The content as loaded, when this copy carries a generated valley instead (see <see cref="ForMap"/>).</summary>
         public GameContent Base { get; private set; }
+        /// <summary>The player's own valley (see <see cref="OwnMap"/>), when one is in the game: new settlements start on it.</summary>
+        public GameContent Own { get; private set; }
+
+        /// <summary>Puts the player's own valley in the game (new settlements start on it; old ones keep their valley).</summary>
+        public void UseOwnMap(MapDefinition map)
+        {
+            var root = Base ?? this;
+            root.Own = map != null ? OwnMap.ContentFor(root, map) : null;
+        }
+
+        /// <summary>The content a new settlement starts on: the player's own valley if there is one.</summary>
+        public GameContent ForNewGame => (Base ?? this).Own ?? (Base ?? this);
 
         /// <summary>
-        /// The content for a settlement's map: the hand-drawn valley as loaded, or a valley drawn by
-        /// <see cref="MapGenerator"/> from the settings in its name. An unknown name gives the loaded content
-        /// (a save from an unknown map then fails validation as before).
+        /// The content for a settlement's map: the hand-drawn valley as loaded, the player's own valley, or
+        /// (settlements started before the generator was taken out) a valley drawn by <see cref="MapGenerator"/>
+        /// from the settings in its name. An unknown name gives the loaded content (a save from an unknown map
+        /// then fails validation as before).
         /// </summary>
         public GameContent ForMap(string mapName)
         {
             var root = Base ?? this;
             if (string.IsNullOrEmpty(mapName) || mapName == Map.Name) return this;
             if (mapName == root.Map.Name) return root;
+            if (root.Own != null && mapName == root.Own.Map.Name) return root.Own;
             return MapSettings.IsGeneratedName(mapName) && MapSettings.TryParse(mapName, out var settings)
                 ? MapGenerator.ContentFor(root, settings) : root;
         }

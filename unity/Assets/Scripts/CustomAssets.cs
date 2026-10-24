@@ -33,6 +33,115 @@ namespace Founders
             return t;
         }
 
+        // MARK: - The player's own valley (Map/Map.png or Map/Map.txt)
+
+        /// <summary>Colours of a map picture (sRGB) and the map letter each one stands for; every pixel takes the nearest.</summary>
+        static readonly (Color32 color, char cell)[] MapColors =
+        {
+            (new Color32(110, 170, 70, 255), '.'),  // meadow: light green
+            (new Color32(30, 90, 40, 255), 'T'),    // forest: dark green
+            (new Color32(40, 110, 220, 255), '~'),  // water: blue
+            (new Color32(235, 215, 130, 255), ','), // sand: yellow
+            (new Color32(150, 150, 150, 255), 'R'), // stony hill: grey
+            (new Color32(80, 70, 65, 255), 'M'),    // mountain: dark grey-brown
+            (new Color32(190, 90, 40, 255), 'O'),   // ore: rust orange
+            (new Color32(255, 0, 255, 255), '*'),   // where to settle: magenta (the cell itself is meadow)
+        };
+
+        /// <summary>
+        /// The player's own hand-made valley, or null when there is none: <c>Map/Map.txt</c> (128 rows of map
+        /// letters, <c>*</c> marks where to settle) or <c>Map/Map.png</c> (a picture, one pixel per cell, scaled to
+        /// 128 × 128; colours in <see cref="MapColors"/>). An optional <c>Map/Name.txt</c> names the valley.
+        /// </summary>
+        public static Founders.Core.MapDefinition OwnMap()
+        {
+            try
+            {
+                int size = Founders.Core.OwnMap.Size;
+                var rows = new List<string>();
+                var text = Resources.Load<TextAsset>(Root + "/Map/Map");
+                if (text != null)
+                {
+                    foreach (var line in text.text.Split('\n'))
+                    {
+                        var l = line.Trim();
+                        if (l.Length > 0) rows.Add(l);
+                    }
+                }
+                else
+                {
+                    var tex = Resources.Load<Texture2D>(Root + "/Map/Map");
+                    if (tex == null) return null;
+                    var px = ReadPixels(tex);
+                    int w = tex.width, h = tex.height;
+                    for (int y = 0; y < size; y++)
+                    {
+                        var sb = new System.Text.StringBuilder(size);
+                        // The picture's top row is the north edge (map row 0); textures count rows from the bottom.
+                        int py = h - 1 - Mathf.Min(h - 1, (int)((y + 0.5f) * h / size));
+                        for (int x = 0; x < size; x++)
+                        {
+                            int pxx = Mathf.Min(w - 1, (int)((x + 0.5f) * w / size));
+                            sb.Append(NearestCell(px[py * w + pxx]));
+                        }
+                        rows.Add(sb.ToString());
+                    }
+                }
+                if (rows.Count == 0) return null;
+                (int x, int y)? fire = null;
+                for (int y = 0; y < rows.Count && fire == null; y++)
+                {
+                    int x = rows[y].IndexOf('*');
+                    if (x >= 0) fire = (x, y);
+                }
+                for (int y = 0; y < rows.Count; y++) rows[y] = rows[y].Replace('*', '.');
+                var name = Resources.Load<TextAsset>(Root + "/Map/Name");
+                var map = Founders.Core.OwnMap.Build(rows, fire, name != null ? name.text : null);
+                Debug.Log($"[FOUNDERS] own valley: {map.Title}, settle near {map.StartBuildings[0].X},{map.StartBuildings[0].Y}");
+                return map;
+            }
+            catch (Exception e)
+            {
+                Debug.LogError($"[FOUNDERS] own valley could not be read: {e}");
+                return null;
+            }
+        }
+
+        static char NearestCell(Color32 c)
+        {
+            if (c.a < 128) return '.';
+            char best = '.';
+            int bestD = int.MaxValue;
+            foreach (var (color, cell) in MapColors)
+            {
+                int dr = c.r - color.r, dg = c.g - color.g, db = c.b - color.b;
+                int d = dr * dr + dg * dg + db * db;
+                if (d < bestD) { bestD = d; best = cell; }
+            }
+            return best;
+        }
+
+        /// <summary>The picture's pixels, also when it was imported unreadable or compressed (copied through the GPU).</summary>
+        static Color32[] ReadPixels(Texture2D tex)
+        {
+            if (tex.isReadable) return tex.GetPixels32();
+            var rt = RenderTexture.GetTemporary(tex.width, tex.height, 0, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB);
+            var mode = tex.filterMode;
+            tex.filterMode = FilterMode.Point;
+            Graphics.Blit(tex, rt);
+            tex.filterMode = mode;
+            var prev = RenderTexture.active;
+            RenderTexture.active = rt;
+            var copy = new Texture2D(tex.width, tex.height, TextureFormat.RGBA32, false);
+            copy.ReadPixels(new Rect(0, 0, tex.width, tex.height), 0, 0);
+            copy.Apply();
+            RenderTexture.active = prev;
+            RenderTexture.ReleaseTemporary(rt);
+            var px = copy.GetPixels32();
+            Object.Destroy(copy);
+            return px;
+        }
+
         // MARK: - Models (buildings, decorations)
 
         sealed class Variant
