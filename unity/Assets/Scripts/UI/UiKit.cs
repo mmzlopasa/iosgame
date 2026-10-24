@@ -1259,7 +1259,7 @@ namespace Founders.UI
             fade.style.backgroundImage = new StyleBackground(fadeTexture);
             fade.style.backgroundSize = new BackgroundSize(Length.Percent(100), Length.Percent(100));
             // The window's own colour near its bottom (the Adventure UI Kit's stone, or the game's parchment).
-            fade.style.unityBackgroundImageTintColor = Theme.IsKitSkin("panel") ? Hex("#2F394E") : Theme.Hex("#E6D2AC");
+            fade.style.unityBackgroundImageTintColor = Theme.IsKitSkin("panel") ? Theme.Hex("#2F394E") : Theme.Hex("#E6D2AC");
             fade.style.display = DisplayStyle.None;
             s.hierarchy.Add(fade);
             void Refresh()
