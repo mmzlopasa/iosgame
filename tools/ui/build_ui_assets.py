@@ -186,21 +186,6 @@ APP_ICON = """
   <ellipse cx="61" cy="61" rx="9.2" ry="5.6" fill="url(#g)"/>
 </svg></div>"""
 
-# Loading / launch backdrop (no text: the text is live UI so it stays sharp).
-BACKDROP = """
-<div style="width:1170px;height:2532px;position:relative;overflow:hidden;
-  background: radial-gradient(70% 45% at 50% 34%, rgba(255,215,106,.22), transparent 70%),
-              radial-gradient(60% 40% at 0% 100%, rgba(160,175,200,.14), transparent 60%),
-              linear-gradient(180deg,#11131a 0%,#0D0F14 55%,#0a0b10 100%)">
-<svg width="1170" height="900" viewBox="0 0 390 300" style="position:absolute;left:0;bottom:450px">
-  <path d="M0 210 L40 170 L75 192 L120 128 L160 176 L205 120 L250 168 L292 132 L340 182 L390 150 L390 300 L0 300 Z" fill="#1A1D25"/>
-  <path d="M0 238 L52 206 L98 230 L150 190 L196 226 L246 196 L300 232 L348 204 L390 222 L390 300 L0 300 Z" fill="#14161D"/>
-  <path d="M0 266 L70 246 L132 262 L196 240 L262 260 L330 244 L390 258 L390 300 L0 300 Z" fill="#0F1117"/>
-</svg>
-<div style="position:absolute;left:0;right:0;bottom:0;height:452px;background:#0F1117"></div>
-</div>"""
-
-
 def chromium():
     hits = sorted(glob.glob("/opt/pw-browsers/chromium_headless_shell-*/chrome-linux/headless_shell"))
     if hits:
@@ -268,7 +253,7 @@ def build_images():
     os.makedirs(out, exist_ok=True)
     render(GLOW, 360, 120, os.path.join(out, "glow.png"))
     render(LOGO.format(s=512), 512, 512, os.path.join(out, "logo_mark.png"))
-    render(BACKDROP, 1170, 2532, os.path.join(out, "loading_bg.png"), transparent=False)
+    # The loading-screen paintings (loading_1..5.jpg) come from tools/loading.
     old_ring = os.path.join(out, "avatar_ring.png")
     if os.path.exists(old_ring):
         os.remove(old_ring)
@@ -278,7 +263,7 @@ def build_images():
         icon_dir = os.path.join(ROOT, "unity", "Assets", "Art", "UI", "AppIcon")
         os.makedirs(icon_dir, exist_ok=True)
         render(APP_ICON, 1024, 1024, os.path.join(icon_dir, "AppIcon.png"), transparent=False)
-    print("images: glow, logo_mark, loading_bg" + (", AppIcon" if LEGACY else ""))
+    print("images: glow, logo_mark" + (", AppIcon" if LEGACY else ""))
 
 
 # MARK: - Fonts

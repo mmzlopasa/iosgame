@@ -26,7 +26,7 @@ unity/Assets/Custom/
     ├── UI/
     │   ├── Icons/           ← ikone sučelja          (npr. wood.png, stone.png, food.png)
     │   ├── Skin/            ← okviri, gumbi, trake   (npr. btn_green.png, panel.png)
-    │   └── Images/          ← velike slike           (npr. logo_mark.png, loading_bg.png)
+    │   └── Images/          ← velike slike           (npr. logo_mark.png, loading_1.jpg)
     ├── Textures/
     │   └── Terrain/         ← tlo                    (npr. Grass.png, Grass_normal.png)
     └── Map/                 ← TVOJA MAPA doline      (Map.png, po želji Name.txt)
@@ -132,7 +132,7 @@ Ograničenja: tvoji likovi ne drže alat u ruci (sjekiru, motiku); trupci i koš
 
 - **Ikone** `UI/Icons/<ime>.png`: kvadratne, prozirne, 128×128 px. Imena su u tablici na dnu (npr. `wood`, `stone`, `food`, `settings`).
 - **Okviri i gumbi** `UI/Skin/<ime>.png`: najlakše je preuzeti originalnu sliku iz `unity/Assets/Art/UI/Resources/UI/Skin/` i prebojati je. Kutovi (rubovi iz tablice) se ne rastežu. Može i veća slika (npr. 2×) ako su **proporcije iste**.
-- **Velike slike** `UI/Images/<ime>.png`: `logo_mark` (logo), `loading_bg` (pozadina učitavanja), `glow`.
+- **Velike slike** `UI/Images/<ime>.png`: `logo_mark` (logo), `loading_1` … `loading_5` (slike ekrana učitavanja), `glow`.
 - Font se (za sada) ne može zamijeniti.
 
 ## 7a. Adventure UI Kit (Unity Asset Store)
@@ -217,7 +217,7 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 | `Icons/` | `<building key>.png`, `deco_<decoration key>.png` | Build-menu/card picture (256×256, transparent). Without one, a replaced model is photographed by the game. |
 | `UI/Icons/` | `<icon name>.png` | UI icons (128×128). Names below. |
 | `UI/Skin/` | `<skin name>.png` | 9-slice frames/buttons; borders below. Any resolution with the same proportions as the game's picture. |
-| `UI/Images/` | `logo_mark`, `loading_bg`, `glow` | Large pictures. |
+| `UI/Images/` | `logo_mark`, `loading_1` … `loading_5`, `glow` | Large pictures. |
 | `Textures/Terrain/` | `Grass Mud Sand RockGround` (+ `_normal`) | Seamless ground textures, tiled every 5 m. (The game draws the ground matte: normal maps are ignored.) |
 | `Map/` | `Map.png` (or `Map.txt`), optional `Name.txt` | Your own valley: top-down picture, top = north, one pixel per 2 m cell, resampled to 128×128; nearest colour of meadow `#6EAA46`, forest `#1E5A28`, water `#286EDC`, sand `#EBD782`, stony hill `#969696`, mountain `#504641`, ore `#BE5A28`, suggested campfire `#FF00FF`. New settlements start on it (`own_valley`); old saves keep their valley (Long Valley or a generated `gen_<code>`). Lands to explore are cut 16×16 from it (`Core/OwnMap.cs`). |
 
@@ -374,7 +374,7 @@ Rubovi (lijevo, gore, desno, dolje) se ne rastežu; sredina se rasteže (kod `pa
 
 ### Velike slike / Images – `UI/Images/<ime>.png`
 
-`glow` (360×120 px), `loading_bg` (1170×2532 px), `logo_mark` (512×512 px)
+`glow` (360×120 px), `loading_1` … `loading_5` (1920×1080 px), `logo_mark` (512×512 px)
 
 ### Tlo / Ground – `Textures/Terrain/<ime>.png` (+ `<ime>_normal.png`)
 

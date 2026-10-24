@@ -280,7 +280,7 @@ namespace FoundersEditor
             // Optional icons the game only uses when the player brings them (it falls back to a built-in one).
             foreach (var kind in new[] { "general", "construction", "research", "exploration" }) uiIcons.Add("speedup_" + kind);
             if (content != null) foreach (var law in content.Laws) uiIcons.Add("law_" + law.Id);
-            var images = new HashSet<string> { "loading_bg", "logo_mark", "glow" };
+            var images = new HashSet<string> { "loading_1", "loading_2", "loading_3", "loading_4", "loading_5", "logo_mark", "glow" };
             var terrain = new HashSet<string> { "Grass", "Mud", "Sand", "RockGround" };
 
             foreach (var file in Files(""))

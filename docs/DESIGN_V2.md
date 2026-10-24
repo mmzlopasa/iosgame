@@ -112,7 +112,7 @@ passes to an heir, who is named in the Legacy Timeline.
    - lanterns at night.
 6. **HUD**: Whiteout Survival style, with a hide button (eye) for a clean view of the
    town.
-7. **Loading screen**: a video montage of the game.
+7. **Loading screen**: five painted scenes of Green Hollow (tools/loading) that drift and dissolve into each other, with chapter captions, rising embers and the progress bar.
 
 **Phase 2 — the Middle Ages**
 - Medieval houses from the Quaternius Medieval Village MegaKit (CC0).

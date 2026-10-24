@@ -21,7 +21,7 @@ namespace FoundersEditor
             string file = Path.GetFileNameWithoutExtension(assetPath);
             if (assetPath.StartsWith("Assets/Art/UI/"))
             {
-                // UI art: pixel-exact, no mips, no power-of-two rescale; only the big backdrop is compressed.
+                // UI art: pixel-exact, no mips, no power-of-two rescale; only the loading-screen paintings are compressed.
                 ti.textureType = TextureImporterType.Default;
                 ti.mipmapEnabled = false;
                 ti.npotScale = TextureImporterNPOTScale.None;
@@ -30,7 +30,7 @@ namespace FoundersEditor
                 ti.wrapMode = TextureWrapMode.Clamp;
                 ti.filterMode = FilterMode.Bilinear;
                 ti.maxTextureSize = 4096;
-                ti.textureCompression = file == "loading_bg" ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Uncompressed;
+                ti.textureCompression = file.StartsWith("loading_") ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Uncompressed;
                 return;
             }
             ti.mipmapEnabled = true;

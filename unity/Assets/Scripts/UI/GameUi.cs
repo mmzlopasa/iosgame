@@ -223,7 +223,6 @@ namespace Founders.UI
             root.Add(loadingLayer);
 
             Loading = new LoadingScreen(loadingLayer);
-            Loading.StartVideo(gameObject);
         }
 
         public void Init(GameStore owner)

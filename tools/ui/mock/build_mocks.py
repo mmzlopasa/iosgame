@@ -1080,25 +1080,6 @@ def page_story_p(scrim):
     return hud(panel_open=True) + scrim + boxh, ""
 
 
-def page_loading():
-    """LoadingScreen: the montage (bg here) filling the screen, the title, the tip, the bar and the version."""
-    top = f"top:{ST + 64}px" if P() else "top:9%"
-    side = 16 if P() else 24
-    b = bottom_pad()
-    shades = ('<div class="a" style="left:0;right:0;top:0;height:45%;background:linear-gradient(180deg,rgba(20,13,5,.55),rgba(20,13,5,0))"></div>'
-              '<div class="a" style="left:0;right:0;bottom:0;height:45%;background:linear-gradient(0deg,rgba(20,13,5,.6),rgba(20,13,5,0))"></div>')
-    brand = (f'<div class="a col" style="left:0;right:0;{top};align-items:center">{icon("logo_mark", 70).replace("Icons/logo_mark", "Images/logo_mark")}'
-             f'{t("FOUNDERS", 38, extra="letter-spacing:4px;margin-top:6px")}{t("THE LONG RISE", 14, GOLD, "letter-spacing:3px")}'
-             f'{t("Build a world that outlives you.", BODY, PALE, "margin-top:6px")}</div>')
-    tip = box("panel", f'<div class="row" style="padding:7px 14px 11px 12px">{icon("knowledge", 32)}<div class="col grow" style="margin-left:10px">'
-              f'{t("Founder&#39;s tip", SMALL, GOLD)}{t("Food spoils in the open. A storage pit keeps part of it safe.", BODY, cls="w")}</div></div>', "width:100%;max-width:600px")
-    tip_row = f'<div class="a col" style="left:0;right:0;bottom:{b + 76}px;align-items:center;padding:0 {side}px">{tip}</div>'
-    prog = (f'<div class="a col" style="left:0;right:0;bottom:{b + 34}px;align-items:center;padding:0 {side}px"><div class="col" style="width:100%;max-width:520px">'
-            f'<div class="row" style="justify-content:space-between">{t("Kindling the hearth…", BODY, PALE)}{t("64%", NUM, GOLD)}</div>{bar(.64, "100%", 12, extra="margin-top:4px")}</div></div>')
-    ver = f'<div class="a row c" style="left:0;right:0;bottom:{b + 10}px">{t("v0.1.0 · Era I — First Communities", SMALL, PALE)}</div>'
-    return '<div class="a" style="inset:0;background:rgba(13,15,20,.38)"></div>' + shades + brand + tip_row + prog + ver, ""
-
-
 def page_settings():
     seg = "".join(tab(n, i == 2) for i, n in enumerate(("Smooth", "Balanced", "Cinematic")))
     gfx = section("Graphics", [f'<div class="row" style="gap:6px;margin:8px 0;align-items:flex-end">{seg}</div>'], style="margin-bottom:8px")
@@ -1125,7 +1106,7 @@ PAGES = {
     "01_hud": page_hud, "02_heart_card": page_heart, "03_workplace_card": page_workplace,
     "04_build": page_build, "05_people": page_people, "05b_people_work": page_people_work, "06_research": page_research,
     "07_goals": page_goals, "08_event": page_event, "09_story": page_story, "10_welcome_back": page_welcome,
-    "11_weather": page_weather, "12_customs": page_customs, "13_settings": page_settings, "14_loading": page_loading,
+    "11_weather": page_weather, "12_customs": page_customs, "13_settings": page_settings,
 }
 
 # Finds text that does not fit: wider than its own box (clipped), or reaching out of the nearest skinned box.
