@@ -78,7 +78,10 @@ namespace Founders
                         tileSize = l.tileSize, normalScale = 1f, smoothness = l.smoothness, metallic = 0f,
                     };
                 }
-                layers.Add(Matte(l));
+                l = Matte(l);
+                // Bright, saturated meadow green (as in Foundation) instead of the packs' dull olive.
+                if (n == "Grass" && albedo == null) l.diffuseRemapMax = new Vector4(0.95f, 1.18f, 0.72f, 1f);
+                layers.Add(l);
             }
             data.terrainLayers = layers.ToArray();
 

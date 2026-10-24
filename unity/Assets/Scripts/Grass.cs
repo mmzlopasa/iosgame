@@ -98,7 +98,7 @@ namespace Founders
                     var type = ground.CellType(cx, cy);
                     float density = type switch
                     {
-                        TerrainType.Grass => 0.8f,
+                        TerrainType.Grass => kitGrass != null ? 0.42f : 0.8f,
                         TerrainType.Forest => 0.15f,
                         TerrainType.Rock => 0.12f,
                         TerrainType.Mountain => 0.1f,
@@ -125,7 +125,7 @@ namespace Founders
                         var models = flower && kitFlowers.Count > 0 ? kitFlowers : kitGrass;
                         // One kind of flower per drift (the grass clumps mix freely).
                         int pick = flower ? (int)(Mathf.PerlinNoise(p.x * 0.03f + 71f, p.z * 0.03f + 3f) * models.Count * 1.4f) % models.Count : rng.Next(models.Count);
-                        AddKit(models[pick], p, (flower ? 0.35f : 0.4f) * size, yaw * 2f, index++);
+                        AddKit(models[pick], p, (flower ? 0.35f : 0.3f) * size, yaw * 2f, index++);
                         continue;
                     }
                     var layer = flower ? flowers : grass;

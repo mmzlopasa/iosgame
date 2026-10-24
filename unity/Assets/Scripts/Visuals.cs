@@ -40,7 +40,7 @@ namespace Founders
         public static readonly Spec[] All =
         {
             // Water: dark, very smooth surface that reflects the HDRI sky.
-            new Spec("Water", new Color(0.16f, 0.46f, 0.52f), 0.86f),
+            new Spec("Water", new Color(0.16f, 0.46f, 0.52f), 0.3f),
             new Spec("Earth", new Color(0.30f, 0.23f, 0.16f), 0.15f),
             new Spec("Ash", new Color(0.16f, 0.15f, 0.14f), 0.1f),
             // People (placeholder until real character models)

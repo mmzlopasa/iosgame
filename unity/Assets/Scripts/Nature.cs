@@ -196,7 +196,7 @@ namespace Founders
         /// <summary>Kit trees further than this are flat cards (and in the fog).</summary>
         public const float CardDistance = 95f;
         /// <summary>Nothing of the packs is drawn beyond this (the fog has hidden it).</summary>
-        public const float DrawDistance = 240f;
+        public const float DrawDistance = 310f;
         /// <summary>Kit trees closer than this cast a shadow (a little beyond the shadow distance).</summary>
         const float ShadowReach = 65f;
 
@@ -367,7 +367,7 @@ namespace Founders
         /// model away from the camera.
         /// </summary>
         public void AddKit(GameObject prefab, string id, Vector3 position, float size, Fit fit, float yaw, int cx, int cy,
-                           bool tree = false, bool castShadows = true, Material tint = null, float sink = 0f)
+                           bool tree = false, bool castShadows = true, Material tint = null, float sink = 0f, Vector2 tilt = default)
         {
             if (prefab == null) return;
             var model = Kit(prefab);
@@ -379,7 +379,8 @@ namespace Founders
             var pos = position + Vector3.up * (-b.min.y * scale - sink * b.size.y * scale);
             float radius = tree ? TrunkRadius : 0.5f * Mathf.Max(b.size.x, b.size.z) * scale;
             var item = NewItem(position, b.size.y * scale, cx, cy, tree, id, radius);
-            var root = Matrix4x4.TRS(pos, Quaternion.Euler(0, yaw, 0), Vector3.one * scale);
+            // Stones lean a little (a boulder never stands as straight as a gravestone).
+            var root = Matrix4x4.TRS(pos, Quaternion.Euler(0, yaw, 0) * Quaternion.Euler(tilt.x, 0, tilt.y), Vector3.one * scale);
             float height = b.size.y * scale;
             // Trees cast their shadow with their simplest model (below); other objects with their own.
             bool shadowOwn = castShadows && !tree;

@@ -306,6 +306,14 @@ namespace Founders
                 var prefab = kit.Pick(group, rng);
                 if (prefab != null) nature.AddKit(prefab, id ?? "kit_" + group, p, size, fit, yaw(), cx, cy, false, shadows, tint, sink);
             }
+            // A stone half sunk into the ground and leaning a little, as stones lie outdoors.
+            void Stone(string group, Vector3 p, float width, Material tint = null, string id = "kit_rock", bool shadows = true)
+            {
+                var prefab = kit.Pick(group, rng);
+                if (prefab == null) return;
+                var lean = new Vector2((r01() - 0.5f) * 24f, (r01() - 0.5f) * 24f);
+                nature.AddKit(prefab, id, p, width, NatureField.Fit.Width, yaw(), cx, cy, false, shadows, tint, 0.28f + r01() * 0.12f, lean);
+            }
             void Tree(string group, Vector3 p, float height)
             {
                 var prefab = kit.Pick(group, rng);
@@ -401,22 +409,20 @@ namespace Founders
                 }
                 case TerrainType.Rock:
                 {
-                    // Outcrops: a boulder with smaller stones and scree around it; gravel and a little
-                    // grass between the outcrops.
+                    // Outcrops here and there: a boulder half in the ground with smaller stones and scree
+                    // around it; mostly gravel and a little grass between them (never rows of upright stones).
                     float outcrop = Field(0.21f, 9f);
-                    if (outcrop > 0.52f)
+                    if (outcrop > 0.6f && rng.Next(3) != 0)
                     {
                         var b = Anywhere();
-                        float big = 1.2f + (outcrop - 0.52f) * 3.5f + r01() * 0.6f;
-                        Put("rock", b, big, NatureField.Fit.Width, "kit_rock", sink: 0.12f);
-                        int stones = 1 + rng.Next(2);
-                        for (int i = 0; i < stones; i++)
-                            Put("rock", Beside(b, big * 0.45f, big * 0.75f), big * (0.3f + r01() * 0.2f), NatureField.Fit.Width, "kit_rock", sink: 0.15f);
-                        Put("pebble", Beside(b, big * 0.5f, big * 0.9f), 0.25f + r01() * 0.3f, NatureField.Fit.Width, shadows: false, sink: 0.1f);
+                        float big = 1.1f + (outcrop - 0.6f) * 4f + r01() * 0.9f;
+                        Stone("rock", b, big);
+                        if (rng.Next(2) == 0) Stone("rock", Beside(b, big * 0.45f, big * 0.75f), big * (0.3f + r01() * 0.25f));
+                        Put("pebble", Beside(b, big * 0.5f, big * 0.9f), 0.25f + r01() * 0.3f, NatureField.Fit.Width, shadows: false, sink: 0.15f);
                     }
                     else
                     {
-                        if (rng.Next(5) == 0) Put("rock", Anywhere(), 0.8f + r01() * 0.5f, NatureField.Fit.Width, "kit_rock", sink: 0.12f);
+                        if (rng.Next(6) == 0) Stone("rock", Anywhere(), 0.6f + r01() * 0.5f);
                         if (rng.Next(2) == 0) Put("pebble", Anywhere(), 0.3f + r01() * 0.35f, NatureField.Fit.Width, shadows: false, sink: 0.1f);
                         if (rng.Next(3) == 0) Put("grass", Anywhere(), 0.35f + r01() * 0.2f, shadows: false);
                     }
@@ -429,7 +435,7 @@ namespace Founders
                     var ore = Field(0.25f, 40f) < 0.35f ? KitTint(kit, "KitCopperOre", new Color(0.62f, 0.85f, 0.7f)) : KitTint(kit, "KitIronOre", new Color(0.95f, 0.58f, 0.42f));
                     var b = Jitter(c, rng, 1.2f);
                     float big = 0.9f + r01() * 0.6f;
-                    Put("rock", b, big, NatureField.Fit.Width, "kit_rock", tint: ore, sink: 0.15f);
+                    Stone("rock", b, big, ore);
                     for (int i = 0; i < 2; i++) Put("pebble", Beside(b, big * 0.5f, big * 1.1f), 0.3f + r01() * 0.3f, NatureField.Fit.Width, shadows: false, tint: ore, sink: 0.1f);
                     break;
                 }
@@ -438,8 +444,10 @@ namespace Founders
                     var p = Anywhere();
                     // Firs climb the lower slopes in groups; cliffs stand together in crags, scree between them.
                     if (p.y < 7f && Field(0.15f, 55f) > 0.45f && rng.Next(2) == 0) Tree("fir", p, (7f + r01() * 3f) * Mathf.Lerp(1f, 0.75f, p.y / 7f));
-                    else if (Field(0.12f, 61f) > 0.55f && rng.Next(2) == 0) Put("cliff", p, 3f + r01() * 3f, NatureField.Fit.Width, "kit_cliff", sink: 0.2f);
-                    else if (rng.Next(4) == 0) Put("rock", p, 1.2f + r01() * 1.4f, NatureField.Fit.Width, "kit_rock", sink: 0.15f);
+                    // Cliffs only on the valley walls beyond the map, deep in the ground; in the valley
+                    // big stones lie in the scree instead.
+                    else if (!inside && Field(0.12f, 61f) > 0.55f && rng.Next(2) == 0) Put("cliff", p, 4f + r01() * 3f, NatureField.Fit.Width, "kit_cliff", sink: 0.4f);
+                    else if (rng.Next(4) == 0) Stone("rock", p, 1.2f + r01() * 1.4f);
                     break;
                 }
                 case TerrainType.Sand:
@@ -502,7 +510,7 @@ namespace Founders
                     if (stony >= 2 && rng.Next(5) == 0)
                     {
                         Put("pebble", Anywhere(), 0.3f + r01() * 0.3f, NatureField.Fit.Width, shadows: false, sink: 0.1f);
-                        if (rng.Next(3) == 0) Put("rock", Anywhere(), 0.6f + r01() * 0.4f, NatureField.Fit.Width, "kit_rock", sink: 0.15f);
+                        if (rng.Next(3) == 0) Stone("rock", Anywhere(), 0.5f + r01() * 0.4f);
                         break;
                     }
                     // Damp ground by the water: tall grass and reeds.

@@ -28,8 +28,8 @@ namespace Founders
         Color grassTint = Color.white, leafTint = Color.white;
 
         static readonly Color Dawn = new Color(1f, 0.62f, 0.38f);
-        static readonly Color Moon = new Color(0.55f, 0.66f, 1f);
-        static readonly Color NightFog = new Color(0.17f, 0.21f, 0.30f);
+        static readonly Color Moon = new Color(0.78f, 0.84f, 1f);
+        static readonly Color NightFog = new Color(0.36f, 0.42f, 0.52f);
 
         public void Init(GameStore owner)
         {
@@ -113,7 +113,9 @@ namespace Founders
                 "spring" => new Color(1f, 0.95f, 0.86f),
                 _ => new Color(1f, 0.92f, 0.78f),
             };
-            float seasonLight = id == "winter" ? 0.85f : 1f;
+            float seasonLight = id == "winter" ? 0.92f : 1f;
+            // A gentle night (as in Foundation): the valley stays green and readable, only a little bluer and dimmer.
+            nightness *= 0.55f;
 
             Color dayColor = Color.Lerp(Dawn, noon, Mathf.SmoothStep(0f, 1f, elevation / 0.4f));
             float dayIntensity = Mathf.Lerp(0.9f, 2.1f, elevation) * seasonLight;
@@ -131,8 +133,8 @@ namespace Founders
 
             if (white != null)
             {
-                float temp = id switch { "summer" => 8f, "autumn" => 16f, "winter" => -16f, _ => 2f };
-                white.temperature.value = Mathf.Lerp(baseTemperature + temp, -12f, nightness);
+                float temp = id switch { "summer" => 6f, "autumn" => 12f, "winter" => -6f, _ => 2f };
+                white.temperature.value = Mathf.Lerp(baseTemperature + temp, baseTemperature - 8f, nightness);
             }
 
             // Vegetation tints follow the season (eased over the first part of each season).

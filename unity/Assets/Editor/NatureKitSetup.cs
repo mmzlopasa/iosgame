@@ -69,9 +69,11 @@ namespace FoundersEditor
                 var copy = new Material(water) { name = "KitWater" };
                 copy.renderQueue = water.renderQueue;
                 // The pack's water is see-through and mirror-smooth: over the dark riverbed it read as
-                // glossy brown mud. Calmer, more opaque painted water with a soft sheen instead.
-                if (copy.HasProperty("_BaseColor")) copy.SetColor("_BaseColor", new Color(0.24f, 0.47f, 0.55f, 0.82f));
-                if (copy.HasProperty("_Smoothness")) copy.SetFloat("_Smoothness", 0.35f);
+                // glossy brown mud, and the low sun drew a glaring streak along every bank. Calmer,
+                // more opaque painted water with no sun highlight and only a faint sheen.
+                if (copy.HasProperty("_BaseColor")) copy.SetColor("_BaseColor", new Color(0.22f, 0.50f, 0.74f, 0.88f));
+                if (copy.HasProperty("_Smoothness")) copy.SetFloat("_Smoothness", 0.12f);
+                if (copy.HasProperty("_SpecularHighlights")) { copy.SetFloat("_SpecularHighlights", 0f); copy.EnableKeyword("_SPECULARHIGHLIGHTS_OFF"); }
                 if (copy.HasProperty("_EnvironmentReflections")) { copy.SetFloat("_EnvironmentReflections", 0f); copy.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF"); }
                 kit.Water = SaveMaterial(copy, $"{MaterialFolder}/KitWater.mat");
             }
@@ -177,6 +179,14 @@ namespace FoundersEditor
                 BaseShaderGUI.SetMaterialKeywords(m, LitGUI.SetMaterialKeywords);
             }
             Matte(m);
+            // The packs' stone is pale grey (its moss and snow cover needs their own shader): under the
+            // blue winter and night light it looked like ice or glass. A darker, warmer stone instead.
+            string n = src.name.ToLowerInvariant();
+            if ((n.Contains("rock") || n.Contains("cliff") || n.Contains("mountain") || n.Contains("stone")) && m.HasProperty("_BaseColor"))
+            {
+                var c = m.GetColor("_BaseColor");
+                m.SetColor("_BaseColor", new Color(c.r * 0.66f, c.g * 0.62f, c.b * 0.56f, 1f));
+            }
             m.enableInstancing = true;
             return SaveMaterial(m, file);
         }

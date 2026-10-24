@@ -104,8 +104,7 @@ namespace Founders
                 Cam.fieldOfView = Fov;
                 Cam.nearClipPlane = 0.5f;
             }
-            // The fog hides everything beyond ~230 m: drawing further only costs frame rate.
-            Cam.farClipPlane = 260f;
+            // The fog hides everything beyond it (see Apply): drawing further only costs frame rate.
             Cam.transform.SetParent(transform, false);
             Apply();
         }
@@ -152,6 +151,11 @@ namespace Founders
             if (HeightAt != null) position.y = Mathf.Max(position.y, HeightAt(position) + 2.5f);
             Cam.transform.position = position;
             Cam.transform.rotation = Quaternion.LookRotation(focus - position);
+            // The haze starts beyond what is in view, however far the camera is zoomed out: it only
+            // hides the end of the world on the horizon, never the valley the player looks at.
+            RenderSettings.fogStartDistance = distance + 70f;
+            RenderSettings.fogEndDistance = distance + 230f;
+            Cam.farClipPlane = distance + 250f;
         }
 
         /// <summary>An off-centre projection (a lens shift) that moves the picture so the focus sits at <see cref="ViewShift"/>.</summary>
