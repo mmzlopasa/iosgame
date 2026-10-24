@@ -390,7 +390,7 @@ namespace FoundersEditor
                 string key = "P_" + Path.GetFileName(p.Str("model"));
                 // Painted figures: matte cloth and skin, the folds only hinted (no photo sheen).
                 var m = TexturedLit(key, t.Str("albedo"), t.Str("normal"), t.Str("mask"), Vector2.one, smoothness: 0.3f);
-                m.SetFloat("_BumpScale", 0.4f);
+                m.SetFloat("_BumpScale", 0.3f);
                 m.SetFloat("_EnvironmentReflections", 0f);
                 m.SetFloat("_SpecularHighlights", 1f);
                 Finish(m);

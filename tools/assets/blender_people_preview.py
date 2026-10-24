@@ -19,7 +19,7 @@ import numpy as np
 from mathutils import Vector
 
 sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-from person_style import stylize  # noqa: E402
+from person_style import soften, stylize, subdivide  # noqa: E402
 
 argv = sys.argv[sys.argv.index("--") + 1:]
 MANIFEST, OUT = argv[0], argv[1]
@@ -106,7 +106,7 @@ def person_material(p, zone, tint_lin):
     nt.links.new(mul.outputs[2], ao.inputs[6])
     nt.links.new(sep.outputs["Green"], ao.inputs[7])
     nt.links.new(ao.outputs[2], bsdf.inputs["Base Color"])
-    # The game's P_ material: smoothness = mask alpha x 0.3, no reflections, normal map at 0.4.
+    # The game's P_ material: smoothness = mask alpha x 0.3, no reflections, normal map at 0.3.
     inv = nt.nodes.new("ShaderNodeMath")
     inv.operation = "MULTIPLY_ADD"
     inv.inputs[1].default_value = -0.3
@@ -114,7 +114,7 @@ def person_material(p, zone, tint_lin):
     nt.links.new(mask.outputs["Alpha"], inv.inputs[0])
     nt.links.new(inv.outputs[0], bsdf.inputs["Roughness"])
     nm = nt.nodes.new("ShaderNodeNormalMap")
-    nm.inputs["Strength"].default_value = 0.4
+    nm.inputs["Strength"].default_value = float(os.environ.get("NRM", "0.3"))
     nt.links.new(nrm.outputs["Color"], nm.inputs["Color"])
     nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
     if zone == "Skin":
@@ -136,6 +136,8 @@ def load(p, skin, main, hair):
     rig = next(o for o in objs if o.type == "ARMATURE")
     rig["clips"] = [a.name for a in bpy.data.actions if a not in acts]
     stylize(rig, objs)
+    subdivide(objs)
+    soften(objs)
     t = tints(p, skin, main, hair)
     for o in objs:
         if o.type != "MESH":
@@ -184,7 +186,7 @@ tmp = os.path.join(os.path.dirname(os.path.abspath(OUT)), "people_preview_tmp")
 os.makedirs(tmp, exist_ok=True)
 rows = []
 body_target = Vector((0, 0, 0.92))
-for i, p in enumerate(people):
+for i, p in enumerate(people[:int(os.environ.get("N", len(people)))]):
     rig, objs = load(p, SKIN_TONES[i % len(SKIN_TONES)], p["main"], p["hair"] if p["age"] == "elder" else HAIR[i % len(HAIR)])
     row = []
     for j, (clip, t, off) in enumerate((("Idle", 0.3, Vector((0.0, -4.2, 0.35))), ("Walk", 0.3, Vector((4.2, 0.4, 0.45))),
