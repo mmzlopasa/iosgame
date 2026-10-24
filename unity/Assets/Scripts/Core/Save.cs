@@ -90,6 +90,14 @@ namespace Founders.Core
             if (!Finite(s.LastUpdateWallTime)) problems.Add("invalid lastUpdateWallTime");
             if (content.Epoch(s.EpochId) == null) problems.Add($"unknown epoch {s.EpochId}");
             if (!string.IsNullOrEmpty(s.MapName) && s.MapName != content.Map.Name) problems.Add($"settlement was founded on another map ({s.MapName})");
+            foreach (var r in s.TradeRoutes)
+            {
+                var partner = content.TradePartner(r.PartnerId);
+                if (partner == null) problems.Add($"unknown trade partner {r.PartnerId}");
+                else if (r.Deal < 0 || r.Deal >= partner.Deals.Count || r.LoadedDeal < 0 || r.LoadedDeal >= partner.Deals.Count) problems.Add("invalid trade deal");
+                if (!Finite(r.Elapsed) || r.Elapsed < 0 || !r.Received.IsValid) problems.Add("invalid trade route");
+            }
+            if (s.TradeRoutes.Select(r => r.PartnerId).Distinct().Count() != s.TradeRoutes.Count) problems.Add("duplicate trade route");
             var ids = new HashSet<int>();
             foreach (var b in s.Buildings)
             {

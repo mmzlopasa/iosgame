@@ -635,8 +635,9 @@ namespace Founders.UI
                 else Lead(E.Square("trash", demolish, E.Kind.Brown, Theme.ButtonH), foot); // remove: the kit's navy secondary
             }
             if (def.Heart && G.HasWarmth && (complete || b.IsOperational)) foot.Add(Share(StokeButton(), foot));
-            if (def.TradeRoutes > 0 && G.HasTrade && b.IsOperational)
-                foot.Add(Share(E.Button("Trade", Act(() => { mapTab = 2; store.ActivePanel = Panel.Map; }), E.Kind.Blue, Theme.ButtonH, "coins"), foot));
+            if ((def.TradeRoutes ?? 0) > 0 && b.IsOperational)
+                foot.Add(Share(E.Button("Trade", Act(() => OpenPanel(Panel.Trade)), canLevel ? E.Kind.Blue : E.Kind.Orange, Theme.ButtonH, "road", 16,
+                                        SubLine("road", $"{G.State.TradeRoutes.Count}/{G.TradeRouteSlots()} routes")), foot));
             if (target != null && complete)
             {
                 var kind = canRebuild ? (canLevel ? E.Kind.Blue : E.Kind.Orange) : E.Kind.Grey; // yellow when it is the card's primary
@@ -706,6 +707,17 @@ namespace Founders.UI
                     Add(E.StatRow("flame", "Warmth", SignedDeg(def.Heat.Heat), null, sep));
                     Add(E.StatRow("compass", "Reach", $"{Num(def.Heat.Radius)} cells", null, sep));
                 }
+            }
+            if ((def.MarketReach ?? 0) > 0)
+            {
+                Add(E.StatRow("compass", "Reach", $"{Game.MarketReachOf(b, def)} cells", Next(level < def.MaxLevel ? $"{Game.MarketReachOf(new PlacedBuilding { Level = level + 1 }, def)} cells" : null), sep));
+                var (served, homed) = G.MarketCoverage();
+                Add(E.StatRow("home", "Families served", $"{served}/{homed}", null, sep, served >= homed && homed > 0 ? Theme.Up : (Color?)null));
+            }
+            if ((def.TradeRoutes ?? 0) > 0)
+            {
+                int routes = def.TradeRoutes.Value + level / Game.TradeLevelsPerRoute, then = def.TradeRoutes.Value + (level + 1) / Game.TradeLevelsPerRoute;
+                Add(E.StatRow("road", "Trade routes", routes.ToString(Inv), Next(level < def.MaxLevel ? then.ToString(Inv) : null), sep));
             }
             if (!def.Heart && def.JobSlots != null && def.JobSlots.Count > 0)
                 Add(E.StatRow("road", "Road", G.HasRoadAccess(b) ? "+10% work" : "None", null, sep, G.HasRoadAccess(b) ? Theme.Up : Theme.Pale));

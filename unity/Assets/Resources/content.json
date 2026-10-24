@@ -537,78 +537,6 @@
    "defaultTax": "normal"
   },
   "treasuryCap": 5000,
-  "trade": {
-   "routeAmountPerMinute": 6,
-   "dealAmount": 10,
-   "neighbours": [
-    {
-     "id": "marsh_folk",
-     "name": "Marsh Folk",
-     "description": "Reed huts on stilts across the wetland. Rich in fish and hides, short of good timber and stone.",
-     "landsExplored": 1,
-     "routeCost": 30,
-     "buys": {
-      "wood": 0.6,
-      "stone": 0.8,
-      "tools": 9
-     },
-     "sells": {
-      "food": 0.9,
-      "hides": 3.0
-     }
-    },
-    {
-     "id": "hill_clan",
-     "name": "Hill Clan",
-     "description": "Herders and miners in the high valleys. They dig ore and quarry stone, and want bread and cloth.",
-     "landsExplored": 3,
-     "routeCost": 60,
-     "buys": {
-      "food": 0.6,
-      "goods": 6,
-      "planks": 2.2
-     },
-     "sells": {
-      "stone": 1.2,
-      "ore": 3.0
-     }
-    },
-    {
-     "id": "river_traders",
-     "name": "River Traders",
-     "description": "Boatmen who carry goods up and down the great river. They pay for bronze and fine cloth.",
-     "landsExplored": 5,
-     "routeCost": 120,
-     "buys": {
-      "bronze": 9,
-      "goods": 6.5,
-      "hides": 2.2
-     },
-     "sells": {
-      "tools": 13,
-      "planks": 3.0,
-      "wood": 0.9
-     }
-    },
-    {
-     "id": "abbey_of_the_vale",
-     "name": "Abbey of the Vale",
-     "description": "Monks who copy books and keep bees. They trade their learning for food, cloth and timber.",
-     "landsExplored": 8,
-     "routeCost": 150,
-     "buys": {
-      "food": 0.65,
-      "goods": 7,
-      "planks": 2.3,
-      "wood": 0.55
-     },
-     "sells": {
-      "knowledge": 4,
-      "bronze": 14
-     }
-    }
-   ]
-  },
   "estates": {
    "grantCost": 40,
    "grantFavour": 20,
@@ -775,7 +703,7 @@
       {
        "favour": 400,
        "name": "Market Rights",
-       "description": "Neighbours pay 10% more for your goods.",
+       "description": "Caravans bring home 10% more.",
        "effects": [
         {
          "kind": "tradePriceMultiplier",
@@ -4756,6 +4684,144 @@
    "insulation": 9
   },
   {
+   "id": "market",
+   "name": "Market",
+   "description": "Open stalls where families swap food, pots and hides. Homes within 8 cells are happier (up to +8 approval), and people gather here.",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 3,
+    "height": 2
+   },
+   "cost": {
+    "wood": 45,
+    "stone": 25
+   },
+   "buildSeconds": 70,
+   "sprite": "market",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "barter",
+   "community": 3,
+   "marketReach": 8,
+   "maxCount": 3,
+   "market": true,
+   "levels": [
+    {
+     "cost": {
+      "wood": 35,
+      "stone": 19
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 25
+     },
+     "buildSeconds": 70.0
+    },
+    {
+     "cost": {
+      "wood": 55,
+      "stone": 30
+     },
+     "buildSeconds": 84.0
+    },
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 40
+     },
+     "buildSeconds": 98.0
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 50
+     },
+     "buildSeconds": 125.0
+    },
+    {
+     "cost": {
+      "wood": 115,
+      "stone": 65
+     },
+     "buildSeconds": 161.0
+    },
+    {
+     "cost": {
+      "wood": 150,
+      "stone": 80,
+      "hides": 14
+     },
+     "buildSeconds": 206.0
+    },
+    {
+     "cost": {
+      "wood": 195,
+      "stone": 105,
+      "hides": 18
+     },
+     "buildSeconds": 263.0
+    },
+    {
+     "cost": {
+      "wood": 250,
+      "stone": 140,
+      "hides": 25
+     },
+     "buildSeconds": 337.0
+    },
+    {
+     "cost": {
+      "wood": 330,
+      "stone": 180,
+      "hides": 30
+     },
+     "buildSeconds": 431.0
+    },
+    {
+     "cost": {
+      "wood": 420,
+      "stone": 240,
+      "hides": 40,
+      "ore": 55
+     },
+     "buildSeconds": 552.0
+    },
+    {
+     "cost": {
+      "wood": 550,
+      "stone": 310,
+      "hides": 50,
+      "ore": 70
+     },
+     "buildSeconds": 706.0
+    },
+    {
+     "cost": {
+      "wood": 720,
+      "stone": 400,
+      "hides": 65,
+      "ore": 90
+     },
+     "buildSeconds": 904.0
+    },
+    {
+     "cost": {
+      "wood": 930,
+      "stone": 520,
+      "hides": 85,
+      "ore": 115
+     },
+     "buildSeconds": 1157.0
+    }
+   ]
+  },
+  {
    "id": "daub_house",
    "name": "Daub House",
    "description": "Wattle walls sealed with clay and dung under a thick thatch. Houses 5 people in comfort.",
@@ -6957,7 +7023,7 @@
   {
    "id": "medieval_market",
    "name": "Market Hall",
-   "description": "A tiled hall where the valley trades. Big community boost, extra storage, and homes within 10 cells can get Household Goods. Keeps 2 trade routes to the neighbours.",
+   "description": "A tiled hall where the valley trades. Big community boost, extra storage, and homes within 10 cells can get Household Goods. Runs 2 more trade routes for the caravans.",
    "epoch": "epoch_medieval_kingdoms",
    "footprint": {
     "width": 3,
@@ -10314,187 +10380,182 @@
   {
    "id": "trading_post",
    "name": "Trading Post",
-   "description": "A fenced yard with a scale and a signpost to the neighbours. Sell and buy goods for coins, and keep 1 lasting trade route.",
-   "epoch": "epoch_first_communities",
+   "description": "A warehouse on the road out of the valley. Caravans leave from here along trade routes: send what you have plenty of, bring home what you lack. One more route at levels 4, 8, 12 and 16.",
+   "epoch": "epoch_first_civilizations",
    "footprint": {
-    "width": 1,
-    "height": 1
+    "width": 2,
+    "height": 2
    },
    "cost": {
-    "wood": 45,
-    "stone": 15,
-    "hides": 5
+    "wood": 80,
+    "stone": 50
    },
-   "buildSeconds": 45,
+   "buildSeconds": 90,
    "sprite": "trading_post",
    "allowedTerrain": [
     "grass",
     "sand"
    ],
    "buildable": true,
-   "requiresTech": "trail_signs",
+   "requiresTech": "trade_routes",
+   "storage": 100,
    "tradeRoutes": 1,
+   "maxCount": 1,
    "levels": [
     {
      "cost": {
-      "wood": 35,
-      "stone": 11,
-      "hides": 4
+      "wood": 60,
+      "stone": 40
      },
-     "buildSeconds": 36.0
+     "buildSeconds": 72.0
     },
     {
      "cost": {
-      "wood": 45,
-      "stone": 15,
-      "hides": 5
+      "wood": 80,
+      "stone": 50
      },
-     "buildSeconds": 45.0
+     "buildSeconds": 90.0
     },
     {
      "cost": {
-      "wood": 55,
-      "stone": 19,
-      "hides": 6
+      "wood": 100,
+      "stone": 60
      },
-     "buildSeconds": 54.0
+     "buildSeconds": 108.0
     },
     {
      "cost": {
-      "wood": 70,
-      "stone": 20,
-      "hides": 8
+      "wood": 120,
+      "stone": 75
      },
-     "buildSeconds": 63.0
+     "buildSeconds": 126.0
     },
     {
      "cost": {
-      "wood": 90,
-      "stone": 30,
-      "hides": 10
+      "wood": 155,
+      "stone": 100
      },
-     "buildSeconds": 81.0
+     "buildSeconds": 161.0
     },
     {
      "cost": {
-      "wood": 115,
-      "stone": 40,
-      "hides": 13
+      "wood": 200,
+      "stone": 125
      },
-     "buildSeconds": 103.0
+     "buildSeconds": 206.0
     },
     {
      "cost": {
-      "wood": 150,
-      "stone": 50,
-      "hides": 16
+      "wood": 260,
+      "stone": 165,
+      "hides": 25
      },
-     "buildSeconds": 132.0
+     "buildSeconds": 264.0
     },
     {
      "cost": {
-      "wood": 195,
-      "stone": 65,
-      "hides": 20
-     },
-     "buildSeconds": 169.0
-    },
-    {
-     "cost": {
-      "wood": 250,
-      "stone": 85,
-      "hides": 30
-     },
-     "buildSeconds": 216.0
-    },
-    {
-     "cost": {
-      "wood": 330,
-      "stone": 110,
+      "wood": 340,
+      "stone": 210,
       "hides": 35
      },
-     "buildSeconds": 277.0
+     "buildSeconds": 338.0
     },
     {
      "cost": {
-      "wood": 420,
-      "stone": 140,
-      "hides": 45,
-      "ore": 50
+      "wood": 450,
+      "stone": 280,
+      "hides": 45
      },
-     "buildSeconds": 355.0
+     "buildSeconds": 433.0
     },
     {
      "cost": {
-      "wood": 550,
-      "stone": 185,
-      "hides": 60,
-      "ore": 65
+      "wood": 580,
+      "stone": 360,
+      "hides": 55
      },
-     "buildSeconds": 454.0
+     "buildSeconds": 554.0
     },
     {
      "cost": {
-      "wood": 720,
-      "stone": 240,
-      "hides": 80,
-      "ore": 85
+      "wood": 750,
+      "stone": 470,
+      "hides": 75,
+      "ore": 100
      },
-     "buildSeconds": 581.0
+     "buildSeconds": 709.0
     },
     {
      "cost": {
-      "wood": 930,
-      "stone": 310,
-      "hides": 105,
-      "ore": 110
+      "wood": 980,
+      "stone": 610,
+      "hides": 95,
+      "ore": 125
      },
-     "buildSeconds": 744.0
+     "buildSeconds": 908.0
     },
     {
      "cost": {
-      "wood": 1210,
-      "stone": 400,
-      "hides": 135,
-      "ore": 140
+      "wood": 1270,
+      "stone": 800,
+      "hides": 125,
+      "ore": 165
      },
-     "buildSeconds": 952.0
+     "buildSeconds": 1162.0
     },
     {
      "cost": {
-      "wood": 1570,
-      "stone": 520,
-      "hides": 175,
-      "ore": 180
+      "wood": 1650,
+      "stone": 1030,
+      "hides": 160,
+      "ore": 220
      },
-     "buildSeconds": 1219.0
+     "buildSeconds": 1488.0
     },
     {
      "cost": {
-      "wood": 2050,
-      "stone": 680,
-      "hides": 230,
-      "ore": 240
+      "wood": 2150,
+      "stone": 1340,
+      "hides": 210,
+      "ore": 280
      },
-     "buildSeconds": 1560.0
+     "buildSeconds": 1904.0
     },
     {
      "cost": {
-      "wood": 2650,
-      "stone": 890,
-      "hides": 300,
-      "ore": 310
+      "wood": 2800,
+      "stone": 1750,
+      "hides": 270,
+      "ore": 360
      },
-     "buildSeconds": 1997.0
+     "buildSeconds": 2437.0
     },
     {
      "cost": {
-      "wood": 3450,
-      "stone": 1150,
-      "hides": 380,
-      "ore": 400
+      "wood": 3650,
+      "stone": 2250,
+      "hides": 350,
+      "ore": 470
      },
-     "buildSeconds": 2556.0
+     "buildSeconds": 3120.0
+    },
+    {
+     "cost": {
+      "wood": 4700,
+      "stone": 2950,
+      "hides": 460,
+      "ore": 610
+     },
+     "buildSeconds": 3993.0
+    },
+    {
+     "cost": {
+      "wood": 6150,
+      "stone": 3850,
+      "hides": 600,
+      "ore": 800
+     },
+     "buildSeconds": 5111.0
     }
    ]
   },
@@ -11006,7 +11067,7 @@
   {
    "id": "trail_signs",
    "name": "Trail Signs",
-   "description": "Blazes on trees and cairns on hills. Scouts explore 10% faster and can build a Lookout Tower and a Trading Post.",
+   "description": "Blazes on trees and cairns on hills. Scouts explore 10% faster and can build a Lookout Tower.",
    "cost": {
     "knowledge": 40
    },
@@ -11022,10 +11083,6 @@
     {
      "kind": "unlockBuilding",
      "buildingId": "lookout_tower"
-    },
-    {
-     "kind": "unlockBuilding",
-     "buildingId": "trading_post"
     }
    ],
    "heartLevel": 6
@@ -11116,6 +11173,25 @@
     }
    ],
    "heartLevel": 8
+  },
+  {
+   "id": "barter",
+   "name": "Barter",
+   "description": "Neighbours swap what they have too much of. Unlocks the Market: homes near a market are happier.",
+   "cost": {
+    "knowledge": 80
+   },
+   "researchSeconds": 900.0,
+   "prerequisites": [
+    "permanent_settlement"
+   ],
+   "heartLevel": 9,
+   "effects": [
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "market"
+    }
+   ]
   },
   {
    "id": "ancestor_rites",
@@ -11255,6 +11331,26 @@
     }
    ],
    "heartLevel": 15
+  },
+  {
+   "id": "trade_routes",
+   "name": "Trade Routes",
+   "description": "Pack animals and carts carry goods over the hills. Unlocks the Trading Post and trade routes to the peoples beyond the valley.",
+   "cost": {
+    "knowledge": 150
+   },
+   "researchSeconds": 1500.0,
+   "prerequisites": [
+    "barter",
+    "pottery"
+   ],
+   "heartLevel": 15,
+   "effects": [
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "trading_post"
+    }
+   ]
   },
   {
    "id": "copper_smelting",
@@ -11460,7 +11556,7 @@
    "id": "guilds",
    "epoch": "epoch_medieval_kingdoms",
    "name": "Craft Guilds",
-   "description": "Masters, journeymen and apprentices. Unlocks the Market Hall. +15% crafting bonus. Neighbours pay 15% more for your goods.",
+   "description": "Masters, journeymen and apprentices. Unlocks the Market Hall. +15% crafting bonus. Caravans bring home 15% more.",
    "cost": {
     "knowledge": 460
    },
@@ -15427,6 +15523,186 @@
     }
    ],
    "deadlineSeconds": 3600
+  }
+ ],
+ "tradePartners": [
+  {
+   "id": "reed_folk",
+   "name": "Reed Folk",
+   "direction": "east",
+   "description": "Fishers and basket weavers on the lakes downriver. They always have dried fish to spare.",
+   "tripSeconds": 180,
+   "openCost": {
+    "food": 30,
+    "wood": 20
+   },
+   "deals": [
+    {
+     "give": {
+      "wood": 20
+     },
+     "get": {
+      "food": 30
+     }
+    },
+    {
+     "give": {
+      "stone": 15
+     },
+     "get": {
+      "food": 25
+     }
+    },
+    {
+     "give": {
+      "hides": 6
+     },
+     "get": {
+      "food": 35
+     }
+    },
+    {
+     "give": {
+      "planks": 15
+     },
+     "get": {
+      "coins": 25
+     }
+    }
+   ],
+   "legacyText": "The first caravan went downriver. The Reed Folk sent it home heavy with dried fish."
+  },
+  {
+   "id": "hill_clan",
+   "name": "Hill Clan",
+   "direction": "north",
+   "description": "Herders on the high pastures. They trade hides, quarried stone and a little ore for grain.",
+   "tripSeconds": 240,
+   "openCost": {
+    "food": 40,
+    "wood": 30
+   },
+   "deals": [
+    {
+     "give": {
+      "food": 30
+     },
+     "get": {
+      "hides": 10
+     }
+    },
+    {
+     "give": {
+      "wood": 25
+     },
+     "get": {
+      "stone": 30
+     }
+    },
+    {
+     "give": {
+      "food": 25
+     },
+     "get": {
+      "ore": 12
+     }
+    },
+    {
+     "give": {
+      "goods": 6
+     },
+     "get": {
+      "coins": 40
+     }
+    }
+   ],
+   "legacyText": "The Hill Clan shared salt and bread with our traders: a road over the ridge is open."
+  },
+  {
+   "id": "pine_valley",
+   "name": "Pine Valley",
+   "direction": "west",
+   "description": "Woodcutters in the deep pine forests. Timber is cheap there, stone is not.",
+   "tripSeconds": 200,
+   "openCost": {
+    "food": 30,
+    "stone": 20
+   },
+   "deals": [
+    {
+     "give": {
+      "food": 25
+     },
+     "get": {
+      "wood": 35
+     }
+    },
+    {
+     "give": {
+      "stone": 20
+     },
+     "get": {
+      "wood": 30
+     }
+    },
+    {
+     "give": {
+      "hides": 8
+     },
+     "get": {
+      "wood": 45
+     }
+    }
+   ],
+   "legacyText": "Rafts of pine logs now float down from Pine Valley."
+  },
+  {
+   "id": "copper_merchants",
+   "name": "Copper Merchants",
+   "direction": "south",
+   "description": "Travelling smiths from the southern mountains. They bring ore and finished bronze for hides and food.",
+   "tripSeconds": 300,
+   "openCost": {
+    "food": 60,
+    "wood": 60,
+    "stone": 40
+   },
+   "requiresTech": "copper_smelting",
+   "deals": [
+    {
+     "give": {
+      "hides": 15
+     },
+     "get": {
+      "ore": 25
+     }
+    },
+    {
+     "give": {
+      "food": 50
+     },
+     "get": {
+      "bronze": 4
+     }
+    },
+    {
+     "give": {
+      "wood": 60
+     },
+     "get": {
+      "bronze": 5
+     }
+    },
+    {
+     "give": {
+      "bronze": 5
+     },
+     "get": {
+      "coins": 60
+     }
+    }
+   ],
+   "legacyText": "Bronze from the south: the Copper Merchants now come every season."
   }
  ]
 }

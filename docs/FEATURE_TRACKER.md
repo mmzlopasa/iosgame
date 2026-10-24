@@ -37,7 +37,7 @@
 | UI | Recipe status on job rows and building cards | 🟡 | `GameUi.Cards.RecipeText` (compiles; screenshot pending) |
 | UI | Economy overview panel | ⬜ | |
 | Economy | Needs (food, water, goods), house tiers, taxes in coins, tax level | ✅ | `GameNeeds.cs`, `NeedsTests` |
-| Economy | Trade with neighbouring villages: deals, routes, trading post | ✅ | `GameTrade.cs`, `TradeTests` |
+| Economy | Markets and trade routes: market reach, trading post, caravans to four peoples (barter, some deals for coins) | ✅ | `GameTrade.cs`, `WorldView.Trade.cs`, `TradeTests` |
 | Society | Three estates (Commons, Clergy, Crown): favour, ranks, boons, balance | ✅ | `GameEstates.cs`, `EstatesTests` |
 | Town | Organic paths worn by foot traffic (faster walking, faster building beside them) | ✅ | `GamePaths.cs`, `PathsTests` |
 | Town | Zone brush: homes built by villagers, woodcutting, forestry, pastures | ✅ | `GameZones.cs`, `ZonesTests` |

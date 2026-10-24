@@ -140,6 +140,23 @@ namespace Founders.Core
                 if (tech.Epoch != null && c.Epoch(tech.Epoch) == null) problems.Add($"tech '{tech.Id}' uses unknown epoch '{tech.Epoch}'");
                 problems.AddRange(ValidateEffects(tech.Effects, $"tech '{tech.Id}'", buildingIds));
             }
+            // Trade partners
+            var partnerIds = new HashSet<string>();
+            foreach (var tp in c.TradePartners)
+            {
+                if (!partnerIds.Add(tp.Id)) problems.Add($"duplicate trade partner '{tp.Id}'");
+                if (!new[] { "north", "east", "south", "west" }.Contains(tp.Direction)) problems.Add($"trade partner '{tp.Id}' has unknown direction '{tp.Direction}'");
+                if (tp.TripSeconds <= 0) problems.Add($"trade partner '{tp.Id}' needs tripSeconds > 0");
+                if (!tp.OpenCost.IsValid) problems.Add($"trade partner '{tp.Id}' has a negative opening cost");
+                if (tp.RequiresTech != null && !techIds.Contains(tp.RequiresTech)) problems.Add($"trade partner '{tp.Id}' requires unknown tech '{tp.RequiresTech}'");
+                if (tp.Deals.Count == 0) problems.Add($"trade partner '{tp.Id}' offers no deals");
+                foreach (var deal in tp.Deals)
+                    if (!deal.Give.IsValid || !deal.Get.IsValid || deal.Give.IsZero || deal.Get.IsZero || deal.Get.Knowledge > 0 || deal.Give.Knowledge > 0)
+                        problems.Add($"trade partner '{tp.Id}' has a deal that must give and get goods");
+            }
+            if (c.TradePartners.Count > 0 && !c.Buildings.Any(x => (x.TradeRoutes ?? 0) > 0))
+                problems.Add("trade partners exist but no building runs trade routes");
+
             var cycle = FindPrerequisiteCycle(c.Technologies);
             if (cycle != null) problems.Add("technology prerequisites form a cycle: " + string.Join(" → ", cycle));
 
@@ -253,24 +270,6 @@ namespace Founders.Core
                             problems.Add($"estate '{e.Id}' rank '{r.Name}' effects must be lasting boons");
                         problems.AddRange(ValidateEffects(r.Effects, $"estate '{e.Id}' rank '{r.Name}'", buildingIds));
                     }
-                }
-            }
-            if (b.Trade != null)
-            {
-                if (b.Trade.RouteAmountPerMinute <= 0 || b.Trade.DealAmount <= 0) problems.Add("trade needs routeAmountPerMinute and dealAmount > 0");
-                var seen = new HashSet<string>();
-                foreach (var n in b.Trade.Neighbours)
-                {
-                    if (!seen.Add(n.Id)) problems.Add($"neighbour '{n.Id}' is listed twice");
-                    if (!n.Buys.IsValid || !n.Sells.IsValid || n.RouteCost < 0) problems.Add($"neighbour '{n.Id}' has negative prices");
-                    if (n.Buys.Coins > 0 || n.Sells.Coins > 0) problems.Add($"neighbour '{n.Id}' cannot trade coins for coins");
-                }
-                // Buying from one village and selling to another must never pay.
-                foreach (var t in ResourceTypes.All)
-                {
-                    double top = b.Trade.Neighbours.Select(n => n.Buys[t]).DefaultIfEmpty(0).Max();
-                    double low = b.Trade.Neighbours.Where(n => n.Sells[t] > 0).Select(n => n.Sells[t]).DefaultIfEmpty(double.MaxValue).Min();
-                    if (top > 0 && top >= low) problems.Add($"trade: {t.Id()} sells for {top} but can be bought for {low}");
                 }
             }
             foreach (var r in c.Regions)

@@ -1,98 +1,163 @@
 using System;
 using System.Linq;
 using Founders.Core;
+using UnityEngine;
 using UnityEngine.UIElements;
 
 namespace Founders.UI
 {
     /// <summary>
-    /// The Trade tab of the map window: the routes that run, and every neighbour the scouts have met with what
-    /// they buy and sell. A deal moves a batch at once; a route carries the good every minute.
+    /// Trade Routes window (opened from the Trading Post): every people beyond the valley with what
+    /// they trade, the route's caravan on its way, the deal it runs, and the button that opens a route.
     /// </summary>
     public partial class GameUi
     {
-        string TradeKey() =>
-            $"{G.LandsExplored}|{G.TradeRouteSlots()}|{G.State.TradeRoutes.Count}|{Math.Floor(G.State.Resources.Coins)}|" +
-            string.Join(",", ResourceTypes.Stored.Select(r => G.State.Resources[r] >= (G.Content.Balance.Trade?.DealAmount ?? 10) ? "1" : "0"));
+        /// <summary>Opens the Trade Routes window.</summary>
+        public void ShowTrade() => OpenPanel(Panel.Trade);
 
-        void BuildTrade(VisualElement host)
+        static string DirectionName(string d) => d switch
         {
-            var cfg = G.Content.Balance.Trade;
-            if (cfg == null) return;
-            int slots = G.TradeRouteSlots();
-            double deal = cfg.DealAmount;
+            "north" => "north",
+            "south" => "south",
+            "west" => "west",
+            _ => "east",
+        };
 
-            var routes = Block("Trade routes", out var rrows, E.T($"{G.State.TradeRoutes.Count}/{slots}", Theme.Num, Theme.Pale));
-            rrows.Add(TreasuryLine());
-            if (slots <= 0)
-                rrows.Add(Notice("info", "Build a Trading Post (research Trail Signs) to trade with the neighbours."));
-            else if (G.State.TradeRoutes.Count == 0)
-                rrows.Add(E.Ink($"A route carries {cfg.RouteAmountPerMinute:0} goods every minute. Open one from a neighbour below.", Theme.Body, Theme.Pale).Margin(6, 0, 4));
-            for (int i = 0; i < G.State.TradeRoutes.Count; i++)
+        string TradeKey()
+        {
+            var parts = G.Content.TradePartners.Select(p =>
             {
-                int index = i;
-                var route = G.State.TradeRoutes[i];
-                var n = G.Neighbour(route.NeighbourId);
-                if (n == null) continue;
-                var line = E.Line(true, 54);
-                line.Add(E.RowIcon(IconFor(route.Resource)));
-                line.Add(E.T($"{(route.Sell ? "Sell" : "Buy")} {route.Resource.DisplayName()} · {n.Name}", Theme.Body).Flex());
-                double price = route.Sell ? G.SellPrice(n, route.Resource) : G.BuyPrice(n, route.Resource);
-                line.Add(Live(() =>
-                {
-                    var t = G.Economy().Trade;
-                    double rate = index < t.Count ? t[index] : 0;
-                    if (rate <= 0) return index >= slots ? "Resting" : route.Sell ? "Nothing to sell" : "No coins or room";
-                    return Fmt.PerMinute((route.Sell ? 1 : -1) * rate * price) + " coins";
-                }, Theme.Num, route.Sell ? Theme.Up : Theme.Pale).NoShrink().Margin(0, 8));
-                line.Add(E.Button("Close", Act(() => G.CloseTradeRoute(index)), E.Kind.Grey, 40, null, 15, null, 86));
-                rrows.Add(line);
+                var r = G.Route(p.Id);
+                if (r == null) return $"{p.Id}:{G.TradeRouteBlocker(p.Id) ?? ""}:{(G.State.Resources.Covers(p.OpenCost) ? 1 : 0)}";
+                var st = G.RouteStatus(r);
+                string goods = string.Join("", p.Deals.Select(d => G.State.Resources.Covers(d.Give) ? "1" : "0"));
+                return $"{p.Id}:{st.State}:{r.Deal}:{r.Active}:{r.Trips}:{goods}";
+            });
+            return $"{G.TradeRouteSlots()}|{G.TradingPost()?.Level}|" + string.Join(",", parts);
+        }
+
+        /// <summary>Goods as icon + amount pairs, without the red "you are short" of costs.</summary>
+        VisualElement GoodsLine(ResourceBundle goods, float size = Theme.Body)
+        {
+            var row = E.Div().Row().Ignore();
+            row.style.flexWrap = Wrap.Wrap;
+            foreach (var kv in goods.Entries)
+            {
+                var item = E.Div().Row().Ignore();
+                item.style.marginRight = 6;
+                item.Add(E.Icon(IconFor(kv.Key), size + 5));
+                item.Add(E.T(Fmt.Compact(kv.Value), size).Margin(0, 0, 0, 1));
+                row.Add(item);
             }
-            host.Add(routes);
+            return row;
+        }
 
-            foreach (var n in G.KnownNeighbours())
+        void BuildTradePanel(VisualElement host)
+        {
+            var post = G.TradingPost();
+            if (post == null)
             {
-                var card = Block(n.Name, out var rows, E.T($"Route {n.RouteCost:0}", Theme.Num, Theme.Gold));
-                rows.Add(E.Ink(n.Description, Theme.Body).Margin(6, 0, 4));
-                foreach (var r in ResourceTypes.All)
+                host.Add(E.Ink("Build a Trading Post: caravans leave from there for the peoples beyond the valley.", Theme.Body).Margin(4, 0, 8));
+                return;
+            }
+            int used = G.State.TradeRoutes.Count, slots = G.TradeRouteSlots();
+            int? next = G.NextRouteLevel();
+            string more = used >= slots && next.HasValue ? $" A level {next} Trading Post runs one more." : "";
+            host.Add(E.Ink($"Send what you have plenty of, bring home what you lack. Each caravan loads its goods at the Trading Post, " +
+                           $"travels to its people and comes back with what it traded for.{more}", Theme.Body, Theme.InkSoft).Margin(2, 0, 8));
+
+            foreach (var partner in G.Content.TradePartners)
+            {
+                var route = G.Route(partner.Id);
+                string pid = partner.Id;
+                VisualElement chip = null;
+                if (route != null)
                 {
-                    if (n.Buys[r] > 0) rows.Add(TradeRow(n, r, true, deal, slots));
+                    var st = G.RouteStatus(route);
+                    chip = st.State switch
+                    {
+                        TradeRouteState.OnTheRoad => Live(() => $"On the road {Fmt.Clock(G.Route(pid) is TradeRoute r ? G.RouteStatus(r).SecondsLeft : 0)}", Theme.Num, Theme.Up),
+                        TradeRouteState.WaitingForGoods => E.T("Waiting for goods", Theme.Num, Theme.Gold),
+                        TradeRouteState.Paused => E.T("Resting", Theme.Num, Theme.Pale),
+                        _ => E.T("No Trading Post", Theme.Num, Theme.Bad),
+                    };
                 }
-                foreach (var r in ResourceTypes.All)
+                var card = Block(partner.Name, out var rows, chip);
+                rows.Add(E.Ink(partner.Description, Theme.Body).Margin(6, 0, 2));
+                rows.Add(E.Ink($"The road leaves the valley to the {DirectionName(partner.Direction)}. A round trip takes {Fmt.Clock(G.TripSeconds(partner))}.",
+                               Theme.Small, Theme.InkSoft).Margin(0, 0, 4));
+
+                if (route == null)
                 {
-                    if (n.Sells[r] > 0) rows.Add(TradeRow(n, r, false, deal, slots));
+                    // Not open yet: what they trade, and the gifts that open the road.
+                    var offers = E.Div().Col().Ignore().Margin(2, 0, 4);
+                    foreach (var deal in partner.Deals) offers.Add(DealRow(deal, false, null, false));
+                    rows.Add(offers);
+                    string blocker = G.TradeRouteBlocker(pid);
+                    var bottom = E.Line(true, 58);
+                    var gifts = E.Div().Col().Grow().Ignore();
+                    gifts.Add(E.T("Gifts to open the road", Theme.Small, Theme.Pale));
+                    gifts.Add(CostLine(partner.OpenCost));
+                    bottom.Add(gifts);
+                    bool can = blocker == null && G.State.Resources.Covers(partner.OpenCost);
+                    bottom.Add(E.Button("Open route", can ? Act(() => store.OpenTradeRoute(pid)) : null, can ? E.Kind.Green : E.Kind.Grey,
+                                        Theme.ButtonH, null, 16, SubLine("clock", Fmt.Clock(G.TripSeconds(partner))), 170));
+                    rows.Add(bottom);
+                    if (blocker != null) rows.Add(E.Ink(blocker, Theme.Small, Theme.Bad).Margin(4));
+                    host.Add(card);
+                    continue;
                 }
+
+                // An open route: the caravan's progress, the deals to choose from, pause and resume.
+                var status = G.RouteStatus(route);
+                if (status.State == TradeRouteState.OnTheRoad)
+                    rows.Add(LiveBar(() => G.Route(pid) is TradeRoute r ? G.RouteStatus(r).Progress : 0, 12).Margin(4, 0, 6));
+                else if (status.State == TradeRouteState.WaitingForGoods && !status.Missing.IsZero)
+                {
+                    var wait = E.Div().Row().Ignore().Margin(2, 0, 4);
+                    wait.Add(E.T("Still needed: ", Theme.Small, Theme.Gold));
+                    wait.Add(GoodsLine(status.Missing, Theme.Small));
+                    rows.Add(wait);
+                }
+                for (int i = 0; i < partner.Deals.Count; i++)
+                {
+                    int index = i;
+                    rows.Add(DealRow(partner.Deals[i], true, route.Deal == i ? null : Act(() => store.SetTradeDeal(pid, index)), route.Deal == i));
+                }
+                var foot = E.Line(true, 54);
+                string brought = route.Trips == 0 ? "No caravan back yet." : $"{route.Trips} trips · brought home {route.Received.ShortDescription}";
+                foot.Add(E.Ink(brought, Theme.Small, Theme.InkSoft).Grow());
+                bool active = route.Active;
+                foot.Add(E.Button(active ? "Rest" : "Resume", Act(() => store.SetTradeRouteActive(pid, !active)), active ? E.Kind.Brown : E.Kind.Green,
+                                  Theme.ButtonH, null, 15, null, 130));
+                rows.Add(foot);
                 host.Add(card);
             }
-            var next = cfg.Neighbours.Where(n => !G.IsKnown(n)).OrderBy(n => n.LandsExplored).FirstOrDefault();
-            if (next != null)
-                host.Add(E.Ink($"Explore {next.LandsExplored} lands to meet more neighbours ({G.LandsExplored} so far).", Theme.Body, Theme.Pale).Margin(4, 0, 8));
         }
 
-        /// <summary>The coins in the treasury, live.</summary>
-        VisualElement TreasuryLine()
+        /// <summary>One deal: what goes out ➜ what comes back, and (on an open route) the button that picks it.</summary>
+        VisualElement DealRow(TradeDeal deal, bool open, Action choose, bool chosen)
         {
-            var line = E.Line(true);
-            line.Add(E.RowIcon("coins"));
-            line.Add(E.T("Treasury", Theme.Body).Flex());
-            line.Add(Live(() => $"{Math.Floor(G.State.Resources.Coins):0}", Theme.Num, Theme.Gold));
-            return line;
-        }
-
-        VisualElement TradeRow(NeighbourDefinition n, ResourceType r, bool sell, double deal, int slots)
-        {
-            var line = E.Line(true, 54);
-            line.Add(E.RowIcon(IconFor(r)));
-            double price = sell ? G.SellPrice(n, r) : G.BuyPrice(n, r);
-            line.Add(E.T($"{(sell ? "They buy" : "They sell")} {r.DisplayName()} · {price.ToString("0.##", Inv)}", Theme.Body).Flex());
-            string id = n.Id;
-            bool can = slots > 0 && (sell ? G.State.Resources[r] >= deal : G.State.Resources.Coins >= price * deal);
-            line.Add(E.Button($"{(sell ? "Sell" : "Buy")} {deal:0}", can ? Act(() => { if (sell) G.SellGoods(id, r, deal); else G.BuyGoods(id, r, deal); }) : null,
-                              sell ? E.Kind.Green : E.Kind.Blue, 40, null, 15, null, 96).Margin(0, 6, 0, 0));
-            bool route = slots > G.State.TradeRoutes.Count && G.State.Resources.Coins >= n.RouteCost
-                         && !G.State.TradeRoutes.Any(t => t.NeighbourId == id && t.Resource == r && t.Sell == sell);
-            line.Add(E.Button("Route", route ? Act(() => G.OpenTradeRoute(id, r, sell)) : null, E.Kind.Brown, 40, null, 15, null, 86));
-            return line;
+            var row = E.Line(true, open ? 52 : 36);
+            var give = E.Div().Row().Ignore();
+            give.Add(E.T("Send", Theme.Small, Theme.Pale).Margin(0, 6));
+            give.Add(GoodsLine(deal.Give));
+            row.Add(give);
+            row.Add(E.Icon("next", 18).Margin(0, 6, 0, 6));
+            var get = E.Div().Row().Grow().Ignore();
+            get.Add(E.T("Get", Theme.Small, Theme.Pale).Margin(0, 6));
+            get.Add(GoodsLine(deal.Get));
+            row.Add(get);
+            if (!open) return row;
+            if (chosen)
+            {
+                var on = E.Div().Row().Ignore();
+                on.Add(E.Icon("check", 22));
+                on.Add(E.T("Trading", Theme.Num, Theme.Up).Margin(0, 0, 0, 4));
+                row.Add(on);
+            }
+            else row.Add(E.Button("Choose", choose, E.Kind.Blue, 40, null, 14, null, 110));
+            return row;
         }
     }
 }

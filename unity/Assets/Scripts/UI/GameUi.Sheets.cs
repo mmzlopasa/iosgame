@@ -191,6 +191,7 @@ namespace Founders.UI
                 Panel.Customs => "Book of Customs",
                 Panel.Map => "World & Legacy",
                 Panel.Profile => "Founder Profile",
+                Panel.Trade => "Trade Routes",
                 _ => "Settings",
             };
             var plank = E.Plank(title, null, Theme.H1, WindowW);
@@ -227,8 +228,7 @@ namespace Founders.UI
                         TabRow(("Work", 0, G.IdleWorkers > 0 ? $"{G.IdleWorkers} idle" : null), ("Villagers", 1, G.State.People.Count.ToString(Inv)), ("Wellbeing", 2, null));
                     break;
                 case Panel.Map:
-                    if (G.HasTrade) TabRow(("Explore", 0, null), ("Trade", 2, G.State.TradeRoutes.Count > 0 ? G.State.TradeRoutes.Count.ToString(Inv) : null), ("Legacy", 1, G.State.Legacy.Count.ToString(Inv)));
-                    else TabRow(("Explore", 0, null), ("Legacy", 1, G.State.Legacy.Count.ToString(Inv)));
+                    TabRow(("Explore", 0, null), ("Legacy", 1, G.State.Legacy.Count.ToString(Inv)));
                     break;
                 case Panel.Profile:
                     TabRow(("Profile", 0, null), ("Stats", 1, null), ("Achievements", 2, $"{G.State.ReachedMilestones.Count}/{G.Content.Milestones.Count}"));
@@ -270,6 +270,16 @@ namespace Founders.UI
                         string d = G.HasDiscontent ? $" · discontent {(int)Math.Round(G.State.Discontent)}" : "";
                         return $"{G.State.Laws.Count}/{G.Content.Laws.Count} customs signed{d}";
                     }, Theme.Body, InnerW - 230, Theme.Pale).Grow());
+                    row.Add(chip);
+                    break;
+                }
+                case Panel.Trade:
+                {
+                    var chip = E.Capsule(34);
+                    chip.Add(E.Icon("road", 24));
+                    chip.Add(Live(() => $"{G.State.TradeRoutes.Count}/{G.TradeRouteSlots()} routes", Theme.Num).Margin(0, 0, 0, 5));
+                    row.Add(LiveFit(() => G.TradingPost() is PlacedBuilding p ? $"Trading Post Lv.{p.Level} · {G.Content.TradePartners.Count} peoples known" : "No Trading Post yet",
+                                    Theme.Body, InnerW - 170, Theme.Pale).Grow());
                     row.Add(chip);
                     break;
                 }
@@ -322,11 +332,12 @@ namespace Founders.UI
                            (G.CurrentObjective == null ? "" : string.Join("", G.Status(G.CurrentObjective.Conditions).Select(s => s.Met ? "1" : "0"))) + "|" +
                            string.Join("", G.Content.Milestones.SelectMany(m => G.MilestoneRequirements(m.Id)).Select(s => s.Met ? "1" : "0"));
                 case Panel.Map:
-                    if (mapTab == 2) return TradeKey();
-                    return $"{G.State.ActiveExpedition?.RegionId}|{string.Join(",", G.State.ExploredRegions)}|{G.State.Legacy.Count}|" +
+                    return $"{G.State.ActiveExpedition?.RegionId}|{G.TradingPost() != null}|{G.State.TradeRoutes.Count}|{string.Join(",", G.State.ExploredRegions)}|{G.State.Legacy.Count}|" +
                            string.Join("", G.Content.Regions.Select(r => G.State.Resources.Covers(G.ExpeditionCost(r)) ? "1" : "0"));
                 case Panel.Profile:
                     return ProfileKey();
+                case Panel.Trade:
+                    return TradeKey();
                 default:
                     return SettingsKey();
             }
@@ -345,8 +356,9 @@ namespace Founders.UI
                     break;
                 case Panel.Objectives: BuildGoalsPanel(host); break;
                 case Panel.Weather: BuildWeatherPanel(host); break;
-                case Panel.Map: if (mapTab == 0) BuildWorldPanel(host); else if (mapTab == 2) BuildTrade(host); else BuildLegacy(host); break;
+                case Panel.Map: if (mapTab == 0) BuildWorldPanel(host); else BuildLegacy(host); break;
                 case Panel.Profile: BuildProfilePanel(host); break;
+                case Panel.Trade: BuildTradePanel(host); break;
                 default: BuildSettingsPanel(host); break;
             }
         }
@@ -866,6 +878,16 @@ namespace Founders.UI
             }
             info.Add(traits);
             host.Add(info);
+
+            // The peoples beyond the valley: a way into the Trade Routes window once there is a Trading Post.
+            if (G.TradingPost() != null)
+            {
+                var trade = E.Line(true, 58).Margin(0, 0, 8);
+                trade.Add(E.RowIcon("road"));
+                trade.Add(E.Ink($"Trade routes: {G.State.TradeRoutes.Count} of {G.TradeRouteSlots()} open to the peoples beyond the valley.", Theme.Body).Grow());
+                trade.Add(E.Button("Trade", Act(ShowTrade), E.Kind.Blue, Theme.ButtonH, null, 16, null, 130));
+                host.Add(trade);
+            }
 
             var active = G.State.ActiveExpedition;
             // The lands next to what is known, nearest first; then the lands already explored.

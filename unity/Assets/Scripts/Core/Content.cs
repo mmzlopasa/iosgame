@@ -282,12 +282,14 @@ namespace Founders.Core
         public bool Market;
         /// <summary>A source of water for the homes around it (a well house).</summary>
         public bool Water;
-        /// <summary>Trade routes to the neighbours this building keeps running (a trading post, a market hall).</summary>
-        public int TradeRoutes;
         /// <summary>A monument's parts, added one by one once the plot is laid out (empty for ordinary buildings).</summary>
         public List<MonumentPart> Parts = new List<MonumentPart>();
         public bool IsMonument => Parts.Count > 0;
         public MonumentPart Part(string id) => Parts.FirstOrDefault(p => p.Id == id);
+        /// <summary>A market: homes within this many cells are served (Foundation's market reach).</summary>
+        public int? MarketReach;
+        /// <summary>A trading post: trade routes it can run at level 1 (one more every <see cref="Game.TradeLevelsPerRoute"/> levels).</summary>
+        public int? TradeRoutes;
 
         /// <summary>The model shown at a level: the last look whose level has been reached.</summary>
         public string SpriteAt(int level)
@@ -340,8 +342,9 @@ namespace Founders.Core
                 Effects = o.Has("effects") ? o.Objs("effects").Select(Effect.FromJson).ToList() : new List<Effect>(),
                 Market = o.OptBool("market", false),
                 Water = o.OptBool("water", false),
-                TradeRoutes = o.OptInt("tradeRoutes") ?? 0,
                 Parts = o.Has("parts") ? o.Objs("parts").Select(MonumentPart.FromJson).ToList() : new List<MonumentPart>(),
+                MarketReach = o.OptInt("marketReach"),
+                TradeRoutes = o.OptInt("tradeRoutes"),
             };
         }
     }
@@ -863,8 +866,6 @@ namespace Founders.Core
         public NeedsConfig Needs;
         /// <summary>Most coins the treasury holds.</summary>
         public double TreasuryCap;
-        /// <summary>Trade with the neighbouring villages (null = no trade).</summary>
-        public TradeConfig Trade;
         /// <summary>The three estates of the realm (null = none).</summary>
         public EstatesConfig Estates;
         /// <summary>Paths worn by people's feet (null = none).</summary>
@@ -914,7 +915,6 @@ namespace Founders.Core
             Health = o.Has("health") ? HealthConfig.FromJson(o.Obj("health")) : null,
             Needs = o.Has("needs") ? NeedsConfig.FromJson(o.Obj("needs")) : null,
             TreasuryCap = o.OptNum("treasuryCap") ?? 5000,
-            Trade = o.Has("trade") ? TradeConfig.FromJson(o.Obj("trade")) : null,
             Estates = o.Has("estates") ? EstatesConfig.FromJson(o.Obj("estates")) : null,
             Paths = o.Has("paths") ? PathsConfig.FromJson(o.Obj("paths")) : null,
             Zones = o.Has("zones") ? ZonesConfig.FromJson(o.Obj("zones")) : null,
@@ -1052,43 +1052,6 @@ namespace Founders.Core
             Tiers = o.Objs("tiers").Select(HouseTier.FromJson).OrderBy(t => t.Level).ToList(),
             TaxLevels = o.Objs("taxLevels").Select(TaxLevel.FromJson).ToList(),
             DefaultTax = o.OptStr("defaultTax") ?? "normal",
-        };
-    }
-
-    /// <summary>Trade with the neighbouring villages (Manor Lords' trade routes): one-off deals and lasting routes.</summary>
-    public sealed class TradeConfig
-    {
-        /// <summary>Goods a route carries each minute.</summary>
-        public double RouteAmountPerMinute;
-        /// <summary>How many goods one deal moves.</summary>
-        public double DealAmount;
-        public List<NeighbourDefinition> Neighbours = new List<NeighbourDefinition>();
-
-        internal static TradeConfig FromJson(JObj o) => new TradeConfig
-        {
-            RouteAmountPerMinute = o.Num("routeAmountPerMinute"),
-            DealAmount = o.OptNum("dealAmount") ?? 10,
-            Neighbours = o.Objs("neighbours").Select(NeighbourDefinition.FromJson).ToList(),
-        };
-    }
-
-    /// <summary>A neighbouring village: what it pays for goods, what it sells, and what a lasting route costs.</summary>
-    public sealed class NeighbourDefinition
-    {
-        public string Id, Name, Description;
-        /// <summary>Lands the scouts must have explored before the village is met.</summary>
-        public int LandsExplored;
-        /// <summary>Coins paid per unit for the town's goods, and asked per unit for theirs.</summary>
-        public ResourceBundle Buys, Sells;
-        /// <summary>Coins to open a lasting route with them.</summary>
-        public double RouteCost;
-
-        internal static NeighbourDefinition FromJson(JObj o) => new NeighbourDefinition
-        {
-            Id = o.Str("id"), Name = o.Str("name"), Description = o.OptStr("description") ?? "",
-            LandsExplored = o.OptInt("landsExplored") ?? 0,
-            Buys = ResourceBundle.FromJson(o.OptObj("buys")), Sells = ResourceBundle.FromJson(o.OptObj("sells")),
-            RouteCost = o.OptNum("routeCost") ?? 0,
         };
     }
 
@@ -1320,6 +1283,7 @@ namespace Founders.Core
         public List<SkillDefinition> Skills = new List<SkillDefinition>();
         public List<LawDefinition> Laws = new List<LawDefinition>();
         public List<PetitionDefinition> Petitions = new List<PetitionDefinition>();
+        public List<TradePartnerDefinition> TradePartners = new List<TradePartnerDefinition>();
         public MapDefinition Map;
         /// <summary>The content as loaded, when this copy carries a generated valley instead (see <see cref="ForMap"/>).</summary>
         public GameContent Base { get; private set; }
@@ -1362,6 +1326,7 @@ namespace Founders.Core
             return c;
         }
 
+        public TradePartnerDefinition TradePartner(string id) => TradePartners.FirstOrDefault(p => p.Id == id);
         public LawDefinition Law(string id) => Laws.FirstOrDefault(l => l.Id == id);
         public PetitionDefinition Petition(string id) => Petitions.FirstOrDefault(p => p.Id == id);
         public SkillDefinition Skill(JobType job) => Skills.FirstOrDefault(s => s.Job == job);
@@ -1407,6 +1372,7 @@ namespace Founders.Core
                 Skills = o.Has("skills") ? o.Objs("skills").Select(SkillDefinition.FromJson).ToList() : new List<SkillDefinition>(),
                 Laws = o.Has("laws") ? o.Objs("laws").Select(LawDefinition.FromJson).ToList() : new List<LawDefinition>(),
                 Petitions = o.Has("petitions") ? o.Objs("petitions").Select(PetitionDefinition.FromJson).ToList() : new List<PetitionDefinition>(),
+                TradePartners = o.Has("tradePartners") ? o.Objs("tradePartners").Select(TradePartnerDefinition.FromJson).ToList() : new List<TradePartnerDefinition>(),
                 Map = MapDefinition.FromJson(o.Obj("map")),
             };
         }

@@ -144,24 +144,6 @@ namespace Founders.Core
         };
     }
 
-    /// <summary>A lasting trade route: a good carried to (sold) or from (bought) a neighbouring village every minute.</summary>
-    public sealed class TradeRoute
-    {
-        public string NeighbourId;
-        public ResourceType Resource;
-        public bool Sell;
-
-        internal Dictionary<string, object> ToJson() => new Dictionary<string, object>
-        {
-            ["neighbourId"] = NeighbourId, ["resource"] = Resource.Id(), ["sell"] = Sell,
-        };
-
-        internal static TradeRoute FromJson(JObj o) => new TradeRoute
-        {
-            NeighbourId = o.Str("neighbourId"), Resource = ResourceTypes.Parse(o.Str("resource")), Sell = o.Bool("sell"),
-        };
-    }
-
     /// <summary>Job → worker count, keyed by the stable job id.</summary>
     public sealed class JobAssignments
     {
@@ -290,8 +272,6 @@ namespace Founders.Core
         public double? LastPetitionSimTime;
         /// <summary>The tax level the player chose (null = the content's default).</summary>
         public string TaxLevel;
-        /// <summary>Lasting trade routes, oldest first (only as many run as the trading places allow).</summary>
-        public List<TradeRoute> TradeRoutes = new List<TradeRoute>();
         /// <summary>Favour of each estate of the realm (estate id → favour).</summary>
         public Dictionary<string, double> Favour = new Dictionary<string, double>();
         /// <summary>Ground worn by feet (cell y·width + x → wear); enough wear makes a path.</summary>
@@ -304,6 +284,8 @@ namespace Founders.Core
         public Dictionary<string, int> Speedups = new Dictionary<string, int>();
         /// <summary>The starter speed-ups were given (older saves get them once on load).</summary>
         public bool SpeedupStarterGiven;
+        /// <summary>Open trade routes to the peoples beyond the valley.</summary>
+        public List<TradeRoute> TradeRoutes = new List<TradeRoute>();
 
         public PlacedBuilding Building(int id) => Buildings.FirstOrDefault(b => b.Id == id);
 
@@ -404,13 +386,13 @@ namespace Founders.Core
                 };
             if (LastPetitionSimTime.HasValue) d["lastPetitionSimTime"] = LastPetitionSimTime.Value;
             if (TaxLevel != null) d["taxLevel"] = TaxLevel;
-            if (TradeRoutes.Count > 0) d["tradeRoutes"] = TradeRoutes.Select(x => (object)x.ToJson()).ToList();
             if (Favour.Count > 0) d["favour"] = Favour.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (Zones.Count > 0) d["zones"] = Zones.Select(kv => (object)new List<object> { kv.Key, kv.Value }).ToList();
             if (Wear.Count > 0) d["wear"] = Wear.Select(kv => (object)new List<object> { kv.Key, Math.Round(kv.Value, 3) }).ToList();
             if (Made.Count > 0) d["made"] = Made.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (Speedups.Count > 0) d["speedups"] = Speedups.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (SpeedupStarterGiven) d["speedupStarterGiven"] = true;
+            if (TradeRoutes.Count > 0) d["tradeRoutes"] = TradeRoutes.Select(r => (object)r.ToJson()).ToList();
             return d;
         }
 
@@ -488,7 +470,6 @@ namespace Founders.Core
             }
             s.LastPetitionSimTime = o.OptNum("lastPetitionSimTime");
             s.TaxLevel = o.OptStr("taxLevel");
-            if (o.Has("tradeRoutes")) s.TradeRoutes = o.Objs("tradeRoutes").Select(TradeRoute.FromJson).ToList();
             if (o.Has("favour"))
             {
                 var fav = o.Obj("favour");
@@ -509,6 +490,7 @@ namespace Founders.Core
                 foreach (var key in sp.Keys) s.Speedups[key] = sp.Int(key);
             }
             s.SpeedupStarterGiven = o.OptBool("speedupStarterGiven", false);
+            if (o.Has("tradeRoutes")) s.TradeRoutes = o.Objs("tradeRoutes").Where(x => x.Has("partnerId")).Select(TradeRoute.FromJson).ToList();
             s.Legacy = o.Objs("legacy").Select(l => new LegacyEntry
             {
                 Id = l.Int("id"), SimTime = l.Num("simTime"), EpochId = l.Str("epochId"),

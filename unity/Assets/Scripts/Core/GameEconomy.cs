@@ -14,8 +14,6 @@ namespace Founders.Core
         public double CraftingBonus;
         /// <summary>State of every recipe job (smelting…) in this snapshot.</summary>
         public Dictionary<JobType, ProcessingStatus> Processing = new Dictionary<JobType, ProcessingStatus>();
-        /// <summary>Goods per second each trade route carries now (same order as State.TradeRoutes).</summary>
-        public List<double> Trade = new List<double>();
         public ResourceBundle Net => Production - Consumption;
     }
 
@@ -249,7 +247,6 @@ namespace Founders.Core
                 consumption.Goods += Math.Min(needs.GoodsPerSecond, State.Resources.Goods / dt);
             }
             ApplyRecipes(snap, ref production, ref consumption, productivity, dt);
-            ApplyTrade(snap, ref production, ref consumption, dt);
             snap.Production = production;
             snap.Consumption = consumption;
             return snap;

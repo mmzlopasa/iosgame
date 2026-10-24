@@ -264,6 +264,7 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 | `longhouse` | Longhouse (`longhouse`) | 2×2 (4×4 m) |
 | `lookout_tower` | Lookout Tower (`lookout_tower`) | 1×1 (2×2 m) |
 | `lords_manor` | Lord's Manor (`lords_manor`) | 4×4 (8×8 m) |
+| `market` | Market (`market`) | 3×2 (6×4 m) |
 | `market_stall` | Market Stall (`market_stall`) | 1×1 (2×2 m) |
 | `medieval_bakery` | Bakery (`medieval_bakery`) | 2×2 (4×4 m) |
 | `medieval_barn` | Barn and Paddock (`medieval_barn`) | 3×3 (6×6 m) |
@@ -290,7 +291,7 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 | `storage_pit` | Storage Pit (`storage_pit`) | 1×1 (2×2 m) |
 | `toolmaker` | Toolmaker's Shelter (`toolmaker`) | 1×1 (2×2 m) |
 | `toolsmith` | Toolsmith (`toolsmith`) | 1×1 (2×2 m) |
-| `trading_post` | Trading Post (`trading_post`) | 1×1 (2×2 m) |
+| `trading_post` | Trading Post (`trading_post`) | 2×2 (4×4 m) |
 | `village_hearth` | Village Hearth (`village_hearth`) | 1×1 (2×2 m) |
 | `weavers_hut` | Weaver's Hut (`weavers_hut`) | 1×1 (2×2 m) |
 | `wood_camp` | Wood Gatherers' Camp (`wood_camp`) | 1×1 (2×2 m) |
