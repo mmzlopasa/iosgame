@@ -4,7 +4,8 @@ Imports every Person_*.fbx listed in people.json with its baked texture set and 
 per-person dye (Main garment, Hair) and skin tone, exactly as Villager.Spawn computes them
 (albedo x tint, tint = colour / neutral grey or skin tone / painted skin), and renders each
 person from the front (Idle) and the side (Walk), plus a row of dye variants and a close-up of a
-woodcutter's swing. Writes one PNG sheet.
+woodcutter's swing. The figures get the game's painted proportions (person_style.py) and its
+matte painted material. Writes one PNG sheet.
 
 blender -b --factory-startup -P blender_people_preview.py -- <people.json> <out.png> [--size 300]
 """
@@ -17,6 +18,9 @@ import bpy
 import numpy as np
 from mathutils import Vector
 
+sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+from person_style import stylize  # noqa: E402
+
 argv = sys.argv[sys.argv.index("--") + 1:]
 MANIFEST, OUT = argv[0], argv[1]
 SIZE = int(argv[argv.index("--size") + 1]) if "--size" in argv else 300
@@ -25,8 +29,8 @@ people = [p for p in json.load(open(MANIFEST))["people"] if "textures" in p]
 
 # The game's palettes (Behaviours.cs Villager): sRGB.
 SKIN_TONES = [(0.87, 0.68, 0.56), (0.80, 0.60, 0.47), (0.70, 0.50, 0.37), (0.56, 0.39, 0.28), (0.42, 0.29, 0.21)]
-DYES = [(0.55, 0.47, 0.36), (0.42, 0.45, 0.30), (0.33, 0.38, 0.47), (0.52, 0.30, 0.22), (0.62, 0.55, 0.40),
-        (0.36, 0.30, 0.24), (0.47, 0.40, 0.48), (0.30, 0.36, 0.33)]
+DYES = [(0.66, 0.57, 0.42), (0.46, 0.55, 0.30), (0.32, 0.45, 0.62), (0.66, 0.31, 0.22), (0.76, 0.60, 0.30),
+        (0.45, 0.33, 0.24), (0.52, 0.42, 0.58), (0.30, 0.48, 0.44)]
 HAIR = [(0.09, 0.065, 0.05), (0.18, 0.12, 0.07), (0.30, 0.20, 0.11), (0.42, 0.30, 0.18), (0.55, 0.36, 0.20)]
 
 
@@ -102,12 +106,15 @@ def person_material(p, zone, tint_lin):
     nt.links.new(mul.outputs[2], ao.inputs[6])
     nt.links.new(sep.outputs["Green"], ao.inputs[7])
     nt.links.new(ao.outputs[2], bsdf.inputs["Base Color"])
+    # The game's P_ material: smoothness = mask alpha x 0.3, no reflections, normal map at 0.4.
     inv = nt.nodes.new("ShaderNodeMath")
-    inv.operation = "SUBTRACT"
-    inv.inputs[0].default_value = 1
-    nt.links.new(mask.outputs["Alpha"], inv.inputs[1])
+    inv.operation = "MULTIPLY_ADD"
+    inv.inputs[1].default_value = -0.3
+    inv.inputs[2].default_value = 1
+    nt.links.new(mask.outputs["Alpha"], inv.inputs[0])
     nt.links.new(inv.outputs[0], bsdf.inputs["Roughness"])
     nm = nt.nodes.new("ShaderNodeNormalMap")
+    nm.inputs["Strength"].default_value = 0.4
     nt.links.new(nrm.outputs["Color"], nm.inputs["Color"])
     nt.links.new(nm.outputs["Normal"], bsdf.inputs["Normal"])
     if zone == "Skin":
@@ -128,6 +135,7 @@ def load(p, skin, main, hair):
     objs = [o for o in bpy.data.objects if o not in before]
     rig = next(o for o in objs if o.type == "ARMATURE")
     rig["clips"] = [a.name for a in bpy.data.actions if a not in acts]
+    stylize(rig, objs)
     t = tints(p, skin, main, hair)
     for o in objs:
         if o.type != "MESH":

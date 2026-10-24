@@ -417,12 +417,13 @@ namespace Founders
             new Color(0.87f, 0.68f, 0.56f), new Color(0.80f, 0.60f, 0.47f), new Color(0.70f, 0.50f, 0.37f),
             new Color(0.56f, 0.39f, 0.28f), new Color(0.42f, 0.29f, 0.21f),
         };
-        // Clothing: plant and earth dyes on wool and linen (oat, weld green, woad, madder, ochre, walnut, lichen, moss).
+        // Clothing: plant and earth dyes on wool and linen (oat, weld green, woad, madder, ochre, walnut, lichen, moss),
+        // a little brighter than real dyes, as on the painted icons.
         static readonly Color[] HideTints =
         {
-            new Color(0.55f, 0.47f, 0.36f), new Color(0.42f, 0.45f, 0.30f), new Color(0.33f, 0.38f, 0.47f),
-            new Color(0.52f, 0.30f, 0.22f), new Color(0.62f, 0.55f, 0.40f), new Color(0.36f, 0.30f, 0.24f),
-            new Color(0.47f, 0.40f, 0.48f), new Color(0.30f, 0.36f, 0.33f),
+            new Color(0.66f, 0.57f, 0.42f), new Color(0.46f, 0.55f, 0.30f), new Color(0.32f, 0.45f, 0.62f),
+            new Color(0.66f, 0.31f, 0.22f), new Color(0.76f, 0.60f, 0.30f), new Color(0.45f, 0.33f, 0.24f),
+            new Color(0.52f, 0.42f, 0.58f), new Color(0.30f, 0.48f, 0.44f),
         };
         static readonly Color[] HairColors =
         {

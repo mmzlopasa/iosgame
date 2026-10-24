@@ -375,8 +375,8 @@ namespace FoundersEditor
         }
 
         /// <summary>
-        /// P_&lt;Person_Name&gt;: one lit material per villager model from its baked texture set (albedo,
-        /// normal map, mask with occlusion and smoothness), listed in Art/Resources/people.json.
+        /// P_&lt;Person_Name&gt;: one lit material per villager model from its painted texture set (albedo
+        /// repainted by tools/assets/paint_people.py, normal map, mask with occlusion and smoothness), listed in Art/Resources/people.json.
         /// Villager.Spawn shares it across the model's zones and dyes each zone with a property block.
         /// </summary>
         static void GeneratePeopleMaterials()
@@ -388,8 +388,10 @@ namespace FoundersEditor
                 var t = p.OptObj("textures");
                 if (t == null) continue;
                 string key = "P_" + Path.GetFileName(p.Str("model"));
-                var m = TexturedLit(key, t.Str("albedo"), t.Str("normal"), t.Str("mask"), Vector2.one);
-                m.SetFloat("_EnvironmentReflections", 1f);
+                // Painted figures: matte cloth and skin, the folds only hinted (no photo sheen).
+                var m = TexturedLit(key, t.Str("albedo"), t.Str("normal"), t.Str("mask"), Vector2.one, smoothness: 0.3f);
+                m.SetFloat("_BumpScale", 0.4f);
+                m.SetFloat("_EnvironmentReflections", 0f);
                 m.SetFloat("_SpecularHighlights", 1f);
                 Finish(m);
                 Save(m, $"{Materials}/{key}.mat");
