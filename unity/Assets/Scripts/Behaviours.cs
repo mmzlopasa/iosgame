@@ -390,6 +390,8 @@ namespace Founders
             need.Show(iconName);
         }
         public WorldTerrain Ground;
+        /// <summary>Moved by someone else (a trader with the caravan): no tasks of their own.</summary>
+        public bool Puppet;
         VillagerTask task;
         bool hasTask;
         readonly Queue<Vector3> route = new Queue<Vector3>();
@@ -538,8 +540,21 @@ namespace Founders
             target = transform.position;
         }
 
+        /// <summary>Places a puppet: walking (with goods on the shoulder) or standing still, facing <paramref name="facing"/>.</summary>
+        public void Steer(Vector3 position, Vector3 facing, bool walking, string carry = null)
+        {
+            transform.position = position;
+            facing.y = 0;
+            if (facing.sqrMagnitude > 1e-4f) transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(facing), 8f * Time.deltaTime);
+            ShowCarry(walking ? carry : null);
+            Play(walking ? (carry != null ? "Carry" : "Walk") : "Idle");
+            if (anim == null && customAnim == null && body != null)
+                body.localPosition = new Vector3(0, walking ? Mathf.Abs(Mathf.Sin(Time.time * 7f)) * 0.05f : 0f, 0);
+        }
+
         void Update()
         {
+            if (Puppet) return;
             if (wait > 0f)
             {
                 wait -= Time.deltaTime;

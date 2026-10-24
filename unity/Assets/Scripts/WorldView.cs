@@ -55,7 +55,7 @@ namespace Founders
     /// progress, placement preview, selection, trodden paths and villagers.
     /// It never changes game state itself.
     /// </summary>
-    public class WorldView : MonoBehaviour
+    public partial class WorldView : MonoBehaviour
     {
         GameStore store;
         public WorldTerrain Ground { get; private set; }
@@ -110,6 +110,7 @@ namespace Founders
             tallDecor.Clear();
             harvestMarkers.Clear();
             herds.Clear();
+            caravans.Clear();
             occupancyKey = null;
             selection.Clear();
             ghost.Clear();
@@ -563,6 +564,7 @@ namespace Founders
 
         void Update()
         {
+            UpdateCaravans();
             UpdateTallDecor();
             UpdateHeatOverlay();
             UpdateStokedFire();
@@ -623,6 +625,7 @@ namespace Founders
             UpdateGhost();
             UpdateFoundingGhost();
             UpdateVillagers(game);
+            SyncCaravans(game);
         }
 
         BuildingView CreateBuilding(PlacedBuilding b, BuildingDefinition def, string key)
@@ -1483,6 +1486,7 @@ namespace Founders
             // Builders, and idle people while something is being built (Manor Lords: free families build).
             if (sites.Count > 0 && (job == JobType.Construction || (job == null && index % 3 != 2)))
                 return BuildAt(sites[index % sites.Count], task, from, index);
+            if (job == null && index % 2 == 0 && MarketVisit(game, index, ref task)) return task;
             if (job == null)
             {
                 task.Spot = FreeAround(index, hearthPos, 1.6f, 2.8f);
@@ -1624,6 +1628,30 @@ namespace Founders
                     task.Action = "Talk";
                     return task;
             }
+        }
+
+        /// <summary>Where a customer stands at the market's four stalls (local to its 6×4 m square), and the stall they face.</summary>
+        static readonly (Vector3 stand, Vector3 stall)[] MarketSpots =
+        {
+            (new Vector3(-1.45f, 0f, 0.25f), new Vector3(-1.45f, 0f, 1.15f)), (new Vector3(1.45f, 0f, 0.25f), new Vector3(1.45f, 0f, 1.15f)),
+            (new Vector3(-1.6f, 0f, -0.55f), new Vector3(-2.3f, 0f, -0.55f)), (new Vector3(1.6f, 0f, -0.55f), new Vector3(2.3f, 0f, -0.55f)),
+        };
+
+        /// <summary>Free people go shopping: they stand at a market stall, chatting with the seller, and carry a basket home.</summary>
+        bool MarketVisit(Game game, int index, ref VillagerTask task)
+        {
+            var markets = game.OperationalBuildings().Where(x => (x.def.MarketReach ?? 0) > 0).Select(x => x.building).ToList();
+            if (markets.Count == 0) return false;
+            var m = markets[(index / 2) % markets.Count];
+            var center = Grid.FootprintCenter(m.X, m.Y, game.FootprintOf(m));
+            var turn = Quaternion.Euler(0f, m.Rotation * 90f, 0f);
+            var (stand, stall) = MarketSpots[Random.Range(0, MarketSpots.Length)];
+            var jitter = new Vector3(Random.Range(-0.35f, 0.35f), 0f, Random.Range(-0.1f, 0.1f));
+            task.Spot = Claim(index, Ground.OnGround(center + turn * (stand + jitter)));
+            task.Face = Ground.OnGround(center + turn * stall);
+            task.Action = Random.value < 0.6f ? "Talk" : "Idle";
+            task.Duration = Random.Range(5f, 10f);
+            return true;
         }
 
         /// <summary>

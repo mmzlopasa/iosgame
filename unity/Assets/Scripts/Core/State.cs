@@ -266,6 +266,8 @@ namespace Founders.Core
         public Dictionary<string, int> Speedups = new Dictionary<string, int>();
         /// <summary>The starter speed-ups were given (older saves get them once on load).</summary>
         public bool SpeedupStarterGiven;
+        /// <summary>Open trade routes to the peoples beyond the valley.</summary>
+        public List<TradeRoute> TradeRoutes = new List<TradeRoute>();
 
         public PlacedBuilding Building(int id) => Buildings.FirstOrDefault(b => b.Id == id);
 
@@ -368,6 +370,7 @@ namespace Founders.Core
             if (Made.Count > 0) d["made"] = Made.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (Speedups.Count > 0) d["speedups"] = Speedups.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (SpeedupStarterGiven) d["speedupStarterGiven"] = true;
+            if (TradeRoutes.Count > 0) d["tradeRoutes"] = TradeRoutes.Select(r => (object)r.ToJson()).ToList();
             return d;
         }
 
@@ -455,6 +458,7 @@ namespace Founders.Core
                 foreach (var key in sp.Keys) s.Speedups[key] = sp.Int(key);
             }
             s.SpeedupStarterGiven = o.OptBool("speedupStarterGiven", false);
+            if (o.Has("tradeRoutes")) s.TradeRoutes = o.Objs("tradeRoutes").Select(TradeRoute.FromJson).ToList();
             s.Legacy = o.Objs("legacy").Select(l => new LegacyEntry
             {
                 Id = l.Int("id"), SimTime = l.Num("simTime"), EpochId = l.Str("epochId"),

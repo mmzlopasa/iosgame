@@ -131,6 +131,14 @@ namespace Founders.Core
             int community = OperationalBuildings().Sum(x => x.def.Community ?? 0);
             if (community > 0) list.Add(new ApprovalFactor("Gathering places", Math.Min(15, community)));
 
+            // Markets: families who can fetch food and goods nearby (Foundation's market reach).
+            int market = MarketApprovalPoints();
+            if (market > 0)
+            {
+                var (served, homed) = MarketCoverage();
+                list.Add(new ApprovalFactor(served >= homed ? "Market for every home" : $"Market nearby ({served}/{homed} people)", market));
+            }
+
             // Beauty and order: fences, lanterns, flowers, monuments (Foundation's splendor).
             int beauty = Beauty();
             if (beauty > 0) list.Add(new ApprovalFactor("Beauty of the town", Math.Min(15, beauty / 2)));
