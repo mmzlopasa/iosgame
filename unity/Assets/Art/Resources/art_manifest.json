@@ -82,6 +82,446 @@
    "toon": true,
    "triangles": 2500
   },
+  "bw_bronze_workshop": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_bronze_workshop",
+   "size": [
+    2.565,
+    2.709,
+    2.278
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 6676
+  },
+  "bw_copper_smelter": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_copper_smelter",
+   "size": [
+    1.965,
+    1.422,
+    1.901
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 3212
+  },
+  "bw_daub_house": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_daub_house",
+   "size": [
+    2.987,
+    2.809,
+    2.751
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 11144
+  },
+  "bw_elders_lodge": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_elders_lodge",
+   "size": [
+    2.883,
+    3.088,
+    2.691
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 10120
+  },
+  "bw_foraging_camp": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_foraging_camp",
+   "size": [
+    1.983,
+    2.065,
+    2.467
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 7168
+  },
+  "bw_granary": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_granary",
+   "size": [
+    2.119,
+    3.152,
+    3.115
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 8196
+  },
+  "bw_healers_hut": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_healers_hut",
+   "size": [
+    2.602,
+    2.542,
+    2.598
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 9000
+  },
+  "bw_hunters_lodge": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_hunters_lodge",
+   "size": [
+    2.464,
+    2.411,
+    2.149
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 10664
+  },
+  "bw_longhouse": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_longhouse",
+   "size": [
+    4.687,
+    2.989,
+    3.275
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 18168
+  },
+  "bw_lookout_tower": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_lookout_tower",
+   "size": [
+    2.023,
+    5.049,
+    2.309
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 6172
+  },
+  "bw_pottery_kiln": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_pottery_kiln",
+   "size": [
+    2.423,
+    1.776,
+    2.026
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 3668
+  },
+  "bw_sawpit": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_sawpit",
+   "size": [
+    2.528,
+    1.977,
+    2.25
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 3516
+  },
+  "bw_shelter": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_shelter",
+   "size": [
+    2.827,
+    2.267,
+    2.621
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 4628
+  },
+  "bw_smokehouse": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_smokehouse",
+   "size": [
+    2.243,
+    2.754,
+    2.11
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 10008
+  },
+  "bw_stone_site": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_stone_site",
+   "size": [
+    2.558,
+    1.722,
+    3.029
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 2344
+  },
+  "bw_storage_pit": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_storage_pit",
+   "size": [
+    2.616,
+    1.841,
+    2.335
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 7696
+  },
+  "bw_toolmaker": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_toolmaker",
+   "size": [
+    2.824,
+    2.609,
+    2.133
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 7916
+  },
+  "bw_weavers_hut": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_weavers_hut",
+   "size": [
+    2.347,
+    2.512,
+    2.796
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 8200
+  },
+  "bw_wood_camp": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_wood_camp",
+   "size": [
+    3.215,
+    2.848,
+    3.088
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 11392
+  },
+  "bw_woven_shelter": {
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": false,
+     "mask": "Art/Textures/bw_atlas_mask.png",
+     "normal": "Art/Textures/bw_atlas_normal.png"
+    }
+   },
+   "resource": "Models/bw_woven_shelter",
+   "size": [
+    2.857,
+    2.843,
+    2.875
+   ],
+   "source": "tools/assets/blender_detailed_buildings.py (modelled for the game)",
+   "triangles": 4500
+  },
   "ceramic_pot": {
    "materialOrder": [
     "ceramic_pot"
