@@ -6,7 +6,7 @@ using UnityEngine;
 
 namespace Founders
 {
-    public enum Panel { None, Build, People, Research, Objectives, Map, Profile, Settings, Weather, Customs }
+    public enum Panel { None, Build, People, Research, Objectives, Map, Profile, Settings, Weather, Customs, Trade }
 
     /// <summary>What happened while the player was away (shown once on launch).</summary>
     public sealed class OfflineReport
@@ -435,6 +435,11 @@ namespace Founders
         public void FinishWithSpeedups(SpeedupTask task) => Perform(Game.UseSpeedupsToFinish(task).Error);
         public void ClaimMilestone(string id) => Perform(Game.ClaimMilestone(id).Error);
         public void ToggleHarvest(int x, int y) => Perform(Game.ToggleHarvestOrder(x, y).Error);
+
+        /// <summary>Opens a trade route to a people beyond the valley (pays the opening gifts).</summary>
+        public void OpenTradeRoute(string partnerId) => Perform(Game.OpenTradeRoute(partnerId).Error);
+        public void SetTradeDeal(string partnerId, int deal) => Perform(Game.SetTradeDeal(partnerId, deal).Error);
+        public void SetTradeRouteActive(string partnerId, bool active) => Perform(Game.SetTradeRouteActive(partnerId, active).Error);
 
         /// <summary>Burns the heart hot for a while (more warmth, wider reach, much more firewood).</summary>
         public void StokeHeart() => Perform(Game.StokeHeart().Error);

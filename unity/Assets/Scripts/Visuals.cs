@@ -51,6 +51,13 @@ namespace Founders
             new Spec("Fish", new Color(0.52f, 0.53f, 0.50f), 0.65f),
             new Spec("Banner", new Color(0.55f, 0.08f, 0.07f), 0.2f),
             new Spec("Cloth", new Color(0.86f, 0.82f, 0.72f), 0.15f),
+            // Market awnings and goods: madder red, weld ochre, woad blue; apples, cabbages, grain.
+            new Spec("Awning", new Color(0.64f, 0.18f, 0.13f), 0.12f),
+            new Spec("Awning2", new Color(0.80f, 0.58f, 0.22f), 0.12f),
+            new Spec("Awning3", new Color(0.26f, 0.38f, 0.56f), 0.12f),
+            new Spec("Apple", new Color(0.72f, 0.14f, 0.08f), 0.45f),
+            new Spec("Cabbage", new Color(0.38f, 0.56f, 0.22f), 0.25f),
+            new Spec("Grain", new Color(0.84f, 0.67f, 0.32f), 0.15f),
             // Fire
             new Spec("Ember", new Color(1.00f, 0.42f, 0.10f)) { Emission = new Color(1.0f, 0.38f, 0.08f) * 4f },
             // Feedback

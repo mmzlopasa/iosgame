@@ -4399,61 +4399,61 @@
    "levels": [
     {
      "cost": {
-      "wood": 30,
-      "stone": 20
+      "wood": 35,
+      "stone": 19
      },
-     "buildSeconds": 54.0
+     "buildSeconds": 56.0
     },
     {
      "cost": {
       "wood": 45,
       "stone": 25
      },
-     "buildSeconds": 67.5
+     "buildSeconds": 70.0
     },
     {
      "cost": {
-      "wood": 60,
+      "wood": 55,
       "stone": 30
      },
-     "buildSeconds": 81.0
+     "buildSeconds": 84.0
     },
     {
      "cost": {
       "wood": 70,
       "stone": 40
      },
-     "buildSeconds": 94.5
+     "buildSeconds": 98.0
     },
     {
      "cost": {
       "wood": 90,
       "stone": 50
      },
-     "buildSeconds": 121.5
+     "buildSeconds": 125.0
     },
     {
      "cost": {
-      "wood": 110,
-      "stone": 60
+      "wood": 115,
+      "stone": 65
      },
-     "buildSeconds": 154.5
+     "buildSeconds": 161.0
     },
     {
      "cost": {
       "wood": 150,
       "stone": 80,
-      "hides": 15
+      "hides": 14
      },
-     "buildSeconds": 198.0
+     "buildSeconds": 206.0
     },
     {
      "cost": {
       "wood": 195,
       "stone": 105,
-      "hides": 20
+      "hides": 18
      },
-     "buildSeconds": 253.5
+     "buildSeconds": 263.0
     },
     {
      "cost": {
@@ -4461,7 +4461,7 @@
       "stone": 140,
       "hides": 25
      },
-     "buildSeconds": 324.0
+     "buildSeconds": 337.0
     },
     {
      "cost": {
@@ -4469,43 +4469,43 @@
       "stone": 180,
       "hides": 30
      },
-     "buildSeconds": 415.5
+     "buildSeconds": 431.0
     },
     {
      "cost": {
       "wood": 420,
       "stone": 240,
-      "hides": 45,
-      "ore": 60
+      "hides": 40,
+      "ore": 55
      },
-     "buildSeconds": 532.5
+     "buildSeconds": 552.0
     },
     {
      "cost": {
-      "wood": 555,
-      "stone": 300,
+      "wood": 550,
+      "stone": 310,
       "hides": 50,
-      "ore": 75
+      "ore": 70
      },
-     "buildSeconds": 681.0
+     "buildSeconds": 706.0
     },
     {
      "cost": {
       "wood": 720,
       "stone": 400,
-      "hides": 75,
-      "ore": 100
+      "hides": 65,
+      "ore": 90
      },
-     "buildSeconds": 871.5
+     "buildSeconds": 904.0
     },
     {
      "cost": {
       "wood": 930,
-      "stone": 510,
-      "hides": 90,
-      "ore": 130
+      "stone": 520,
+      "hides": 85,
+      "ore": 115
      },
-     "buildSeconds": 1116.0
+     "buildSeconds": 1157.0
     }
    ]
   },
@@ -5828,10 +5828,10 @@
     },
     {
      "cost": {
-      "wood": 160,
+      "wood": 155,
       "stone": 100
      },
-     "buildSeconds": 162.0
+     "buildSeconds": 161.0
     },
     {
      "cost": {
@@ -5843,8 +5843,8 @@
     {
      "cost": {
       "wood": 260,
-      "stone": 160,
-      "hides": 15
+      "stone": 165,
+      "hides": 25
      },
      "buildSeconds": 264.0
     },
@@ -5852,68 +5852,68 @@
      "cost": {
       "wood": 340,
       "stone": 210,
-      "hides": 20
+      "hides": 35
      },
      "buildSeconds": 338.0
     },
     {
      "cost": {
-      "wood": 440,
-      "stone": 275,
-      "hides": 25
+      "wood": 450,
+      "stone": 280,
+      "hides": 45
      },
-     "buildSeconds": 432.0
+     "buildSeconds": 433.0
     },
     {
      "cost": {
       "wood": 580,
       "stone": 360,
-      "hides": 35
+      "hides": 55
      },
      "buildSeconds": 554.0
     },
     {
      "cost": {
-      "wood": 760,
-      "stone": 475,
-      "hides": 45,
-      "ore": 60
+      "wood": 750,
+      "stone": 470,
+      "hides": 75,
+      "ore": 100
      },
-     "buildSeconds": 710.0
+     "buildSeconds": 709.0
     },
     {
      "cost": {
       "wood": 980,
       "stone": 610,
-      "hides": 60,
-      "ore": 80
+      "hides": 95,
+      "ore": 125
      },
      "buildSeconds": 908.0
     },
     {
      "cost": {
-      "wood": 1280,
+      "wood": 1270,
       "stone": 800,
-      "hides": 75,
-      "ore": 100
+      "hides": 125,
+      "ore": 165
      },
      "buildSeconds": 1162.0
     },
     {
      "cost": {
-      "wood": 1660,
-      "stone": 1040,
-      "hides": 100,
-      "ore": 130
+      "wood": 1650,
+      "stone": 1030,
+      "hides": 160,
+      "ore": 220
      },
      "buildSeconds": 1488.0
     },
     {
      "cost": {
-      "wood": 2160,
-      "stone": 1350,
-      "hides": 130,
-      "ore": 170
+      "wood": 2150,
+      "stone": 1340,
+      "hides": 210,
+      "ore": 280
      },
      "buildSeconds": 1904.0
     },
@@ -5921,37 +5921,37 @@
      "cost": {
       "wood": 2800,
       "stone": 1750,
-      "hides": 170,
-      "ore": 220
+      "hides": 270,
+      "ore": 360
      },
-     "buildSeconds": 2438.0
+     "buildSeconds": 2437.0
     },
     {
      "cost": {
-      "wood": 3640,
-      "stone": 2275,
-      "hides": 220,
-      "ore": 290
+      "wood": 3650,
+      "stone": 2250,
+      "hides": 350,
+      "ore": 470
      },
      "buildSeconds": 3120.0
     },
     {
      "cost": {
       "wood": 4700,
-      "stone": 2940,
-      "hides": 280,
-      "ore": 380
+      "stone": 2950,
+      "hides": 460,
+      "ore": 610
      },
-     "buildSeconds": 3994.0
+     "buildSeconds": 3993.0
     },
     {
      "cost": {
-      "wood": 6100,
-      "stone": 3810,
-      "hides": 370,
-      "ore": 490
+      "wood": 6150,
+      "stone": 3850,
+      "hides": 600,
+      "ore": 800
      },
-     "buildSeconds": 5112.0
+     "buildSeconds": 5111.0
     }
    ]
   },

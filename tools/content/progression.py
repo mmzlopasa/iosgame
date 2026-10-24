@@ -110,7 +110,7 @@ LOOKS = {
 }
 
 # Buildings with a shorter ladder (big monuments and special sites).
-MAX_LEVEL = {"medieval_church": 10, "medieval_market": 15, "community_circle": 15, "elders_lodge": 15,
+MAX_LEVEL = {"medieval_church": 10, "medieval_market": 15, "community_circle": 15, "elders_lodge": 15, "market": 15,
              "bronze_workshop": 15, "medieval_mill": 15, "medieval_smithy": 15}
 
 
@@ -242,7 +242,7 @@ RESEARCH = {
     "improved_stone_tools": (1, 4, 15), "food_preservation": (1, 4, 15),
     "structural_weaving": (3, 6, 25), "shared_labor": (4, 6, 30),
     "fishing": (4, 8, 35), "hide_working": (5, 8, 40), "permanent_settlement": (7, 12, 60),
-    "oral_tradition": (8, 12, 70), "longhouses": (10, 16, 90), "agriculture": (12, 20, 110),
+    "oral_tradition": (8, 12, 70), "barter": (9, 15, 80), "trade_routes": (15, 25, 150), "longhouses": (10, 16, 90), "agriculture": (12, 20, 110),
     "animal_husbandry": (14, 24, 130), "pottery": (15, 24, 140), "copper_smelting": (16, 30, 170),
     "bronze_working": (18, 40, 220), "written_law": (24, 60, 320), "masonry": (30, 60, 360),
     "ironworking": (30, 75, 400), "watermill": (30, 75, 400), "animal_breeding": (30, 75, 400),
