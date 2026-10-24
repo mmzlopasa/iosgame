@@ -179,6 +179,7 @@ Generatora mapa više nema: nova igra počinje na **tvojoj** dolini. Mapu nacrta
 - Zemlje za istraživanje (64 komada 16×16 polja) igra sama izreže i imenuje iz tvoje mape.
 - **Stare igre ostaju na svojoj dolini** (stara dolina i generirane doline se i dalje učitavaju). Tvoja mapa vrijedi za **novu igru**. Ako kasnije promijeniš mapu, igra koja je već na njoj se učita na novoj verziji – ako je neka zgrada sad u vodi, igra pokrene novi kamp i sačuva kopiju.
 - Bez `Map.png` igra koristi svoju dolinu (Long Valley).
+- Sada je ovdje već dolina **Green Hollow** (nacrtana skriptom `tools/map/foundation_valley.py`, u stilu Foundationa). Svoju mapu samo stavi preko nje (isto ime `Map.png`).
 
 ## 9. Provjera
 
