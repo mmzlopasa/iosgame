@@ -80,9 +80,9 @@ namespace Founders
         const float MaxDistance = 150f;
         /// <summary>Extra tilt the player added (two fingers up/down): negative looks flatter, positive more from above.</summary>
         float tilt;
-        /// <summary>Flatter as the camera pulls back to 80 m; further out it looks more from above, like a map of the whole valley.</summary>
+        /// <summary>Flatter as the camera pulls back: far out it looks across the valley to the hills (as in Foundation).</summary>
         float Pitch => Mathf.Clamp((distance <= 80f ? Mathf.Lerp(52f, 40f, Mathf.InverseLerp(MinDistance, 80f, distance))
-                                                    : Mathf.Lerp(40f, 52f, Mathf.InverseLerp(80f, MaxDistance, distance))) + tilt, 22f, 82f);
+                                                    : Mathf.Lerp(40f, 34f, Mathf.InverseLerp(80f, MaxDistance, distance))) + tilt, 22f, 82f);
         /// <summary>Compass heading of the camera; the player turns it freely with two fingers.</summary>
         public static float Yaw { get; private set; } = -45f;
         float lastTwist;

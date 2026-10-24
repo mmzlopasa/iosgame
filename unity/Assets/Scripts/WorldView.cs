@@ -154,6 +154,13 @@ namespace Founders
             var map = store.Game.Content.Map;
             var kit = NatureKit.Current;
             nature = Parts.Group("Nature", transform, Vector3.zero).AddComponent<NatureField>();
+            if (kit != null)
+            {
+                PlantKitNature(kit, map);
+                nature.Build();
+                Debug.Log($"[FOUNDERS] nature: {nature.Count} objects");
+                return;
+            }
             for (int cy = -NatureMargin; cy < map.Height + NatureMargin; cy++)
             {
                 for (int cx = -NatureMargin; cx < map.Width + NatureMargin; cx++)
@@ -163,8 +170,7 @@ namespace Founders
                     // Outside the map only some cells get props (far away nobody counts them).
                     if (!inside && (cx + cy) % 2 != 0) continue;
                     var rng = new System.Random(cx * 73856093 ^ cy * 19349663 ^ 0x5bd1e995);
-                    if (kit != null) PopulateKitCell(kit, type, cx, cy, rng, inside);
-                    else PopulateCell(type, cx, cy, rng, inside);
+                    PopulateCell(type, cx, cy, rng, inside);
                 }
             }
             nature.Build();
@@ -277,272 +283,51 @@ namespace Founders
             return kitTints[key] = m;
         }
 
-        int NeighbourCount(int cx, int cy, TerrainType t)
+        /// <summary>
+        /// The valley drawn with the nature packs: every tree, bush and stone where <see cref="NaturePlan"/>
+        /// says it grows (woods, wood edges, lone trees, outcrops, beaches), standing on the terrain.
+        /// </summary>
+        void PlantKitNature(NatureKit kit, MapDefinition map)
         {
-            int n = 0;
-            for (int dy = -1; dy <= 1; dy++)
-                for (int dx = -1; dx <= 1; dx++)
-                    if ((dx != 0 || dy != 0) && Ground.CellType(cx + dx, cy + dy) == t) n++;
-            return n;
+            var berries = store.Game.NodeKinds.FirstOrDefault(k => k.Id == "berries" && k.Capacity > 0);
+            var plan = NaturePlan.Make(map.Width, map.Height, NatureMargin, Ground.CellType,
+                (x, y) => berries != null && Game.HasFeature(berries, x, y),
+                (x, z) => Ground.HeightAt(new Vector3(x, 0f, z)));
+            foreach (var item in plan.Items)
+            {
+                var list = kit.Group(item.Group);
+                if (list.Count == 0) continue;
+                var prefab = list[item.Variant % Mathf.Min(list.Count, 3)];
+                var p = new Vector3(item.X, 0f, item.Z);
+                p.y = item.OnWater ? WorldTerrain.WaterLevel + 0.01f : Ground.HeightAt(p) + item.Lift;
+                Material tint = item.Tint switch
+                {
+                    "iron" => KitTint(kit, "KitIronOre", new Color(0.95f, 0.58f, 0.42f)),
+                    "copper" => KitTint(kit, "KitCopperOre", new Color(0.62f, 0.85f, 0.7f)),
+                    "berry" => KitTint(kit, "KitBerry", new Color(0.78f, 0.12f, 0.22f)),
+                    "stone" => StoneTint(kit, prefab),
+                    _ => null,
+                };
+                nature.AddKit(prefab, item.Id, p, item.Size, item.ByWidth ? NatureField.Fit.Width : NatureField.Fit.Height, item.Yaw,
+                              item.Cx, item.Cy, item.Tree, item.Shadows, tint, item.Sink, new Vector2(item.LeanX, item.LeanZ));
+            }
         }
 
+        static readonly Dictionary<Material, Material> stoneTints = new Dictionary<Material, Material>();
+
         /// <summary>
-        /// The valley drawn with the nature packs only. Sizes are real-world metres (a cell is 2 m).
-        /// Nature grows the way it does outdoors rather than one thing per cell: woods in stands of
-        /// one kind (firs on the cold, high and northern ground, oaks and birches in the warm
-        /// lowlands and by the water) that are thick inside, ragged at the edge and open in glades;
-        /// bushes and young trees where woods meet meadow, ferns in the shade; boulders on the stony
-        /// hills in outcrops with smaller stones and scree around them; flowers in drifts in some
-        /// meadows only; reeds and lilies in clumps along the river and the lake.
+        /// The Starter pack's stones are drawn from its colour palette, nearly white: a slate-grey copy for
+        /// them (the PRO stones have their own darkened texture and keep it).
         /// </summary>
-        void PopulateKitCell(NatureKit kit, TerrainType type, int cx, int cy, System.Random rng, bool inside)
+        static Material StoneTint(NatureKit kit, GameObject prefab)
         {
-            float yaw() => (float)rng.NextDouble() * 360f;
-            float r01() => (float)rng.NextDouble();
-            var c = Grid.CellCenter(cx, cy);
-            void Put(string group, Vector3 p, float size, NatureField.Fit fit = NatureField.Fit.Height, string id = null,
-                     bool shadows = true, Material tint = null, float sink = 0f)
-            {
-                var prefab = kit.Pick(group, rng);
-                if (prefab != null) nature.AddKit(prefab, id ?? "kit_" + group, p, size, fit, yaw(), cx, cy, false, shadows, tint, sink);
-            }
-            // A stone half sunk into the ground and leaning a little, as stones lie outdoors.
-            void Stone(string group, Vector3 p, float width, Material tint = null, string id = "kit_rock", bool shadows = true)
-            {
-                var prefab = kit.Pick(group, rng);
-                if (prefab == null) return;
-                var lean = new Vector2((r01() - 0.5f) * 24f, (r01() - 0.5f) * 24f);
-                nature.AddKit(prefab, id, p, width, NatureField.Fit.Width, yaw(), cx, cy, false, shadows, tint, 0.28f + r01() * 0.12f, lean);
-            }
-            void Tree(string group, Vector3 p, float height)
-            {
-                var prefab = kit.Pick(group, rng);
-                if (prefab != null) nature.AddKit(prefab, "kit_tree", p, height, NatureField.Fit.Height, yaw(), cx, cy, true);
-            }
-            // Smooth fields over the valley: neighbouring cells get alike values, so things come in patches.
-            float Field(float scale, float seed) => Mathf.PerlinNoise(cx * scale + seed, cy * scale + seed * 1.37f);
-            // Anywhere in the cell (it stays in its own cell: work and footprints count by cell).
-            Vector3 Anywhere() => Jitter(c, rng, 1.9f);
-            // Spots in the cell at least this far apart (trees of a cell never grow into each other).
-            var taken = new List<Vector3>(4);
-            Vector3 Spaced(float apart)
-            {
-                var p = Anywhere();
-                for (int i = 0; i < 6 && taken.Any(q => (q - p).sqrMagnitude < apart * apart); i++) p = Anywhere();
-                taken.Add(p);
-                return p;
-            }
-            // Something small lying beside a bigger thing (stones by a boulder, a mushroom by a log).
-            Vector3 Beside(Vector3 p, float min, float max)
-            {
-                float a = r01() * Mathf.PI * 2f, d = min + r01() * (max - min);
-                var q = p + new Vector3(Mathf.Cos(a) * d, 0f, Mathf.Sin(a) * d);
-                q.x = Mathf.Clamp(q.x, c.x - 0.95f, c.x + 0.95f);
-                q.z = Mathf.Clamp(q.z, c.z - 0.95f, c.z + 0.95f);
-                return Ground.OnGround(q);
-            }
-
-            // Which trees grow here: firs in the north, the hills and the mountains' feet; elsewhere
-            // stands of broadleaf or birch (a few trees of another kind among them).
-            float cold = Mathf.PerlinNoise(cx * 0.06f + 7.3f, cy * 0.06f + 2.1f) + Mathf.Clamp01((24f - cy) / 40f) * 0.35f;
-            float stand = Field(0.08f, 21f);
-            string Species()
-            {
-                if (cold > 0.62f || NeighbourCount(cx, cy, TerrainType.Mountain) > 0) return rng.Next(10) == 0 ? "birch" : "fir";
-                if (NeighbourCount(cx, cy, TerrainType.Water) > 0 && rng.Next(2) == 0) return "birch";
-                if (rng.Next(7) == 0) { float pick = r01(); return pick < 0.35f ? "fir" : pick < 0.7f ? "broadleaf" : "birch"; }
-                return stand < 0.42f ? "fir" : stand < 0.64f ? "broadleaf" : "birch";
-            }
-            float Height(string species) => species == "fir" ? 8f + r01() * 4f : species == "birch" ? 7f + r01() * 3f : 6.5f + r01() * 3f;
-
-            switch (type)
-            {
-                case TerrainType.Forest:
-                {
-                    // Beyond the map only some of the woods get trees: the valley walls read as woods, not a wall.
-                    if (!inside && rng.Next(3) == 0) break;
-                    int depth = NeighbourCount(cx, cy, TerrainType.Forest);
-                    bool edge = depth < 6;
-                    // Thick woods and thin woods; now and then a glade inside.
-                    float thick = Field(0.13f, 3.1f);
-                    int count;
-                    if (edge) count = r01() < 0.5f + 0.35f * thick ? 1 : 0;
-                    else if (thick < 0.3f) count = rng.Next(3) == 0 ? 1 : 0;
-                    else count = 1 + (thick > 0.5f && rng.Next(2) == 0 ? 1 : 0) + (inside && thick > 0.7f && rng.Next(3) == 0 ? 1 : 0);
-                    // Old trees inside the wood, younger and smaller ones at its edge.
-                    float age = edge ? 0.78f + r01() * 0.17f : 0.95f + thick * 0.2f;
-                    for (int i = 0; i < count; i++)
-                    {
-                        var p = Spaced(count > 2 ? 1.0f : 1.3f);
-                        if (!edge && rng.Next(40) == 0) { Tree("dead_tree", p, 6f + r01() * 3f); continue; }
-                        var species = Species();
-                        if (edge && rng.Next(4) == 0)
-                        {
-                            bool fir = species == "fir";
-                            Tree(fir ? "fir_young" : "birch", p, fir ? 2.5f + r01() * 1.5f : 4.5f + r01() * 1.5f);
-                            continue;
-                        }
-                        Tree(species, p, Height(species) * age * (count > 1 ? 0.9f : 1f));
-                    }
-                    if (!inside) break;
-                    // Undergrowth: ferns in the shade inside, a thicket of bushes in the light at the edge.
-                    float shade = edge ? 0.25f : 0.6f;
-                    if (r01() < shade)
-                    {
-                        var f = Anywhere();
-                        Put("fern", f, 0.5f + r01() * 0.4f, shadows: false);
-                        if (!edge && rng.Next(2) == 0) Put("fern", Beside(f, 0.4f, 0.8f), 0.4f + r01() * 0.3f, shadows: false);
-                    }
-                    if (rng.Next(edge ? 3 : 8) == 0) Put(edge && rng.Next(4) == 0 ? "bush_flower" : "bush", Anywhere(), 0.9f + r01() * 0.5f);
-                    // Fallen wood, with mushrooms growing on the damp side of it.
-                    int wood = rng.Next(14);
-                    if (wood == 0 || wood == 1)
-                    {
-                        var w = Anywhere();
-                        if (wood == 0) Put("log", w, 2.2f + r01() * 1.2f, NatureField.Fit.Width);
-                        else Put("stump", w, 0.5f + r01() * 0.3f);
-                        if (rng.Next(2) == 0) Put("mushroom", Beside(w, 0.4f, 0.9f), 0.15f + r01() * 0.1f, shadows: false);
-                    }
-                    else if (wood < 4) Put("branch", Anywhere(), 0.8f + r01() * 0.6f, NatureField.Fit.Width, shadows: false);
-                    else if (!edge && rng.Next(9) == 0) Put("mushroom", Anywhere(), 0.15f + r01() * 0.1f, shadows: false);
-                    break;
-                }
-                case TerrainType.Rock:
-                {
-                    // Outcrops here and there: a boulder half in the ground with smaller stones and scree
-                    // around it; mostly gravel and a little grass between them (never rows of upright stones).
-                    float outcrop = Field(0.21f, 9f);
-                    if (outcrop > 0.6f && rng.Next(3) != 0)
-                    {
-                        var b = Anywhere();
-                        float big = 1.1f + (outcrop - 0.6f) * 4f + r01() * 0.9f;
-                        Stone("rock", b, big);
-                        if (rng.Next(2) == 0) Stone("rock", Beside(b, big * 0.45f, big * 0.75f), big * (0.3f + r01() * 0.25f));
-                        Put("pebble", Beside(b, big * 0.5f, big * 0.9f), 0.25f + r01() * 0.3f, NatureField.Fit.Width, shadows: false, sink: 0.15f);
-                    }
-                    else
-                    {
-                        if (rng.Next(6) == 0) Stone("rock", Anywhere(), 0.6f + r01() * 0.5f);
-                        if (rng.Next(2) == 0) Put("pebble", Anywhere(), 0.3f + r01() * 0.35f, NatureField.Fit.Width, shadows: false, sink: 0.1f);
-                        if (rng.Next(3) == 0) Put("grass", Anywhere(), 0.35f + r01() * 0.2f, shadows: false);
-                    }
-                    if (rng.Next(14) == 0) Put("bush_dead", Anywhere(), 0.7f + r01() * 0.4f);
-                    break;
-                }
-                case TerrainType.Ore:
-                {
-                    // Veins of rusty iron and green copper stone at the mountain foot, broken stone around them.
-                    var ore = Field(0.25f, 40f) < 0.35f ? KitTint(kit, "KitCopperOre", new Color(0.62f, 0.85f, 0.7f)) : KitTint(kit, "KitIronOre", new Color(0.95f, 0.58f, 0.42f));
-                    var b = Jitter(c, rng, 1.2f);
-                    float big = 0.9f + r01() * 0.6f;
-                    Stone("rock", b, big, ore);
-                    for (int i = 0; i < 2; i++) Put("pebble", Beside(b, big * 0.5f, big * 1.1f), 0.3f + r01() * 0.3f, NatureField.Fit.Width, shadows: false, tint: ore, sink: 0.1f);
-                    break;
-                }
-                case TerrainType.Mountain:
-                {
-                    var p = Anywhere();
-                    // Firs climb the lower slopes in groups; cliffs stand together in crags, scree between them.
-                    if (p.y < 7f && Field(0.15f, 55f) > 0.45f && rng.Next(2) == 0) Tree("fir", p, (7f + r01() * 3f) * Mathf.Lerp(1f, 0.75f, p.y / 7f));
-                    // Cliffs only on the valley walls beyond the map, deep in the ground; in the valley
-                    // big stones lie in the scree instead.
-                    else if (!inside && Field(0.12f, 61f) > 0.55f && rng.Next(2) == 0) Put("cliff", p, 4f + r01() * 3f, NatureField.Fit.Width, "kit_cliff", sink: 0.4f);
-                    else if (rng.Next(4) == 0) Stone("rock", p, 1.2f + r01() * 1.4f);
-                    break;
-                }
-                case TerrainType.Sand:
-                {
-                    // Beds of reeds where the bank meets the water, pebbles and driftwood on the beach.
-                    if (NeighbourCount(cx, cy, TerrainType.Water) > 0 && Field(0.2f, 77f) > 0.45f)
-                    {
-                        var r = Anywhere();
-                        int n = 1 + rng.Next(3);
-                        for (int i = 0; i < n; i++) Put("reeds", i == 0 ? r : Beside(r, 0.3f, 0.7f), 1.0f + r01() * 0.6f, shadows: false);
-                    }
-                    if (rng.Next(3) == 0) Put("pebble", Anywhere(), 0.25f + r01() * 0.3f, NatureField.Fit.Width, shadows: false, sink: 0.1f);
-                    if (rng.Next(14) == 0) Put("branch", Anywhere(), 1.0f + r01() * 0.6f, NatureField.Fit.Width, shadows: false);
-                    break;
-                }
-                case TerrainType.Water:
-                {
-                    // Water lilies in pads of a few in the quiet water of the lake (not in the running river).
-                    if (inside && NeighbourCount(cx, cy, TerrainType.Water) >= 7 && Field(0.18f, 91f) > 0.6f && rng.Next(3) == 0)
-                    {
-                        var p0 = c + new Vector3((r01() - 0.5f) * 1.2f, 0f, (r01() - 0.5f) * 1.2f);
-                        int n = 1 + rng.Next(3);
-                        for (int i = 0; i < n; i++)
-                        {
-                            var p = i == 0 ? p0 : p0 + new Vector3((r01() - 0.5f) * 1.1f, 0f, (r01() - 0.5f) * 1.1f);
-                            p.y = WorldTerrain.WaterLevel + 0.01f;
-                            Put("lily", p, 0.6f + r01() * 0.4f, NatureField.Fit.Width, shadows: false);
-                        }
-                    }
-                    break;
-                }
-                case TerrainType.Grass:
-                {
-                    // Berry bushes the foragers pick (the same cells the game counts as food).
-                    var berries = store.Game.NodeKinds.FirstOrDefault(k => k.Id == "berries" && k.Capacity > 0);
-                    if (inside && berries != null && Game.HasFeature(berries, cx, cy))
-                    {
-                        var p = Jitter(c, rng, 0.9f);
-                        var bush = kit.Pick("bush", rng);
-                        if (bush != null) nature.AddKit(bush, "kit_berry_bush", p, 1.0f + r01() * 0.3f, NatureField.Fit.Height, yaw(), cx, cy);
-                        var berry = KitTint(kit, "KitBerry", new Color(0.78f, 0.12f, 0.22f));
-                        for (int i = 0; i < 9; i++)
-                            Put("pebble", p + new Vector3((r01() - 0.5f) * 0.9f, 0.45f + r01() * 0.4f, (r01() - 0.5f) * 0.9f), 0.07f,
-                                NatureField.Fit.Width, "kit_berry", false, berry);
-                        break;
-                    }
-                    // Where the wood meets the meadow: young trees spreading out, bushes in the light.
-                    int woods = NeighbourCount(cx, cy, TerrainType.Forest);
-                    if (woods > 0)
-                    {
-                        if (rng.Next(woods >= 3 ? 5 : 11) == 0)
-                        {
-                            Tree(cold > 0.55f ? "fir_young" : "birch", Anywhere(), cold > 0.55f ? 2.5f + r01() * 1.5f : 4.5f + r01() * 1.5f);
-                            break;
-                        }
-                        if (rng.Next(woods >= 3 ? 3 : 6) == 0) { Put(rng.Next(3) == 0 ? "bush_flower" : "bush", Anywhere(), 0.8f + r01() * 0.5f); break; }
-                    }
-                    // Stones roll down from the stony hills into the grass beside them.
-                    int stony = NeighbourCount(cx, cy, TerrainType.Rock);
-                    if (stony >= 2 && rng.Next(5) == 0)
-                    {
-                        Put("pebble", Anywhere(), 0.3f + r01() * 0.3f, NatureField.Fit.Width, shadows: false, sink: 0.1f);
-                        if (rng.Next(3) == 0) Stone("rock", Anywhere(), 0.5f + r01() * 0.4f);
-                        break;
-                    }
-                    // Damp ground by the water: tall grass and reeds.
-                    if (NeighbourCount(cx, cy, TerrainType.Water) + NeighbourCount(cx, cy, TerrainType.Sand) > 0 && rng.Next(4) == 0)
-                    {
-                        Put(rng.Next(3) == 0 ? "reeds" : "grass_tall", Anywhere(), 0.7f + r01() * 0.4f, shadows: false);
-                        break;
-                    }
-                    // Open meadow, no trees, so the player decides what goes where. Flowers only in some
-                    // meadows (the same ones where the grass flowers), a drift of one kind across cells.
-                    float meadow = Mathf.Clamp01((Mathf.PerlinNoise(c.x * 0.045f + 31f, c.z * 0.045f + 17f) - 0.5f) * 4f);
-                    if (meadow > 0f && r01() < 0.45f * meadow)
-                    {
-                        var flowers = kit.Group("flowers");
-                        if (flowers.Count > 0)
-                        {
-                            var flower = flowers[(int)(Mathf.PerlinNoise(c.x * 0.03f + 71f, c.z * 0.03f + 3f) * flowers.Count * 1.4f) % Mathf.Min(flowers.Count, 3)];
-                            var p0 = Anywhere();
-                            int n = 2 + rng.Next(4);
-                            for (int i = 0; i < n; i++)
-                                nature.AddKit(flower, "kit_flowers", Beside(p0, 0f, 0.8f), 0.3f + r01() * 0.2f, NatureField.Fit.Height, yaw(), cx, cy, false, false);
-                        }
-                        break;
-                    }
-                    int r = rng.Next(22);
-                    if (r == 0) Put("bush", Anywhere(), 0.8f + r01() * 0.5f);
-                    else if (r == 1 && !inside && rng.Next(2) == 0) Tree("broadleaf", Anywhere(), 7f + r01() * 2f);
-                    else if (r < 4 && Field(0.1f, 101f) > 0.5f) Put("clover", Anywhere(), 0.25f, NatureField.Fit.Height, shadows: false);
-                    else if (r < 6 && Field(0.11f, 113f) > 0.55f) Put("grass_tall", Anywhere(), 0.6f + r01() * 0.3f, shadows: false);
-                    break;
-                }
-            }
+            var r = prefab.GetComponentInChildren<MeshRenderer>(true);
+            var src = r != null ? kit.Convert(r.sharedMaterial) : null;
+            if (src == null || src.name.IndexOf("Palette", System.StringComparison.OrdinalIgnoreCase) < 0) return null;
+            if (stoneTints.TryGetValue(src, out var m) && m != null) return m;
+            m = new Material(src) { name = src.name + "_Stone", enableInstancing = true };
+            if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", new Color(0.6f, 0.64f, 0.7f));
+            return stoneTints[src] = m;
         }
 
         // MARK: - Sync

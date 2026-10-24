@@ -158,7 +158,18 @@ namespace FoundersEditor
                     m.SetTexture("_BaseMap", tex);
                     if (src.HasProperty("_MainTex")) m.SetTextureScale("_BaseMap", src.GetTextureScale("_MainTex"));
                 }
-                m.SetColor("_BaseColor", Col(src, Color.white, "_MainColor", "_Color", "_BaseColor"));
+                var color = Col(src, Color.white, "_MainColor", "_Color", "_BaseColor");
+                // PRO's leaves blend from a dark base colour to a light, sunny one up the crown (its own shader);
+                // URP/Lit has one colour: most of the way to the light one, warmed towards Foundation's yellow-green.
+                string leafName = src.name.ToLowerInvariant();
+                if (src.HasProperty("_SecondColor") && (leafName.Contains("lea") || leafName.Contains("branch") || leafName.Contains("grass") ||
+                                                         leafName.Contains("fern") || leafName.Contains("reeds") || leafName.Contains("clover")))
+                {
+                    var light = src.GetColor("_SecondColor");
+                    var mixed = Color.Lerp(color, light, 0.6f) * 1.1f;
+                    color = new Color(Mathf.Min(1f, mixed.r * 1.08f), Mathf.Min(1f, mixed.g * 1.06f), Mathf.Min(1f, mixed.b * 0.75f), 1f);
+                }
+                m.SetColor("_BaseColor", color);
                 var normal = Tex(src, "_BumpMap", "_NormalMap", "_Normal");
                 if (normal != null) { m.SetTexture("_BumpMap", normal); m.SetFloat("_BumpScale", Num(src, 1f, "_BumpScale", "_NormalStrength")); }
                 m.SetFloat("_Metallic", 0f);

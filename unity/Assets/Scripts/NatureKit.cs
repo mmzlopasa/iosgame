@@ -172,7 +172,8 @@ namespace Founders
             ["grass"] = new[] { "Grass_01_Low", "Grass_01_Medium", "Grass_02", "UNS_Grass" },
             ["grass_tall"] = new[] { "Grass_01_High", "Grass_01_Medium" },
             ["reeds"] = new[] { "Grass_Reeds", "Plant_Reeds" },
-            ["flowers"] = new[] { "Flower_Poppy", "Flower_Lavender", "Flower_Cherry_Blossom", "UNS_Flower" },
+            // No pink cherry blossom drifts: they read as litter on the meadow.
+            ["flowers"] = new[] { "Flower_Lavender", "UNS_Flower", "Flower_Poppy" },
             ["fern"] = new[] { "Plant_Fern_Low", "Plant_Fern_High" },
             ["clover"] = new[] { "Plant_Clovers" },
             ["lily"] = new[] { "Plant_Water_Lily" },
@@ -182,6 +183,11 @@ namespace Founders
                                "UNS_Standard_Rock_03", "UNS_Standard_Rock_04", "UNS_Standard_Rock_05" },
             ["pebble"] = new[] { "Rock_Small_01", "Rock_Small_02", "Rock_Small_03", "UNS_Tiny_Rock_01", "UNS_Tiny_Rock_02",
                                  "UNS_Tiny_Rock_03", "UNS_Tiny_Rock_04", "UNS_Tiny_Rock_05" },
+            // Round boulders lying in the grass (the tall Rock_Large_01/03 stood up like gravestones).
+            ["boulder"] = new[] { "UNS_Standard_Rock_01", "Rock_Large_02", "UNS_Standard_Rock_02", "UNS_Standard_Rock_03", "UNS_Standard_Rock_04", "UNS_Standard_Rock_05" },
+            // Tall crags for the heart of an outcrop, and flat mossy slabs at their foot.
+            ["crag"] = new[] { "UNS_Rock_Cliff_01", "UNS_Rock_Cliff_02", "UNS_Rock_Cliff_03", "UNS_Rock_Cliff_04", "UNS_Rock_Cliff_05" },
+            ["slab"] = new[] { "Rock_Cliff_01", "Rock_Cliff_02", "Rock_Cliff_03" },
             ["cliff"] = new[] { "Rock_Cliff_01", "Rock_Cliff_02", "Rock_Cliff_03", "UNS_Rock_Cliff_01", "UNS_Rock_Cliff_02",
                                 "UNS_Rock_Cliff_03", "UNS_Rock_Cliff_04", "UNS_Rock_Cliff_05" },
             ["log"] = new[] { "Tree_Fir_Log", "Tree_Birch_Log", "Tree_Broadleaf_Log", "UNS_Log" },
