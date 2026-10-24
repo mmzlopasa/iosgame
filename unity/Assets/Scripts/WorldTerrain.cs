@@ -78,7 +78,7 @@ namespace Founders
                         tileSize = l.tileSize, normalScale = 1f, smoothness = l.smoothness, metallic = 0f,
                     };
                 }
-                layers.Add(l);
+                layers.Add(Matte(l));
             }
             data.terrainLayers = layers.ToArray();
 
@@ -103,6 +103,31 @@ namespace Founders
             Debug.Log($"[FOUNDERS] terrain: material={(mat != null ? mat.name : "none")} shader={(shader != null ? shader.name : "none")} " +
                       $"supported={(shader != null && shader.isSupported)} layers={string.Join(",", data.terrainLayers.Select(l => l != null && l.diffuseTexture != null ? l.diffuseTexture.name : "null"))} " +
                       $"height(center)={HeightAt(center):0.00} water={WaterLevel}");
+        }
+
+        static readonly Dictionary<TerrainLayer, TerrainLayer> matteLayers = new Dictionary<TerrainLayer, TerrainLayer>();
+
+        /// <summary>
+        /// A matte copy of a ground layer. The game's own sand, riverbed and rock layers (the packs
+        /// have none for those) were made partly smooth, so the stony hills and the beaches shone
+        /// like wet glass in the sun; painted ground has no shine at all.
+        /// </summary>
+        static TerrainLayer Matte(TerrainLayer l)
+        {
+            if (l.smoothness <= 0f && l.metallic <= 0f && l.maskMapTexture == null && l.normalScale <= 0.6f) return l;
+            if (matteLayers.TryGetValue(l, out var m) && m != null) return m;
+            return matteLayers[l] = new TerrainLayer
+            {
+                name = l.name + "_Matte",
+                diffuseTexture = l.diffuseTexture,
+                normalMapTexture = l.normalMapTexture,
+                normalScale = Mathf.Min(l.normalScale, 0.6f),
+                tileSize = l.tileSize,
+                tileOffset = l.tileOffset,
+                smoothness = 0f,
+                metallic = 0f,
+                specular = Color.black,
+            };
         }
 
         /// <summary>Ground height (world y) at a world position.</summary>

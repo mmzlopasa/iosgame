@@ -163,6 +163,9 @@ namespace Founders
             public int Cx, Cy;
             public bool Tree;
             public bool NearCamera, Blocked;
+            /// <summary>Stands too close to a building, road or the campfire (see <see cref="SetClearings"/>).</summary>
+            public bool Cleared;
+            public bool Gone => Blocked || Cleared;
             public readonly List<InstanceSet> Sets = new List<InstanceSet>(4);
             /// <summary>The simple far version of a kit object (its last LOD), drawn instead of <see cref="Sets"/> from afar.</summary>
             public List<InstanceSet> FarSets;
@@ -456,7 +459,7 @@ namespace Founders
             Item best = null;
             foreach (var item in list)
             {
-                if (item.Blocked) continue;
+                if (item.Gone) continue;
                 bool match = kind == "tree" ? item.Tree : kind == "rock" ? IsRock(item.Id) : kind == "bush" && IsBush(item.Id);
                 if (!match) continue;
                 if (best == null || item.Height > best.Height) best = item;
@@ -479,7 +482,7 @@ namespace Founders
                     if (!byCell.TryGetValue((cx + dx, cy + dy), out var list)) continue;
                     foreach (var item in list)
                     {
-                        if (item.Blocked || item.Index == ignore) continue;
+                        if (item.Gone || item.Index == ignore) continue;
                         if (!item.Tree && !IsRock(item.Id) && !IsBush(item.Id)) continue;
                         float r = (item.Tree ? TrunkRadius : item.Radius * 0.8f) + clearance;
                         float ddx = item.Position.x - p.x, ddz = item.Position.z - p.z;
@@ -530,9 +533,61 @@ namespace Founders
             }
         }
 
+        // MARK: - Clearings (nothing grows through a floor, a road or the campfire's ring)
+
+        /// <summary>
+        /// Ground kept free of nature: a rectangle on the ground (world x/z; a point for a circle)
+        /// and how far around it things stay away. Trees keep their crown out of it, rocks and
+        /// bushes their whole width; <see cref="Ragged"/> metres of random give make the edge of a
+        /// big clearing look trodden out rather than drawn with a compass.
+        /// </summary>
+        public struct Clearing
+        {
+            public Vector2 Min, Max;
+            public float Margin, Ragged;
+        }
+
+        readonly HashSet<Item> cleared = new HashSet<Item>();
+
+        static float CrownRadius(Item item) => Mathf.Min(2.4f, 0.24f * item.Height);
+
+        /// <summary>Hides everything standing in one of these clearings (and shows again what no longer does).</summary>
+        public void SetClearings(List<Clearing> clearings)
+        {
+            var now = new HashSet<Item>();
+            foreach (var z in clearings)
+            {
+                float reach = z.Margin + z.Ragged + 2.4f;
+                var (x0, y0) = Grid.CellAt(new Vector3(z.Min.x - reach, 0f, z.Max.y + reach));
+                var (x1, y1) = Grid.CellAt(new Vector3(z.Max.x + reach, 0f, z.Min.y - reach));
+                for (int cy = y0; cy <= y1; cy++)
+                    for (int cx = x0; cx <= x1; cx++)
+                    {
+                        if (!byCell.TryGetValue((cx, cy), out var list)) continue;
+                        foreach (var item in list)
+                        {
+                            if (now.Contains(item)) continue;
+                            float dx = Mathf.Max(0f, Mathf.Max(z.Min.x - item.Position.x, item.Position.x - z.Max.x));
+                            float dz = Mathf.Max(0f, Mathf.Max(z.Min.y - item.Position.z, item.Position.z - z.Max.y));
+                            float size = item.Tree ? CrownRadius(item) : item.Height < 0.45f ? 0.15f : item.Radius * 0.8f;
+                            // The same item always gets the same give, so the edge does not flicker.
+                            float give = z.Ragged * ((((uint)item.Index * 2654435761u) >> 8) % 1000u / 1000f);
+                            float r = z.Margin + size - give;
+                            if (r > 0f && dx * dx + dz * dz < r * r) now.Add(item);
+                        }
+                    }
+            }
+            foreach (var item in cleared)
+                if (!now.Contains(item)) { item.Cleared = false; Apply(item); }
+            foreach (var item in now)
+                if (!item.Cleared) { item.Cleared = true; Apply(item); }
+            cleared.Clear();
+            cleared.UnionWith(now);
+        }
+
         void Apply(Item item)
         {
-            bool hidden = item.Blocked || item.NearCamera;
+            bool hidden = item.Gone || item.NearCamera;
             if (item.MaxAt <= 0f)
             {
                 foreach (var set in item.Sets) set.SetHidden(item.Index, hidden);
@@ -545,7 +600,7 @@ namespace Founders
             foreach (var set in item.Sets) set.SetHidden(item.Index, hidden || tier != 0);
             if (item.FarSets != null) foreach (var set in item.FarSets) set.SetHidden(item.Index, hidden || tier != 1);
             if (item.CardSets != null) foreach (var set in item.CardSets) set.SetHidden(item.Index, hidden || tier != 2);
-            if (item.ShadowSets != null) foreach (var set in item.ShadowSets) set.SetHidden(item.Index, item.Blocked || !item.Shadow);
+            if (item.ShadowSets != null) foreach (var set in item.ShadowSets) set.SetHidden(item.Index, item.Gone || !item.Shadow);
         }
 
         /// <summary>
