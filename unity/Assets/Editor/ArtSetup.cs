@@ -21,7 +21,7 @@ namespace FoundersEditor
             string file = Path.GetFileNameWithoutExtension(assetPath);
             if (assetPath.StartsWith("Assets/Art/UI/"))
             {
-                // UI art: pixel-exact, no mips, no power-of-two rescale; only the big backdrop is compressed.
+                // UI art: pixel-exact, no mips, no power-of-two rescale; only the loading-screen paintings are compressed.
                 ti.textureType = TextureImporterType.Default;
                 ti.mipmapEnabled = false;
                 ti.npotScale = TextureImporterNPOTScale.None;
@@ -30,7 +30,7 @@ namespace FoundersEditor
                 ti.wrapMode = TextureWrapMode.Clamp;
                 ti.filterMode = FilterMode.Bilinear;
                 ti.maxTextureSize = 4096;
-                ti.textureCompression = file == "loading_bg" ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Uncompressed;
+                ti.textureCompression = file.StartsWith("loading_") ? TextureImporterCompression.CompressedHQ : TextureImporterCompression.Uncompressed;
                 return;
             }
             ti.mipmapEnabled = true;
@@ -61,6 +61,12 @@ namespace FoundersEditor
                 ti.mipMapsPreserveCoverage = true;
                 ti.alphaTestReferenceValue = 0.5f;
                 ti.wrapMode = file.Contains("_impostor") ? TextureWrapMode.Clamp : TextureWrapMode.Repeat;
+            }
+            // The detailed buildings' painted atlas (16 tiles of 512 px): kept sharp.
+            if (file.StartsWith("bw_atlas"))
+            {
+                ti.maxTextureSize = file.EndsWith("_mask") ? 1024 : 2048;
+                ti.wrapMode = TextureWrapMode.Clamp;
             }
         }
 
@@ -375,8 +381,8 @@ namespace FoundersEditor
         }
 
         /// <summary>
-        /// P_&lt;Person_Name&gt;: one lit material per villager model from its baked texture set (albedo,
-        /// normal map, mask with occlusion and smoothness), listed in Art/Resources/people.json.
+        /// P_&lt;Person_Name&gt;: one lit material per villager model from its painted texture set (albedo
+        /// repainted by tools/assets/paint_people.py, normal map, mask with occlusion and smoothness), listed in Art/Resources/people.json.
         /// Villager.Spawn shares it across the model's zones and dyes each zone with a property block.
         /// </summary>
         static void GeneratePeopleMaterials()
@@ -388,8 +394,10 @@ namespace FoundersEditor
                 var t = p.OptObj("textures");
                 if (t == null) continue;
                 string key = "P_" + Path.GetFileName(p.Str("model"));
-                var m = TexturedLit(key, t.Str("albedo"), t.Str("normal"), t.Str("mask"), Vector2.one);
-                m.SetFloat("_EnvironmentReflections", 1f);
+                // Painted figures: matte cloth and skin, the folds only hinted (no photo sheen).
+                var m = TexturedLit(key, t.Str("albedo"), t.Str("normal"), t.Str("mask"), Vector2.one, smoothness: 0.3f);
+                m.SetFloat("_BumpScale", 0.3f);
+                m.SetFloat("_EnvironmentReflections", 0f);
                 m.SetFloat("_SpecularHighlights", 1f);
                 Finish(m);
                 Save(m, $"{Materials}/{key}.mat");

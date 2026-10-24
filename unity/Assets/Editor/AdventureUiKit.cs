@@ -28,6 +28,9 @@ namespace FoundersEditor
     ///     folder = Assets/SomeOtherName (where the kit is, if its folder is not called "Adventure…")
     /// The menu command writes the current choices there for editing; builds read it.
     ///
+    /// The kit's stone is purple; the game's is blue-grey, so every copy goes through <see cref="Recolor"/>
+    /// (the kit's own files are never changed).
+    ///
     /// Runs before every build (BuildScript.Generate) and from FOUNDERS → Adventure UI Kit → Apply.
     /// Assets/Generated is not in git: the copies are made again on every machine and in CI.
     /// </summary>
@@ -193,6 +196,7 @@ namespace FoundersEditor
                 string name = key.Substring(5);
                 string dst = Copy(pic, OutRoot + (skin ? "Skin/" : "Icons/") + name);
                 if (dst == null) { sb.Append("  ").Append(key).Append(": could not read ").Append(pic.Id).Append('\n'); continue; }
+                dst = Recolor(dst);
                 copied.Add(dst);
                 if (skin)
                 {
@@ -375,6 +379,82 @@ namespace FoundersEditor
                 return dst;
             }
             finally { UnityEngine.Object.DestroyImmediate(sheet); }
+        }
+
+        // MARK: - Blue-grey stone
+
+        /// <summary>
+        /// The game's stone, dark → light by brightness: the kit's dark inset (#2E2633 seen over the panel) lands on
+        /// #202734 and its panel stone (#594B6A) on #36415A; the rest of the ramp keeps the shading in the same tone.
+        /// </summary>
+        static readonly (float y, Color32 c)[] StoneRamp =
+        {
+            (0.000f, new Color32(0x07, 0x09, 0x0D, 255)),
+            (0.164f, new Color32(0x20, 0x27, 0x34, 255)),
+            (0.324f, new Color32(0x36, 0x41, 0x5A, 255)),
+            (0.550f, new Color32(0x6A, 0x78, 0x94, 255)),
+            (0.800f, new Color32(0xAE, 0xB9, 0xCD, 255)),
+            (1.000f, new Color32(0xF2, 0xF5, 0xFA, 255)),
+        };
+
+        static Color StoneAt(float y)
+        {
+            for (int i = 1; i < StoneRamp.Length; i++)
+                if (y <= StoneRamp[i].y || i == StoneRamp.Length - 1)
+                {
+                    var (y0, c0) = StoneRamp[i - 1];
+                    var (y1, c1) = StoneRamp[i];
+                    return Color.Lerp(c0, c1, Mathf.Clamp01((y - y0) / (y1 - y0)));
+                }
+            return StoneRamp[StoneRamp.Length - 1].c;
+        }
+
+        /// <summary>
+        /// How much of a pixel is the kit's purple: violet to plum hues fully (fading out towards blue and red, so
+        /// the blue and orange fills, gold, green vines and red stay), and the near-black greys of the dark insets.
+        /// White and grey symbols keep their colour.
+        /// </summary>
+        static float PurpleWeight(Color c)
+        {
+            Color.RGBToHSV(c, out float h, out float s, out float v);
+            h *= 360f;
+            float hue = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(215, 232, h)) * (1 - Mathf.SmoothStep(0, 1, Mathf.InverseLerp(335, 350, h)));
+            hue *= Mathf.SmoothStep(0, 1, Mathf.InverseLerp(0.04f, 0.10f, s));
+            float darkGrey = (1 - Mathf.SmoothStep(0, 1, Mathf.InverseLerp(0.06f, 0.14f, s))) * (1 - Mathf.SmoothStep(0, 1, Mathf.InverseLerp(0.30f, 0.45f, v)));
+            return Mathf.Max(hue, darkGrey);
+        }
+
+        /// <summary>Turns the purple of a copied kit picture blue-grey (#202734 / #36415A). Returns the (PNG) path.</summary>
+        static string Recolor(string path)
+        {
+            var ext = Path.GetExtension(path).ToLowerInvariant();
+            if (ext != ".png" && ext != ".jpg" && ext != ".jpeg") return path;
+            var t = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+            try
+            {
+                if (!t.LoadImage(File.ReadAllBytes(path))) return path;
+                var px = t.GetPixels();
+                bool changed = false;
+                for (int i = 0; i < px.Length; i++)
+                {
+                    var c = px[i];
+                    if (c.a <= 0) continue;
+                    float w = PurpleWeight(c);
+                    if (w <= 0) continue;
+                    var stone = StoneAt(c.r * 0.299f + c.g * 0.587f + c.b * 0.114f);
+                    stone.a = c.a;
+                    px[i] = Color.Lerp(c, stone, w);
+                    changed = true;
+                }
+                if (!changed) return path;
+                t.SetPixels(px);
+                t.Apply();
+                string dst = Path.ChangeExtension(path, ".png");
+                File.WriteAllBytes(dst, t.EncodeToPNG());
+                if (dst != path) File.Delete(path);
+                return dst;
+            }
+            finally { UnityEngine.Object.DestroyImmediate(t); }
         }
 
         /// <summary>Is the middle of the picture light (so text on it is dark)? null when it cannot be read.</summary>

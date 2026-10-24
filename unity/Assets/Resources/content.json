@@ -241,6 +241,64 @@
     "description": "Healers look after the sick: each cares for three, who get well quickly and never worse.",
     "ratePerWorkerPerSecond": 0,
     "unlimitedSlots": false
+   },
+   {
+    "job": "sawing",
+    "name": "Sawing",
+    "description": "Saw logs into straight planks: 2 Wood make 1 Plank.",
+    "output": "planks",
+    "inputs": {
+     "wood": 2
+    },
+    "ratePerWorkerPerSecond": 0.05,
+    "unlimitedSlots": false
+   },
+   {
+    "job": "toolmaking",
+    "name": "Toolmaking",
+    "description": "Cast and haft tools: 1 Bronze and 1 Plank make 2 Tools. Tools make gatherers faster.",
+    "output": "tools",
+    "inputs": {
+     "bronze": 0.5,
+     "planks": 0.5
+    },
+    "ratePerWorkerPerSecond": 0.03,
+    "unlimitedSlots": false
+   },
+   {
+    "job": "baking",
+    "name": "Baking",
+    "description": "Bake bread: 3 Flour and 1 Wood make 10 Food (the grain goes three times as far as bread).",
+    "output": "food",
+    "inputs": {
+     "flour": 0.3,
+     "wood": 0.1
+    },
+    "ratePerWorkerPerSecond": 0.3,
+    "unlimitedSlots": false
+   },
+   {
+    "job": "weaving",
+    "name": "Weaving",
+    "description": "Weave cloth and baskets: 1 Hide and half a Wood make 2 Household Goods.",
+    "output": "goods",
+    "inputs": {
+     "hides": 0.5,
+     "wood": 0.25
+    },
+    "ratePerWorkerPerSecond": 0.04,
+    "unlimitedSlots": false
+   },
+   {
+    "job": "milling",
+    "name": "Milling",
+    "description": "Grind grain between the millstones: 1 Food makes 1 Flour for the bakers.",
+    "output": "flour",
+    "inputs": {
+     "food": 1
+    },
+    "ratePerWorkerPerSecond": 0.12,
+    "unlimitedSlots": false
    }
   ],
   "seasonSeconds": 21600,
@@ -417,6 +475,259 @@
    "refusedAnger": 8,
    "keptApproval": 8,
    "keptSeconds": 21600
+  },
+  "toolBonus": 0.15,
+  "toolWearPerWorkerPerSecond": 0.001,
+  "needs": {
+   "waterReach": 6,
+   "riverReach": 3,
+   "marketReach": 10,
+   "goodsPerPersonPerSecond": 0.0003,
+   "metApproval": 6,
+   "unmetApproval": 8,
+   "tiers": [
+    {
+     "level": 1,
+     "name": "Huts",
+     "needs": [
+      "food"
+     ],
+     "taxPerPersonPerHour": 2
+    },
+    {
+     "level": 5,
+     "name": "Houses",
+     "needs": [
+      "food",
+      "water"
+     ],
+     "taxPerPersonPerHour": 5
+    },
+    {
+     "level": 10,
+     "name": "Burgher Houses",
+     "needs": [
+      "food",
+      "water",
+      "goods"
+     ],
+     "taxPerPersonPerHour": 12
+    }
+   ],
+   "taxLevels": [
+    {
+     "id": "low",
+     "name": "Low",
+     "multiplier": 0.5,
+     "approval": 3
+    },
+    {
+     "id": "normal",
+     "name": "Fair",
+     "multiplier": 1.0,
+     "approval": 0
+    },
+    {
+     "id": "high",
+     "name": "Heavy",
+     "multiplier": 1.6,
+     "approval": -8
+    }
+   ],
+   "defaultTax": "normal"
+  },
+  "treasuryCap": 5000,
+  "estates": {
+   "grantCost": 40,
+   "grantFavour": 20,
+   "imbalanceRanks": 2,
+   "imbalanceApproval": 6,
+   "harmonyApproval": 3,
+   "estates": [
+    {
+     "id": "commons",
+     "name": "Commons",
+     "icon": "people",
+     "description": "The farmers, woodcutters and craftsmen. Their favour grows with every pair of busy hands.",
+     "jobs": {
+      "foraging": 0.4,
+      "farming": 0.4,
+      "herding": 0.4,
+      "woodcutting": 0.4,
+      "stonecutting": 0.4,
+      "fishing": 0.4,
+      "hunting": 0.4,
+      "mining": 0.4,
+      "crafting": 0.6,
+      "construction": 0.6,
+      "smelting": 0.6,
+      "sawing": 0.6,
+      "toolmaking": 0.6,
+      "baking": 0.6,
+      "weaving": 0.6
+     },
+     "ranks": [
+      {
+       "favour": 40,
+       "name": "Willing Hands",
+       "description": "Everyone works 5% faster.",
+       "effects": [
+        {
+         "kind": "workRateMultiplier",
+         "value": 1.05
+        }
+       ]
+      },
+      {
+       "favour": 150,
+       "name": "Free Craftsmen",
+       "description": "Building goes 15% faster.",
+       "effects": [
+        {
+         "kind": "constructionSpeedMultiplier",
+         "value": 1.15
+        }
+       ]
+      },
+      {
+       "favour": 400,
+       "name": "Commons' Charter",
+       "description": "Work 5% faster again, and +3 approval.",
+       "effects": [
+        {
+         "kind": "workRateMultiplier",
+         "value": 1.05
+        },
+        {
+         "kind": "approvalBonus",
+         "value": 3
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "clergy",
+     "name": "Clergy",
+     "icon": "bell",
+     "description": "Keepers of the stones, the church and the books. Their favour grows with every holy place and every scholar.",
+     "buildings": {
+      "ancestor_shrine": 4,
+      "elders_lodge": 2,
+      "healers_hut": 2,
+      "medieval_church": 10,
+      "medieval_scriptorium": 5
+     },
+     "jobs": {
+      "research": 0.3,
+      "healing": 0.5
+     },
+     "ranks": [
+      {
+       "favour": 40,
+       "name": "Blessings",
+       "description": "10% fewer people fall ill.",
+       "effects": [
+        {
+         "kind": "sicknessMultiplier",
+         "value": 0.9
+        }
+       ]
+      },
+      {
+       "favour": 150,
+       "name": "Learned Brothers",
+       "description": "Research goes 15% faster.",
+       "effects": [
+        {
+         "kind": "jobRateMultiplier",
+         "job": "research",
+         "value": 1.15
+        }
+       ]
+      },
+      {
+       "favour": 400,
+       "name": "Feast Days",
+       "description": "+4 approval and people grumble less.",
+       "effects": [
+        {
+         "kind": "approvalBonus",
+         "value": 4
+        },
+        {
+         "kind": "discontentPerHour",
+         "value": -0.5
+        }
+       ]
+      }
+     ]
+    },
+    {
+     "id": "crown",
+     "name": "Crown",
+     "icon": "landmark",
+     "description": "The lord's stewards and the king's men. Their favour grows with the taxes paid and the trade that runs.",
+     "taxShare": 0.2,
+     "routeFavour": 3,
+     "buildings": {
+      "lookout_tower": 3,
+      "trading_post": 2,
+      "medieval_market": 6,
+      "medieval_warehouse": 3
+     },
+     "ranks": [
+      {
+       "favour": 40,
+       "name": "Royal Charter",
+       "description": "The treasury holds 50% more coins.",
+       "effects": [
+        {
+         "kind": "storageMultiplier",
+         "resource": "coins",
+         "value": 1.5
+        }
+       ]
+      },
+      {
+       "favour": 150,
+       "name": "King's Roads",
+       "description": "Scouts explore 20% faster.",
+       "effects": [
+        {
+         "kind": "expeditionSpeedMultiplier",
+         "value": 1.2
+        }
+       ]
+      },
+      {
+       "favour": 400,
+       "name": "Market Rights",
+       "description": "Caravans bring home 10% more.",
+       "effects": [
+        {
+         "kind": "tradePriceMultiplier",
+         "value": 1.1
+        }
+       ]
+      }
+     ]
+    }
+   ]
+  },
+  "paths": {
+   "wearPerPersonPerHour": 1.0,
+   "threshold": 6,
+   "maxWear": 30,
+   "decayPerHour": 0.03,
+   "constructionBonus": 0.15,
+   "walkCost": 0.75
+  },
+  "zones": {
+   "checkSeconds": 60,
+   "freeBeds": 1,
+   "pastureCellsPerHerder": 4,
+   "forestryRegrowMultiplier": 2
   }
  },
  "buildings": [
@@ -4373,6 +4684,144 @@
    "insulation": 9
   },
   {
+   "id": "market",
+   "name": "Market",
+   "description": "Open stalls where families swap food, pots and hides. Homes within 8 cells are happier (up to +8 approval), and people gather here.",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 3,
+    "height": 2
+   },
+   "cost": {
+    "wood": 45,
+    "stone": 25
+   },
+   "buildSeconds": 70,
+   "sprite": "market",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "barter",
+   "community": 3,
+   "marketReach": 8,
+   "maxCount": 3,
+   "market": true,
+   "levels": [
+    {
+     "cost": {
+      "wood": 35,
+      "stone": 19
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 25
+     },
+     "buildSeconds": 70.0
+    },
+    {
+     "cost": {
+      "wood": 55,
+      "stone": 30
+     },
+     "buildSeconds": 84.0
+    },
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 40
+     },
+     "buildSeconds": 98.0
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 50
+     },
+     "buildSeconds": 125.0
+    },
+    {
+     "cost": {
+      "wood": 115,
+      "stone": 65
+     },
+     "buildSeconds": 161.0
+    },
+    {
+     "cost": {
+      "wood": 150,
+      "stone": 80,
+      "hides": 14
+     },
+     "buildSeconds": 206.0
+    },
+    {
+     "cost": {
+      "wood": 195,
+      "stone": 105,
+      "hides": 18
+     },
+     "buildSeconds": 263.0
+    },
+    {
+     "cost": {
+      "wood": 250,
+      "stone": 140,
+      "hides": 25
+     },
+     "buildSeconds": 337.0
+    },
+    {
+     "cost": {
+      "wood": 330,
+      "stone": 180,
+      "hides": 30
+     },
+     "buildSeconds": 431.0
+    },
+    {
+     "cost": {
+      "wood": 420,
+      "stone": 240,
+      "hides": 40,
+      "ore": 55
+     },
+     "buildSeconds": 552.0
+    },
+    {
+     "cost": {
+      "wood": 550,
+      "stone": 310,
+      "hides": 50,
+      "ore": 70
+     },
+     "buildSeconds": 706.0
+    },
+    {
+     "cost": {
+      "wood": 720,
+      "stone": 400,
+      "hides": 65,
+      "ore": 90
+     },
+     "buildSeconds": 904.0
+    },
+    {
+     "cost": {
+      "wood": 930,
+      "stone": 520,
+      "hides": 85,
+      "ore": 115
+     },
+     "buildSeconds": 1157.0
+    }
+   ]
+  },
+  {
    "id": "daub_house",
    "name": "Daub House",
    "description": "Wattle walls sealed with clay and dung under a thick thatch. Houses 5 people in comfort.",
@@ -6574,7 +7023,7 @@
   {
    "id": "medieval_market",
    "name": "Market Hall",
-   "description": "A tiled hall where the valley trades. Big community boost and extra storage.",
+   "description": "A tiled hall where the valley trades. Big community boost, extra storage, and homes within 10 cells can get Household Goods. Runs 2 more trade routes for the caravans.",
    "epoch": "epoch_medieval_kingdoms",
    "footprint": {
     "width": 3,
@@ -6706,12 +7155,14 @@
      },
      "buildSeconds": 1818.0
     }
-   ]
+   ],
+   "market": true,
+   "tradeRoutes": 2
   },
   {
    "id": "medieval_mill",
    "name": "Watermill",
-   "description": "A mill on the river. Must touch water. +3 Farming jobs.",
+   "description": "A mill on the river. Must touch water. +3 Farming jobs and 2 Milling jobs that grind grain into Flour.",
    "epoch": "epoch_medieval_kingdoms",
    "footprint": {
     "width": 2,
@@ -6734,6 +7185,10 @@
     {
      "job": "farming",
      "count": 3
+    },
+    {
+     "job": "milling",
+     "count": 2
     }
    ],
    "levels": [
@@ -7496,6 +7951,3006 @@
      "buildSeconds": 5679.0
     }
    ]
+  },
+  {
+   "id": "lookout_tower",
+   "name": "Lookout Tower",
+   "description": "A tall timber tower over the valley. Scouts explore new lands 25% faster.",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 45,
+    "stone": 15
+   },
+   "buildSeconds": 50,
+   "sprite": "lookout_tower",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "trail_signs",
+   "maxCount": 1,
+   "effects": [
+    {
+     "kind": "expeditionSpeedMultiplier",
+     "value": 1.25
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 35,
+      "stone": 11
+     },
+     "buildSeconds": 40.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 15
+     },
+     "buildSeconds": 50.0
+    },
+    {
+     "cost": {
+      "wood": 55,
+      "stone": 19
+     },
+     "buildSeconds": 60.0
+    },
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 20
+     },
+     "buildSeconds": 70.0
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 30
+     },
+     "buildSeconds": 90.0
+    },
+    {
+     "cost": {
+      "wood": 115,
+      "stone": 40
+     },
+     "buildSeconds": 115.0
+    },
+    {
+     "cost": {
+      "wood": 150,
+      "stone": 50,
+      "hides": 12
+     },
+     "buildSeconds": 147.0
+    },
+    {
+     "cost": {
+      "wood": 195,
+      "stone": 65,
+      "hides": 15
+     },
+     "buildSeconds": 188.0
+    },
+    {
+     "cost": {
+      "wood": 250,
+      "stone": 85,
+      "hides": 20
+     },
+     "buildSeconds": 241.0
+    }
+   ]
+  },
+  {
+   "id": "herb_garden",
+   "name": "Herb Garden",
+   "description": "Beds of yarrow, mint and willow. Fewer people fall ill (-10%) and the sick get well 10% faster.",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 20,
+    "stone": 10
+   },
+   "buildSeconds": 30,
+   "sprite": "herb_garden",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "herbal_healing",
+   "maxCount": 2,
+   "effects": [
+    {
+     "kind": "sicknessMultiplier",
+     "value": 0.9
+    },
+    {
+     "kind": "recoveryMultiplier",
+     "value": 1.1
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 15,
+      "stone": 8
+     },
+     "buildSeconds": 24.0
+    },
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 10
+     },
+     "buildSeconds": 30.0
+    },
+    {
+     "cost": {
+      "wood": 25,
+      "stone": 12
+     },
+     "buildSeconds": 36.0
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 15
+     },
+     "buildSeconds": 42.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 20
+     },
+     "buildSeconds": 54.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 25
+     },
+     "buildSeconds": 69.0
+    },
+    {
+     "cost": {
+      "wood": 65,
+      "stone": 35,
+      "hides": 6
+     },
+     "buildSeconds": 88.0
+    },
+    {
+     "cost": {
+      "wood": 85,
+      "stone": 45,
+      "hides": 8
+     },
+     "buildSeconds": 113.0
+    },
+    {
+     "cost": {
+      "wood": 110,
+      "stone": 55,
+      "hides": 10
+     },
+     "buildSeconds": 144.0
+    },
+    {
+     "cost": {
+      "wood": 145,
+      "stone": 70,
+      "hides": 13
+     },
+     "buildSeconds": 185.0
+    },
+    {
+     "cost": {
+      "wood": 190,
+      "stone": 95,
+      "hides": 17,
+      "ore": 25
+     },
+     "buildSeconds": 236.0
+    },
+    {
+     "cost": {
+      "wood": 240,
+      "stone": 120,
+      "hides": 20,
+      "ore": 30
+     },
+     "buildSeconds": 303.0
+    },
+    {
+     "cost": {
+      "wood": 320,
+      "stone": 160,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 387.0
+    },
+    {
+     "cost": {
+      "wood": 410,
+      "stone": 210,
+      "hides": 35,
+      "ore": 50
+     },
+     "buildSeconds": 496.0
+    }
+   ]
+  },
+  {
+   "id": "smokehouse",
+   "name": "Smokehouse",
+   "description": "Fish and meat hang in slow smoke. Protects 60 food, food spoils 10% slower, and smoked food counts for food variety.",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 35,
+    "stone": 15
+   },
+   "buildSeconds": 40,
+   "sprite": "smokehouse",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "hide_working",
+   "protectedFood": 60,
+   "foodSource": "smoked",
+   "effects": [
+    {
+     "kind": "spoilageMultiplier",
+     "value": 0.9
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 25,
+      "stone": 11
+     },
+     "buildSeconds": 32.0
+    },
+    {
+     "cost": {
+      "wood": 35,
+      "stone": 15
+     },
+     "buildSeconds": 40.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 19
+     },
+     "buildSeconds": 48.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 20
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 30
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 40
+     },
+     "buildSeconds": 92.0
+    },
+    {
+     "cost": {
+      "wood": 115,
+      "stone": 50,
+      "hides": 10
+     },
+     "buildSeconds": 117.0
+    },
+    {
+     "cost": {
+      "wood": 150,
+      "stone": 65,
+      "hides": 13
+     },
+     "buildSeconds": 150.0
+    },
+    {
+     "cost": {
+      "wood": 195,
+      "stone": 85,
+      "hides": 17
+     },
+     "buildSeconds": 192.0
+    },
+    {
+     "cost": {
+      "wood": 250,
+      "stone": 110,
+      "hides": 20
+     },
+     "buildSeconds": 246.0
+    },
+    {
+     "cost": {
+      "wood": 330,
+      "stone": 140,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 315.0
+    },
+    {
+     "cost": {
+      "wood": 430,
+      "stone": 185,
+      "hides": 35,
+      "ore": 50
+     },
+     "buildSeconds": 404.0
+    },
+    {
+     "cost": {
+      "wood": 560,
+      "stone": 240,
+      "hides": 50,
+      "ore": 65
+     },
+     "buildSeconds": 517.0
+    },
+    {
+     "cost": {
+      "wood": 720,
+      "stone": 310,
+      "hides": 60,
+      "ore": 85
+     },
+     "buildSeconds": 661.0
+    },
+    {
+     "cost": {
+      "wood": 940,
+      "stone": 400,
+      "hides": 80,
+      "ore": 110
+     },
+     "buildSeconds": 846.0
+    },
+    {
+     "cost": {
+      "wood": 1220,
+      "stone": 520,
+      "hides": 105,
+      "ore": 140
+     },
+     "buildSeconds": 1083.0
+    },
+    {
+     "cost": {
+      "wood": 1590,
+      "stone": 680,
+      "hides": 135,
+      "ore": 180
+     },
+     "buildSeconds": 1386.0
+    },
+    {
+     "cost": {
+      "wood": 2050,
+      "stone": 890,
+      "hides": 175,
+      "ore": 240
+     },
+     "buildSeconds": 1775.0
+    },
+    {
+     "cost": {
+      "wood": 2700,
+      "stone": 1150,
+      "hides": 230,
+      "ore": 310
+     },
+     "buildSeconds": 2272.0
+    }
+   ]
+  },
+  {
+   "id": "ancestor_shrine",
+   "name": "Ancestor Stones",
+   "description": "Tall stones where the first founders rest. A gathering place, and people grumble less.",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 2,
+    "height": 2
+   },
+   "cost": {
+    "wood": 30,
+    "stone": 90
+   },
+   "buildSeconds": 90,
+   "sprite": "ancestor_shrine",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "ancestor_rites",
+   "maxCount": 1,
+   "community": 4,
+   "effects": [
+    {
+     "kind": "discontentPerHour",
+     "value": -1
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 70
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 90
+     },
+     "buildSeconds": 90.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 110
+     },
+     "buildSeconds": 108.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 135
+     },
+     "buildSeconds": 126.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 175
+     },
+     "buildSeconds": 161.0
+    },
+    {
+     "cost": {
+      "wood": 75,
+      "stone": 230
+     },
+     "buildSeconds": 206.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 300,
+      "hides": 25
+     },
+     "buildSeconds": 264.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 390,
+      "hides": 30
+     },
+     "buildSeconds": 338.0
+    },
+    {
+     "cost": {
+      "wood": 165,
+      "stone": 500,
+      "hides": 40
+     },
+     "buildSeconds": 433.0
+    }
+   ]
+  },
+  {
+   "id": "sawpit",
+   "name": "Sawpit",
+   "description": "A log over a pit and a two-man saw. 2 Sawing jobs turn 2 Wood into 1 Plank.",
+   "epoch": "epoch_first_civilizations",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 40,
+    "stone": 20
+   },
+   "buildSeconds": 45,
+   "sprite": "sawpit",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "carpentry",
+   "jobSlots": [
+    {
+     "job": "sawing",
+     "count": 2
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 15
+     },
+     "buildSeconds": 36.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 20
+     },
+     "buildSeconds": 45.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 25
+     },
+     "buildSeconds": 54.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 30
+     },
+     "buildSeconds": 63.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 40
+     },
+     "buildSeconds": 81.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 50
+     },
+     "buildSeconds": 103.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 65,
+      "hides": 12
+     },
+     "buildSeconds": 132.0
+    },
+    {
+     "cost": {
+      "wood": 170,
+      "stone": 85,
+      "hides": 15
+     },
+     "buildSeconds": 169.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 110,
+      "hides": 20
+     },
+     "buildSeconds": 216.0
+    },
+    {
+     "cost": {
+      "wood": 290,
+      "stone": 145,
+      "hides": 25
+     },
+     "buildSeconds": 277.0
+    },
+    {
+     "cost": {
+      "wood": 380,
+      "stone": 190,
+      "hides": 35,
+      "ore": 45
+     },
+     "buildSeconds": 355.0
+    },
+    {
+     "cost": {
+      "wood": 490,
+      "stone": 240,
+      "hides": 45,
+      "ore": 60
+     },
+     "buildSeconds": 454.0
+    },
+    {
+     "cost": {
+      "wood": 640,
+      "stone": 320,
+      "hides": 55,
+      "ore": 75
+     },
+     "buildSeconds": 581.0
+    },
+    {
+     "cost": {
+      "wood": 830,
+      "stone": 410,
+      "hides": 75,
+      "ore": 100
+     },
+     "buildSeconds": 744.0
+    },
+    {
+     "cost": {
+      "wood": 1080,
+      "stone": 540,
+      "hides": 95,
+      "ore": 130
+     },
+     "buildSeconds": 952.0
+    },
+    {
+     "cost": {
+      "wood": 1400,
+      "stone": 700,
+      "hides": 125,
+      "ore": 170
+     },
+     "buildSeconds": 1219.0
+    },
+    {
+     "cost": {
+      "wood": 1820,
+      "stone": 910,
+      "hides": 165,
+      "ore": 220
+     },
+     "buildSeconds": 1560.0
+    },
+    {
+     "cost": {
+      "wood": 2350,
+      "stone": 1180,
+      "hides": 210,
+      "ore": 280
+     },
+     "buildSeconds": 1997.0
+    },
+    {
+     "cost": {
+      "wood": 3050,
+      "stone": 1540,
+      "hides": 280,
+      "ore": 370
+     },
+     "buildSeconds": 2556.0
+    }
+   ]
+  },
+  {
+   "id": "apiary",
+   "name": "Apiary",
+   "description": "Straw hives humming with bees. +2 Foraging jobs, and honey counts for food variety.",
+   "epoch": "epoch_first_civilizations",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 30,
+    "stone": 10
+   },
+   "buildSeconds": 35,
+   "sprite": "apiary",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "beekeeping",
+   "foodSource": "honey",
+   "jobSlots": [
+    {
+     "job": "foraging",
+     "count": 2
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 20,
+      "stone": 8
+     },
+     "buildSeconds": 28.0
+    },
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 10
+     },
+     "buildSeconds": 35.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 12
+     },
+     "buildSeconds": 42.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 15
+     },
+     "buildSeconds": 49.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 20
+     },
+     "buildSeconds": 63.0
+    },
+    {
+     "cost": {
+      "wood": 75,
+      "stone": 25
+     },
+     "buildSeconds": 80.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 35,
+      "hides": 8
+     },
+     "buildSeconds": 103.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 45,
+      "hides": 10
+     },
+     "buildSeconds": 132.0
+    },
+    {
+     "cost": {
+      "wood": 165,
+      "stone": 55,
+      "hides": 13
+     },
+     "buildSeconds": 168.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 70,
+      "hides": 17
+     },
+     "buildSeconds": 216.0
+    },
+    {
+     "cost": {
+      "wood": 280,
+      "stone": 95,
+      "hides": 25,
+      "ore": 30
+     },
+     "buildSeconds": 276.0
+    },
+    {
+     "cost": {
+      "wood": 370,
+      "stone": 120,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 353.0
+    },
+    {
+     "cost": {
+      "wood": 480,
+      "stone": 160,
+      "hides": 40,
+      "ore": 50
+     },
+     "buildSeconds": 452.0
+    },
+    {
+     "cost": {
+      "wood": 620,
+      "stone": 210,
+      "hides": 50,
+      "ore": 65
+     },
+     "buildSeconds": 578.0
+    },
+    {
+     "cost": {
+      "wood": 810,
+      "stone": 270,
+      "hides": 65,
+      "ore": 85
+     },
+     "buildSeconds": 740.0
+    },
+    {
+     "cost": {
+      "wood": 1050,
+      "stone": 350,
+      "hides": 85,
+      "ore": 110
+     },
+     "buildSeconds": 948.0
+    },
+    {
+     "cost": {
+      "wood": 1360,
+      "stone": 450,
+      "hides": 110,
+      "ore": 145
+     },
+     "buildSeconds": 1213.0
+    },
+    {
+     "cost": {
+      "wood": 1770,
+      "stone": 590,
+      "hides": 140,
+      "ore": 190
+     },
+     "buildSeconds": 1553.0
+    },
+    {
+     "cost": {
+      "wood": 2300,
+      "stone": 770,
+      "hides": 185,
+      "ore": 250
+     },
+     "buildSeconds": 1988.0
+    }
+   ]
+  },
+  {
+   "id": "toolsmith",
+   "name": "Toolsmith",
+   "description": "Moulds, hammers and a whetstone. 2 Toolmaking jobs turn 1 Bronze and 1 Plank into 2 Tools. While there are tools in store every gatherer works 15% faster.",
+   "epoch": "epoch_first_civilizations",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 40,
+    "stone": 40,
+    "bronze": 10
+   },
+   "buildSeconds": 60,
+   "sprite": "toolsmith",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "bronze_tools",
+   "jobSlots": [
+    {
+     "job": "toolmaking",
+     "count": 2
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 30,
+      "bronze": 8
+     },
+     "buildSeconds": 48.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 40,
+      "bronze": 10
+     },
+     "buildSeconds": 60.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 50,
+      "bronze": 12
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 60,
+      "bronze": 15
+     },
+     "buildSeconds": 84.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 80,
+      "bronze": 20
+     },
+     "buildSeconds": 108.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 100,
+      "bronze": 25
+     },
+     "buildSeconds": 138.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 130,
+      "bronze": 35,
+      "hides": 18
+     },
+     "buildSeconds": 176.0
+    },
+    {
+     "cost": {
+      "wood": 170,
+      "stone": 170,
+      "bronze": 45,
+      "hides": 25
+     },
+     "buildSeconds": 225.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 220,
+      "bronze": 55,
+      "hides": 30
+     },
+     "buildSeconds": 289.0
+    },
+    {
+     "cost": {
+      "wood": 290,
+      "stone": 290,
+      "bronze": 70,
+      "hides": 40
+     },
+     "buildSeconds": 369.0
+    },
+    {
+     "cost": {
+      "wood": 380,
+      "stone": 380,
+      "bronze": 95,
+      "hides": 50,
+      "ore": 70
+     },
+     "buildSeconds": 473.0
+    },
+    {
+     "cost": {
+      "wood": 490,
+      "stone": 490,
+      "bronze": 120,
+      "hides": 65,
+      "ore": 90
+     },
+     "buildSeconds": 605.0
+    },
+    {
+     "cost": {
+      "wood": 640,
+      "stone": 640,
+      "bronze": 160,
+      "hides": 85,
+      "ore": 115
+     },
+     "buildSeconds": 775.0
+    },
+    {
+     "cost": {
+      "wood": 830,
+      "stone": 830,
+      "bronze": 210,
+      "hides": 110,
+      "ore": 150
+     },
+     "buildSeconds": 992.0
+    }
+   ]
+  },
+  {
+   "id": "medieval_bakery",
+   "name": "Bakery",
+   "description": "A brick oven that never cools. 3 Baking jobs bake bread from the mill's Flour and a little firewood. Bread counts for food variety.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 2,
+    "height": 2
+   },
+   "cost": {
+    "wood": 80,
+    "stone": 90,
+    "planks": 30
+   },
+   "buildSeconds": 90,
+   "sprite": "medieval_bakery",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "bread_ovens",
+   "foodSource": "bread",
+   "jobSlots": [
+    {
+     "job": "baking",
+     "count": 3
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 70,
+      "planks": 20
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 90,
+      "planks": 30
+     },
+     "buildSeconds": 90.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 110,
+      "planks": 40
+     },
+     "buildSeconds": 108.0
+    },
+    {
+     "cost": {
+      "wood": 120,
+      "stone": 135,
+      "planks": 45
+     },
+     "buildSeconds": 126.0
+    },
+    {
+     "cost": {
+      "wood": 155,
+      "stone": 175,
+      "planks": 60
+     },
+     "buildSeconds": 161.0
+    },
+    {
+     "cost": {
+      "wood": 200,
+      "stone": 230,
+      "planks": 75
+     },
+     "buildSeconds": 206.0
+    },
+    {
+     "cost": {
+      "wood": 260,
+      "stone": 300,
+      "planks": 100,
+      "hides": 40
+     },
+     "buildSeconds": 264.0
+    },
+    {
+     "cost": {
+      "wood": 340,
+      "stone": 390,
+      "planks": 130,
+      "hides": 50
+     },
+     "buildSeconds": 338.0
+    },
+    {
+     "cost": {
+      "wood": 450,
+      "stone": 500,
+      "planks": 165,
+      "hides": 65
+     },
+     "buildSeconds": 433.0
+    },
+    {
+     "cost": {
+      "wood": 580,
+      "stone": 650,
+      "planks": 220,
+      "hides": 85
+     },
+     "buildSeconds": 554.0
+    },
+    {
+     "cost": {
+      "wood": 750,
+      "stone": 850,
+      "planks": 280,
+      "hides": 115,
+      "ore": 150
+     },
+     "buildSeconds": 709.0
+    },
+    {
+     "cost": {
+      "wood": 980,
+      "stone": 1100,
+      "planks": 370,
+      "hides": 145,
+      "ore": 195
+     },
+     "buildSeconds": 908.0
+    },
+    {
+     "cost": {
+      "wood": 1270,
+      "stone": 1430,
+      "planks": 480,
+      "hides": 190,
+      "ore": 250
+     },
+     "buildSeconds": 1162.0
+    },
+    {
+     "cost": {
+      "wood": 1650,
+      "stone": 1860,
+      "planks": 620,
+      "hides": 250,
+      "ore": 330
+     },
+     "buildSeconds": 1488.0
+    },
+    {
+     "cost": {
+      "wood": 2150,
+      "stone": 2400,
+      "planks": 810,
+      "hides": 320,
+      "ore": 430
+     },
+     "buildSeconds": 1904.0
+    },
+    {
+     "cost": {
+      "wood": 2800,
+      "stone": 3150,
+      "planks": 1050,
+      "hides": 420,
+      "ore": 560
+     },
+     "buildSeconds": 2437.0
+    },
+    {
+     "cost": {
+      "wood": 3650,
+      "stone": 4100,
+      "planks": 1360,
+      "hides": 550,
+      "ore": 730
+     },
+     "buildSeconds": 3120.0
+    },
+    {
+     "cost": {
+      "wood": 4700,
+      "stone": 5300,
+      "planks": 1770,
+      "hides": 710,
+      "ore": 940
+     },
+     "buildSeconds": 3993.0
+    },
+    {
+     "cost": {
+      "wood": 6150,
+      "stone": 6900,
+      "planks": 2300,
+      "hides": 920,
+      "ore": 1230
+     },
+     "buildSeconds": 5111.0
+    }
+   ]
+  },
+  {
+   "id": "medieval_carpenter",
+   "name": "Carpenter's Yard",
+   "description": "A roofed yard of saws and trestles. 3 Sawing jobs turn Wood into Planks.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 2,
+    "height": 2
+   },
+   "cost": {
+    "wood": 70,
+    "stone": 40
+   },
+   "buildSeconds": 70,
+   "sprite": "medieval_carpenter",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "masonry",
+   "jobSlots": [
+    {
+     "job": "sawing",
+     "count": 3
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 30
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 40
+     },
+     "buildSeconds": 70.0
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 50
+     },
+     "buildSeconds": 84.0
+    },
+    {
+     "cost": {
+      "wood": 105,
+      "stone": 60
+     },
+     "buildSeconds": 98.0
+    },
+    {
+     "cost": {
+      "wood": 135,
+      "stone": 80
+     },
+     "buildSeconds": 125.0
+    },
+    {
+     "cost": {
+      "wood": 175,
+      "stone": 100
+     },
+     "buildSeconds": 161.0
+    },
+    {
+     "cost": {
+      "wood": 230,
+      "stone": 130,
+      "hides": 20
+     },
+     "buildSeconds": 206.0
+    },
+    {
+     "cost": {
+      "wood": 300,
+      "stone": 170,
+      "hides": 30
+     },
+     "buildSeconds": 263.0
+    },
+    {
+     "cost": {
+      "wood": 390,
+      "stone": 220,
+      "hides": 35
+     },
+     "buildSeconds": 337.0
+    },
+    {
+     "cost": {
+      "wood": 510,
+      "stone": 290,
+      "hides": 50
+     },
+     "buildSeconds": 431.0
+    },
+    {
+     "cost": {
+      "wood": 660,
+      "stone": 380,
+      "hides": 60,
+      "ore": 85
+     },
+     "buildSeconds": 552.0
+    },
+    {
+     "cost": {
+      "wood": 860,
+      "stone": 490,
+      "hides": 80,
+      "ore": 110
+     },
+     "buildSeconds": 706.0
+    },
+    {
+     "cost": {
+      "wood": 1110,
+      "stone": 640,
+      "hides": 105,
+      "ore": 140
+     },
+     "buildSeconds": 904.0
+    },
+    {
+     "cost": {
+      "wood": 1450,
+      "stone": 830,
+      "hides": 135,
+      "ore": 180
+     },
+     "buildSeconds": 1157.0
+    },
+    {
+     "cost": {
+      "wood": 1880,
+      "stone": 1080,
+      "hides": 175,
+      "ore": 240
+     },
+     "buildSeconds": 1481.0
+    },
+    {
+     "cost": {
+      "wood": 2450,
+      "stone": 1400,
+      "hides": 230,
+      "ore": 310
+     },
+     "buildSeconds": 1896.0
+    },
+    {
+     "cost": {
+      "wood": 3200,
+      "stone": 1820,
+      "hides": 300,
+      "ore": 400
+     },
+     "buildSeconds": 2426.0
+    },
+    {
+     "cost": {
+      "wood": 4150,
+      "stone": 2350,
+      "hides": 390,
+      "ore": 520
+     },
+     "buildSeconds": 3106.0
+    },
+    {
+     "cost": {
+      "wood": 5350,
+      "stone": 3050,
+      "hides": 510,
+      "ore": 680
+     },
+     "buildSeconds": 3975.0
+    }
+   ]
+  },
+  {
+   "id": "medieval_tavern",
+   "name": "Tavern",
+   "description": "Ale, stew and songs by the fire. A big gathering place, and people grumble much less.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 2,
+    "height": 2
+   },
+   "cost": {
+    "wood": 90,
+    "stone": 100,
+    "planks": 40
+   },
+   "buildSeconds": 100,
+   "sprite": "medieval_tavern",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "burgher_rights",
+   "maxCount": 2,
+   "community": 8,
+   "effects": [
+    {
+     "kind": "discontentPerHour",
+     "value": -2
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 75,
+      "planks": 30
+     },
+     "buildSeconds": 80.0
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 100,
+      "planks": 40
+     },
+     "buildSeconds": 100.0
+    },
+    {
+     "cost": {
+      "wood": 110,
+      "stone": 125,
+      "planks": 50
+     },
+     "buildSeconds": 120.0
+    },
+    {
+     "cost": {
+      "wood": 135,
+      "stone": 150,
+      "planks": 60
+     },
+     "buildSeconds": 140.0
+    },
+    {
+     "cost": {
+      "wood": 175,
+      "stone": 195,
+      "planks": 80
+     },
+     "buildSeconds": 179.0
+    },
+    {
+     "cost": {
+      "wood": 230,
+      "stone": 250,
+      "planks": 100
+     },
+     "buildSeconds": 229.0
+    },
+    {
+     "cost": {
+      "wood": 300,
+      "stone": 330,
+      "planks": 130,
+      "hides": 45
+     },
+     "buildSeconds": 294.0
+    },
+    {
+     "cost": {
+      "wood": 390,
+      "stone": 430,
+      "planks": 170,
+      "hides": 60
+     },
+     "buildSeconds": 376.0
+    },
+    {
+     "cost": {
+      "wood": 500,
+      "stone": 560,
+      "planks": 220,
+      "hides": 75
+     },
+     "buildSeconds": 481.0
+    },
+    {
+     "cost": {
+      "wood": 650,
+      "stone": 720,
+      "planks": 290,
+      "hides": 100
+     },
+     "buildSeconds": 616.0
+    },
+    {
+     "cost": {
+      "wood": 850,
+      "stone": 940,
+      "planks": 380,
+      "hides": 130,
+      "ore": 175
+     },
+     "buildSeconds": 788.0
+    },
+    {
+     "cost": {
+      "wood": 1100,
+      "stone": 1220,
+      "planks": 490,
+      "hides": 170,
+      "ore": 230
+     },
+     "buildSeconds": 1009.0
+    },
+    {
+     "cost": {
+      "wood": 1430,
+      "stone": 1590,
+      "planks": 640,
+      "hides": 220,
+      "ore": 290
+     },
+     "buildSeconds": 1291.0
+    },
+    {
+     "cost": {
+      "wood": 1860,
+      "stone": 2050,
+      "planks": 830,
+      "hides": 290,
+      "ore": 380
+     },
+     "buildSeconds": 1653.0
+    }
+   ]
+  },
+  {
+   "id": "medieval_scriptorium",
+   "name": "Scriptorium",
+   "description": "Quiet desks where scribes copy books. +3 Research jobs.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 2,
+    "height": 2
+   },
+   "cost": {
+    "wood": 80,
+    "stone": 140,
+    "planks": 30
+   },
+   "buildSeconds": 110,
+   "sprite": "medieval_scriptorium",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "monastic_orders",
+   "maxCount": 2,
+   "jobSlots": [
+    {
+     "job": "research",
+     "count": 3
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 105,
+      "planks": 20
+     },
+     "buildSeconds": 88.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 140,
+      "planks": 30
+     },
+     "buildSeconds": 110.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 175,
+      "planks": 40
+     },
+     "buildSeconds": 132.0
+    },
+    {
+     "cost": {
+      "wood": 120,
+      "stone": 210,
+      "planks": 45
+     },
+     "buildSeconds": 154.0
+    },
+    {
+     "cost": {
+      "wood": 155,
+      "stone": 270,
+      "planks": 60
+     },
+     "buildSeconds": 197.0
+    },
+    {
+     "cost": {
+      "wood": 200,
+      "stone": 350,
+      "planks": 75
+     },
+     "buildSeconds": 252.0
+    },
+    {
+     "cost": {
+      "wood": 260,
+      "stone": 460,
+      "planks": 100,
+      "hides": 50
+     },
+     "buildSeconds": 323.0
+    },
+    {
+     "cost": {
+      "wood": 340,
+      "stone": 600,
+      "planks": 130,
+      "hides": 65
+     },
+     "buildSeconds": 413.0
+    },
+    {
+     "cost": {
+      "wood": 450,
+      "stone": 780,
+      "planks": 165,
+      "hides": 85
+     },
+     "buildSeconds": 529.0
+    },
+    {
+     "cost": {
+      "wood": 580,
+      "stone": 1010,
+      "planks": 220,
+      "hides": 110
+     },
+     "buildSeconds": 677.0
+    },
+    {
+     "cost": {
+      "wood": 750,
+      "stone": 1320,
+      "planks": 280,
+      "hides": 140,
+      "ore": 190
+     },
+     "buildSeconds": 867.0
+    },
+    {
+     "cost": {
+      "wood": 980,
+      "stone": 1710,
+      "planks": 370,
+      "hides": 185,
+      "ore": 240
+     },
+     "buildSeconds": 1110.0
+    },
+    {
+     "cost": {
+      "wood": 1270,
+      "stone": 2250,
+      "planks": 480,
+      "hides": 240,
+      "ore": 320
+     },
+     "buildSeconds": 1420.0
+    },
+    {
+     "cost": {
+      "wood": 1650,
+      "stone": 2900,
+      "planks": 620,
+      "hides": 310,
+      "ore": 410
+     },
+     "buildSeconds": 1818.0
+    }
+   ]
+  },
+  {
+   "id": "medieval_warehouse",
+   "name": "Warehouse",
+   "description": "A great timber store with a hoist. +400 storage for every good.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 3,
+    "height": 3
+   },
+   "cost": {
+    "wood": 140,
+    "stone": 100,
+    "planks": 60
+   },
+   "buildSeconds": 110,
+   "sprite": "medieval_warehouse",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "guilds",
+   "storage": 400,
+   "levels": [
+    {
+     "cost": {
+      "wood": 105,
+      "stone": 75,
+      "planks": 45
+     },
+     "buildSeconds": 88.0
+    },
+    {
+     "cost": {
+      "wood": 140,
+      "stone": 100,
+      "planks": 60
+     },
+     "buildSeconds": 110.0
+    },
+    {
+     "cost": {
+      "wood": 175,
+      "stone": 125,
+      "planks": 75
+     },
+     "buildSeconds": 132.0
+    },
+    {
+     "cost": {
+      "wood": 210,
+      "stone": 150,
+      "planks": 90
+     },
+     "buildSeconds": 154.0
+    },
+    {
+     "cost": {
+      "wood": 270,
+      "stone": 195,
+      "planks": 115
+     },
+     "buildSeconds": 197.0
+    },
+    {
+     "cost": {
+      "wood": 350,
+      "stone": 250,
+      "planks": 150
+     },
+     "buildSeconds": 252.0
+    },
+    {
+     "cost": {
+      "wood": 460,
+      "stone": 330,
+      "planks": 200,
+      "hides": 60
+     },
+     "buildSeconds": 323.0
+    },
+    {
+     "cost": {
+      "wood": 600,
+      "stone": 430,
+      "planks": 260,
+      "hides": 75
+     },
+     "buildSeconds": 413.0
+    },
+    {
+     "cost": {
+      "wood": 780,
+      "stone": 560,
+      "planks": 330,
+      "hides": 100
+     },
+     "buildSeconds": 529.0
+    },
+    {
+     "cost": {
+      "wood": 1010,
+      "stone": 720,
+      "planks": 430,
+      "hides": 130
+     },
+     "buildSeconds": 677.0
+    },
+    {
+     "cost": {
+      "wood": 1320,
+      "stone": 940,
+      "planks": 560,
+      "hides": 170,
+      "ore": 230
+     },
+     "buildSeconds": 867.0
+    },
+    {
+     "cost": {
+      "wood": 1710,
+      "stone": 1220,
+      "planks": 730,
+      "hides": 220,
+      "ore": 290
+     },
+     "buildSeconds": 1110.0
+    },
+    {
+     "cost": {
+      "wood": 2250,
+      "stone": 1590,
+      "planks": 950,
+      "hides": 290,
+      "ore": 380
+     },
+     "buildSeconds": 1420.0
+    },
+    {
+     "cost": {
+      "wood": 2900,
+      "stone": 2050,
+      "planks": 1240,
+      "hides": 370,
+      "ore": 500
+     },
+     "buildSeconds": 1818.0
+    },
+    {
+     "cost": {
+      "wood": 3750,
+      "stone": 2700,
+      "planks": 1610,
+      "hides": 480,
+      "ore": 650
+     },
+     "buildSeconds": 2327.0
+    },
+    {
+     "cost": {
+      "wood": 4900,
+      "stone": 3500,
+      "planks": 2100,
+      "hides": 630,
+      "ore": 840
+     },
+     "buildSeconds": 2979.0
+    },
+    {
+     "cost": {
+      "wood": 6350,
+      "stone": 4550,
+      "planks": 2750,
+      "hides": 820,
+      "ore": 1090
+     },
+     "buildSeconds": 3813.0
+    },
+    {
+     "cost": {
+      "wood": 8250,
+      "stone": 5900,
+      "planks": 3550,
+      "hides": 1060,
+      "ore": 1420
+     },
+     "buildSeconds": 4880.0
+    },
+    {
+     "cost": {
+      "wood": 10750,
+      "stone": 7700,
+      "planks": 4600,
+      "hides": 1380,
+      "ore": 1840
+     },
+     "buildSeconds": 6247.0
+    }
+   ]
+  },
+  {
+   "id": "medieval_bathhouse",
+   "name": "Bathhouse",
+   "description": "Hot water and clean linen. Fewer people fall ill (-15%), the sick get well 20% faster, and people like to meet there.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 2,
+    "height": 2
+   },
+   "cost": {
+    "wood": 70,
+    "stone": 120
+   },
+   "buildSeconds": 90,
+   "sprite": "medieval_bathhouse",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "masonry",
+   "maxCount": 1,
+   "community": 3,
+   "effects": [
+    {
+     "kind": "sicknessMultiplier",
+     "value": 0.85
+    },
+    {
+     "kind": "recoveryMultiplier",
+     "value": 1.2
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 90
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 120
+     },
+     "buildSeconds": 90.0
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 150
+     },
+     "buildSeconds": 108.0
+    },
+    {
+     "cost": {
+      "wood": 105,
+      "stone": 180
+     },
+     "buildSeconds": 126.0
+    },
+    {
+     "cost": {
+      "wood": 135,
+      "stone": 230
+     },
+     "buildSeconds": 161.0
+    },
+    {
+     "cost": {
+      "wood": 175,
+      "stone": 300
+     },
+     "buildSeconds": 206.0
+    },
+    {
+     "cost": {
+      "wood": 230,
+      "stone": 400,
+      "hides": 40
+     },
+     "buildSeconds": 264.0
+    },
+    {
+     "cost": {
+      "wood": 300,
+      "stone": 510,
+      "hides": 50
+     },
+     "buildSeconds": 338.0
+    },
+    {
+     "cost": {
+      "wood": 390,
+      "stone": 670,
+      "hides": 65
+     },
+     "buildSeconds": 433.0
+    }
+   ]
+  },
+  {
+   "id": "weavers_hut",
+   "name": "Weaver's Hut",
+   "description": "A loom and a tanning frame. 2 Weaving jobs turn Hides and a little Wood into Household Goods (cloth, baskets, pots) that the better homes need.",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 35,
+    "stone": 10
+   },
+   "buildSeconds": 40,
+   "sprite": "weavers_hut",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "hide_working",
+   "jobSlots": [
+    {
+     "job": "weaving",
+     "count": 2
+    }
+   ],
+   "levels": [
+    {
+     "cost": {
+      "wood": 25,
+      "stone": 8
+     },
+     "buildSeconds": 32.0
+    },
+    {
+     "cost": {
+      "wood": 35,
+      "stone": 10
+     },
+     "buildSeconds": 40.0
+    },
+    {
+     "cost": {
+      "wood": 45,
+      "stone": 12
+     },
+     "buildSeconds": 48.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 15
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 70,
+      "stone": 20
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 90,
+      "stone": 25
+     },
+     "buildSeconds": 92.0
+    },
+    {
+     "cost": {
+      "wood": 115,
+      "stone": 35,
+      "hides": 9
+     },
+     "buildSeconds": 117.0
+    },
+    {
+     "cost": {
+      "wood": 150,
+      "stone": 45,
+      "hides": 12
+     },
+     "buildSeconds": 150.0
+    },
+    {
+     "cost": {
+      "wood": 195,
+      "stone": 55,
+      "hides": 15
+     },
+     "buildSeconds": 192.0
+    },
+    {
+     "cost": {
+      "wood": 250,
+      "stone": 70,
+      "hides": 20
+     },
+     "buildSeconds": 246.0
+    },
+    {
+     "cost": {
+      "wood": 330,
+      "stone": 95,
+      "hides": 25,
+      "ore": 35
+     },
+     "buildSeconds": 315.0
+    },
+    {
+     "cost": {
+      "wood": 430,
+      "stone": 120,
+      "hides": 35,
+      "ore": 45
+     },
+     "buildSeconds": 404.0
+    },
+    {
+     "cost": {
+      "wood": 560,
+      "stone": 160,
+      "hides": 45,
+      "ore": 55
+     },
+     "buildSeconds": 517.0
+    },
+    {
+     "cost": {
+      "wood": 720,
+      "stone": 210,
+      "hides": 55,
+      "ore": 75
+     },
+     "buildSeconds": 661.0
+    },
+    {
+     "cost": {
+      "wood": 940,
+      "stone": 270,
+      "hides": 75,
+      "ore": 95
+     },
+     "buildSeconds": 846.0
+    },
+    {
+     "cost": {
+      "wood": 1220,
+      "stone": 350,
+      "hides": 95,
+      "ore": 125
+     },
+     "buildSeconds": 1083.0
+    },
+    {
+     "cost": {
+      "wood": 1590,
+      "stone": 450,
+      "hides": 125,
+      "ore": 165
+     },
+     "buildSeconds": 1386.0
+    },
+    {
+     "cost": {
+      "wood": 2050,
+      "stone": 590,
+      "hides": 160,
+      "ore": 210
+     },
+     "buildSeconds": 1775.0
+    },
+    {
+     "cost": {
+      "wood": 2700,
+      "stone": 770,
+      "hides": 210,
+      "ore": 280
+     },
+     "buildSeconds": 2272.0
+    }
+   ]
+  },
+  {
+   "id": "market_stall",
+   "name": "Market Stall",
+   "description": "Awnings and baskets where goods change hands. Homes within 10 cells can get Household Goods.",
+   "epoch": "epoch_first_communities",
+   "footprint": {
+    "width": 1,
+    "height": 1
+   },
+   "cost": {
+    "wood": 40,
+    "stone": 15
+   },
+   "buildSeconds": 40,
+   "sprite": "market_stall",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "permanent_settlement",
+   "market": true,
+   "community": 2,
+   "levels": [
+    {
+     "cost": {
+      "wood": 30,
+      "stone": 11
+     },
+     "buildSeconds": 32.0
+    },
+    {
+     "cost": {
+      "wood": 40,
+      "stone": 15
+     },
+     "buildSeconds": 40.0
+    },
+    {
+     "cost": {
+      "wood": 50,
+      "stone": 19
+     },
+     "buildSeconds": 48.0
+    },
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 20
+     },
+     "buildSeconds": 56.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 30
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 40
+     },
+     "buildSeconds": 92.0
+    },
+    {
+     "cost": {
+      "wood": 130,
+      "stone": 50,
+      "hides": 11
+     },
+     "buildSeconds": 117.0
+    },
+    {
+     "cost": {
+      "wood": 170,
+      "stone": 65,
+      "hides": 14
+     },
+     "buildSeconds": 150.0
+    },
+    {
+     "cost": {
+      "wood": 220,
+      "stone": 85,
+      "hides": 18
+     },
+     "buildSeconds": 192.0
+    },
+    {
+     "cost": {
+      "wood": 290,
+      "stone": 110,
+      "hides": 25
+     },
+     "buildSeconds": 246.0
+    },
+    {
+     "cost": {
+      "wood": 380,
+      "stone": 140,
+      "hides": 30,
+      "ore": 40
+     },
+     "buildSeconds": 315.0
+    },
+    {
+     "cost": {
+      "wood": 490,
+      "stone": 185,
+      "hides": 40,
+      "ore": 55
+     },
+     "buildSeconds": 404.0
+    },
+    {
+     "cost": {
+      "wood": 640,
+      "stone": 240,
+      "hides": 50,
+      "ore": 70
+     },
+     "buildSeconds": 517.0
+    },
+    {
+     "cost": {
+      "wood": 830,
+      "stone": 310,
+      "hides": 70,
+      "ore": 90
+     },
+     "buildSeconds": 661.0
+    },
+    {
+     "cost": {
+      "wood": 1080,
+      "stone": 400,
+      "hides": 90,
+      "ore": 120
+     },
+     "buildSeconds": 846.0
+    },
+    {
+     "cost": {
+      "wood": 1400,
+      "stone": 520,
+      "hides": 115,
+      "ore": 155
+     },
+     "buildSeconds": 1083.0
+    },
+    {
+     "cost": {
+      "wood": 1820,
+      "stone": 680,
+      "hides": 150,
+      "ore": 200
+     },
+     "buildSeconds": 1386.0
+    },
+    {
+     "cost": {
+      "wood": 2350,
+      "stone": 890,
+      "hides": 195,
+      "ore": 260
+     },
+     "buildSeconds": 1775.0
+    },
+    {
+     "cost": {
+      "wood": 3050,
+      "stone": 1150,
+      "hides": 250,
+      "ore": 340
+     },
+     "buildSeconds": 2272.0
+    }
+   ]
+  },
+  {
+   "id": "trading_post",
+   "name": "Trading Post",
+   "description": "A warehouse on the road out of the valley. Caravans leave from here along trade routes: send what you have plenty of, bring home what you lack. One more route at levels 4, 8, 12 and 16.",
+   "epoch": "epoch_first_civilizations",
+   "footprint": {
+    "width": 2,
+    "height": 2
+   },
+   "cost": {
+    "wood": 80,
+    "stone": 50
+   },
+   "buildSeconds": 90,
+   "sprite": "trading_post",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "trade_routes",
+   "storage": 100,
+   "tradeRoutes": 1,
+   "maxCount": 1,
+   "levels": [
+    {
+     "cost": {
+      "wood": 60,
+      "stone": 40
+     },
+     "buildSeconds": 72.0
+    },
+    {
+     "cost": {
+      "wood": 80,
+      "stone": 50
+     },
+     "buildSeconds": 90.0
+    },
+    {
+     "cost": {
+      "wood": 100,
+      "stone": 60
+     },
+     "buildSeconds": 108.0
+    },
+    {
+     "cost": {
+      "wood": 120,
+      "stone": 75
+     },
+     "buildSeconds": 126.0
+    },
+    {
+     "cost": {
+      "wood": 155,
+      "stone": 100
+     },
+     "buildSeconds": 161.0
+    },
+    {
+     "cost": {
+      "wood": 200,
+      "stone": 125
+     },
+     "buildSeconds": 206.0
+    },
+    {
+     "cost": {
+      "wood": 260,
+      "stone": 165,
+      "hides": 25
+     },
+     "buildSeconds": 264.0
+    },
+    {
+     "cost": {
+      "wood": 340,
+      "stone": 210,
+      "hides": 35
+     },
+     "buildSeconds": 338.0
+    },
+    {
+     "cost": {
+      "wood": 450,
+      "stone": 280,
+      "hides": 45
+     },
+     "buildSeconds": 433.0
+    },
+    {
+     "cost": {
+      "wood": 580,
+      "stone": 360,
+      "hides": 55
+     },
+     "buildSeconds": 554.0
+    },
+    {
+     "cost": {
+      "wood": 750,
+      "stone": 470,
+      "hides": 75,
+      "ore": 100
+     },
+     "buildSeconds": 709.0
+    },
+    {
+     "cost": {
+      "wood": 980,
+      "stone": 610,
+      "hides": 95,
+      "ore": 125
+     },
+     "buildSeconds": 908.0
+    },
+    {
+     "cost": {
+      "wood": 1270,
+      "stone": 800,
+      "hides": 125,
+      "ore": 165
+     },
+     "buildSeconds": 1162.0
+    },
+    {
+     "cost": {
+      "wood": 1650,
+      "stone": 1030,
+      "hides": 160,
+      "ore": 220
+     },
+     "buildSeconds": 1488.0
+    },
+    {
+     "cost": {
+      "wood": 2150,
+      "stone": 1340,
+      "hides": 210,
+      "ore": 280
+     },
+     "buildSeconds": 1904.0
+    },
+    {
+     "cost": {
+      "wood": 2800,
+      "stone": 1750,
+      "hides": 270,
+      "ore": 360
+     },
+     "buildSeconds": 2437.0
+    },
+    {
+     "cost": {
+      "wood": 3650,
+      "stone": 2250,
+      "hides": 350,
+      "ore": 470
+     },
+     "buildSeconds": 3120.0
+    },
+    {
+     "cost": {
+      "wood": 4700,
+      "stone": 2950,
+      "hides": 460,
+      "ore": 610
+     },
+     "buildSeconds": 3993.0
+    },
+    {
+     "cost": {
+      "wood": 6150,
+      "stone": 3850,
+      "hides": 600,
+      "ore": 800
+     },
+     "buildSeconds": 5111.0
+    }
+   ]
+  },
+  {
+   "id": "lords_manor",
+   "name": "Lord's Manor",
+   "description": "The lord's seat, raised part by part as you choose: a great hall first, then kitchens, a tower, a garden and a steward's office. Each part pleases the Crown.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 4,
+    "height": 4
+   },
+   "cost": {
+    "wood": 120,
+    "stone": 60
+   },
+   "buildSeconds": 60,
+   "sprite": "lords_manor",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "written_law",
+   "maxCount": 1,
+   "parts": [
+    {
+     "id": "great_hall",
+     "name": "Great Hall",
+     "description": "Feasts and the lord's court. A gathering place (+3) and +4 Crown favour an hour.",
+     "cost": {
+      "wood": 160,
+      "stone": 120,
+      "planks": 30
+     },
+     "buildSeconds": 240.0,
+     "requires": [],
+     "effects": [],
+     "community": 3,
+     "estate": "crown",
+     "favour": 4
+    },
+    {
+     "id": "manor_kitchen",
+     "name": "Kitchens",
+     "description": "Bread and stew for the hall's guests. +2 approval.",
+     "cost": {
+      "wood": 80,
+      "stone": 60,
+      "planks": 15
+     },
+     "buildSeconds": 180.0,
+     "requires": [
+      "great_hall"
+     ],
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": 2
+      }
+     ]
+    },
+    {
+     "id": "solar_tower",
+     "name": "Solar Tower",
+     "description": "The lord's chambers and strongroom. The treasury holds 25% more; +3 Crown favour.",
+     "cost": {
+      "wood": 60,
+      "stone": 180,
+      "planks": 20
+     },
+     "buildSeconds": 300.0,
+     "requires": [
+      "great_hall"
+     ],
+     "effects": [
+      {
+       "kind": "storageMultiplier",
+       "resource": "coins",
+       "value": 1.25
+      }
+     ],
+     "estate": "crown",
+     "favour": 3
+    },
+    {
+     "id": "manor_garden",
+     "name": "Walled Garden",
+     "description": "Herbs, roses and a fountain. A gathering place (+2), 5% less illness.",
+     "cost": {
+      "wood": 40,
+      "stone": 80
+     },
+     "buildSeconds": 180.0,
+     "requires": [
+      "manor_kitchen"
+     ],
+     "effects": [
+      {
+       "kind": "sicknessMultiplier",
+       "value": 0.95
+      }
+     ],
+     "community": 2
+    },
+    {
+     "id": "stewards_office",
+     "name": "Steward's Office",
+     "description": "Ledgers and the lord's builders. Building goes 10% faster; +3 Crown favour.",
+     "cost": {
+      "wood": 70,
+      "stone": 70,
+      "planks": 30,
+      "tools": 5
+     },
+     "buildSeconds": 240.0,
+     "requires": [
+      "solar_tower"
+     ],
+     "effects": [
+      {
+       "kind": "constructionSpeedMultiplier",
+       "value": 1.1
+      }
+     ],
+     "estate": "crown",
+     "favour": 3
+    }
+   ]
+  },
+  {
+   "id": "abbey",
+   "name": "Abbey",
+   "description": "Monks build their house of prayer and learning part by part: the church, a cloister, an infirmary, a brewery and a library. Each part pleases the Clergy.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 4,
+    "height": 4
+   },
+   "cost": {
+    "wood": 100,
+    "stone": 80
+   },
+   "buildSeconds": 60,
+   "sprite": "abbey",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "monastic_orders",
+   "maxCount": 1,
+   "parts": [
+    {
+     "id": "abbey_church",
+     "name": "Abbey Church",
+     "description": "Bells and chant. A gathering place (+3) and +6 Clergy favour an hour.",
+     "cost": {
+      "wood": 120,
+      "stone": 220,
+      "planks": 30
+     },
+     "buildSeconds": 300.0,
+     "requires": [],
+     "effects": [],
+     "community": 3,
+     "estate": "clergy",
+     "favour": 6
+    },
+    {
+     "id": "cloister",
+     "name": "Cloister",
+     "description": "A quiet garth for study. Research 10% faster; +3 Clergy favour.",
+     "cost": {
+      "wood": 60,
+      "stone": 140,
+      "planks": 20
+     },
+     "buildSeconds": 240.0,
+     "requires": [
+      "abbey_church"
+     ],
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "research",
+       "value": 1.1
+      }
+     ],
+     "estate": "clergy",
+     "favour": 3
+    },
+    {
+     "id": "infirmary",
+     "name": "Infirmary",
+     "description": "Beds and herbs for the sick. 15% less illness, the sick get well 15% faster.",
+     "cost": {
+      "wood": 70,
+      "stone": 90,
+      "planks": 20
+     },
+     "buildSeconds": 240.0,
+     "requires": [
+      "cloister"
+     ],
+     "effects": [
+      {
+       "kind": "sicknessMultiplier",
+       "value": 0.85
+      },
+      {
+       "kind": "recoveryMultiplier",
+       "value": 1.15
+      }
+     ]
+    },
+    {
+     "id": "abbey_brewery",
+     "name": "Brewery",
+     "description": "Ale for feast days. +2 approval, people grumble a little less.",
+     "cost": {
+      "wood": 70,
+      "stone": 50,
+      "planks": 20
+     },
+     "buildSeconds": 180.0,
+     "requires": [
+      "abbey_church"
+     ],
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": 2
+      },
+      {
+       "kind": "discontentPerHour",
+       "value": -0.3
+      }
+     ]
+    },
+    {
+     "id": "abbey_library",
+     "name": "Library",
+     "description": "Copied books from far away. Research 10% faster again; +4 Clergy favour.",
+     "cost": {
+      "wood": 60,
+      "stone": 100,
+      "planks": 40
+     },
+     "buildSeconds": 300.0,
+     "requires": [
+      "cloister"
+     ],
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "research",
+       "value": 1.1
+      }
+     ],
+     "estate": "clergy",
+     "favour": 4
+    }
+   ]
+  },
+  {
+   "id": "stone_keep",
+   "name": "Stone Keep",
+   "description": "A castle raised part by part: a keep tower, a curtain wall, a gatehouse, a watch house and a great storehouse. Pleases the Crown and keeps the town calm.",
+   "epoch": "epoch_medieval_kingdoms",
+   "footprint": {
+    "width": 4,
+    "height": 4
+   },
+   "cost": {
+    "wood": 80,
+    "stone": 120
+   },
+   "buildSeconds": 60,
+   "sprite": "stone_keep",
+   "allowedTerrain": [
+    "grass",
+    "sand"
+   ],
+   "buildable": true,
+   "requiresTech": "masonry",
+   "maxCount": 1,
+   "parts": [
+    {
+     "id": "keep_tower",
+     "name": "Keep Tower",
+     "description": "A tall square tower. Stores hold 15% more food; +3 Crown favour.",
+     "cost": {
+      "wood": 80,
+      "stone": 260
+     },
+     "buildSeconds": 300.0,
+     "requires": [],
+     "effects": [
+      {
+       "kind": "storageMultiplier",
+       "resource": "food",
+       "value": 1.15
+      }
+     ],
+     "estate": "crown",
+     "favour": 3
+    },
+    {
+     "id": "curtain_wall",
+     "name": "Curtain Wall",
+     "description": "Stone walls round the bailey. People feel safe: discontent eases.",
+     "cost": {
+      "stone": 300
+     },
+     "buildSeconds": 360.0,
+     "requires": [
+      "keep_tower"
+     ],
+     "effects": [
+      {
+       "kind": "discontentPerHour",
+       "value": -0.5
+      }
+     ]
+    },
+    {
+     "id": "gatehouse",
+     "name": "Gatehouse",
+     "description": "Riders go out to the lands around. Scouts explore 15% faster.",
+     "cost": {
+      "wood": 60,
+      "stone": 140,
+      "planks": 20
+     },
+     "buildSeconds": 240.0,
+     "requires": [
+      "curtain_wall"
+     ],
+     "effects": [
+      {
+       "kind": "expeditionSpeedMultiplier",
+       "value": 1.15
+      }
+     ]
+    },
+    {
+     "id": "watch_house",
+     "name": "Watch House",
+     "description": "Guards keep the peace. +1 approval and +2 Commons favour.",
+     "cost": {
+      "wood": 70,
+      "stone": 60,
+      "planks": 15
+     },
+     "buildSeconds": 180.0,
+     "requires": [
+      "keep_tower"
+     ],
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": 1
+      }
+     ],
+     "estate": "commons",
+     "favour": 2
+    },
+    {
+     "id": "great_storehouse",
+     "name": "Great Storehouse",
+     "description": "Vaults under the bailey. Stores hold 20% more wood and stone.",
+     "cost": {
+      "wood": 100,
+      "stone": 160,
+      "planks": 30
+     },
+     "buildSeconds": 300.0,
+     "requires": [
+      "curtain_wall"
+     ],
+     "effects": [
+      {
+       "kind": "storageMultiplier",
+       "resource": "wood",
+       "value": 1.2
+      },
+      {
+       "kind": "storageMultiplier",
+       "resource": "stone",
+       "value": 1.2
+      }
+     ]
+    }
+   ]
   }
  ],
  "technologies": [
@@ -7563,6 +11018,10 @@
     {
      "kind": "unlockBuilding",
      "buildingId": "healers_hut"
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "herb_garden"
     }
    ]
   },
@@ -7606,6 +11065,29 @@
    "heartLevel": 4
   },
   {
+   "id": "trail_signs",
+   "name": "Trail Signs",
+   "description": "Blazes on trees and cairns on hills. Scouts explore 10% faster and can build a Lookout Tower.",
+   "cost": {
+    "knowledge": 40
+   },
+   "researchSeconds": 480.0,
+   "prerequisites": [
+    "shared_labor"
+   ],
+   "effects": [
+    {
+     "kind": "expeditionSpeedMultiplier",
+     "value": 1.1
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "lookout_tower"
+    }
+   ],
+   "heartLevel": 6
+  },
+  {
    "id": "permanent_settlement",
    "name": "Permanent Settlement",
    "description": "The community commits to this place. Required to found a stable village.",
@@ -7617,7 +11099,12 @@
     "food_preservation",
     "structural_weaving"
    ],
-   "effects": [],
+   "effects": [
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "market_stall"
+    }
+   ],
    "heartLevel": 7
   },
   {
@@ -7655,6 +11142,14 @@
     {
      "kind": "spoilageMultiplier",
      "value": 0.85
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "smokehouse"
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "weavers_hut"
     }
    ],
    "heartLevel": 5
@@ -7678,6 +11173,44 @@
     }
    ],
    "heartLevel": 8
+  },
+  {
+   "id": "barter",
+   "name": "Barter",
+   "description": "Neighbours swap what they have too much of. Unlocks the Market: homes near a market are happier.",
+   "cost": {
+    "knowledge": 80
+   },
+   "researchSeconds": 900.0,
+   "prerequisites": [
+    "permanent_settlement"
+   ],
+   "heartLevel": 9,
+   "effects": [
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "market"
+    }
+   ]
+  },
+  {
+   "id": "ancestor_rites",
+   "name": "Ancestor Rites",
+   "description": "The founders are honoured at tall stones. Unlocks the Ancestor Stones.",
+   "cost": {
+    "knowledge": 80
+   },
+   "researchSeconds": 840.0,
+   "prerequisites": [
+    "oral_tradition"
+   ],
+   "effects": [
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "ancestor_shrine"
+    }
+   ],
+   "heartLevel": 9
   },
   {
    "id": "longhouses",
@@ -7718,6 +11251,49 @@
    "heartLevel": 12
   },
   {
+   "id": "beekeeping",
+   "name": "Beekeeping",
+   "description": "Wild swarms are coaxed into straw hives. Unlocks the Apiary.",
+   "cost": {
+    "knowledge": 120
+   },
+   "researchSeconds": 1200.0,
+   "prerequisites": [
+    "agriculture"
+   ],
+   "effects": [
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "apiary"
+    }
+   ],
+   "heartLevel": 14
+  },
+  {
+   "id": "carpentry",
+   "name": "Carpentry",
+   "description": "Saws, wedges and straight planks. Wood gathering +5% and unlocks the Sawpit.",
+   "cost": {
+    "knowledge": 115
+   },
+   "researchSeconds": 1200.0,
+   "prerequisites": [
+    "agriculture"
+   ],
+   "effects": [
+    {
+     "kind": "jobRateMultiplier",
+     "job": "woodcutting",
+     "value": 1.05
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "sawpit"
+    }
+   ],
+   "heartLevel": 13
+  },
+  {
    "id": "animal_husbandry",
    "name": "Animal Husbandry",
    "description": "Penning goats, sheep and cattle. Unlocks the Animal Pen and the Pasture: herders bring food and hides all year.",
@@ -7755,6 +11331,26 @@
     }
    ],
    "heartLevel": 15
+  },
+  {
+   "id": "trade_routes",
+   "name": "Trade Routes",
+   "description": "Pack animals and carts carry goods over the hills. Unlocks the Trading Post and trade routes to the peoples beyond the valley.",
+   "cost": {
+    "knowledge": 150
+   },
+   "researchSeconds": 1500.0,
+   "prerequisites": [
+    "barter",
+    "pottery"
+   ],
+   "heartLevel": 15,
+   "effects": [
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "trading_post"
+    }
+   ]
   },
   {
    "id": "copper_smelting",
@@ -7813,9 +11409,29 @@
    "heartLevel": 18
   },
   {
+   "id": "bronze_tools",
+   "name": "Bronze Tools",
+   "description": "Axes, sickles and picks cast in bronze. Unlocks the Toolsmith.",
+   "cost": {
+    "knowledge": 250
+   },
+   "researchSeconds": 2700.0,
+   "prerequisites": [
+    "bronze_working",
+    "carpentry"
+   ],
+   "effects": [
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "toolsmith"
+    }
+   ],
+   "heartLevel": 19
+  },
+  {
    "id": "written_law",
    "name": "Written Law",
-   "description": "Marks on clay and wood that keep promises. The village is ready to ask a lord for a charter. +10% research.",
+   "description": "Marks on clay and wood that keep promises. The village is ready to ask a lord for a charter. +10% research. Lay out the Lord's Manor, built part by part.",
    "cost": {
     "knowledge": 320
    },
@@ -7828,6 +11444,10 @@
      "kind": "jobRateMultiplier",
      "job": "research",
      "value": 1.1
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "lords_manor"
     }
    ],
    "heartLevel": 24
@@ -7836,7 +11456,7 @@
    "id": "masonry",
    "epoch": "epoch_medieval_kingdoms",
    "name": "Stone Masonry",
-   "description": "Cut stone and lime mortar. Unlocks the Stone Cottage and the Town House. +15% stone gathering.",
+   "description": "Cut stone and lime mortar. Unlocks the Stone Cottage and the Town House. +15% stone gathering. Lay out the Stone Keep, built part by part.",
    "cost": {
     "knowledge": 360
    },
@@ -7849,6 +11469,18 @@
      "kind": "jobRateMultiplier",
      "job": "stonecutting",
      "value": 1.15
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "medieval_carpenter"
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "medieval_bathhouse"
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "stone_keep"
     }
    ],
    "heartLevel": 30
@@ -7883,7 +11515,7 @@
    "id": "watermill",
    "epoch": "epoch_medieval_kingdoms",
    "name": "The Watermill",
-   "description": "The river turns the millstone. Unlocks the Watermill. +20% farming.",
+   "description": "The river turns the millstone. Unlocks the Watermill, whose millers grind grain into Flour. +20% farming.",
    "cost": {
     "knowledge": 400
    },
@@ -7901,10 +11533,30 @@
    "heartLevel": 30
   },
   {
+   "id": "bread_ovens",
+   "name": "Bread Ovens",
+   "description": "Flour from the mill becomes bread in brick ovens. Unlocks the Bakery.",
+   "cost": {
+    "knowledge": 420
+   },
+   "researchSeconds": 4500.0,
+   "prerequisites": [
+    "watermill"
+   ],
+   "effects": [
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "medieval_bakery"
+    }
+   ],
+   "heartLevel": 30,
+   "epoch": "epoch_medieval_kingdoms"
+  },
+  {
    "id": "guilds",
    "epoch": "epoch_medieval_kingdoms",
    "name": "Craft Guilds",
-   "description": "Masters, journeymen and apprentices. Unlocks the Market Hall. +15% crafting bonus.",
+   "description": "Masters, journeymen and apprentices. Unlocks the Market Hall. +15% crafting bonus. Caravans bring home 15% more.",
    "cost": {
     "knowledge": 460
    },
@@ -7917,6 +11569,14 @@
     {
      "kind": "jobRateMultiplier",
      "job": "crafting",
+     "value": 1.15
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "medieval_warehouse"
+    },
+    {
+     "kind": "tradePriceMultiplier",
      "value": 1.15
     }
    ],
@@ -7938,6 +11598,10 @@
     {
      "kind": "growthMultiplier",
      "value": 1.1
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "medieval_tavern"
     }
    ],
    "heartLevel": 30
@@ -7946,7 +11610,7 @@
    "id": "monastic_orders",
    "epoch": "epoch_medieval_kingdoms",
    "name": "Monastic Orders",
-   "description": "Monks who copy books and keep the calendar. Unlocks the Church. +20% research.",
+   "description": "Monks who copy books and keep the calendar. Unlocks the Church. +20% research. Lay out the Abbey, built part by part.",
    "cost": {
     "knowledge": 540
    },
@@ -7959,6 +11623,14 @@
      "kind": "jobRateMultiplier",
      "job": "research",
      "value": 1.2
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "medieval_scriptorium"
+    },
+    {
+     "kind": "unlockBuilding",
+     "buildingId": "abbey"
     }
    ],
    "heartLevel": 30
@@ -8282,6 +11954,179 @@
      "legacyText": "Every grain went into the stores. The elders called it wisdom; the young called it meanness."
     }
    ]
+  },
+  {
+   "id": "master_carpenter",
+   "title": "The Master Carpenter",
+   "text": "A carpenter from the hills has heard the sound of your saw. He offers to stay for a while.",
+   "trigger": [
+    {
+     "kind": "buildingCount",
+     "id": "sawpit",
+     "amount": 1
+    }
+   ],
+   "options": [
+    {
+     "id": "hire",
+     "label": "Feed him and let him work",
+     "tradeOff": "Give 40 food. He saws 40 planks and the sawyers work 25% faster for 2 hours.",
+     "cost": {
+      "food": 40
+     },
+     "effects": [
+      {
+       "kind": "grantResources",
+       "resources": {
+        "planks": 40
+       }
+      },
+      {
+       "kind": "jobRateMultiplier",
+       "job": "sawing",
+       "value": 1.25,
+       "durationSeconds": 7200
+      }
+     ],
+     "legacyText": "A master carpenter from the hills taught the valley to join timber."
+    },
+    {
+     "id": "learn",
+     "label": "Learn his joints",
+     "tradeOff": "Give 30 wood for practice: +40 knowledge.",
+     "cost": {
+      "wood": 30
+     },
+     "effects": [
+      {
+       "kind": "grantResources",
+       "resources": {
+        "knowledge": 40
+       }
+      }
+     ],
+     "legacyText": "The carpenter's joints were remembered long after he left."
+    },
+    {
+     "id": "decline",
+     "label": "Thank him and let him go",
+     "tradeOff": "No cost, no gain.",
+     "effects": [],
+     "legacyText": "The carpenter went on over the hills."
+    }
+   ]
+  },
+  {
+   "id": "frost_cracked_tools",
+   "title": "Frost-Cracked Tools",
+   "text": "A hard frost split the hafts of many tools in the store. The workers grumble over broken handles.",
+   "trigger": [
+    {
+     "kind": "madeAtLeast",
+     "resource": "tools",
+     "amount": 10
+    }
+   ],
+   "baseEffects": [
+    {
+     "kind": "approvalBonus",
+     "value": -3,
+     "durationSeconds": 3600
+    }
+   ],
+   "options": [
+    {
+     "id": "mend",
+     "label": "Fit new hafts",
+     "tradeOff": "Give 15 planks: the tools are mended and 10 more are made.",
+     "cost": {
+      "planks": 15
+     },
+     "effects": [
+      {
+       "kind": "grantResources",
+       "resources": {
+        "tools": 10
+       }
+      }
+     ],
+     "legacyText": "Every tool in the valley got a new ash haft that winter."
+    },
+    {
+     "id": "make_do",
+     "label": "Make do",
+     "tradeOff": "No cost, but wood and stone gathering are 15% slower for 1 hour.",
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "woodcutting",
+       "value": 0.85,
+       "durationSeconds": 3600
+      },
+      {
+       "kind": "jobRateMultiplier",
+       "job": "stonecutting",
+       "value": 0.85,
+       "durationSeconds": 3600
+      }
+     ],
+     "legacyText": "The valley worked on with cracked tools until spring."
+    }
+   ]
+  },
+  {
+   "id": "tavern_minstrels",
+   "title": "Minstrels at the Tavern",
+   "text": "Travelling minstrels have come to the new tavern. The whole town wants to hear them.",
+   "trigger": [
+    {
+     "kind": "buildingCount",
+     "id": "medieval_tavern",
+     "amount": 1
+    }
+   ],
+   "options": [
+    {
+     "id": "feast",
+     "label": "Hold a feast",
+     "tradeOff": "Give 80 food: +8 hope for 4 hours.",
+     "cost": {
+      "food": 80
+     },
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": 8,
+       "durationSeconds": 14400
+      }
+     ],
+     "legacyText": "The minstrels' feast was sung about for a generation."
+    },
+    {
+     "id": "news",
+     "label": "Ask them for news",
+     "tradeOff": "Give 20 food for their supper: +60 knowledge from far-off towns.",
+     "cost": {
+      "food": 20
+     },
+     "effects": [
+      {
+       "kind": "grantResources",
+       "resources": {
+        "knowledge": 60
+       }
+      }
+     ],
+     "legacyText": "The minstrels brought news of kingdoms beyond the mountains."
+    },
+    {
+     "id": "quiet",
+     "label": "Keep the town at work",
+     "tradeOff": "No cost, no gain.",
+     "effects": [],
+     "legacyText": "The minstrels played to an empty square and moved on."
+    }
+   ]
   }
  ],
  "objectives": [
@@ -8399,6 +12244,97 @@
      "id": "stable_village"
     }
    ]
+  },
+  {
+   "id": "obj_smokehouse",
+   "title": "Smoke food for the winter",
+   "hint": "Research Hide Working, then build a Smokehouse: it keeps food from spoiling.",
+   "conditions": [
+    {
+     "kind": "buildingCount",
+     "id": "smokehouse",
+     "amount": 1
+    }
+   ],
+   "reward": {
+    "food": 40
+   }
+  },
+  {
+   "id": "obj_ancestors",
+   "title": "Raise the Ancestor Stones",
+   "hint": "Research Ancestor Rites, then build the Ancestor Stones near the hearth.",
+   "conditions": [
+    {
+     "kind": "buildingCount",
+     "id": "ancestor_shrine",
+     "amount": 1
+    }
+   ],
+   "reward": {
+    "knowledge": 30
+   }
+  },
+  {
+   "id": "obj_planks",
+   "title": "Saw the first planks",
+   "hint": "Research Carpentry, build a Sawpit and put two sawyers to work.",
+   "conditions": [
+    {
+     "kind": "madeAtLeast",
+     "resource": "planks",
+     "amount": 20
+    }
+   ],
+   "reward": {
+    "wood": 60
+   }
+  },
+  {
+   "id": "obj_tools",
+   "title": "Forge bronze tools",
+   "hint": "Research Bronze Tools and build a Toolsmith. Tools need bronze and planks.",
+   "conditions": [
+    {
+     "kind": "madeAtLeast",
+     "resource": "tools",
+     "amount": 10
+    }
+   ],
+   "reward": {
+    "stone": 80,
+    "ore": 20
+   }
+  },
+  {
+   "id": "obj_bread",
+   "title": "Bake the town's bread",
+   "hint": "Research Bread Ovens, build a Watermill and a Bakery: millers grind grain into flour, bakers bake it into bread.",
+   "conditions": [
+    {
+     "kind": "buildingCount",
+     "id": "medieval_bakery",
+     "amount": 1
+    }
+   ],
+   "reward": {
+    "planks": 40
+   }
+  },
+  {
+   "id": "obj_tavern",
+   "title": "Open a tavern",
+   "hint": "Research Burgher Rights and build a Tavern: people grumble less.",
+   "conditions": [
+    {
+     "kind": "buildingCount",
+     "id": "medieval_tavern",
+     "amount": 1
+    }
+   ],
+   "reward": {
+    "knowledge": 80
+   }
   }
  ],
  "milestones": [
@@ -10116,13 +14052,14 @@
   {
    "id": "well",
    "name": "Well",
-   "description": "A stone-lined well at the heart of the village.",
+   "description": "A stone-lined well. Homes within 6 cells have water (houses need it).",
    "category": "Monuments",
    "cost": {
     "stone": 15,
     "wood": 5
    },
-   "beauty": 6
+   "beauty": 6,
+   "water": true
   },
   {
    "id": "totem",
@@ -10945,6 +14882,251 @@
      ]
     }
    ]
+  },
+  {
+   "job": "sawing",
+   "title": "Sawyer",
+   "perks": [
+    {
+     "level": 2,
+     "name": "True Line",
+     "description": "Follows the chalk line.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Set Teeth",
+     "description": "Keeps the saw sharp and set.",
+     "bonus": 0.1
+    },
+    {
+     "level": 6,
+     "name": "Quarter Sawn",
+     "description": "Planks that never warp.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "constructionSpeedMultiplier",
+       "value": 1.03
+      }
+     ]
+    },
+    {
+     "level": 8,
+     "name": "Pit Master",
+     "description": "Two logs in the time of one.",
+     "bonus": 0.15
+    },
+    {
+     "level": 10,
+     "name": "Master Sawyer",
+     "description": "Not a splinter wasted.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "sawing",
+       "value": 1.05
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "job": "toolmaking",
+   "title": "Toolsmith",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Good Moulds",
+     "description": "Fewer cracked castings.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Keen Edge",
+     "description": "Tools that cut clean.",
+     "bonus": 0.1
+    },
+    {
+     "level": 6,
+     "name": "Ash Hafts",
+     "description": "Handles that never split.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "Tempered",
+     "description": "Hard and springy bronze.",
+     "bonus": 0.15,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "mining",
+       "value": 1.03
+      }
+     ]
+    },
+    {
+     "level": 10,
+     "name": "Master Toolsmith",
+     "description": "Every worker asks for their tools.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "toolmaking",
+       "value": 1.05
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "job": "baking",
+   "title": "Baker",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Early Riser",
+     "description": "Bread before dawn.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Sourdough",
+     "description": "Bread that keeps for days.",
+     "bonus": 0.1,
+     "effects": [
+      {
+       "kind": "spoilageMultiplier",
+       "value": 0.95
+      }
+     ]
+    },
+    {
+     "level": 6,
+     "name": "Hot Oven",
+     "description": "Bakes more with less wood.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "Feast Loaves",
+     "description": "Bread for every table.",
+     "bonus": 0.15
+    },
+    {
+     "level": 10,
+     "name": "Master Baker",
+     "description": "The smell fills the whole town.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": 2
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "job": "weaving",
+   "title": "Weaver",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Even Weft",
+     "description": "Cloth without holes.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Dyer",
+     "description": "Colours the town likes.",
+     "bonus": 0.1,
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "level": 6,
+     "name": "Basket Maker",
+     "description": "Nothing is wasted.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "Tanner's Friend",
+     "description": "Uses every scrap of hide.",
+     "bonus": 0.15
+    },
+    {
+     "level": 10,
+     "name": "Master Weaver",
+     "description": "Cloth the traders ask for.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "weaving",
+       "value": 1.05
+      }
+     ]
+    }
+   ]
+  },
+  {
+   "job": "milling",
+   "title": "Miller",
+   "perks": [
+    {
+     "level": 2,
+     "name": "Dressed Stones",
+     "description": "Sharp grooves, fine flour.",
+     "bonus": 0.1
+    },
+    {
+     "level": 4,
+     "name": "Fair Measure",
+     "description": "No one says the miller cheats.",
+     "bonus": 0.1,
+     "effects": [
+      {
+       "kind": "approvalBonus",
+       "value": 1
+      }
+     ]
+    },
+    {
+     "level": 6,
+     "name": "Sluice Keeper",
+     "description": "Water at the right speed.",
+     "bonus": 0.15
+    },
+    {
+     "level": 8,
+     "name": "Bolting Cloth",
+     "description": "White flour for the feast days.",
+     "bonus": 0.15
+    },
+    {
+     "level": 10,
+     "name": "Master Miller",
+     "description": "The wheel never stops.",
+     "bonus": 0.25,
+     "effects": [
+      {
+       "kind": "jobRateMultiplier",
+       "job": "milling",
+       "value": 1.05
+      }
+     ]
+    }
+   ]
   }
  ],
  "laws": [
@@ -11341,6 +15523,186 @@
     }
    ],
    "deadlineSeconds": 3600
+  }
+ ],
+ "tradePartners": [
+  {
+   "id": "reed_folk",
+   "name": "Reed Folk",
+   "direction": "east",
+   "description": "Fishers and basket weavers on the lakes downriver. They always have dried fish to spare.",
+   "tripSeconds": 180,
+   "openCost": {
+    "food": 30,
+    "wood": 20
+   },
+   "deals": [
+    {
+     "give": {
+      "wood": 20
+     },
+     "get": {
+      "food": 30
+     }
+    },
+    {
+     "give": {
+      "stone": 15
+     },
+     "get": {
+      "food": 25
+     }
+    },
+    {
+     "give": {
+      "hides": 6
+     },
+     "get": {
+      "food": 35
+     }
+    },
+    {
+     "give": {
+      "planks": 15
+     },
+     "get": {
+      "coins": 25
+     }
+    }
+   ],
+   "legacyText": "The first caravan went downriver. The Reed Folk sent it home heavy with dried fish."
+  },
+  {
+   "id": "hill_clan",
+   "name": "Hill Clan",
+   "direction": "north",
+   "description": "Herders on the high pastures. They trade hides, quarried stone and a little ore for grain.",
+   "tripSeconds": 240,
+   "openCost": {
+    "food": 40,
+    "wood": 30
+   },
+   "deals": [
+    {
+     "give": {
+      "food": 30
+     },
+     "get": {
+      "hides": 10
+     }
+    },
+    {
+     "give": {
+      "wood": 25
+     },
+     "get": {
+      "stone": 30
+     }
+    },
+    {
+     "give": {
+      "food": 25
+     },
+     "get": {
+      "ore": 12
+     }
+    },
+    {
+     "give": {
+      "goods": 6
+     },
+     "get": {
+      "coins": 40
+     }
+    }
+   ],
+   "legacyText": "The Hill Clan shared salt and bread with our traders: a road over the ridge is open."
+  },
+  {
+   "id": "pine_valley",
+   "name": "Pine Valley",
+   "direction": "west",
+   "description": "Woodcutters in the deep pine forests. Timber is cheap there, stone is not.",
+   "tripSeconds": 200,
+   "openCost": {
+    "food": 30,
+    "stone": 20
+   },
+   "deals": [
+    {
+     "give": {
+      "food": 25
+     },
+     "get": {
+      "wood": 35
+     }
+    },
+    {
+     "give": {
+      "stone": 20
+     },
+     "get": {
+      "wood": 30
+     }
+    },
+    {
+     "give": {
+      "hides": 8
+     },
+     "get": {
+      "wood": 45
+     }
+    }
+   ],
+   "legacyText": "Rafts of pine logs now float down from Pine Valley."
+  },
+  {
+   "id": "copper_merchants",
+   "name": "Copper Merchants",
+   "direction": "south",
+   "description": "Travelling smiths from the southern mountains. They bring ore and finished bronze for hides and food.",
+   "tripSeconds": 300,
+   "openCost": {
+    "food": 60,
+    "wood": 60,
+    "stone": 40
+   },
+   "requiresTech": "copper_smelting",
+   "deals": [
+    {
+     "give": {
+      "hides": 15
+     },
+     "get": {
+      "ore": 25
+     }
+    },
+    {
+     "give": {
+      "food": 50
+     },
+     "get": {
+      "bronze": 4
+     }
+    },
+    {
+     "give": {
+      "wood": 60
+     },
+     "get": {
+      "bronze": 5
+     }
+    },
+    {
+     "give": {
+      "bronze": 5
+     },
+     "get": {
+      "coins": 60
+     }
+    }
+   ],
+   "legacyText": "Bronze from the south: the Copper Merchants now come every season."
   }
  ]
 }

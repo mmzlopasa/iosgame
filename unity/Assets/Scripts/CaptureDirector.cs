@@ -74,10 +74,9 @@ namespace Founders
             SetTime(game, 1, 0.3f);
             yield return new WaitForSeconds(1f);
 
-            // The loading screen (the montage fills the tall screen).
+            // The loading screen (the paintings fill the tall screen).
             ui.Loading.Show();
             ui.Loading.Set(0.64f, "Kindling the hearth…");
-            for (int i = 0; i < 100 && !ui.Loading.VideoPlaying; i++) yield return new WaitForSeconds(0.1f);
             yield return new WaitForSeconds(1f);
             yield return Shot("p_00_loading", true);
             ui.Loading.Hide();
@@ -155,8 +154,7 @@ namespace Founders
             var chapter = game.CurrentChapter;
             if (chapter != null)
             {
-                game.State.PendingStory = chapter.Id;
-                store.Refresh();
+                store.OpenStory(chapter.Id);
                 yield return Shot("p_18_story", true);
                 game.DismissStory();
             }
@@ -508,7 +506,6 @@ namespace Founders
             // 0. The loading screen.
             ui.Loading.Show();
             ui.Loading.Set(0.64f, "Kindling the hearth…");
-            for (int i = 0; i < 150 && !ui.Loading.VideoPlaying; i++) yield return new WaitForSeconds(0.1f);
             yield return new WaitForSeconds(1.2f);
             yield return Shot("00_loading", true);
             ui.Loading.Hide();

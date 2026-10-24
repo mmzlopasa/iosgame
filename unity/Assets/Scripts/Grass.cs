@@ -77,6 +77,8 @@ namespace Founders
                 layer.TopSet = layer.Top != null ? new InstanceSet(flat, 0, layer.Top, false) : null;
             }
             var used = WorldView.OccupiedCells(game);
+            // The trodden ring around the fire: thin grass and no flowers.
+            var rings = WorldView.Clearings(game).FindAll(z => z.Ragged > 0f);
             var center = Grid.CellCenter((game.Content.Map.Width - 1) * 0.5f, (game.Content.Map.Height - 1) * 0.5f);
             var rng = new System.Random(4242);
             int index = 0;
@@ -96,7 +98,7 @@ namespace Founders
                     var type = ground.CellType(cx, cy);
                     float density = type switch
                     {
-                        TerrainType.Grass => 0.8f,
+                        TerrainType.Grass => kitGrass != null ? 0.42f : 0.8f,
                         TerrainType.Forest => 0.15f,
                         TerrainType.Rock => 0.12f,
                         TerrainType.Mountain => 0.1f,
@@ -104,17 +106,26 @@ namespace Founders
                     };
                     // Thinner far from the valley centre (it is barely visible there).
                     density *= Mathf.Lerp(1f, 0.45f, Mathf.InverseLerp(Radius * 0.66f, Radius, d));
+                    // Grass grows in thick and thin patches, not evenly as a lawn.
+                    density *= 0.55f + 0.7f * Mathf.PerlinNoise(p.x * 0.09f + 13.7f, p.z * 0.09f + 5.2f);
+                    // Wildflowers only in some meadows, where they grow in drifts.
+                    float meadow = Mathf.Clamp01((Mathf.PerlinNoise(p.x * 0.045f + 31f, p.z * 0.045f + 17f) - 0.5f) * 4f);
                     if (roll > density) continue;
                     if (used.Contains((cx, cy))) continue;
+                    float ring = 1e9f;
+                    foreach (var hr in rings) ring = Mathf.Min(ring, new Vector2(p.x - hr.Min.x, p.z - hr.Min.y).magnitude - hr.Margin);
+                    if (ring < 0f && roll > density * 0.35f) continue;
                     float y = ground.HeightAt(p);
                     if (y < WorldTerrain.WaterLevel + 0.12f || y > 14f) continue;
                     p.y = y - 0.02f;
 
-                    bool flower = roll < density * 0.05f;
+                    bool flower = type == TerrainType.Grass && ring > 0f && roll < density * 0.12f * meadow;
                     if (kitGrass != null)
                     {
                         var models = flower && kitFlowers.Count > 0 ? kitFlowers : kitGrass;
-                        AddKit(models[rng.Next(models.Count)], p, (flower ? 0.35f : 0.4f) * size, yaw * 2f, index++);
+                        // One kind of flower per drift (the grass clumps mix freely).
+                        int pick = flower ? (int)(Mathf.PerlinNoise(p.x * 0.03f + 71f, p.z * 0.03f + 3f) * models.Count * 1.4f) % models.Count : rng.Next(models.Count);
+                        AddKit(models[pick], p, (flower ? 0.35f : 0.3f) * size, yaw * 2f, index++);
                         continue;
                     }
                     var layer = flower ? flowers : grass;
@@ -143,24 +154,30 @@ namespace Founders
             foreach (var part in model.Near)
             {
                 var key = (part.Mesh, part.SubMesh, part.Material);
-                if (!kitSets.TryGetValue(key, out var set)) kitSets[key] = set = new InstanceSet(part.Mesh, part.SubMesh, part.Material, false);
+                if (!kitSets.TryGetValue(key, out var set))
+                    kitSets[key] = set = new InstanceSet(part.Mesh, part.SubMesh, part.Material, false) { MaxDistance = KitGrassDistance };
                 set.Add(root * part.Local, index);
             }
         }
 
+        /// <summary>The packs' grass clumps are drawn up to this far from the camera (beyond, the ground's own grass shows).</summary>
+        const float KitGrassDistance = 90f;
+
         void Update()
         {
+            var cam = Camera.main;
+            var c = cam != null ? cam.transform.position : Vector3.zero;
             if (kitSets.Count > 0)
             {
-                foreach (var set in kitSets.Values) set.Draw();
+                foreach (var set in kitSets.Values) set.Draw(c);
                 return;
             }
             if (mesh == null || grass?.Side == null) return;
             // The strategy camera looks down, so each tuft is a top-view card plus two crossed side cards.
-            grass.TopSet?.Draw();
-            grass.Side?.Draw();
-            flowers.TopSet?.Draw();
-            flowers.Side?.Draw();
+            grass.TopSet?.Draw(c);
+            grass.Side?.Draw(c);
+            flowers.TopSet?.Draw(c);
+            flowers.Side?.Draw(c);
         }
 
         /// <summary>Horizontal unit card a little above the ground (seen from the strategy camera).</summary>

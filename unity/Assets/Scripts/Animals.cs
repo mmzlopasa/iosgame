@@ -20,6 +20,8 @@ namespace Founders
         };
 
         public WorldTerrain Ground;
+        /// <summary>Led by someone else (a pack horse with a caravan): no wandering of its own.</summary>
+        public bool Puppet;
         Vector3 home;
         float radius;
         Vector3 target;
@@ -120,8 +122,20 @@ namespace Founders
             }
         }
 
+        /// <summary>Places a led animal: walking or standing, facing <paramref name="facing"/>.</summary>
+        public void Steer(Vector3 position, Vector3 facing, bool walking)
+        {
+            transform.position = position;
+            facing.y = 0;
+            if (facing.sqrMagnitude > 1e-4f) transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(facing), 6f * Time.deltaTime);
+            if (body == null) return; // not started yet
+            Play(walking && hasWalk ? "WalkSlow" : "Idle");
+            body.localPosition = walking && !hasWalk ? new Vector3(0, Mathf.Abs(Mathf.Sin(Time.time * 9f)) * 0.06f, 0) : Vector3.zero;
+        }
+
         void Update()
         {
+            if (Puppet) return;
             if (wait > 0f)
             {
                 wait -= Time.deltaTime;

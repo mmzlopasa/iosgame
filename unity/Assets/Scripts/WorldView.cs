@@ -55,7 +55,7 @@ namespace Founders
     /// progress, placement preview, selection, trodden paths and villagers.
     /// It never changes game state itself.
     /// </summary>
-    public class WorldView : MonoBehaviour
+    public partial class WorldView : MonoBehaviour
     {
         GameStore store;
         public WorldTerrain Ground { get; private set; }
@@ -110,6 +110,7 @@ namespace Founders
             tallDecor.Clear();
             harvestMarkers.Clear();
             herds.Clear();
+            caravans.Clear();
             occupancyKey = null;
             selection.Clear();
             ghost.Clear();
@@ -154,6 +155,13 @@ namespace Founders
             var map = store.Game.Content.Map;
             var kit = NatureKit.Current;
             nature = Parts.Group("Nature", transform, Vector3.zero).AddComponent<NatureField>();
+            if (kit != null)
+            {
+                PlantKitNature(kit, map);
+                nature.Build();
+                Debug.Log($"[FOUNDERS] nature: {nature.Count} objects");
+                return;
+            }
             for (int cy = -NatureMargin; cy < map.Height + NatureMargin; cy++)
             {
                 for (int cx = -NatureMargin; cx < map.Width + NatureMargin; cx++)
@@ -163,8 +171,7 @@ namespace Founders
                     // Outside the map only some cells get props (far away nobody counts them).
                     if (!inside && (cx + cy) % 2 != 0) continue;
                     var rng = new System.Random(cx * 73856093 ^ cy * 19349663 ^ 0x5bd1e995);
-                    if (kit != null) PopulateKitCell(kit, type, cx, cy, rng, inside);
-                    else PopulateCell(type, cx, cy, rng, inside);
+                    PopulateCell(type, cx, cy, rng, inside);
                 }
             }
             nature.Build();
@@ -277,157 +284,51 @@ namespace Founders
             return kitTints[key] = m;
         }
 
-        int NeighbourCount(int cx, int cy, TerrainType t)
+        /// <summary>
+        /// The valley drawn with the nature packs: every tree, bush and stone where <see cref="NaturePlan"/>
+        /// says it grows (woods, wood edges, lone trees, outcrops, beaches), standing on the terrain.
+        /// </summary>
+        void PlantKitNature(NatureKit kit, MapDefinition map)
         {
-            int n = 0;
-            for (int dy = -1; dy <= 1; dy++)
-                for (int dx = -1; dx <= 1; dx++)
-                    if ((dx != 0 || dy != 0) && Ground.CellType(cx + dx, cy + dy) == t) n++;
-            return n;
+            var berries = store.Game.NodeKinds.FirstOrDefault(k => k.Id == "berries" && k.Capacity > 0);
+            var plan = NaturePlan.Make(map.Width, map.Height, NatureMargin, Ground.CellType,
+                (x, y) => berries != null && Game.HasFeature(berries, x, y),
+                (x, z) => Ground.HeightAt(new Vector3(x, 0f, z)));
+            foreach (var item in plan.Items)
+            {
+                var list = kit.Group(item.Group);
+                if (list.Count == 0) continue;
+                var prefab = list[item.Variant % Mathf.Min(list.Count, 3)];
+                var p = new Vector3(item.X, 0f, item.Z);
+                p.y = item.OnWater ? WorldTerrain.WaterLevel + 0.01f : Ground.HeightAt(p) + item.Lift;
+                Material tint = item.Tint switch
+                {
+                    "iron" => KitTint(kit, "KitIronOre", new Color(0.95f, 0.58f, 0.42f)),
+                    "copper" => KitTint(kit, "KitCopperOre", new Color(0.62f, 0.85f, 0.7f)),
+                    "berry" => KitTint(kit, "KitBerry", new Color(0.78f, 0.12f, 0.22f)),
+                    "stone" => StoneTint(kit, prefab),
+                    _ => null,
+                };
+                nature.AddKit(prefab, item.Id, p, item.Size, item.ByWidth ? NatureField.Fit.Width : NatureField.Fit.Height, item.Yaw,
+                              item.Cx, item.Cy, item.Tree, item.Shadows, tint, item.Sink, new Vector2(item.LeanX, item.LeanZ));
+            }
         }
 
-        /// <summary>
-        /// The valley drawn with the nature packs only. Sizes are real-world metres (a cell is 2 m):
-        /// firs on the cold, high and northern ground, oaks and birches in the warm lowlands and by
-        /// the water, undergrowth under the trees, boulders on the stony hills, cliffs on the
-        /// mountains, reeds and lilies along the river and the lake, flowers in the meadows.
-        /// </summary>
-        void PopulateKitCell(NatureKit kit, TerrainType type, int cx, int cy, System.Random rng, bool inside)
-        {
-            float yaw() => (float)rng.NextDouble() * 360f;
-            float r01() => (float)rng.NextDouble();
-            var c = Grid.CellCenter(cx, cy);
-            void Put(string group, Vector3 p, float size, NatureField.Fit fit = NatureField.Fit.Height, string id = null,
-                     bool shadows = true, Material tint = null, float sink = 0f)
-            {
-                var prefab = kit.Pick(group, rng);
-                if (prefab != null) nature.AddKit(prefab, id ?? "kit_" + group, p, size, fit, yaw(), cx, cy, false, shadows, tint, sink);
-            }
-            void Tree(string group, Vector3 p, float height)
-            {
-                var prefab = kit.Pick(group, rng);
-                if (prefab != null) nature.AddKit(prefab, "kit_tree", p, height, NatureField.Fit.Height, yaw(), cx, cy, true);
-            }
-            // Which trees grow here: firs in the north, the hills and the mountains' feet; broadleaf and birch elsewhere.
-            float cold = Mathf.PerlinNoise(cx * 0.06f + 7.3f, cy * 0.06f + 2.1f) + Mathf.Clamp01((24f - cy) / 40f) * 0.35f;
-            string Species()
-            {
-                if (cold > 0.62f || NeighbourCount(cx, cy, TerrainType.Mountain) > 0) return "fir";
-                if (NeighbourCount(cx, cy, TerrainType.Water) > 0 && rng.Next(2) == 0) return "birch";
-                float pick = r01();
-                return pick < 0.35f ? "fir" : pick < 0.72f ? "broadleaf" : "birch";
-            }
-            float Height(string species) => species == "fir" ? 8f + r01() * 4f : species == "birch" ? 7f + r01() * 3f : 6.5f + r01() * 3f;
+        static readonly Dictionary<Material, Material> stoneTints = new Dictionary<Material, Material>();
 
-            switch (type)
-            {
-                case TerrainType.Forest:
-                {
-                    // Beyond the map only some of the woods get trees: the valley walls read as woods, not a wall.
-                    if (!inside && rng.Next(3) == 0) break;
-                    int count = inside && rng.Next(6) == 0 ? 2 : 1;
-                    for (int i = 0; i < count; i++)
-                    {
-                        if (rng.Next(40) == 0) { Tree("dead_tree", Jitter(c, rng, 1.5f), 6f + r01() * 3f); continue; }
-                        var species = Species();
-                        Tree(species, Jitter(c, rng, 1.5f), Height(species) * (count == 2 ? 0.85f : 1f));
-                    }
-                    if (!inside) break;
-                    // Undergrowth: ferns and bushes in the shade, mushrooms, fallen wood.
-                    if (rng.Next(2) == 0) Put("fern", Jitter(c, rng, 1.7f), 0.5f + r01() * 0.4f, shadows: false);
-                    if (rng.Next(5) == 0) Put("bush", Jitter(c, rng, 1.6f), 0.9f + r01() * 0.5f);
-                    if (rng.Next(7) == 0) Put("mushroom", Jitter(c, rng, 1.6f), 0.15f + r01() * 0.1f, shadows: false);
-                    int wood = rng.Next(14);
-                    if (wood == 0) Put("log", Jitter(c, rng, 1.2f), 2.2f + r01() * 1.2f, NatureField.Fit.Width);
-                    else if (wood == 1) Put("stump", Jitter(c, rng, 1.4f), 0.5f + r01() * 0.3f);
-                    else if (wood < 4) Put("branch", Jitter(c, rng, 1.6f), 0.8f + r01() * 0.6f, NatureField.Fit.Width, shadows: false);
-                    break;
-                }
-                case TerrainType.Rock:
-                {
-                    // Boulders here and there; the stony hills show their gravel between them.
-                    if (rng.Next(10) < 4) Put("rock", Jitter(c, rng, 0.8f), 1.1f + r01() * 0.9f, NatureField.Fit.Width, "kit_rock", sink: 0.12f);
-                    if (rng.Next(3) == 0) Put("pebble", Jitter(c, rng, 1.6f), 0.3f + r01() * 0.35f, NatureField.Fit.Width, shadows: false, sink: 0.1f);
-                    if (rng.Next(6) == 0) Put("grass", Jitter(c, rng, 1.4f), 0.35f + r01() * 0.2f, shadows: false);
-                    if (rng.Next(12) == 0) Put("bush_dead", Jitter(c, rng, 1.4f), 0.7f + r01() * 0.4f);
-                    break;
-                }
-                case TerrainType.Ore:
-                {
-                    // Veins of rusty iron and green copper stone at the mountain foot.
-                    var ore = rng.Next(4) == 0 ? KitTint(kit, "KitCopperOre", new Color(0.62f, 0.85f, 0.7f)) : KitTint(kit, "KitIronOre", new Color(0.95f, 0.58f, 0.42f));
-                    Put("rock", Jitter(c, rng, 0.9f), 0.9f + r01() * 0.6f, NatureField.Fit.Width, "kit_rock", tint: ore, sink: 0.15f);
-                    for (int i = 0; i < 2; i++) Put("pebble", Jitter(c, rng, 1.6f), 0.3f + r01() * 0.3f, NatureField.Fit.Width, shadows: false, tint: ore, sink: 0.1f);
-                    break;
-                }
-                case TerrainType.Mountain:
-                {
-                    var p = Jitter(c, rng, 1.6f);
-                    // Firs climb the lower slopes; cliffs and scree above.
-                    if (p.y < 7f && rng.Next(3) == 0) Tree("fir", p, 7f + r01() * 3f);
-                    else if (rng.Next(4) == 0) Put("cliff", p, 3f + r01() * 3f, NatureField.Fit.Width, "kit_cliff", sink: 0.2f);
-                    else if (rng.Next(3) == 0) Put("rock", p, 1.2f + r01() * 1.4f, NatureField.Fit.Width, "kit_rock", sink: 0.15f);
-                    break;
-                }
-                case TerrainType.Sand:
-                {
-                    // Reeds where the bank meets the water, pebbles and driftwood on the beach.
-                    if (NeighbourCount(cx, cy, TerrainType.Water) > 0 && rng.Next(2) == 0) Put("reeds", Jitter(c, rng, 1.4f), 1.0f + r01() * 0.6f, shadows: false);
-                    if (rng.Next(3) == 0) Put("pebble", Jitter(c, rng, 1.6f), 0.25f + r01() * 0.3f, NatureField.Fit.Width, shadows: false, sink: 0.1f);
-                    if (rng.Next(12) == 0) Put("branch", Jitter(c, rng, 1.4f), 1.0f + r01() * 0.6f, NatureField.Fit.Width, shadows: false);
-                    break;
-                }
-                case TerrainType.Water:
-                {
-                    // Water lilies in the quiet water of the lake (not in the running river).
-                    if (inside && NeighbourCount(cx, cy, TerrainType.Water) >= 7 && rng.Next(9) == 0)
-                    {
-                        var p = c + new Vector3((r01() - 0.5f) * 1.4f, 0f, (r01() - 0.5f) * 1.4f);
-                        p.y = WorldTerrain.WaterLevel + 0.01f;
-                        Put("lily", p, 0.6f + r01() * 0.4f, NatureField.Fit.Width, shadows: false);
-                    }
-                    break;
-                }
-                case TerrainType.Grass:
-                {
-                    // Berry bushes the foragers pick (the same cells the game counts as food).
-                    var berries = store.Game.NodeKinds.FirstOrDefault(k => k.Id == "berries" && k.Capacity > 0);
-                    if (inside && berries != null && Game.HasFeature(berries, cx, cy))
-                    {
-                        var p = Jitter(c, rng, 0.9f);
-                        var bush = kit.Pick("bush", rng);
-                        if (bush != null) nature.AddKit(bush, "kit_berry_bush", p, 1.0f + r01() * 0.3f, NatureField.Fit.Height, yaw(), cx, cy);
-                        var berry = KitTint(kit, "KitBerry", new Color(0.78f, 0.12f, 0.22f));
-                        for (int i = 0; i < 9; i++)
-                            Put("pebble", p + new Vector3((r01() - 0.5f) * 0.9f, 0.45f + r01() * 0.4f, (r01() - 0.5f) * 0.9f), 0.07f,
-                                NatureField.Fit.Width, "kit_berry", false, berry);
-                        break;
-                    }
-                    // Young trees spread from the forest's edge.
-                    if (NeighbourCount(cx, cy, TerrainType.Forest) >= 3 && rng.Next(7) == 0)
-                    {
-                        Tree(cold > 0.55f ? "fir_young" : "birch", Jitter(c, rng, 1.4f), cold > 0.55f ? 2.5f + r01() * 1.5f : 4.5f + r01() * 1.5f);
-                        break;
-                    }
-                    // Open meadow: shrubs and flowers, no trees, so the player decides what goes where.
-                    int r = rng.Next(16);
-                    if (r == 0) Put("bush", Jitter(c, rng, 1.4f), 0.8f + r01() * 0.5f);
-                    else if (r == 1) Put("bush_flower", Jitter(c, rng, 1.4f), 0.8f + r01() * 0.4f);
-                    else if (r == 2 && !inside && rng.Next(2) == 0) Tree("broadleaf", Jitter(c, rng, 1.4f), 7f + r01() * 2f);
-                    else if (r < 6)
-                    {
-                        // A little patch of the same flower.
-                        var flower = kit.Pick("flowers", rng);
-                        var p0 = Jitter(c, rng, 1.2f);
-                        int n = 2 + rng.Next(4);
-                        for (int i = 0; i < n && flower != null; i++)
-                            nature.AddKit(flower, "kit_flowers", Jitter(p0, rng, 0.8f), 0.3f + r01() * 0.2f, NatureField.Fit.Height, yaw(), cx, cy, false, false);
-                    }
-                    else if (r == 6) Put("clover", Jitter(c, rng, 1.4f), 0.25f, NatureField.Fit.Height, shadows: false);
-                    else if (r == 7) Put("grass_tall", Jitter(c, rng, 1.4f), 0.6f + r01() * 0.3f, shadows: false);
-                    break;
-                }
-            }
+        /// <summary>
+        /// The Starter pack's stones are drawn from its colour palette, nearly white: a slate-grey copy for
+        /// them (the PRO stones have their own darkened texture and keep it).
+        /// </summary>
+        static Material StoneTint(NatureKit kit, GameObject prefab)
+        {
+            var r = prefab.GetComponentInChildren<MeshRenderer>(true);
+            var src = r != null ? kit.Convert(r.sharedMaterial) : null;
+            if (src == null || src.name.IndexOf("Palette", System.StringComparison.OrdinalIgnoreCase) < 0) return null;
+            if (stoneTints.TryGetValue(src, out var m) && m != null) return m;
+            m = new Material(src) { name = src.name + "_Stone", enableInstancing = true };
+            if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", new Color(0.6f, 0.64f, 0.7f));
+            return stoneTints[src] = m;
         }
 
         // MARK: - Sync
@@ -563,6 +464,7 @@ namespace Founders
 
         void Update()
         {
+            UpdateCaravans();
             UpdateTallDecor();
             UpdateHeatOverlay();
             UpdateStokedFire();
@@ -621,8 +523,10 @@ namespace Founders
             RepaintGround(game, initial);
             UpdateSelection();
             UpdateGhost();
+            UpdateZoneOverlay(game);
             UpdateFoundingGhost();
             UpdateVillagers(game);
+            SyncCaravans(game);
         }
 
         BuildingView CreateBuilding(PlacedBuilding b, BuildingDefinition def, string key)
@@ -687,7 +591,7 @@ namespace Founders
         void RepaintGround(Game game, bool initial)
         {
             var st = game.State;
-            string key = $"{st.StageId}|{st.NextBuildingId}|{st.Buildings.Count}|{st.NextDecorationId}|{st.Decorations.Count}";
+            string key = $"{st.StageId}|{st.NextBuildingId}|{st.Buildings.Count}|{st.NextDecorationId}|{st.Decorations.Count}|{game.PathsVersion}|{st.Wear.Count > 0}";
             if (key == splatKey) return;
             // Repainting the ground is heavy: while a road is being drawn, do it a few times a second at most.
             if (!initial && Time.unscaledTime < nextGroundPaint) return;
@@ -703,7 +607,21 @@ namespace Founders
                 if (def == null) continue;
                 around.Add((Grid.FootprintCenter(b.X, b.Y, def.Footprint), 0.9f * Mathf.Max(def.Footprint.Width, def.Footprint.Height)));
             }
-            if (game.State.StageId != game.Content.StartStage)
+            if (game.HasPaths)
+            {
+                // Paths worn by feet: each trodden cell joined to its trodden neighbours, so the lanes wind as people walk.
+                var trodden = new HashSet<(int, int)>(game.TroddenCells());
+                foreach (var (x, y) in trodden)
+                {
+                    var c = Grid.CellCenter(x, y);
+                    bool any = false;
+                    foreach (var (dx, dy) in new[] { (1, 0), (0, 1), (1, 1), (1, -1) })
+                        if (trodden.Contains((x + dx, y + dy))) { paths.Add((c, Grid.CellCenter(x + dx, y + dy))); any = true; }
+                    if (!any && !trodden.Contains((x - 1, y)) && !trodden.Contains((x, y - 1)) && !trodden.Contains((x - 1, y - 1)) && !trodden.Contains((x - 1, y + 1)))
+                        paths.Add((c + new Vector3(-0.3f, 0, 0), c + new Vector3(0.3f, 0, 0)));
+                }
+            }
+            else if (game.State.StageId != game.Content.StartStage)
             {
                 var hearth = game.State.Buildings.FirstOrDefault(b => b.DefinitionId == "village_hearth");
                 if (hearth != null)
@@ -899,6 +817,48 @@ namespace Founders
             return node == null || double.IsInfinity(node.Remaining) ? 1f : (float)node.Fraction;
         }
 
+        /// <summary>Metres of free ground kept around a building, a road and the settlement's heart.</summary>
+        const float BuildingMargin = 0.6f, RoadMargin = 0.2f, DecorationMargin = 0.35f;
+        /// <summary>The trodden ground around the campfire (or hearth): radius in metres and how ragged its edge is.</summary>
+        const float HeartClearing = 6f, HeartClearingRagged = 1.6f;
+
+        /// <summary>
+        /// Ground nature keeps away from: every building's footprint and a little around it (so no
+        /// crown grows through a roof), roads and decorations, and a round clearing about the fire.
+        /// </summary>
+        public static List<NatureField.Clearing> Clearings(Game game)
+        {
+            var list = new List<NatureField.Clearing>();
+            void Rect(int x, int y, int w, int h, float margin, float ragged = 0f)
+            {
+                var a = Grid.CellCenter(x - 0.5f, y - 0.5f);
+                var b = Grid.CellCenter(x + w - 0.5f, y + h - 0.5f);
+                list.Add(new NatureField.Clearing
+                {
+                    Min = new Vector2(Mathf.Min(a.x, b.x), Mathf.Min(a.z, b.z)),
+                    Max = new Vector2(Mathf.Max(a.x, b.x), Mathf.Max(a.z, b.z)),
+                    Margin = margin, Ragged = ragged,
+                });
+            }
+            foreach (var b in game.State.Buildings)
+            {
+                var fp = game.FootprintOf(b);
+                Rect(b.X, b.Y, fp.Width, fp.Height, BuildingMargin);
+                if (game.Content.Building(b.DefinitionId)?.Heart ?? false)
+                {
+                    var c = Grid.FootprintCenter(b.X, b.Y, fp);
+                    list.Add(new NatureField.Clearing
+                    {
+                        Min = new Vector2(c.x, c.z), Max = new Vector2(c.x, c.z),
+                        Margin = HeartClearing + 0.5f * Mathf.Max(fp.Width, fp.Height) * Grid.CellSize, Ragged = HeartClearingRagged,
+                    });
+                }
+            }
+            foreach (var d in game.State.Decorations)
+                Rect(d.X, d.Y, 1, 1, (game.Content.Decoration(d.DefinitionId)?.IsRoad ?? false) ? RoadMargin : DecorationMargin);
+            return list;
+        }
+
         /// <summary>Trees, rocks and grass disappear from cells the player builds on.</summary>
         void UpdateOccupancy(Game game)
         {
@@ -912,6 +872,7 @@ namespace Founders
                 occupancyKey = key;
                 usedCells = OccupiedCells(game);
                 nature.SetStanding(Standing);
+                nature.SetClearings(Clearings(game));
                 UpdateHarvestMarkers(game);
                 if (!first) grassDirty = true;
                 return;
@@ -958,6 +919,55 @@ namespace Founders
             Parts.Prim(PrimitiveType.Cube, frame, new Vector3(s * 0.46f, 0, 0), new Vector3(0.1f, 0.06f, s * 0.96f), m, default, false);
             Parts.Prim(PrimitiveType.Cube, frame, new Vector3(-s * 0.46f, 0, 0), new Vector3(0.1f, 0.06f, s * 0.96f), m, default, false);
             return frame.gameObject;
+        }
+
+        // MARK: - Zones
+
+        readonly Dictionary<string, GameObject> zoneOverlays = new Dictionary<string, GameObject>();
+        string zoneOverlayKey;
+
+        /// <summary>The painted zones as coloured tiles, one mesh per kind, shown while building or painting.</summary>
+        void UpdateZoneOverlay(Game game)
+        {
+            bool show = game.HasZones && (store.ActivePanel == Panel.Build || GameStore.IsZoneTool(store.DecoratingId));
+            string key = show ? $"{game.ZonesVersion}|{game.State.Zones.Count}|{game.State.NextBuildingId}" : "";
+            if (key == zoneOverlayKey) return;
+            zoneOverlayKey = key;
+            foreach (var go in zoneOverlays.Values) Destroy(go);
+            zoneOverlays.Clear();
+            if (!show) return;
+            int w = game.Content.Map.Width;
+            float h = Grid.CellSize * 0.42f;
+            foreach (var zone in Game.ZoneIds)
+            {
+                var verts = new List<Vector3>();
+                var tris = new List<int>();
+                foreach (var kv in game.State.Zones)
+                {
+                    if (kv.Value != zone) continue;
+                    int x = kv.Key % w, y = kv.Key / w;
+                    if (game.BuildingIdAt(x, y) != null) continue; // built on: the zone did its work
+                    var c = Ground.OnGround(Grid.CellCenter(x, y)) + new Vector3(0, 0.05f, 0);
+                    int i = verts.Count;
+                    verts.Add(c + new Vector3(-h, 0, -h));
+                    verts.Add(c + new Vector3(-h, 0, h));
+                    verts.Add(c + new Vector3(h, 0, h));
+                    verts.Add(c + new Vector3(h, 0, -h));
+                    tris.AddRange(new[] { i, i + 1, i + 2, i, i + 2, i + 3 });
+                }
+                if (verts.Count == 0) continue;
+                var mesh = new Mesh { name = "Zone_" + zone, indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
+                mesh.SetVertices(verts);
+                mesh.SetTriangles(tris, 0);
+                mesh.RecalculateNormals();
+                var go = new GameObject("Zone_" + zone);
+                go.transform.SetParent(overlayRoot, false);
+                go.AddComponent<MeshFilter>().sharedMesh = mesh;
+                var r = go.AddComponent<MeshRenderer>();
+                r.sharedMaterial = Palette.Get("Zone_" + zone);
+                r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+                zoneOverlays[zone] = go;
+            }
         }
 
         void UpdateGhost()
@@ -1044,6 +1054,8 @@ namespace Founders
         Pathing paths;
         /// <summary>Per villager: false = on the way to work, true = carrying the goods home.</summary>
         readonly Dictionary<int, bool> carrying = new Dictionary<int, bool>();
+        /// <summary>Per villager: where in a carrying round they are (see <see cref="HaulTask"/>).</summary>
+        readonly Dictionary<int, int> haulLeg = new Dictionary<int, int>();
         /// <summary>
         /// Where each person stands (or is walking to) for their task. Nobody takes a spot within
         /// <see cref="PersonSpace"/> of a spot someone else holds, so people never stack.
@@ -1139,6 +1151,7 @@ namespace Founders
             workTargets.Remove(owner);
             dispatched.Remove(owner);
             carrying.Remove(owner);
+            haulLeg.Remove(owner);
             lying.Remove(owner);
             spots.Remove(LyingKey + owner);
         }
@@ -1320,6 +1333,74 @@ namespace Founders
             return best;
         }
 
+        /// <summary>What a production job carries in and out (models of the goods).</summary>
+        static (string input, string output) Loads(JobType job) => job switch
+        {
+            JobType.Sawing => ("k_log", "k_planks"),
+            JobType.Toolmaking => ("k_planks", "k_box"),
+            JobType.Smelting => ("k_stone", "k_box"),
+            JobType.Baking => ("k_wood", "wicker_basket_01"),
+            JobType.Weaving => ("k_bedroll", "ceramic_pot"),
+            JobType.Milling => ("wicker_basket_01", "k_bedroll"),
+            _ => (null, null),
+        };
+
+        /// <summary>The nearest finished store (or the heart) to a workplace, other than the workplace itself.</summary>
+        static PlacedBuilding StoreFor(Game game, PlacedBuilding site)
+        {
+            PlacedBuilding best = null;
+            float bestD = float.MaxValue;
+            var at = Grid.CellCenter(site.X, site.Y);
+            foreach (var (b, def) in game.OperationalBuildings())
+            {
+                if (b.Id == site.Id || (def.StorageValue <= 0 && !def.Heart)) continue;
+                float d = (Grid.CellCenter(b.X, b.Y) - at).sqrMagnitude;
+                if (d < bestD) { bestD = d; best = b; }
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// One leg of a carrying round between the stores and a workplace: 0 walk to the store, 1 carry the input to
+        /// the work, 2 work (the caller's task: returns false), 3 carry the product back to the store. Without an
+        /// output the round skips the last leg. False when there is no store or it is time to work.
+        /// </summary>
+        bool HaulTask(Game game, int index, Vector3 from, PlacedBuilding site, string input, string output, ref VillagerTask task)
+        {
+            var stores = StoreFor(game, site);
+            if (stores == null || input == null) return false;
+            haulLeg.TryGetValue(index, out int leg);
+            haulLeg[index] = output == null ? (leg + 1) % 3 : (leg + 1) % 4;
+            var siteCenter = Grid.FootprintCenter(site.X, site.Y, game.FootprintOf(site));
+            switch (leg)
+            {
+                case 0:
+                    task.Spot = BesideBuilding(stores, from, index);
+                    task.Face = Grid.CellCenter(stores.X, stores.Y);
+                    task.Action = "Gather";
+                    task.Duration = 1.4f;
+                    return true;
+                case 1:
+                    task.Spot = BesideBuilding(site, from, index);
+                    task.Face = siteCenter;
+                    task.Carry = input;
+                    task.WalkClip = "Carry";
+                    task.Action = "Gather";
+                    task.Duration = 1.4f;
+                    return true;
+                case 3:
+                    task.Spot = BesideBuilding(stores, from, index);
+                    task.Face = Grid.CellCenter(stores.X, stores.Y);
+                    task.Carry = output;
+                    task.WalkClip = "Carry";
+                    task.Action = "Gather";
+                    task.Duration = 1.4f;
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
         static bool GathersFromLand(JobType job) =>
             job == JobType.Woodcutting || job == JobType.Stonecutting || job == JobType.Mining || job == JobType.Foraging
             || job == JobType.Hunting || job == JobType.Fishing;
@@ -1482,7 +1563,13 @@ namespace Founders
             var job = JobOf(game, index);
             // Builders, and idle people while something is being built (Manor Lords: free families build).
             if (sites.Count > 0 && (job == JobType.Construction || (job == null && index % 3 != 2)))
-                return BuildAt(sites[index % sites.Count], task, from, index);
+            {
+                // Builders fetch timber and stone from the stores now and then (goods are carried, not conjured).
+                var buildSite = sites[index % sites.Count];
+                if (HaulTask(game, index, from, buildSite, index % 2 == 0 ? "k_planks" : "k_stone", null, ref task)) return task;
+                return BuildAt(buildSite, task, from, index);
+            }
+            if (job == null && index % 2 == 0 && MarketVisit(game, index, ref task)) return task;
             if (job == null)
             {
                 task.Spot = FreeAround(index, hearthPos, 1.6f, 2.8f);
@@ -1611,8 +1698,24 @@ namespace Founders
                 }
                 case JobType.Healing:
                     return HealTask(game, index, site, from, center, task);
-                case JobType.Crafting:
                 case JobType.Smelting:
+                case JobType.Sawing:
+                case JobType.Toolmaking:
+                case JobType.Baking:
+                case JobType.Weaving:
+                case JobType.Milling:
+                {
+                    // A working production chain moves its goods by hand: inputs from the stores, the product back.
+                    var (input, output) = Loads(job.Value);
+                    if (game.Processing(job.Value).State == ProcessingState.Working && HaulTask(game, index, from, site, input, output, ref task))
+                        return task;
+                    task.Spot = BesideBuilding(site, from, index);
+                    task.Face = center;
+                    task.Action = "Work";
+                    task.Tool = "Prop_Hammer";
+                    return task;
+                }
+                case JobType.Crafting:
                     task.Spot = BesideBuilding(site, from, index);
                     task.Face = center;
                     task.Action = "Work";
@@ -1624,6 +1727,30 @@ namespace Founders
                     task.Action = "Talk";
                     return task;
             }
+        }
+
+        /// <summary>Where a customer stands at the market's four stalls (local to its 6×4 m square), and the stall they face.</summary>
+        static readonly (Vector3 stand, Vector3 stall)[] MarketSpots =
+        {
+            (new Vector3(-1.45f, 0f, 0.25f), new Vector3(-1.45f, 0f, 1.15f)), (new Vector3(1.45f, 0f, 0.25f), new Vector3(1.45f, 0f, 1.15f)),
+            (new Vector3(-1.6f, 0f, -0.55f), new Vector3(-2.3f, 0f, -0.55f)), (new Vector3(1.6f, 0f, -0.55f), new Vector3(2.3f, 0f, -0.55f)),
+        };
+
+        /// <summary>Free people go shopping: they stand at a market stall, chatting with the seller, and carry a basket home.</summary>
+        bool MarketVisit(Game game, int index, ref VillagerTask task)
+        {
+            var markets = game.OperationalBuildings().Where(x => (x.def.MarketReach ?? 0) > 0).Select(x => x.building).ToList();
+            if (markets.Count == 0) return false;
+            var m = markets[(index / 2) % markets.Count];
+            var center = Grid.FootprintCenter(m.X, m.Y, game.FootprintOf(m));
+            var turn = Quaternion.Euler(0f, m.Rotation * 90f, 0f);
+            var (stand, stall) = MarketSpots[Random.Range(0, MarketSpots.Length)];
+            var jitter = new Vector3(Random.Range(-0.35f, 0.35f), 0f, Random.Range(-0.1f, 0.1f));
+            task.Spot = Claim(index, Ground.OnGround(center + turn * (stand + jitter)));
+            task.Face = Ground.OnGround(center + turn * stall);
+            task.Action = Random.value < 0.6f ? "Talk" : "Idle";
+            task.Duration = Random.Range(5f, 10f);
+            return true;
         }
 
         /// <summary>

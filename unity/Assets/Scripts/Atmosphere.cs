@@ -20,6 +20,8 @@ namespace Founders
 
         GameStore store;
         Light sun;
+        /// <summary>A soft light from the other side, without shadows: slopes facing away from the sun stay painted, never black.</summary>
+        Light fill;
         Material sky;
         float skyExposure = 1f;
         WhiteBalance white;
@@ -28,8 +30,8 @@ namespace Founders
         Color grassTint = Color.white, leafTint = Color.white;
 
         static readonly Color Dawn = new Color(1f, 0.62f, 0.38f);
-        static readonly Color Moon = new Color(0.55f, 0.66f, 1f);
-        static readonly Color NightFog = new Color(0.17f, 0.21f, 0.30f);
+        static readonly Color Moon = new Color(0.78f, 0.84f, 1f);
+        static readonly Color NightFog = new Color(0.36f, 0.42f, 0.52f);
 
         public void Init(GameStore owner)
         {
@@ -44,6 +46,16 @@ namespace Founders
                 white = wb;
                 baseTemperature = wb.temperature.value;
             }
+            // Only fire, embers and lamps glow; sunlit ground and cliff edges never do.
+            if (volume != null && volume.sharedProfile != null && volume.sharedProfile.TryGet(out Bloom bloom))
+                bloom.threshold.value = Mathf.Max(bloom.threshold.value, 1.6f);
+            var fillGo = new GameObject("Fill Light");
+            fillGo.transform.SetParent(transform, false);
+            fill = fillGo.AddComponent<Light>();
+            fill.type = LightType.Directional;
+            fill.shadows = LightShadows.None;
+            fill.color = new Color(0.86f, 0.9f, 1f);
+            fill.intensity = 0.35f;
             BuildSnow();
         }
 
@@ -113,15 +125,23 @@ namespace Founders
                 "spring" => new Color(1f, 0.95f, 0.86f),
                 _ => new Color(1f, 0.92f, 0.78f),
             };
-            float seasonLight = id == "winter" ? 0.85f : 1f;
+            float seasonLight = id == "winter" ? 0.92f : 1f;
+            // A gentle night (as in Foundation): the valley stays green and readable, only a little bluer and dimmer.
+            nightness *= 0.55f;
 
             Color dayColor = Color.Lerp(Dawn, noon, Mathf.SmoothStep(0f, 1f, elevation / 0.4f));
             float dayIntensity = Mathf.Lerp(0.9f, 2.1f, elevation) * seasonLight;
             sun.color = Color.Lerp(dayColor, Moon, nightness);
             // A bright moon: the town stays readable at night, the lights still glow.
             sun.intensity = Mathf.Lerp(dayIntensity, 0.95f, nightness);
-            float pitch = p < 0.75f ? Mathf.Lerp(9f, 56f, elevation) : Mathf.Lerp(12f, 48f, nightness);
+            // Never a grazing sun: a low sun lit only the tops of slopes (they shone) and left their faces black.
+            float pitch = p < 0.75f ? Mathf.Lerp(32f, 58f, elevation) : Mathf.Lerp(34f, 50f, nightness);
             sun.transform.rotation = Quaternion.Euler(pitch, yaw, 0f);
+            if (fill != null)
+            {
+                fill.transform.rotation = Quaternion.Euler(40f, yaw + 180f, 0f);
+                fill.intensity = sun.intensity * 0.3f;
+            }
 
             RenderSettings.ambientIntensity = Mathf.Lerp(Mathf.Lerp(0.75f, 1f, elevation), 0.82f, nightness);
             RenderSettings.reflectionIntensity = Mathf.Lerp(1f, 0.3f, nightness);
@@ -131,8 +151,8 @@ namespace Founders
 
             if (white != null)
             {
-                float temp = id switch { "summer" => 8f, "autumn" => 16f, "winter" => -16f, _ => 2f };
-                white.temperature.value = Mathf.Lerp(baseTemperature + temp, -12f, nightness);
+                float temp = id switch { "summer" => 6f, "autumn" => 12f, "winter" => -6f, _ => 2f };
+                white.temperature.value = Mathf.Lerp(baseTemperature + temp, baseTemperature - 8f, nightness);
             }
 
             // Vegetation tints follow the season (eased over the first part of each season).

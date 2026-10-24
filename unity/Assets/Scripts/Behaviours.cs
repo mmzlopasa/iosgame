@@ -77,10 +77,12 @@ namespace Founders
         Vector2 shiftNow;
 
         const float MinDistance = 9f;
-        const float MaxDistance = 80f;
+        const float MaxDistance = 150f;
         /// <summary>Extra tilt the player added (two fingers up/down): negative looks flatter, positive more from above.</summary>
         float tilt;
-        float Pitch => Mathf.Clamp(Mathf.Lerp(52f, 40f, Mathf.InverseLerp(MinDistance, MaxDistance, distance)) + tilt, 22f, 82f);
+        /// <summary>Flatter as the camera pulls back: far out it looks across the valley to the hills (as in Foundation).</summary>
+        float Pitch => Mathf.Clamp((distance <= 80f ? Mathf.Lerp(52f, 40f, Mathf.InverseLerp(MinDistance, 80f, distance))
+                                                    : Mathf.Lerp(40f, 34f, Mathf.InverseLerp(80f, MaxDistance, distance))) + tilt, 22f, 82f);
         /// <summary>Compass heading of the camera; the player turns it freely with two fingers.</summary>
         public static float Yaw { get; private set; } = -45f;
         float lastTwist;
@@ -103,8 +105,8 @@ namespace Founders
                 camGo.AddComponent<AudioListener>();
                 Cam.fieldOfView = Fov;
                 Cam.nearClipPlane = 0.5f;
-                Cam.farClipPlane = 400f;
             }
+            // The fog hides everything beyond it (see Apply): drawing further only costs frame rate.
             Cam.transform.SetParent(transform, false);
             Apply();
         }
@@ -151,6 +153,11 @@ namespace Founders
             if (HeightAt != null) position.y = Mathf.Max(position.y, HeightAt(position) + 2.5f);
             Cam.transform.position = position;
             Cam.transform.rotation = Quaternion.LookRotation(focus - position);
+            // The haze starts beyond what is in view, however far the camera is zoomed out: it only
+            // hides the end of the world on the horizon, never the valley the player looks at.
+            RenderSettings.fogStartDistance = distance + 70f;
+            RenderSettings.fogEndDistance = distance + 230f;
+            Cam.farClipPlane = distance + 250f;
         }
 
         /// <summary>An off-centre projection (a lens shift) that moves the picture so the focus sits at <see cref="ViewShift"/>.</summary>
@@ -390,6 +397,8 @@ namespace Founders
             need.Show(iconName);
         }
         public WorldTerrain Ground;
+        /// <summary>Moved by someone else (a trader with the caravan): no tasks of their own.</summary>
+        public bool Puppet;
         VillagerTask task;
         bool hasTask;
         readonly Queue<Vector3> route = new Queue<Vector3>();
@@ -412,12 +421,13 @@ namespace Founders
             new Color(0.87f, 0.68f, 0.56f), new Color(0.80f, 0.60f, 0.47f), new Color(0.70f, 0.50f, 0.37f),
             new Color(0.56f, 0.39f, 0.28f), new Color(0.42f, 0.29f, 0.21f),
         };
-        // Clothing: plant and earth dyes on wool and linen (oat, weld green, woad, madder, ochre, walnut, lichen, moss).
+        // Clothing: plant and earth dyes on wool and linen (oat, weld green, woad, madder, ochre, walnut, lichen, moss),
+        // a little brighter than real dyes, as on the painted icons.
         static readonly Color[] HideTints =
         {
-            new Color(0.55f, 0.47f, 0.36f), new Color(0.42f, 0.45f, 0.30f), new Color(0.33f, 0.38f, 0.47f),
-            new Color(0.52f, 0.30f, 0.22f), new Color(0.62f, 0.55f, 0.40f), new Color(0.36f, 0.30f, 0.24f),
-            new Color(0.47f, 0.40f, 0.48f), new Color(0.30f, 0.36f, 0.33f),
+            new Color(0.66f, 0.57f, 0.42f), new Color(0.46f, 0.55f, 0.30f), new Color(0.32f, 0.45f, 0.62f),
+            new Color(0.66f, 0.31f, 0.22f), new Color(0.76f, 0.60f, 0.30f), new Color(0.45f, 0.33f, 0.24f),
+            new Color(0.52f, 0.42f, 0.58f), new Color(0.30f, 0.48f, 0.44f),
         };
         static readonly Color[] HairColors =
         {
@@ -495,7 +505,11 @@ namespace Founders
             carried = null;
             carriedId = id;
             if (id == null || !ModelLibrary.HasModel(id)) return;
-            float s = id == "k_wood" ? 4.2f : id == "k_stone" ? 2.2f : 1.2f;
+            float s = id switch
+            {
+                "k_wood" => 4.2f, "k_stone" => 2.2f, "k_planks" => 1.4f, "k_log" => 0.8f, "k_box" => 1.8f,
+                "k_bedroll" => 1.2f, "ceramic_pot" => 0.6f, _ => 1.2f,
+            };
             var at = id == "wicker_basket_01" ? new Vector3(0.22f, 0.78f, 0.12f) : new Vector3(0f, 1.25f, 0.06f);
             carried = ModelLibrary.Place(id, transform, at, s, 90f);
             foreach (var r in carried.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
@@ -538,8 +552,21 @@ namespace Founders
             target = transform.position;
         }
 
+        /// <summary>Places a puppet: walking (with goods on the shoulder) or standing still, facing <paramref name="facing"/>.</summary>
+        public void Steer(Vector3 position, Vector3 facing, bool walking, string carry = null)
+        {
+            transform.position = position;
+            facing.y = 0;
+            if (facing.sqrMagnitude > 1e-4f) transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(facing), 8f * Time.deltaTime);
+            ShowCarry(walking ? carry : null);
+            Play(walking ? (carry != null ? "Carry" : "Walk") : "Idle");
+            if (anim == null && customAnim == null && body != null)
+                body.localPosition = new Vector3(0, walking ? Mathf.Abs(Mathf.Sin(Time.time * 7f)) * 0.05f : 0f, 0);
+        }
+
         void Update()
         {
+            if (Puppet) return;
             if (wait > 0f)
             {
                 wait -= Time.deltaTime;

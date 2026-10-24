@@ -53,6 +53,60 @@ Like the speed-ups in Whiteout Survival, but only ever earned in play. Rules: `u
 - **Used:** the clock button on a timer (HUD), on a building under construction, on the running research and on the scouts opens the speed-up window: use one at a time, or *Finish now* (picks the job's own kind first, large ones while they fit, then the smallest that covers the rest). A building minute is a minute at today's building pace (never less than the base pace). A job a speed-up covers finishes at once, with its normal rewards.
 - **Saved** as `speedups` (key `kind_minutes` → count) in the settlement state; a tampered key or negative count is rejected on load. Profile › Stats lists everything owned.
 
+## The second wave of the playable eras (October 2026)
+
+Content for the three eras that are already playable (the modern era stays paused). Data in
+`content.json`, written by `tools/content/present_eras.py`; rules tested in `unity/CoreTests/PresentEraTests.cs`.
+
+| Era | Building | Research | What it does |
+|---|---|---|---|
+| I | Lookout Tower | Trail Signs (heart 6) | scouts explore 25 % faster (the research itself +10 %) |
+| I | Herb Garden | Herbal Healing | −10 % illness, +10 % recovery (two gardens stack) |
+| I | Smokehouse | Hide Working | protects 60 food, −10 % spoilage, "smoked" food variety |
+| I | Ancestor Stones | Ancestor Rites (heart 9) | gathering place +4, −1 discontent per hour |
+| II | Sawpit | Carpentry (heart 13) | 2 sawyers: 2 wood → 1 plank |
+| II | Apiary | Beekeeping (heart 14) | 2 foraging jobs, "honey" food variety |
+| II | Toolsmith | Bronze Tools (heart 19) | 2 toolsmiths: 1 bronze + 1 plank → 2 tools |
+| IV | Bakery | Bread Ovens | 3 bakers: each wood burnt gives 4 food, "bread" food variety |
+| IV | Carpenter's Yard | Stone Masonry | 3 sawyers |
+| IV | Tavern | Burgher Rights | gathering place +8, −2 discontent per hour |
+| IV | Scriptorium | Monastic Orders | 3 research jobs |
+| IV | Warehouse | Craft Guilds | +400 storage |
+| IV | Bathhouse | Stone Masonry | −15 % illness, +20 % recovery, gathering place +3 |
+
+- **Tools:** while the store holds any, every gatherer (foragers, farmers, fishers, hunters, herders,
+  woodcutters, quarriers, miners) works 15 % faster; each working gatherer wears out 0.001 tools per
+  second (`balance.toolBonus`, `toolWearPerWorkerPerSecond`).
+- **Building effects:** a building may carry `effects` (same kinds as research) that last while it
+  stands finished; each building of the kind adds them once.
+- **Goals after the village:** smokehouse, Ancestor Stones, 20 planks, 10 tools, a bakery, a tavern.
+- **Events:** the Master Carpenter (first sawpit), Frost-Cracked Tools (10 tools made), Minstrels at
+  the Tavern (first tavern).
+
+## The player's own valley (the map generator is gone)
+
+New games start on the player's own hand-made valley when `unity/Assets/Custom/Resources/Custom/Map/Map.png`
+(or `Map.txt`) is in the game, otherwise on the hand-drawn Long Valley; the player then picks where the
+campfire and shelters go. The picture is read as 128 × 128 cells by nearest colour (see the Custom README);
+a magenta pixel suggests where to settle. `Core/OwnMap.cs` builds the map (`own_valley`), its traits and its
+64 lands (cut 16 × 16 as the generator did, `MapGenerator.BuildRegions`); tested in `CoreTests/OwnMapTests.cs`.
+
+The generator's screen (Choose Your Valley) was removed on 2026-10-24. `Core/MapGenerator.cs` stays only so
+settlements started on a generated valley (`gen_<code>` in the save) are drawn again on load; do not change
+its output.
+
+## The player's own valley (no map generator)
+
+New games start on the player's own hand-made valley when `unity/Assets/Custom/Resources/Custom/Map/Map.png`
+(or `Map.txt`) is in the game, otherwise on the hand-drawn Long Valley; the player then picks where the
+campfire and shelters go. The picture is read as 128 × 128 cells by nearest colour (see the Custom README);
+a magenta pixel suggests where to settle. `Core/OwnMap.cs` builds the map (`own_valley`), its traits and its
+64 lands (cut 16 × 16, `MapGenerator.BuildRegions`); tested in `CoreTests/OwnMapTests.cs`.
+
+The map generator's screen (Choose Your Valley, PR #10) was removed on 2026-10-24. `Core/MapGenerator.cs`
+stays only so settlements started on a generated valley (`gen_<code>` in the save) are drawn again on load;
+do not change its output.
+
 ## Next refinements (to discuss)
 
 1. **Families instead of single people**: housing gives family slots and one family

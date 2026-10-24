@@ -24,6 +24,9 @@ namespace Founders.Core
         /// <summary>Building level (1 = as built). Upgrading to <see cref="PendingLevel"/> raises it.</summary>
         public int Level = 1;
         public int PendingLevel;
+        /// <summary>A monument's finished parts, in the order they were built, and the part going up now.</summary>
+        public List<string> Parts = new List<string>();
+        public string PendingPart;
 
         public bool IsOperational => Status != BuildingStatus.Constructing;
 
@@ -49,6 +52,8 @@ namespace Founders.Core
             if (Rotation != 0) d["rotation"] = Rotation;
             if (Level != 1) d["level"] = Level;
             if (PendingLevel != 0) d["pendingLevel"] = PendingLevel;
+            if (Parts.Count > 0) d["parts"] = Parts.Cast<object>().ToList();
+            if (PendingPart != null) d["pendingPart"] = PendingPart;
             return d;
         }
 
@@ -66,6 +71,8 @@ namespace Founders.Core
             Rotation = o.OptInt("rotation") ?? 0,
             Level = o.OptInt("level") ?? 1,
             PendingLevel = o.OptInt("pendingLevel") ?? 0,
+            Parts = o.Has("parts") ? o.Strs("parts") : new List<string>(),
+            PendingPart = o.OptStr("pendingPart"),
         };
     }
 
@@ -145,8 +152,11 @@ namespace Founders.Core
         public int this[JobType job]
         {
             get => Counts.TryGetValue(job.Id(), out var n) ? n : 0;
-            set => Counts[job.Id()] = System.Math.Max(0, value);
+            set { Counts[job.Id()] = System.Math.Max(0, value); Version++; }
         }
+
+        /// <summary>Changes on every assignment (for caches).</summary>
+        public int Version;
 
         public int Total => Enums.Jobs.Sum(j => this[j]);
     }
@@ -260,12 +270,22 @@ namespace Founders.Core
         public ActivePetition ActivePetition;
         /// <summary>When the people last petitioned (null = never).</summary>
         public double? LastPetitionSimTime;
+        /// <summary>The tax level the player chose (null = the content's default).</summary>
+        public string TaxLevel;
+        /// <summary>Favour of each estate of the realm (estate id → favour).</summary>
+        public Dictionary<string, double> Favour = new Dictionary<string, double>();
+        /// <summary>Ground worn by feet (cell y·width + x → wear); enough wear makes a path.</summary>
+        public Dictionary<int, double> Wear = new Dictionary<int, double>();
+        /// <summary>Zones painted with the brush (cell y·width + x → zone id).</summary>
+        public Dictionary<int, string> Zones = new Dictionary<int, string>();
         /// <summary>Goods made by recipes since the founding, by resource id (e.g. bronze cast).</summary>
         public Dictionary<string, double> Made = new Dictionary<string, double>();
         /// <summary>Speed-ups owned: key (see Speedups.Key) → count.</summary>
         public Dictionary<string, int> Speedups = new Dictionary<string, int>();
         /// <summary>The starter speed-ups were given (older saves get them once on load).</summary>
         public bool SpeedupStarterGiven;
+        /// <summary>Open trade routes to the peoples beyond the valley.</summary>
+        public List<TradeRoute> TradeRoutes = new List<TradeRoute>();
 
         public PlacedBuilding Building(int id) => Buildings.FirstOrDefault(b => b.Id == id);
 
@@ -365,9 +385,14 @@ namespace Founders.Core
                     ["petitionId"] = ActivePetition.PetitionId, ["deadlineSimTime"] = ActivePetition.DeadlineSimTime,
                 };
             if (LastPetitionSimTime.HasValue) d["lastPetitionSimTime"] = LastPetitionSimTime.Value;
+            if (TaxLevel != null) d["taxLevel"] = TaxLevel;
+            if (Favour.Count > 0) d["favour"] = Favour.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
+            if (Zones.Count > 0) d["zones"] = Zones.Select(kv => (object)new List<object> { kv.Key, kv.Value }).ToList();
+            if (Wear.Count > 0) d["wear"] = Wear.Select(kv => (object)new List<object> { kv.Key, Math.Round(kv.Value, 3) }).ToList();
             if (Made.Count > 0) d["made"] = Made.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (Speedups.Count > 0) d["speedups"] = Speedups.ToDictionary(kv => kv.Key, kv => (object)kv.Value);
             if (SpeedupStarterGiven) d["speedupStarterGiven"] = true;
+            if (TradeRoutes.Count > 0) d["tradeRoutes"] = TradeRoutes.Select(r => (object)r.ToJson()).ToList();
             return d;
         }
 
@@ -444,6 +469,16 @@ namespace Founders.Core
                 s.ActivePetition = new ActivePetition { PetitionId = ap.Str("petitionId"), DeadlineSimTime = ap.Num("deadlineSimTime") };
             }
             s.LastPetitionSimTime = o.OptNum("lastPetitionSimTime");
+            s.TaxLevel = o.OptStr("taxLevel");
+            if (o.Has("favour"))
+            {
+                var fav = o.Obj("favour");
+                foreach (var key in fav.Keys) s.Favour[key] = fav.Num(key);
+            }
+            if (o.Has("zones"))
+                foreach (var pair in o.Arr("zones")) { var l = (List<object>)pair; s.Zones[Convert.ToInt32(l[0])] = Convert.ToString(l[1]); }
+            if (o.Has("wear"))
+                foreach (var pair in o.Arr("wear")) { var l = (List<object>)pair; s.Wear[Convert.ToInt32(l[0])] = Convert.ToDouble(l[1]); }
             if (o.Has("made"))
             {
                 var made = o.Obj("made");
@@ -455,6 +490,7 @@ namespace Founders.Core
                 foreach (var key in sp.Keys) s.Speedups[key] = sp.Int(key);
             }
             s.SpeedupStarterGiven = o.OptBool("speedupStarterGiven", false);
+            if (o.Has("tradeRoutes")) s.TradeRoutes = o.Objs("tradeRoutes").Where(x => x.Has("partnerId")).Select(TradeRoute.FromJson).ToList();
             s.Legacy = o.Objs("legacy").Select(l => new LegacyEntry
             {
                 Id = l.Int("id"), SimTime = l.Num("simTime"), EpochId = l.Str("epochId"),

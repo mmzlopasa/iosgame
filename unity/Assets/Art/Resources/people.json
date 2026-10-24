@@ -6,9 +6,10 @@
    "gender": "male",
    "age": "adult",
    "textures": {
-    "albedo": "Art/Textures/People/Person_Farmer_Male_albedo.jpg",
+    "albedo": "Art/Textures/People/Person_Farmer_Male_painted.jpg",
     "normal": "Art/Textures/People/Person_Farmer_Male_normal.jpg",
-    "mask": "Art/Textures/People/Person_Farmer_Male_mask.png"
+    "mask": "Art/Textures/People/Person_Farmer_Male_mask.png",
+    "source": "Art/Textures/People/Person_Farmer_Male_albedo.jpg"
    },
    "skin": [
     0.3843,
@@ -35,9 +36,10 @@
    "gender": "male",
    "age": "adult",
    "textures": {
-    "albedo": "Art/Textures/People/Person_Woodcutter_Male_albedo.jpg",
+    "albedo": "Art/Textures/People/Person_Woodcutter_Male_painted.jpg",
     "normal": "Art/Textures/People/Person_Woodcutter_Male_normal.jpg",
-    "mask": "Art/Textures/People/Person_Woodcutter_Male_mask.png"
+    "mask": "Art/Textures/People/Person_Woodcutter_Male_mask.png",
+    "source": "Art/Textures/People/Person_Woodcutter_Male_albedo.jpg"
    },
    "skin": [
     0.3843,
@@ -64,9 +66,10 @@
    "gender": "male",
    "age": "adult",
    "textures": {
-    "albedo": "Art/Textures/People/Person_Hunter_Male_albedo.jpg",
+    "albedo": "Art/Textures/People/Person_Hunter_Male_painted.jpg",
     "normal": "Art/Textures/People/Person_Hunter_Male_normal.jpg",
-    "mask": "Art/Textures/People/Person_Hunter_Male_mask.png"
+    "mask": "Art/Textures/People/Person_Hunter_Male_mask.png",
+    "source": "Art/Textures/People/Person_Hunter_Male_albedo.jpg"
    },
    "skin": [
     0.3657,
@@ -93,9 +96,10 @@
    "gender": "male",
    "age": "adult",
    "textures": {
-    "albedo": "Art/Textures/People/Person_Hooded_Male_albedo.jpg",
+    "albedo": "Art/Textures/People/Person_Hooded_Male_painted.jpg",
     "normal": "Art/Textures/People/Person_Hooded_Male_normal.jpg",
-    "mask": "Art/Textures/People/Person_Hooded_Male_mask.png"
+    "mask": "Art/Textures/People/Person_Hooded_Male_mask.png",
+    "source": "Art/Textures/People/Person_Hooded_Male_albedo.jpg"
    },
    "skin": [
     0.3657,
@@ -122,9 +126,10 @@
    "gender": "male",
    "age": "elder",
    "textures": {
-    "albedo": "Art/Textures/People/Person_Elder_Male_albedo.jpg",
+    "albedo": "Art/Textures/People/Person_Elder_Male_painted.jpg",
     "normal": "Art/Textures/People/Person_Elder_Male_normal.jpg",
-    "mask": "Art/Textures/People/Person_Elder_Male_mask.png"
+    "mask": "Art/Textures/People/Person_Elder_Male_mask.png",
+    "source": "Art/Textures/People/Person_Elder_Male_albedo.jpg"
    },
    "skin": [
     0.3843,
@@ -151,9 +156,10 @@
    "gender": "female",
    "age": "adult",
    "textures": {
-    "albedo": "Art/Textures/People/Person_Farmer_Female_albedo.jpg",
+    "albedo": "Art/Textures/People/Person_Farmer_Female_painted.jpg",
     "normal": "Art/Textures/People/Person_Farmer_Female_normal.jpg",
-    "mask": "Art/Textures/People/Person_Farmer_Female_mask.png"
+    "mask": "Art/Textures/People/Person_Farmer_Female_mask.png",
+    "source": "Art/Textures/People/Person_Farmer_Female_albedo.jpg"
    },
    "skin": [
     0.3849,
@@ -180,9 +186,10 @@
    "gender": "female",
    "age": "adult",
    "textures": {
-    "albedo": "Art/Textures/People/Person_Weaver_Female_albedo.jpg",
+    "albedo": "Art/Textures/People/Person_Weaver_Female_painted.jpg",
     "normal": "Art/Textures/People/Person_Weaver_Female_normal.jpg",
-    "mask": "Art/Textures/People/Person_Weaver_Female_mask.png"
+    "mask": "Art/Textures/People/Person_Weaver_Female_mask.png",
+    "source": "Art/Textures/People/Person_Weaver_Female_albedo.jpg"
    },
    "skin": [
     0.3849,
@@ -209,9 +216,10 @@
    "gender": "female",
    "age": "adult",
    "textures": {
-    "albedo": "Art/Textures/People/Person_Hunter_Female_albedo.jpg",
+    "albedo": "Art/Textures/People/Person_Hunter_Female_painted.jpg",
     "normal": "Art/Textures/People/Person_Hunter_Female_normal.jpg",
-    "mask": "Art/Textures/People/Person_Hunter_Female_mask.png"
+    "mask": "Art/Textures/People/Person_Hunter_Female_mask.png",
+    "source": "Art/Textures/People/Person_Hunter_Female_albedo.jpg"
    },
    "skin": [
     0.3859,
@@ -238,9 +246,10 @@
    "gender": "female",
    "age": "adult",
    "textures": {
-    "albedo": "Art/Textures/People/Person_Gatherer_Female_albedo.jpg",
+    "albedo": "Art/Textures/People/Person_Gatherer_Female_painted.jpg",
     "normal": "Art/Textures/People/Person_Gatherer_Female_normal.jpg",
-    "mask": "Art/Textures/People/Person_Gatherer_Female_mask.png"
+    "mask": "Art/Textures/People/Person_Gatherer_Female_mask.png",
+    "source": "Art/Textures/People/Person_Gatherer_Female_albedo.jpg"
    },
    "skin": [
     0.3859,
@@ -267,9 +276,10 @@
    "gender": "female",
    "age": "elder",
    "textures": {
-    "albedo": "Art/Textures/People/Person_Elder_Female_albedo.jpg",
+    "albedo": "Art/Textures/People/Person_Elder_Female_painted.jpg",
     "normal": "Art/Textures/People/Person_Elder_Female_normal.jpg",
-    "mask": "Art/Textures/People/Person_Elder_Female_mask.png"
+    "mask": "Art/Textures/People/Person_Elder_Female_mask.png",
+    "source": "Art/Textures/People/Person_Elder_Female_albedo.jpg"
    },
    "skin": [
     0.3849,

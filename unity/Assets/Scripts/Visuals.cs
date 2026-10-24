@@ -40,7 +40,7 @@ namespace Founders
         public static readonly Spec[] All =
         {
             // Water: dark, very smooth surface that reflects the HDRI sky.
-            new Spec("Water", new Color(0.16f, 0.46f, 0.52f), 0.86f),
+            new Spec("Water", new Color(0.16f, 0.46f, 0.52f), 0.3f),
             new Spec("Earth", new Color(0.30f, 0.23f, 0.16f), 0.15f),
             new Spec("Ash", new Color(0.16f, 0.15f, 0.14f), 0.1f),
             // People (placeholder until real character models)
@@ -51,12 +51,24 @@ namespace Founders
             new Spec("Fish", new Color(0.52f, 0.53f, 0.50f), 0.65f),
             new Spec("Banner", new Color(0.55f, 0.08f, 0.07f), 0.2f),
             new Spec("Cloth", new Color(0.86f, 0.82f, 0.72f), 0.15f),
+            // Market awnings and goods: madder red, weld ochre, woad blue; apples, cabbages, grain.
+            new Spec("Awning", new Color(0.64f, 0.18f, 0.13f), 0.12f),
+            new Spec("Awning2", new Color(0.80f, 0.58f, 0.22f), 0.12f),
+            new Spec("Awning3", new Color(0.26f, 0.38f, 0.56f), 0.12f),
+            new Spec("Apple", new Color(0.72f, 0.14f, 0.08f), 0.45f),
+            new Spec("Cabbage", new Color(0.38f, 0.56f, 0.22f), 0.25f),
+            new Spec("Grain", new Color(0.84f, 0.67f, 0.32f), 0.15f),
             // Fire
             new Spec("Ember", new Color(1.00f, 0.42f, 0.10f)) { Emission = new Color(1.0f, 0.38f, 0.08f) * 4f },
             // Feedback
             new Spec("GhostOk", new Color(0.30f, 0.90f, 0.40f)) { Emission = new Color(0.15f, 0.7f, 0.25f) },
             new Spec("GhostBad", new Color(0.95f, 0.25f, 0.20f)) { Emission = new Color(0.7f, 0.12f, 0.1f) },
             new Spec("Select", new Color(1.00f, 0.85f, 0.30f)) { Emission = new Color(0.9f, 0.7f, 0.2f) },
+            // Zones painted with the brush
+            new Spec("Zone_homes", new Color(0.95f, 0.70f, 0.30f)) { Emission = new Color(0.45f, 0.30f, 0.10f) },
+            new Spec("Zone_woodcutting", new Color(0.85f, 0.45f, 0.25f)) { Emission = new Color(0.40f, 0.18f, 0.08f) },
+            new Spec("Zone_forestry", new Color(0.30f, 0.70f, 0.35f)) { Emission = new Color(0.10f, 0.32f, 0.12f) },
+            new Spec("Zone_pasture", new Color(0.70f, 0.85f, 0.35f)) { Emission = new Color(0.30f, 0.40f, 0.12f) },
             new Spec("BarBack", new Color(0.08f, 0.07f, 0.06f)),
             new Spec("BarFill", new Color(1.00f, 0.80f, 0.30f)) { Emission = new Color(1f, 0.75f, 0.25f) },
             // Particles

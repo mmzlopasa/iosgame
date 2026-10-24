@@ -228,6 +228,11 @@ namespace Founders.UI
             ResourceType.Ore => "ore",
             ResourceType.Hides => "hides",
             ResourceType.Bronze => "bronze",
+            ResourceType.Planks => "planks",
+            ResourceType.Tools => "tools",
+            ResourceType.Goods => "goods",
+            ResourceType.Flour => "flour",
+            ResourceType.Coins => "coins",
             _ => "knowledge",
         };
 
@@ -240,6 +245,11 @@ namespace Founders.UI
             ResourceType.Ore => E.Cell.Rare,
             ResourceType.Hides => E.Cell.Legendary,
             ResourceType.Bronze => E.Cell.Rare,
+            ResourceType.Planks => E.Cell.Legendary,
+            ResourceType.Tools => E.Cell.Rare,
+            ResourceType.Goods => E.Cell.Uncommon,
+            ResourceType.Flour => E.Cell.Uncommon,
+            ResourceType.Coins => E.Cell.Legendary,
             _ => E.Cell.Epic,
         };
 
@@ -252,6 +262,7 @@ namespace Founders.UI
         /// <summary>Category label used for tabs and the build strip.</summary>
         static string Category(BuildingDefinition d)
         {
+            if (d.IsMonument) return "Monuments";
             if (d.HousingValue > 0) return "Shelter";
             if (d.JobSlots != null && d.JobSlots.Any(s => s.Job == JobType.Foraging || s.Job == JobType.Farming)) return "Food";
             if (d.StorageValue > 0 || d.ProtectedFoodValue > 0) return "Storage";
@@ -263,6 +274,7 @@ namespace Founders.UI
             "Shelter" => E.Cell.Rare,
             "Food" => E.Cell.Uncommon,
             "Storage" => E.Cell.Legendary,
+            "Monuments" => E.Cell.Epic,
             _ => d.Heart ? E.Cell.Legendary : E.Cell.Common,
         };
 
@@ -272,7 +284,8 @@ namespace Founders.UI
         /// <summary>A red notification badge in the top-right corner of a parent.</summary>
         static VisualElement CornerBadge(string text, float size = 20) => E.Badge(text, true, size).Abs(null, -6, -6);
 
-        static readonly ResourceType[] StripOrder = { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Knowledge, ResourceType.Ore, ResourceType.Hides, ResourceType.Bronze };
+        static readonly ResourceType[] StripOrder = { ResourceType.Food, ResourceType.Wood, ResourceType.Stone, ResourceType.Knowledge, ResourceType.Ore, ResourceType.Hides, ResourceType.Bronze,
+                                                              ResourceType.Planks, ResourceType.Tools, ResourceType.Goods, ResourceType.Flour, ResourceType.Coins };
 
         // MARK: - Top: the player block and the resource counters (the blue kit)
 
@@ -317,7 +330,12 @@ namespace Founders.UI
                 if (t == ResourceType.Hides && G.State.Resources.Hides < 1) continue;
                 if (t == ResourceType.Ore && G.State.Resources.Ore < 1) continue;
                 if (t == ResourceType.Bronze && G.State.Resources.Bronze < 1) continue;
-                int drop = t == ResourceType.Bronze ? 10 : t == ResourceType.Hides ? 9 : t == ResourceType.Ore ? 8 : t == ResourceType.Knowledge ? 3 : t == ResourceType.Stone ? 2 : 0;
+                if (t == ResourceType.Planks && G.State.Resources.Planks < 1) continue;
+                if (t == ResourceType.Tools && G.State.Resources.Tools < 1) continue;
+                if (t == ResourceType.Goods && G.State.Resources.Goods < 1) continue;
+                if (t == ResourceType.Flour && G.State.Resources.Flour < 1) continue;
+                if (t == ResourceType.Coins && G.State.Resources.Coins < 1) continue;
+                int drop = t == ResourceType.Flour ? 14 : t == ResourceType.Goods ? 13 : t == ResourceType.Coins ? 4 : t == ResourceType.Tools ? 12 : t == ResourceType.Planks ? 11 : t == ResourceType.Bronze ? 10 : t == ResourceType.Hides ? 9 : t == ResourceType.Ore ? 8 : t == ResourceType.Knowledge ? 3 : t == ResourceType.Stone ? 2 : 0;
                 list.Add(new TopItem(t.ToString(), CounterW(Fmt.Compact(G.State.Resources[t]), PlusFor(t)), drop));
             }
             list.Add(new TopItem("clock", ChipW("00:00"), 7));
@@ -417,7 +435,7 @@ namespace Founders.UI
             var frame = E.HexFrame(store.Profile.Avatar, HexFrameW);
             bool goalWaits = MilestoneReady() || G.PendingStory != null;
             if (goalWaits) frame.Add(CornerBadge("!", 20).Abs(null, 2, 0));
-            Tap(frame, () => { if (MilestoneReady() || G.PendingStory != null) store.ActivePanel = Panel.Objectives; else ShowProfile(); });
+            Tap(frame, () => { if (G.PendingStory != null) store.OpenStory(); else if (MilestoneReady()) store.ActivePanel = Panel.Objectives; else ShowProfile(); });
             block.Add(frame);
             var col = E.Div().Col().Ignore().Size(PlayerNameW);
             col.style.marginLeft = 8;
@@ -565,11 +583,14 @@ namespace Founders.UI
 
         // MARK: - Left rail: the goal and a promise
 
+        const bool ShowGoalCard = false;
+
         string LeftKey() => $"{G.CurrentObjective?.Id}|{G.State.ActivePetition?.PetitionId}";
 
         void BuildLeft(VisualElement host)
         {
-            var o = G.CurrentObjective;
+            // The goal is no longer pinned on the screen (it hid the town): the Goals tile opens it.
+            var o = ShowGoalCard ? G.CurrentObjective : null;
             if (o != null)
             {
                 var card = E.Panel().Pad(7, 11, 11, 11);
@@ -635,7 +656,8 @@ namespace Founders.UI
             {
                 var def = G.Content.Building(b.Status == BuildingStatus.Upgrading && b.UpgradeTargetId != null ? b.UpgradeTargetId : b.DefinitionId);
                 int id = b.Id;
-                cards.Add(TimerCard(b.Status == BuildingStatus.Upgrading ? "level_up" : "build", def?.Name ?? b.DefinitionId,
+                string title = b.PendingPart != null ? def?.Part(b.PendingPart)?.Name ?? def?.Name : def?.Name ?? b.DefinitionId;
+                cards.Add(TimerCard(b.Status == BuildingStatus.Upgrading ? "level_up" : "build", title,
                     () => G.State.Building(id)?.Progress ?? 1, () => Fmt.Clock(G.EstimatedSeconds(G.State.Building(id)?.RemainingWork ?? 0)),
                     E.FillKind.Gold, () => store.FocusBuilding(id), SpeedupTask.Building(id)));
             }

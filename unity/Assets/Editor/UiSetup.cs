@@ -37,7 +37,7 @@ namespace FoundersEditor
             }
             panel.themeStyleSheet = theme;
             panel.scaleMode = PanelScaleMode.ScaleWithScreenSize;
-            // Landscape design canvas of a regular phone (965 × 446). The game re-picks the canvas for the device
+            // Landscape design canvas of a regular phone (1082 × 500). The game re-picks the canvas for the device
             // (fewer units on a small phone, portrait turned) and the match at run time, see GameUi.ReferenceFor.
             panel.referenceResolution = Founders.UI.GameUi.ReferenceResolution;
             panel.screenMatchMode = PanelScreenMatchMode.MatchWidthOrHeight;

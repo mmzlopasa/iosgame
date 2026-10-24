@@ -47,6 +47,12 @@ namespace Founders.Core
         internal List<Effect> ActiveEffects()
         {
             if (stepEffects != null) return stepEffects;
+            // The UI asks for multipliers many times a frame: the list is kept until anything it is made of changes.
+            int ranks = 0;
+            if (HasEstates) foreach (var e in Estates) ranks = ranks * 8 + EstateRank(e);
+            var buildings = BuildingEffects();
+            var key = (State.SimTime, State.Researched.Count, State.Modifiers.Count, State.Laws.Count, ranks, State.People.Count, buildings, State);
+            if (effectsCache != null && effectsCacheKey.Equals(key)) return effectsCache;
             var effects = new List<Effect>();
             foreach (var id in State.Researched)
             {
@@ -54,10 +60,18 @@ namespace Founders.Core
                 if (tech != null) effects.AddRange(tech.Effects);
             }
             foreach (var m in State.Modifiers) effects.Add(m.Effect);
+            effects.AddRange(buildings);
             effects.AddRange(PerkEffects());
             effects.AddRange(LawEffects());
+            effects.AddRange(EstateEffects());
+            effectsCache = effects;
+            effectsCacheKey = key;
             return effects;
         }
+
+        List<Effect> effectsCache;
+        static readonly List<Effect> noEffects = new List<Effect>();
+        (double, int, int, int, int, int, List<Effect>, GameState) effectsCacheKey;
 
         int CurrentApproval => stepApproval ?? Approval;
 
@@ -80,6 +94,39 @@ namespace Founders.Core
             }
         }
 
+        /// <summary>Building kinds with lasting effects (content does not change while playing).</summary>
+        Dictionary<string, List<Effect>> effectsByBuilding;
+        List<Effect> buildingEffects;
+        bool hasMonuments;
+        int buildingEffectsKey = -1;
+        object buildingEffectsOwner;
+
+        /// <summary>Lasting effects of the finished buildings that have any (herb garden, lookout tower…).
+        /// Kept until a building is added, removed or finished, so the UI can ask for multipliers every frame.</summary>
+        List<Effect> BuildingEffects()
+        {
+            if (effectsByBuilding == null)
+            {
+                effectsByBuilding = Content.Buildings.Where(d => d.Effects.Count > 0).ToDictionary(d => d.Id, d => d.Effects);
+                hasMonuments = Content.Buildings.Any(d => d.IsMonument);
+            }
+            if (effectsByBuilding.Count == 0 && !hasMonuments) return noEffects;
+            int operational = 0;
+            foreach (var b in State.Buildings) if (b.IsOperational) operational++;
+            int parts = 0;
+            foreach (var b in State.Buildings) parts += b.Parts.Count;
+            int key = (State.Buildings.Count * 4096 + operational) * 64 + parts;
+            if (buildingEffects != null && key == buildingEffectsKey && ReferenceEquals(buildingEffectsOwner, State.Buildings)) return buildingEffects;
+            var list = new List<Effect>();
+            foreach (var b in State.Buildings)
+                if (b.IsOperational && effectsByBuilding.TryGetValue(b.DefinitionId, out var effects)) list.AddRange(effects);
+            if (hasMonuments) list.AddRange(PartEffects());
+            buildingEffects = list;
+            buildingEffectsKey = key;
+            buildingEffectsOwner = State.Buildings;
+            return list;
+        }
+
         public int HousingCapacity() => OperationalBuildings().Sum(x => HousingOf(x.building, x.def));
 
         public ResourceBundle StorageCapacity()
@@ -90,6 +137,7 @@ namespace Founders.Core
             foreach (var t in ResourceTypes.Stored)
                 caps[t] = baseCap * Multiplier(EffectKind.StorageMultiplier, null, t);
             caps.Knowledge = Content.Balance.KnowledgeCap * Multiplier(EffectKind.StorageMultiplier, null, ResourceType.Knowledge);
+            caps.Coins = Content.Balance.TreasuryCap * Multiplier(EffectKind.StorageMultiplier, null, ResourceType.Coins);
             return caps;
         }
 
@@ -99,7 +147,7 @@ namespace Founders.Core
         public int JobCapacity(JobType job)
         {
             if (Content.JobConfig(job)?.UnlimitedSlots == true) return State.Population;
-            return OperationalBuildings().Sum(x => SlotsOf(x.building, x.def, job));
+            return OperationalBuildings().Sum(x => SlotsOf(x.building, x.def, job)) + PastureSlots(job);
         }
 
         /// <summary>Output per worker per second, including all current bonuses and penalties.</summary>
@@ -112,8 +160,21 @@ namespace Founders.Core
             double rate = cfg.RatePerWorkerPerSecond * Multiplier(EffectKind.JobRateMultiplier, job) * SeasonJobMultiplier(job) * productivity
                           * RoadMultiplier(job) * WorkRate;
             if (State.FoodShortage) rate *= Content.Balance.ShortageProductivityMultiplier;
-            if (IsGathering(job)) rate *= 1 + GetCraftingStatus().Bonus;
+            if (IsGathering(job)) rate *= 1 + GetCraftingStatus().Bonus + ToolBonus;
             return rate;
+        }
+
+        /// <summary>Extra output of the gatherers while the store holds tools (bronze axes, sickles, picks).</summary>
+        public double ToolBonus => State.Resources.Tools > 1e-6 ? Content.Balance.ToolBonus : 0;
+
+        /// <summary>Tools the working gatherers wear out per second (never more than the store holds for one step).</summary>
+        double ToolWear(double dt)
+        {
+            var b = Content.Balance;
+            if (b.ToolWearPerWorkerPerSecond <= 0 || State.Resources.Tools <= 1e-6) return 0;
+            int gatherers = 0;
+            foreach (var job in Enums.Jobs) if (IsGathering(job)) gatherers += ActiveWorkers(job);
+            return Math.Min(gatherers * b.ToolWearPerWorkerPerSecond, State.Resources.Tools / dt);
         }
 
         internal static bool IsGathering(JobType job) =>
@@ -178,6 +239,13 @@ namespace Founders.Core
             consumption.Food += snap.Spoilage;
             consumption.Wood = FuelPerSecond;
             consumption += crafting.Input;
+            consumption.Tools += ToolWear(dt);
+            if (HasNeeds)
+            {
+                var needs = Needs();
+                production.Coins += needs.TaxPerSecond;
+                consumption.Goods += Math.Min(needs.GoodsPerSecond, State.Resources.Goods / dt);
+            }
             ApplyRecipes(snap, ref production, ref consumption, productivity, dt);
             snap.Production = production;
             snap.Consumption = consumption;
