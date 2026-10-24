@@ -68,6 +68,11 @@ namespace FoundersEditor
             {
                 var copy = new Material(water) { name = "KitWater" };
                 copy.renderQueue = water.renderQueue;
+                // The pack's water is see-through and mirror-smooth: over the dark riverbed it read as
+                // glossy brown mud. Calmer, more opaque painted water with a soft sheen instead.
+                if (copy.HasProperty("_BaseColor")) copy.SetColor("_BaseColor", new Color(0.24f, 0.47f, 0.55f, 0.82f));
+                if (copy.HasProperty("_Smoothness")) copy.SetFloat("_Smoothness", 0.35f);
+                if (copy.HasProperty("_EnvironmentReflections")) { copy.SetFloat("_EnvironmentReflections", 0f); copy.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF"); }
                 kit.Water = SaveMaterial(copy, $"{MaterialFolder}/KitWater.mat");
             }
 
@@ -154,7 +159,6 @@ namespace FoundersEditor
                 m.SetColor("_BaseColor", Col(src, Color.white, "_MainColor", "_Color", "_BaseColor"));
                 var normal = Tex(src, "_BumpMap", "_NormalMap", "_Normal");
                 if (normal != null) { m.SetTexture("_BumpMap", normal); m.SetFloat("_BumpScale", Num(src, 1f, "_BumpScale", "_NormalStrength")); }
-                m.SetFloat("_Smoothness", Mathf.Min(0.5f, Num(src, 0.2f, "_Smoothness", "_Glossiness")));
                 m.SetFloat("_Metallic", 0f);
                 bool vegetation = shader.Contains("Vegetation");
                 bool cutout = vegetation || src.IsKeywordEnabled("_ALPHATEST_ON") || src.GetTag("RenderType", false) == "TransparentCutout";
@@ -172,8 +176,21 @@ namespace FoundersEditor
                 }
                 BaseShaderGUI.SetMaterialKeywords(m, LitGUI.SetMaterialKeywords);
             }
+            Matte(m);
             m.enableInstancing = true;
             return SaveMaterial(m, file);
+        }
+
+        /// <summary>
+        /// No shine on nature: leaves, bark and stone are matte in the painted look, and skipping the
+        /// highlights and reflections is also cheaper for the iPhone.
+        /// </summary>
+        static void Matte(Material m)
+        {
+            if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", Mathf.Min(m.GetFloat("_Smoothness"), 0.08f));
+            if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0f);
+            if (m.HasProperty("_SpecularHighlights")) { m.SetFloat("_SpecularHighlights", 0f); m.EnableKeyword("_SPECULARHIGHLIGHTS_OFF"); }
+            if (m.HasProperty("_EnvironmentReflections")) { m.SetFloat("_EnvironmentReflections", 0f); m.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF"); }
         }
 
         static string Safe(string s) => new string(s.Select(c => char.IsLetterOrDigit(c) || c == '_' ? c : '_').ToArray());
