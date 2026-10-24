@@ -243,9 +243,17 @@ namespace Founders.UI
             return t;
         }
 
-        public static bool HasIcon(string name) =>
-            CustomAssets.Texture("UI/Icons/" + name) != null || Kit.Texture("UI/Icons/" + name) != null ||
-            UnityEngine.Resources.Load<Texture2D>("UI/Icons/" + name) != null;
+        static readonly Dictionary<string, bool> hasIcon = new Dictionary<string, bool>();
+
+        /// <summary>True when there is a picture for this icon (asked again on every redraw, so remembered).</summary>
+        public static bool HasIcon(string name)
+        {
+            if (hasIcon.TryGetValue(name, out bool has)) return has;
+            has = icons.TryGetValue(name, out var t) ? t != null :
+                CustomAssets.Texture("UI/Icons/" + name) != null || Kit.Texture("UI/Icons/" + name) != null ||
+                UnityEngine.Resources.Load<Texture2D>("UI/Icons/" + name) != null;
+            return hasIcon[name] = has;
+        }
 
         static readonly Dictionary<string, float> skinPixels = new Dictionary<string, float>();
 

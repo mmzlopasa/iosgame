@@ -389,19 +389,27 @@ namespace Founders
             }
         }
 
+        /// <summary>Splat samples (rows i0..i1, columns j0..j1) the last paint stamped; i0 &gt; i1 when none.</summary>
+        (int i0, int i1, int j0, int j1) stamped = (0, -1, 0, -1);
+        bool painted;
+
         /// <summary>
         /// Paints the texture layers: the natural ground plus trodden mud around
         /// <paramref name="buildings"/> (world positions with a radius), worn footpaths along
         /// <paramref name="paths"/> and the player's <paramref name="roads"/>.
+        /// Only the patch around the village is worked out and sent to the GPU again (what is stamped
+        /// now and what the last paint stamped): the whole valley took a long freeze on a phone.
         /// </summary>
         public void PaintSplat(List<(Vector3 center, float radius)> buildings, List<(Vector3 a, Vector3 b)> paths,
                                List<RoadSegment> roads = null)
         {
             if (baseSplat == null) BuildBaseSplat();
             int L = LayerNames.Length;
-            var maps = (float[,,])baseSplat.Clone();
             float px = Size / (SplatRes - 1);
             var add = new float[L];
+            var stamps = new List<(int i0, int i1, int j0, int j1, System.Func<Vector2, int, int, bool> weights)>();
+            float[,,] maps = null;
+            int ri0 = 0, rj0 = 0;
 
             // Each stamp only touches the samples inside its bounding box.
             void Stamp(Vector2 min, Vector2 max, System.Func<Vector2, int, int, bool> weights)
@@ -410,15 +418,7 @@ namespace Founders
                 int j1 = Mathf.Clamp(Mathf.CeilToInt((max.x - origin.x) / px), 0, SplatRes - 1);
                 int i0 = Mathf.Clamp(Mathf.FloorToInt((min.y - origin.z) / px), 0, SplatRes - 1);
                 int i1 = Mathf.Clamp(Mathf.CeilToInt((max.y - origin.z) / px), 0, SplatRes - 1);
-                for (int i = i0; i <= i1; i++)
-                    for (int j = j0; j <= j1; j++)
-                    {
-                        System.Array.Clear(add, 0, L);
-                        if (!weights(SampleWorld(i, j, SplatRes), i, j)) continue;
-                        float sum = 0f;
-                        for (int l = 0; l < L; l++) { maps[i, j, l] += add[l]; sum += maps[i, j, l]; }
-                        for (int l = 0; l < L; l++) maps[i, j, l] /= sum;
-                    }
+                stamps.Add((i0, i1, j0, j1, weights));
             }
 
             float N2(Vector2 w) => Mathf.PerlinNoise(w.x * 0.37f + 1f, w.y * 0.37f + 5f);
@@ -461,22 +461,53 @@ namespace Founders
                         float k = 1f - Mathf.Clamp01((d - half) / 0.45f);
                         if (k <= 0f) return false;
                         // Roads replace the ground underneath instead of blending into it.
-                        for (int l = 0; l < L; l++) maps[i, j, l] *= 1f - k * 0.9f;
+                        for (int l = 0; l < L; l++) maps[i - ri0, j - rj0, l] *= 1f - k * 0.9f;
                         if (road.Stone) { add[LRock] = k * 2.2f; add[LSand] = k * 0.4f * N2(w); }
                         else { add[LMud] = k * 2f; add[LSand] = k * 0.5f * N2(w); }
                         return true;
                     });
                 }
-            var output = new float[SplatRes, SplatRes, OutputLayers.Length];
-            for (int i = 0; i < SplatRes; i++)
-                for (int j = 0; j < SplatRes; j++)
+
+            // What is stamped now; the patch redrawn also covers the last stamps, so they turn back to bare ground.
+            var now = (i0: SplatRes, i1: -1, j0: SplatRes, j1: -1);
+            foreach (var st in stamps)
+                now = (Mathf.Min(now.i0, st.i0), Mathf.Max(now.i1, st.i1), Mathf.Min(now.j0, st.j0), Mathf.Max(now.j1, st.j1));
+            var region = painted
+                ? (i0: Mathf.Min(now.i0, stamped.i0), i1: Mathf.Max(now.i1, stamped.i1), j0: Mathf.Min(now.j0, stamped.j0), j1: Mathf.Max(now.j1, stamped.j1))
+                : (i0: 0, i1: SplatRes - 1, j0: 0, j1: SplatRes - 1);
+            painted = true;
+            stamped = now;
+            if (region.i0 > region.i1 || region.j0 > region.j1) return;
+
+            ri0 = region.i0;
+            rj0 = region.j0;
+            int h = region.i1 - region.i0 + 1, wd = region.j1 - region.j0 + 1;
+            maps = new float[h, wd, L];
+            for (int i = 0; i < h; i++)
+                for (int j = 0; j < wd; j++)
+                    for (int l = 0; l < L; l++) maps[i, j, l] = baseSplat[ri0 + i, rj0 + j, l];
+
+            foreach (var st in stamps)
+                for (int i = st.i0; i <= st.i1; i++)
+                    for (int j = st.j0; j <= st.j1; j++)
+                    {
+                        System.Array.Clear(add, 0, L);
+                        if (!st.weights(SampleWorld(i, j, SplatRes), i, j)) continue;
+                        float sum = 0f;
+                        for (int l = 0; l < L; l++) { maps[i - ri0, j - rj0, l] += add[l]; sum += maps[i - ri0, j - rj0, l]; }
+                        for (int l = 0; l < L; l++) maps[i - ri0, j - rj0, l] /= sum;
+                    }
+
+            var output = new float[h, wd, OutputLayers.Length];
+            for (int i = 0; i < h; i++)
+                for (int j = 0; j < wd; j++)
                     for (int l = 0; l < L; l++)
                     {
                         float v = maps[i, j, l];
                         if (v <= 0f) continue;
                         foreach (var (to, amount) in Fold[l]) output[i, j, to] += v * amount;
                     }
-            Terrain.terrainData.SetAlphamaps(0, 0, output);
+            Terrain.terrainData.SetAlphamaps(rj0, ri0, output);
         }
 
         static float DistanceToSegment(Vector2 p, Vector2 a, Vector2 b)
