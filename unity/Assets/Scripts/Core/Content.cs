@@ -265,6 +265,10 @@ namespace Founders.Core
         public double Insulation;
         /// <summary>A fire that warms the homes around it (the heart's own warmth is set in balance.warmth).</summary>
         public HeatSource Heat;
+        /// <summary>A market: homes within this many cells are served (Foundation's market reach).</summary>
+        public int? MarketReach;
+        /// <summary>A trading post: trade routes it can run at level 1 (one more every <see cref="Game.TradeLevelsPerRoute"/> levels).</summary>
+        public int? TradeRoutes;
 
         /// <summary>The model shown at a level: the last look whose level has been reached.</summary>
         public string SpriteAt(int level)
@@ -314,6 +318,8 @@ namespace Founders.Core
                                                     .OrderBy(l => l.Level).ToList() : new List<LevelLook>(),
                 Insulation = o.OptNum("insulation") ?? 0,
                 Heat = o.Has("heat") ? HeatSource.FromJson(o.Obj("heat")) : null,
+                MarketReach = o.OptInt("marketReach"),
+                TradeRoutes = o.OptInt("tradeRoutes"),
             };
         }
     }
@@ -1043,7 +1049,9 @@ namespace Founders.Core
         public List<SkillDefinition> Skills = new List<SkillDefinition>();
         public List<LawDefinition> Laws = new List<LawDefinition>();
         public List<PetitionDefinition> Petitions = new List<PetitionDefinition>();
+        public List<TradePartnerDefinition> TradePartners = new List<TradePartnerDefinition>();
         public MapDefinition Map;
+        public TradePartnerDefinition TradePartner(string id) => TradePartners.FirstOrDefault(p => p.Id == id);
         public LawDefinition Law(string id) => Laws.FirstOrDefault(l => l.Id == id);
         public PetitionDefinition Petition(string id) => Petitions.FirstOrDefault(p => p.Id == id);
         public SkillDefinition Skill(JobType job) => Skills.FirstOrDefault(s => s.Job == job);
@@ -1089,6 +1097,7 @@ namespace Founders.Core
                 Skills = o.Has("skills") ? o.Objs("skills").Select(SkillDefinition.FromJson).ToList() : new List<SkillDefinition>(),
                 Laws = o.Has("laws") ? o.Objs("laws").Select(LawDefinition.FromJson).ToList() : new List<LawDefinition>(),
                 Petitions = o.Has("petitions") ? o.Objs("petitions").Select(PetitionDefinition.FromJson).ToList() : new List<PetitionDefinition>(),
+                TradePartners = o.Has("tradePartners") ? o.Objs("tradePartners").Select(TradePartnerDefinition.FromJson).ToList() : new List<TradePartnerDefinition>(),
                 Map = MapDefinition.FromJson(o.Obj("map")),
             };
         }

@@ -120,6 +120,23 @@ namespace Founders.Core
                 if (tech.Epoch != null && c.Epoch(tech.Epoch) == null) problems.Add($"tech '{tech.Id}' uses unknown epoch '{tech.Epoch}'");
                 problems.AddRange(ValidateEffects(tech.Effects, $"tech '{tech.Id}'", buildingIds));
             }
+            // Trade partners
+            var partnerIds = new HashSet<string>();
+            foreach (var tp in c.TradePartners)
+            {
+                if (!partnerIds.Add(tp.Id)) problems.Add($"duplicate trade partner '{tp.Id}'");
+                if (!new[] { "north", "east", "south", "west" }.Contains(tp.Direction)) problems.Add($"trade partner '{tp.Id}' has unknown direction '{tp.Direction}'");
+                if (tp.TripSeconds <= 0) problems.Add($"trade partner '{tp.Id}' needs tripSeconds > 0");
+                if (!tp.OpenCost.IsValid) problems.Add($"trade partner '{tp.Id}' has a negative opening cost");
+                if (tp.RequiresTech != null && !techIds.Contains(tp.RequiresTech)) problems.Add($"trade partner '{tp.Id}' requires unknown tech '{tp.RequiresTech}'");
+                if (tp.Deals.Count == 0) problems.Add($"trade partner '{tp.Id}' offers no deals");
+                foreach (var deal in tp.Deals)
+                    if (!deal.Give.IsValid || !deal.Get.IsValid || deal.Give.IsZero || deal.Get.IsZero || deal.Get.Knowledge > 0 || deal.Give.Knowledge > 0)
+                        problems.Add($"trade partner '{tp.Id}' has a deal that must give and get goods");
+            }
+            if (c.TradePartners.Count > 0 && !c.Buildings.Any(x => (x.TradeRoutes ?? 0) > 0))
+                problems.Add("trade partners exist but no building runs trade routes");
+
             var cycle = FindPrerequisiteCycle(c.Technologies);
             if (cycle != null) problems.Add("technology prerequisites form a cycle: " + string.Join(" → ", cycle));
 

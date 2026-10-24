@@ -174,6 +174,7 @@ namespace Founders.Core
             AdvanceConstruction(dt);
             AdvanceResearch(dt);
             AdvanceExpedition(dt);
+            AdvanceTrade(dt);
             AdvanceHealth(dt);
             AdvanceDiscontent(dt);
             AdvanceGrowth(dt, snapshot.Net.Food);
