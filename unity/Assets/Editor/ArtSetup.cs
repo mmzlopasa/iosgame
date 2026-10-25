@@ -226,8 +226,8 @@ namespace FoundersEditor
             asset.supportsCameraDepthTexture = false;
             asset.mainLightShadowmapResolution = 2048;
             asset.shadowDistance = 55f;
-            asset.shadowCascadeCount = 2;
-            asset.cascade2Split = 0.3f;
+            // One cascade: the strategy camera looks down on a small patch, so a second split only doubles the shadow pass.
+            asset.shadowCascadeCount = 1;
             asset.maxAdditionalLightsCount = 4;
             asset.colorGradingMode = ColorGradingMode.HighDynamicRange;
             asset.useSRPBatcher = true;
@@ -335,8 +335,34 @@ namespace FoundersEditor
                 m.SetFloat("_Cutoff", 0.45f);
             }
             if (doubleSided) m.SetFloat("_Cull", 0f);
+            if (IsStone(name)) MatteStone(m);
             Finish(m);
             return m;
+        }
+
+        static readonly string[] StoneWords = { "rock", "stone", "cliff", "boulder", "pebble", "cobble", "brick", "gravel", "slate", "masonry", "quarry", "granite", "marble" };
+
+        /// <summary>Stone of any kind (by its material or texture name).</summary>
+        static bool IsStone(string name)
+        {
+            string n = name.ToLowerInvariant();
+            foreach (var w in StoneWords)
+                if (n.Contains(w)) return true;
+            return false;
+        }
+
+        /// <summary>
+        /// Painted stone never shines: no gloss from the mask's smoothness, no sun highlight, no sky
+        /// reflection and only a hint of its bumps (scanned rock looked like wet glass or a mirror).
+        /// </summary>
+        static void MatteStone(Material m)
+        {
+            m.SetTexture("_MetallicGlossMap", null);
+            m.SetFloat("_Smoothness", 0f);
+            m.SetFloat("_Metallic", 0f);
+            m.SetFloat("_SpecularHighlights", 0f);
+            m.SetFloat("_EnvironmentReflections", 0f);
+            if (m.GetTexture("_BumpMap") != null) m.SetFloat("_BumpScale", 0.35f);
         }
 
         /// <summary>T_&lt;Texture&gt;, M_&lt;model&gt;__&lt;material&gt; and I_&lt;tree&gt;_side/_top materials from the manifest.</summary>
@@ -512,6 +538,9 @@ namespace FoundersEditor
             bloom.threshold.Override(1.05f);
             bloom.intensity.Override(0.35f);
             bloom.scatter.Override(0.65f);
+            // Bloom on a quarter-size picture: the glow of fires looks the same at a fraction of the cost.
+            bloom.downscale.Override(BloomDownscaleMode.Quarter);
+            bloom.highQualityFiltering.Override(false);
             var color = Add<ColorAdjustments>();
             color.postExposure.Override(0.35f);
             color.contrast.Override(8f);
@@ -538,6 +567,7 @@ namespace FoundersEditor
             var data = camGo.AddComponent<UniversalAdditionalCameraData>();
             data.renderPostProcessing = true;
             data.antialiasing = AntialiasingMode.SubpixelMorphologicalAntiAliasing;
+            data.antialiasingQuality = AntialiasingQuality.Low;
             data.renderShadows = true;
 
             var volumeGo = new GameObject("PostProcessing");

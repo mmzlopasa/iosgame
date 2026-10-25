@@ -1025,8 +1025,8 @@ namespace Founders.UI
             return c;
         }
 
-        /// <summary>Width of the room an overlapping counter icon takes at the capsule's left end.</summary>
-        public const float CounterIconRoom = 26;
+        /// <summary>Width of the room the counter icon takes at the capsule's left end (inside it, with its margins).</summary>
+        public const float CounterIconRoom = 32;
 
         /// <summary>
         /// A resource counter: the navy capsule with the 3D icon overlapping its left end, the number, and the
@@ -1035,12 +1035,15 @@ namespace Founders.UI
         public static VisualElement HudCounter(string icon, out Label value, Action plus, float height = 30, float size = Theme.Num)
         {
             var c = HudCapsule(height);
+            // The icon sits inside the capsule's left end (it used to hang out over the edge), the number
+            // centred in the height that is left.
+            float ic = height - 4;
             c.style.paddingLeft = CounterIconRoom + 4;
             c.style.paddingRight = plus != null ? 0 : 12;
-            c.style.marginLeft = 6; // room for the icon's overhang
-            float ic = height + 6;
-            c.Add(Icon(icon, ic).Abs(-8, -3));
-            value = T("", size);
+            c.style.marginLeft = 0;
+            c.Add(Icon(icon, ic).Abs(5, 2));
+            value = T("", size).Align(TextAnchor.MiddleLeft);
+            value.style.height = height;
             c.Add(value.NoShrink());
             if (plus != null)
             {
@@ -1150,7 +1153,8 @@ namespace Founders.UI
             label = T("", Theme.Small).Align(TextAnchor.MiddleCenter);
             label.Abs(25, 0, 4, 0);
             track.Add(label);
-            track.Add(Icon(icon, height + 2).Abs(-1, -1));
+            // The icon stays within the track's left cap.
+            track.Add(Icon(icon, height - 2).Abs(1, 1));
             return track;
         }
 

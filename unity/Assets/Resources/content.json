@@ -13948,6 +13948,24 @@
    ]
   },
   {
+   "id": "stone_bridge",
+   "name": "Stone Bridge",
+   "category": "Roads",
+   "description": "Arches of dressed stone: a lasting crossing over the river.",
+   "cost": {
+    "stone": 14,
+    "wood": 2
+   },
+   "road": true,
+   "bridge": true,
+   "beauty": 2,
+   "requiresTech": "permanent_settlement",
+   "allowedTerrain": [
+    "water",
+    "sand"
+   ]
+  },
+  {
    "id": "wattle_fence",
    "name": "Wattle Fence",
    "description": "Woven branches between stakes.",

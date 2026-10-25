@@ -68,7 +68,7 @@ Napomena: neke zgrade same mijenjaju ključ s razinom (npr. *Shelter* od razine 
 - Model ostaje u **stvarnoj veličini** (1 jedinica = 1 metar); samo ako je širi od polja (2 m) igra ga smanji.
 - Postavi se na sredinu polja, na tlo; okreće se kad ga igrač okrene.
 - **Ograde i zidovi** (`wattle_fence`, `palisade`, `stone_wall`): s tvojim modelom se dijelovi više ne spajaju sami – svaki komad stoji na svom polju. Bez tvog modela ostaju ugrađeni koji se spajaju.
-- **Most** (`wooden_bridge`): ishodište modela (0,0,0) je površina vode, most ide duž osi Z i rastegne se na jedno polje (2 m).
+- **Most** (`wooden_bridge`, `stone_bridge`): ishodište modela (0,0,0) je površina vode, most ide duž osi Z i rastegne se na jedno polje (2 m).
 - **Ceste** (`dirt_path`, `stone_road`, `cobble_road`) se crtaju po tlu i ne mogu se zamijeniti modelom (sliku u izborniku možeš).
 
 ## 5. Ljudi (`People/`) – likovi i animacije
@@ -304,6 +304,7 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 | ~~`dirt_path`~~ | Dirt Path | Roads | cesta se crta po tlu – **ne može se zamijeniti** / painted road, not replaceable |
 | ~~`stone_road`~~ | Stone Road | Roads | cesta se crta po tlu – **ne može se zamijeniti** / painted road, not replaceable |
 | `wooden_bridge` | Wooden Bridge | Roads | most: ishodište modela = površina vode, dug 2 m po osi Z / bridge: origin = water surface, 2 m along Z |
+| `stone_bridge` | Stone Bridge | Roads | kameni most: kao drveni (ishodište = površina vode, 2 m po osi Z) / stone bridge: as the wooden one |
 | `wattle_fence` | Wattle Fence | Fences | s modelom se dijelovi ne spajaju; okreće se / pieces no longer join, they turn |
 | `palisade` | Palisade | Fences | s modelom se dijelovi ne spajaju; okreće se / pieces no longer join, they turn |
 | `stone_wall` | Stone Wall | Fences | s modelom se dijelovi ne spajaju; okreće se / pieces no longer join, they turn |
@@ -323,7 +324,7 @@ Drop your own art into `unity/Assets/Custom/Resources/Custom/` and the game uses
 
 Za zgradu: isti ključ kao u tablici zgrada (npr. `Icons/longhouse.png`). For a building: the same key as in the buildings table.
 
-Za ukras / For a decoration: `deco_dirt_path`, `deco_stone_road`, `deco_wooden_bridge`, `deco_wattle_fence`, `deco_palisade`, `deco_stone_wall`, `deco_torch_post`, `deco_fire_brazier`, `deco_oil_lantern`, `deco_bush`, `deco_young_tree`, `deco_flower_bed`, `deco_well`, `deco_totem`, `deco_standing_stone`, `deco_cobble_road`, `deco_banner`
+Za ukras / For a decoration: `deco_dirt_path`, `deco_stone_road`, `deco_wooden_bridge`, `deco_stone_bridge`, `deco_wattle_fence`, `deco_palisade`, `deco_stone_wall`, `deco_torch_post`, `deco_fire_brazier`, `deco_oil_lantern`, `deco_bush`, `deco_young_tree`, `deco_flower_bed`, `deco_well`, `deco_totem`, `deco_standing_stone`, `deco_cobble_road`, `deco_banner`
 
 ### Ikone sučelja / UI icons – `UI/Icons/<ime>.png` (kvadratne, 128×128 px)
 

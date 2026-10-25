@@ -371,6 +371,15 @@ namespace Founders
                 if (Chance(0.4f)) Add("fern", Beside(f, 0.4f, 0.8f), Range(0.4f, 0.7f), shadows: false);
             }
             if (Chance(0.06f)) Add("bush", Anywhere(), Range(0.9f, 1.3f));
+            // Mossy boulders in the woods, a few together where the ground turns stony.
+            if (Field(0.1f, 13.7f) > 0.78f && Chance(0.3f))
+            {
+                var s = Anywhere(0.6f);
+                Stone(s, Range(1.1f, 2.3f), id: "kit_stone");
+                if (Chance(0.5f)) Stone(Beside(s, 0.6f, 1.0f), Range(0.5f, 1.0f), id: "kit_stone");
+                if (Chance(0.4f)) Add("fern", Beside(s, 0.4f, 0.9f), Range(0.5f, 0.8f), shadows: false);
+            }
+            else if (Chance(1f / 45f)) Stone(Anywhere(0.6f), Range(0.7f, 1.4f), id: "kit_stone");
             if (Chance(1f / 40f))
             {
                 var w = Anywhere();
@@ -466,11 +475,15 @@ namespace Founders
                 return;
             }
             // A few stones lying in the grass not far from the woods.
-            if (woods <= 7 && Field(0.17f, 7.9f) > 0.84f && Chance(0.3f))
+            if (woods <= 9 && Field(0.17f, 7.9f) > 0.8f && Chance(0.42f))
             {
+                // A little field of boulders in the grass, as glaciers left them.
                 var s = Anywhere(0.6f);
-                Stone(s, Range(0.8f, 1.5f), id: "kit_stone");
+                Stone(s, Range(0.9f, 1.8f), id: "kit_stone");
+                int more = rng.Next(3);
+                for (int i = 0; i < more; i++) Stone(Beside(s, 0.6f, 1.1f), Range(0.4f, 0.9f), id: "kit_stone");
                 Add("pebble", Beside(s, 0.5f, 0.9f), Range(0.25f, 0.45f), byWidth: true, shadows: false, sink: 0.15f);
+                if (Chance(0.35f)) Add("grass_tall", Beside(s, 0.4f, 0.8f), Range(0.5f, 0.8f), shadows: false);
                 return;
             }
             if (Field(0.1f, 10.1f) > 0.6f && Chance(0.05f)) Add("clover", Anywhere(), 0.25f, shadows: false);
@@ -486,15 +499,18 @@ namespace Founders
             if (o.x == cx && o.y == cy) Outcrop(o.size, o.depth);
             else if (depth >= 2)
             {
-                if (Chance(0.22f)) Stone(Anywhere(0.7f), Range(1.2f, 2.2f));
-                if (Chance(0.35f)) Add("pebble", Anywhere(), Range(0.3f, 0.6f), byWidth: true, shadows: false, sink: 0.12f);
-                if (Chance(0.2f)) Add("grass", Anywhere(), Range(0.3f, 0.5f), shadows: false);
+                // Inside the outcrop: boulders and broken stone everywhere, the quarry's riches in sight.
+                if (Chance(0.45f)) Stone(Anywhere(0.7f), Range(1.2f, 2.4f));
+                if (Chance(0.25f)) Stone(Anywhere(0.7f), Range(0.6f, 1.1f));
+                if (Chance(0.6f)) Add("pebble", Anywhere(), Range(0.3f, 0.6f), byWidth: true, shadows: false, sink: 0.12f);
+                if (Chance(0.3f)) Add("pebble", Anywhere(), Range(0.25f, 0.45f), byWidth: true, shadows: false, sink: 0.12f);
+                if (Chance(0.15f)) Add("grass", Anywhere(), Range(0.3f, 0.5f), shadows: false);
             }
             else
             {
                 // The edge: scree, a bush and grass between the stones, now and then a hardy tree.
-                if (Chance(0.14f)) Stone(Anywhere(), Range(0.6f, 1.1f));
-                if (Chance(0.35f)) Add("pebble", Anywhere(), Range(0.3f, 0.55f), byWidth: true, shadows: false, sink: 0.12f);
+                if (Chance(0.3f)) Stone(Anywhere(), Range(0.6f, 1.3f));
+                if (Chance(0.5f)) Add("pebble", Anywhere(), Range(0.3f, 0.55f), byWidth: true, shadows: false, sink: 0.12f);
                 if (Chance(0.3f)) Add("grass", Anywhere(), Range(0.3f, 0.5f), shadows: false);
                 if (Chance(0.08f)) Add("bush", Anywhere(), Range(0.8f, 1.2f));
                 if (Chance(0.05f)) AddTree(Chance(0.5f) ? "birch" : "fir", Anywhere(), Range(5f, 8f));
@@ -544,17 +560,23 @@ namespace Founders
             // Firs climb the lower slopes in groups; crags on the valley walls beyond the map; stones in the scree.
             if (y < 7f && Field(0.15f, 55f) > 0.45f && Chance(0.5f)) AddTree("fir", p, Range(7f, 10f) * Lerp(1f, 0.75f, Math.Max(0f, y) / 7f));
             else if (!inside && Field(0.12f, 61f) > 0.55f && Chance(0.5f)) Add("cliff", p, Range(4f, 7f), byWidth: true, id: "kit_cliff", sink: 0.4f);
-            else if (Chance(0.25f)) Stone(p, Range(1.2f, 2.6f));
+            else if (Chance(0.4f)) Stone(p, Range(1.2f, 2.8f));
         }
 
         void Ore()
         {
             // Veins of rusty iron and green copper stone at the mountain foot, broken stone around them.
+            // A deposit reads from afar (as on Foundation's maps): big veined boulders, now and then a
+            // rusty or green crag standing among them, the ground strewn with broken ore.
             string tint = Field(0.25f, 40f) < 0.35f ? "copper" : "iron";
             var b = Anywhere(0.6f);
-            float big = Range(0.9f, 1.5f);
+            float big = Range(1.2f, 2.1f);
             Stone(b, big, tint);
-            for (int i = 0; i < 2; i++) Add("pebble", Beside(b, big * 0.5f, big * 1.1f), Range(0.3f, 0.6f), byWidth: true, shadows: false, tint: tint, sink: 0.1f);
+            if (Chance(0.5f)) Stone(Beside(b, big * 0.6f, big * 1.0f), Range(0.6f, 1.1f), tint);
+            if (Chance(0.25f)) Add("crag", Beside(b, 0.3f, 0.8f), Range(1.6f, 2.8f), id: "kit_rock", tint: tint, sink: Range(0.15f, 0.25f), lean: 6f);
+            int bits = 3 + rng.Next(3);
+            for (int i = 0; i < bits; i++) Add("pebble", Beside(b, big * 0.5f, big * 1.2f), Range(0.3f, 0.6f), byWidth: true, shadows: false, tint: tint, sink: 0.1f);
+            if (Chance(0.4f)) Add("pebble", Anywhere(), Range(0.3f, 0.5f), byWidth: true, shadows: false, sink: 0.1f);
         }
 
         // MARK: - Water's edge

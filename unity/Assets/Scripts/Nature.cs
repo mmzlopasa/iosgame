@@ -357,8 +357,65 @@ namespace Founders
             {
                 rootInverse = card.transform.worldToLocalMatrix;
                 Collect(card.GetComponentsInChildren<MeshRenderer>(true), model.Card, false);
+                // The pack gives every card one white picture in a dark blue-green: far woods turned into
+                // navy silhouettes beside the bright crowns up close. Each tree's card takes its own leaves' colour.
+                var leaves = LeafMaterial(model.Near);
+                foreach (var p in model.Card) p.Material = CardMaterial(p.Material, leaves);
             }
             return kitModels[prefab] = model;
+        }
+
+        /// <summary>The leaves (or fir branches) of a kit tree, or null for a bare tree.</summary>
+        static Material LeafMaterial(List<Part> parts)
+        {
+            foreach (var p in parts)
+            {
+                if (p.Material == null) continue;
+                string n = p.Material.name.ToLowerInvariant();
+                if (n.Contains("lea") || n.Contains("branch") || n.Contains("needle")) return p.Material;
+            }
+            return null;
+        }
+
+        static readonly Dictionary<(Material, Material), Material> cardMaterials = new Dictionary<(Material, Material), Material>();
+
+        /// <summary>
+        /// The card of a tree in the colour of its own crown (bare trees in weathered wood). The card is
+        /// flat, so its side away from the sun would turn black: a soft glow, which follows the
+        /// daylight (<see cref="UpdateCardLight"/>), stands in for the light the round crown catches.
+        /// </summary>
+        static Material CardMaterial(Material card, Material leaves)
+        {
+            if (card == null) return null;
+            if (cardMaterials.TryGetValue((card, leaves), out var m) && m != null) return m;
+            var color = leaves != null && leaves.HasProperty("_BaseColor") ? leaves.GetColor("_BaseColor") : new Color(0.42f, 0.36f, 0.29f);
+            m = new Material(card) { name = card.name + "_" + (leaves != null ? leaves.name : "Bare"), enableInstancing = true };
+            if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", new Color(color.r * 0.9f, color.g * 0.9f, color.b * 0.9f, 1f));
+            if (m.HasProperty("_EmissionColor"))
+            {
+                m.EnableKeyword("_EMISSION");
+                m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+                m.SetColor("_EmissionColor", color * CardGlow);
+            }
+            cardGlow.Add((m, color));
+            return cardMaterials[(card, leaves)] = m;
+        }
+
+        const float CardGlow = 0.32f;
+        static readonly List<(Material material, Color color)> cardGlow = new List<(Material, Color)>();
+        float nextCardLight, lastDaylight = -1f;
+
+        /// <summary>The cards' glow follows the sun (none at night, when the near crowns are dark too).</summary>
+        void UpdateCardLight()
+        {
+            if (cardGlow.Count == 0 || Time.unscaledTime < nextCardLight) return;
+            nextCardLight = Time.unscaledTime + 0.5f;
+            // Atmosphere's night reaches 0.55 at most (a gentle, moonlit night).
+            float day = 1f - Mathf.Clamp01(Atmosphere.Nightness / 0.55f) * 0.7f;
+            if (Mathf.Abs(day - lastDaylight) < 0.02f) return;
+            lastDaylight = day;
+            foreach (var (m, c) in cardGlow)
+                if (m != null) m.SetColor("_EmissionColor", c * (CardGlow * day));
         }
 
         /// <summary>
@@ -671,6 +728,7 @@ namespace Founders
         void Update()
         {
             UpdateNearCamera();
+            UpdateCardLight();
             var cam = Camera.main;
             var c = cam != null ? cam.transform.position : Vector3.zero;
             foreach (var set in drawOrder) set.Draw(c);

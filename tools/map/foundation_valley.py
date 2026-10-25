@@ -111,10 +111,18 @@ def main():
     banks = (stream >= 1.6) & (stream < 2.6) & (value_noise(5, 41) > 0.55) & (g != 'M') & (g != '~')
     g[banks] = ','
 
-    # --- Rock outcrops: one great one at the edge of the east wood, two small ones.
-    for cx, cy, r, seed in [(86, 40, 6.5, 51), (24, 52, 4.0, 52), (104, 92, 3.6, 53), (64, 112, 3.0, 54)]:
-        b = blob(cx, cy, r, r * 0.8, 0.5, seed, angle=0.6)
+    # --- Rock outcrops: one great one at the edge of the east wood, smaller ones all round the valley
+    # (as on Foundation's maps, stone is never far, but the big quarries are a walk away from the camp).
+    for cx, cy, r, seed in [(86, 40, 6.5, 51), (24, 52, 4.0, 52), (104, 92, 3.6, 53), (64, 112, 3.0, 54),
+                            (14, 12, 4.2, 55), (74, 12, 3.4, 56), (8, 70, 3.0, 57), (36, 120, 2.6, 58),
+                            (112, 116, 4.4, 59), (100, 74, 2.2, 60), (30, 34, 1.8, 62), (82, 98, 1.6, 63)]:
+        b = blob(cx, cy, r, r * 0.8, 0.5, seed, angle=0.6 if seed <= 54 else 0.6 + seed * 0.4)
         g[(b < 0) & (g != '~') & (g != ',')] = 'R'
+    # Ore deposits in the heart of two outcrops far from the camp: iron in the south-east, copper in the
+    # north-west (the game tints them by place), ringed by stone.
+    for cx, cy, r, seed in [(113, 116, 2.4, 65), (14, 12, 2.0, 66)]:
+        b = blob(cx, cy, r, r * 0.85, 0.4, seed, angle=0.3)
+        g[(b < 0) & (g == 'R')] = 'O'
 
     # --- Ore along the foot of the mountains, in a few seams.
     m = g == 'M'

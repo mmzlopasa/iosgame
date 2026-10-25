@@ -17,8 +17,9 @@ namespace FoundersEditor
         const string ThemePath = "Assets/Generated/UI/FoundersTheme.tss";
         const string PanelPath = "Assets/Generated/Resources/UI/FoundersPanel.asset";
         const string AppIconPath = "Assets/Art/UI/AppIcon/AppIcon.png";
-        const string LaunchImagePath = "Assets/Art/UI/Resources/UI/Images/logo_mark.png";
-        static readonly Color Night = new Color32(0x0D, 0x0F, 0x14, 0xFF);
+        const string LaunchImagePath = "Assets/Art/UI/Launch/scyde_logo.png";
+        /// <summary>The game's dark blue-grey (#202734): the launch screen is never black.</summary>
+        static readonly Color Night = new Color32(0x20, 0x27, 0x34, 0xFF);
 
         public static void Run()
         {
@@ -74,12 +75,24 @@ namespace FoundersEditor
             if (launch != null)
             {
                 PlayerSettings.iOS.SetiPhoneLaunchScreenType(iOSLaunchScreenType.ImageAndBackgroundConstant);
-                // The game launches in whichever way the phone is held: the emblem for both orientations (it is
-                // centred on the night colour, so the same square image works either way round).
+                // The SCYDE logo centred on the blue-grey, for both orientations. Editor/IosLaunchScreen.cs then puts the
+                // full launch picture (logo on a painting of the valley) in its place in the Xcode project.
                 PlayerSettings.iOS.SetLaunchScreenImage(launch, iOSLaunchScreenImageType.iPhonePortraitImage);
                 PlayerSettings.iOS.SetLaunchScreenImage(launch, iOSLaunchScreenImageType.iPhoneLandscapeImage);
                 PlayerSettings.iOS.SetiPadLaunchScreenType(iOSLaunchScreenType.ImageAndBackgroundConstant);
                 PlayerSettings.iOS.SetLaunchScreenImage(launch, iOSLaunchScreenImageType.iPadImage);
+            }
+            // The launch screen's background has no public setter: the player settings asset holds it.
+            var settings = Unsupported.GetSerializedAssetInterfaceSingleton("PlayerSettings");
+            if (settings != null)
+            {
+                var so = new SerializedObject(settings);
+                foreach (var name in new[] { "iOSLaunchScreenBackgroundColor", "iOSLaunchScreeniPadBackgroundColor" })
+                {
+                    var prop = so.FindProperty(name);
+                    if (prop != null && prop.propertyType == SerializedPropertyType.Color) prop.colorValue = Night;
+                }
+                so.ApplyModifiedPropertiesWithoutUndo();
             }
         }
     }

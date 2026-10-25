@@ -735,6 +735,12 @@ namespace Founders
         {
             var at = new Dictionary<(int, int), string>();
             foreach (var d in game.State.Decorations) at[(d.X, d.Y)] = d.DefinitionId;
+            // Where people walk over the bridges (on the deck, not on the riverbed under the water).
+            var decks = new Dictionary<(int, int), float>();
+            foreach (var d in game.State.Decorations)
+                if (game.Content.Decoration(d.DefinitionId)?.IsBridge ?? false)
+                    decks[(d.X, d.Y)] = CrossingHeight(game, at, d.X, d.Y, d.DefinitionId) + BuildingModels.DeckHeight;
+            Ground.SetDecks(decks);
             var seen = new HashSet<int>();
             foreach (var d in game.State.Decorations)
             {

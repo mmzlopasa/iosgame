@@ -319,7 +319,7 @@ namespace FoundersEditor
                     if (size == Vector3.zero) { Warn($"{file}: has no visible mesh"); continue; }
                     Ok($"{file}: decoration \"{key}\" ({dname}); size {Fmt(size)} m, {tris} triangles");
                     float cell = Grid.CellSize * 0.95f;
-                    if (Mathf.Max(size.x, size.z) > cell && key != "wooden_bridge") Warn($"{file}: wider than its {Grid.CellSize} m cell - shrunk to fit");
+                    if (Mathf.Max(size.x, size.z) > cell && key != "wooden_bridge" && key != "stone_bridge") Warn($"{file}: wider than its {Grid.CellSize} m cell - shrunk to fit");
                     if (Mathf.Max(size.x, size.y, size.z) < 0.1f) Warn($"{file}: only {Fmt(size)} m - units probably wrong (1 unit = 1 m)");
                     if (tris > 15000) Warn($"{file}: {tris} triangles - heavy for a decoration (keep under ~5000)");
                     foreach (var p in pink) Warn($"{file}: material \"{p}\" is not a URP material - converted to URP/Lit at runtime");
