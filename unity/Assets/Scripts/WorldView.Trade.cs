@@ -188,9 +188,9 @@ namespace Founders
                 cartAt = head - heading * CartBehind;
                 traderAt = head - heading * TraderBehind + Vector3.Cross(Vector3.up, heading) * 0.9f;
             }
-            head = Ground.OnGround(head);
-            cartAt = Ground.OnGround(cartAt);
-            traderAt = Ground.OnGround(traderAt);
+            head = Ground.OnWalk(head);
+            cartAt = Ground.OnWalk(cartAt);
+            traderAt = Ground.OnWalk(traderAt);
             if (c.Horse != null) c.Horse.Steer(head, heading, walking);
             // The cart's shafts (its −z side) point at the horse.
             var toHorse = head - cartAt;

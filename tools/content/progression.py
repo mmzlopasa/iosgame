@@ -419,6 +419,16 @@ def main():
             "cost": {"wood": 12}, "road": True, "bridge": True})
     # Over the water, or on the sandy bank beside it (where the river looks wider than its cells).
     next(d for d in c["decorations"] if d["id"] == "wooden_bridge")["allowedTerrain"] = ["water", "sand"]
+    # The stone arch bridge: dressed stone instead of planks, once the settlement is permanent.
+    decos = {d["id"]: d for d in c["decorations"]}
+    if "stone_bridge" not in decos:
+        at = next(i for i, d in enumerate(c["decorations"]) if d["id"] == "wooden_bridge") + 1
+        c["decorations"].insert(at, {
+            "id": "stone_bridge", "name": "Stone Bridge", "category": "Roads",
+            "description": "Arches of dressed stone: a lasting crossing over the river.",
+            "cost": {"stone": 14, "wood": 2}, "road": True, "bridge": True, "beauty": 2,
+            "requiresTech": "permanent_settlement"})
+    next(d for d in c["decorations"] if d["id"] == "stone_bridge")["allowedTerrain"] = ["water", "sand"]
 
     with open(CONTENT, "w") as f:
         json.dump(c, f, indent=1, ensure_ascii=False)

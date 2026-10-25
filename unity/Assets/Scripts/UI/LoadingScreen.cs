@@ -55,7 +55,10 @@ namespace Founders.UI
         readonly VisualElement[] slides = new VisualElement[2];
         readonly int[] slideScene = { -1, -1 };
         readonly Texture2D[] paintings = new Texture2D[Scenes.Length];
-        readonly VisualElement brand, captionBox, progressRow, tipRow, embersLayer, fill, head;
+        readonly VisualElement brand, captionBox, progressRow, tipRow, embersLayer, fill, head, intro;
+        /// <summary>The SCYDE logo is shown once, when the game starts (it continues the launch screen).</summary>
+        static bool introShown;
+        bool introNow;
         readonly VisualElement[] pips = new VisualElement[Scenes.Length];
         readonly Label chapter, captionTitle, captionLine, percent, status, tip, version;
         readonly VisualElement[] embers = new VisualElement[EmberCount];
@@ -204,6 +207,21 @@ namespace Founders.UI
                 .Align(TextAnchor.MiddleCenter).Abs(0, null, 0, 6);
             layer.Add(version);
 
+            // The studio's logo, the same picture as the launch screen, so the game opens on it without a
+            // jump; it gives way to the paintings after a moment.
+            intro = E.Div().Fill().Ignore();
+            intro.style.backgroundColor = Theme.Hex("#202734");
+            var splash = Theme.Image("scyde_splash");
+            if (splash != null)
+            {
+                intro.style.backgroundImage = new StyleBackground(splash);
+                intro.style.backgroundSize = new BackgroundSize(BackgroundSizeType.Cover);
+                intro.style.backgroundPositionX = new BackgroundPosition(BackgroundPositionKeyword.Center);
+                intro.style.backgroundPositionY = new BackgroundPosition(BackgroundPositionKeyword.Center);
+            }
+            intro.Hidden(true);
+            layer.Add(intro);
+
             tipStart = Random.Range(0, Tips.Length);
             ticker = layer.schedule.Execute(Tick).Every(16);
             ticker.Pause();
@@ -277,6 +295,11 @@ namespace Founders.UI
             scene = -1;
             slideScene[0] = slideScene[1] = -1;
             for (int i = 0; i < EmberCount; i++) emberSeed[i] = Random.value * 100f;
+            introNow = !introShown && Theme.Image("scyde_splash") != null;
+            introShown = true;
+            intro.Hidden(!introNow);
+            intro.style.opacity = 1;
+            if (introNow) startTime += IntroSeconds; // the paintings start once the logo begins to fade
             Tick();
             ticker.Resume();
             layer.style.opacity = 1;
@@ -311,12 +334,21 @@ namespace Founders.UI
             return x * x * (3 - 2 * x);
         }
 
+        const float IntroSeconds = 1.8f, IntroFade = 0.7f;
+
         void Tick()
         {
             float now = Time.realtimeSinceStartup;
             float dt = Mathf.Min(0.1f, now - lastTick);
             lastTick = now;
-            float t = now - startTime;
+            float t = Mathf.Max(0f, now - startTime);
+            if (introNow)
+            {
+                float since = now - (startTime - IntroSeconds);
+                float o = 1f - Smooth((since - IntroSeconds + IntroFade * 0.3f) / IntroFade);
+                intro.style.opacity = o;
+                if (o <= 0f) { introNow = false; intro.Hidden(true); }
+            }
             int n = Scenes.Length;
             int k = Mathf.FloorToInt(t / SceneSeconds);
             float local = t - k * SceneSeconds;
@@ -417,22 +449,22 @@ namespace Founders.UI
 
         static float? baseShadowDistance;
 
+        /// <summary>The sharpest the 3D view is drawn at the chosen quality (see <see cref="FrameGovernor"/>).</summary>
+        public static float RenderScaleCap => Quality == 0 ? 0.62f : Quality == 1 ? 0.74f : 0.85f;
+
         public static void Apply()
         {
             // As fast as the screen refreshes (120 on ProMotion iPhones and iPads), or 30 to save the battery.
             int screenHz = Mathf.RoundToInt((float)Screen.currentResolution.refreshRateRatio.value);
             Application.targetFrameRate = BatterySaver ? 30 : Mathf.Max(60, screenHz);
+            QualitySettings.vSyncCount = 0;
             if (GraphicsSettings.currentRenderPipeline is UniversalRenderPipelineAsset urp)
             {
                 if (!baseShadowDistance.HasValue) baseShadowDistance = urp.shadowDistance;
-                switch (Quality)
-                {
-                    // Retina phones draw ~3 pixels per point: rendering below native and upscaling
-                    // (FSR) keeps the picture sharp while holding 60 fps.
-                    case 0: urp.renderScale = 0.62f; urp.shadowDistance = baseShadowDistance.Value * 0.6f; break;
-                    case 1: urp.renderScale = 0.74f; urp.shadowDistance = baseShadowDistance.Value * 0.8f; break;
-                    default: urp.renderScale = 0.85f; urp.shadowDistance = baseShadowDistance.Value; break;
-                }
+                // Retina phones draw ~3 pixels per point: rendering below native and upscaling
+                // (FSR) keeps the picture sharp while holding the frame rate.
+                urp.renderScale = RenderScaleCap;
+                urp.shadowDistance = baseShadowDistance.Value * (Quality == 0 ? 0.55f : Quality == 1 ? 0.75f : 1f);
             }
         }
     }

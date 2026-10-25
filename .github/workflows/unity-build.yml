@@ -71,9 +71,16 @@ jobs:
           ASSETS_TOKEN: ${{ secrets.ASSETS_TOKEN || secrets.KIT_TOKEN }}
         run: |
           if [ -z "$ASSETS_TOKEN" ]; then echo "::warning::No ASSETS_TOKEN/KIT_TOKEN secret: the game's own nature is used."; exit 0; fi
-          if ! git clone --depth 1 "https://x-access-token:${ASSETS_TOKEN}@github.com/mmzlopasa/founders-assets.git" "$RUNNER_TEMP/assets"; then
-            echo "::warning::Could not fetch mmzlopasa/founders-assets: the game's own nature is used."; exit 0
+          # A branch of the same name in founders-assets (art made for this change) wins over its default branch.
+          BRANCH="${GITHUB_HEAD_REF:-$GITHUB_REF_NAME}"
+          URL="https://x-access-token:${ASSETS_TOKEN}@github.com/mmzlopasa/founders-assets.git"
+          if ! git clone --depth 1 --branch "$BRANCH" "$URL" "$RUNNER_TEMP/assets" 2>/dev/null; then
+            if ! git clone --depth 1 "$URL" "$RUNNER_TEMP/assets"; then
+              echo "::warning::Could not fetch mmzlopasa/founders-assets: the game's own nature is used."; exit 0
+            fi
           fi
+          git -C "$RUNNER_TEMP/assets" log -1 --format='founders-assets %h %s'
+          rm -rf "$RUNNER_TEMP/assets/.git"
           cp -R "$RUNNER_TEMP/assets/Nature/." unity/Assets/
           rm -rf "$RUNNER_TEMP/assets"
           ls unity/Assets

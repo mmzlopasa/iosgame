@@ -264,7 +264,9 @@ namespace Founders.UI
         {
             if (d.IsMonument) return "Monuments";
             if (d.HousingValue > 0) return "Shelter";
-            if (d.JobSlots != null && d.JobSlots.Any(s => s.Job == JobType.Foraging || s.Job == JobType.Farming)) return "Food";
+            // Everything that puts food on the table: gatherers, fields, the fishing weir, hunters, herds and the bakery.
+            if (d.JobSlots != null && d.JobSlots.Any(s => s.Job == JobType.Foraging || s.Job == JobType.Farming || s.Job == JobType.Fishing ||
+                                                          s.Job == JobType.Hunting || s.Job == JobType.Herding || s.Job == JobType.Baking)) return "Food";
             if (d.StorageValue > 0 || d.ProtectedFoodValue > 0) return "Storage";
             return "Work";
         }
@@ -303,7 +305,7 @@ namespace Founders.UI
         float CounterGap => Portrait ? 6 : 10;
 
         /// <summary>Width of a counter showing a text (one digit of slack so it does not jump on every change).</summary>
-        static float CounterW(string text, bool plus) => 6 + E.CounterIconRoom + 4 + Theme.TextWidth(text + "0", Theme.Num) + (plus ? 6 + 24 - 3 : 12);
+        static float CounterW(string text, bool plus) => E.CounterIconRoom + 4 + Theme.TextWidth(text + "0", Theme.Num) + (plus ? 6 + 24 - 3 : 12);
 
         static float ChipW(string text) => 7 + (ChipH - 6) + 4 + Theme.TextWidth(text + "0", Theme.Body) + 10;
 
@@ -474,7 +476,7 @@ namespace Founders.UI
                 case "people":
                 {
                     var c = E.HudCounter("people", out var v, Act(() => { peopleTab = 0; store.ActivePanel = Panel.People; }), CounterH);
-                    var idle = E.Badge("!", true, 18).Abs(14, -6);
+                    var idle = E.Badge("!", true, 16).Abs(20, -4);
                     c.Add(idle);
                     Bind(() =>
                     {

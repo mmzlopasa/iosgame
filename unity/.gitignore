@@ -49,6 +49,8 @@
 /Assets/Innerverse Games.meta
 /Assets/InnerverseInteractive/
 /Assets/InnerverseInteractive.meta
+/Assets/FoundersBaked/
+/Assets/FoundersBaked.meta
 
 # Licensed Asset Store kit: never in this public repository (CI fetches it from the private iosgame-uikit repo)
 /Assets/Adventure UI Kit/

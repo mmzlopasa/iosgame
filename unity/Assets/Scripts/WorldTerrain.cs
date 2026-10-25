@@ -139,6 +139,47 @@ namespace Founders
 
         public Vector3 OnGround(Vector3 world) => new Vector3(world.x, HeightAt(world), world.z);
 
+        // MARK: - Bridge decks (people walk on the planks, not on the riverbed under the water)
+
+        readonly Dictionary<(int, int), float> decks = new Dictionary<(int, int), float>();
+
+        /// <summary>The walking surfaces of the bridges (world y per cell); replaces all of them.</summary>
+        public void SetDecks(Dictionary<(int, int), float> heights)
+        {
+            decks.Clear();
+            foreach (var kv in heights) decks[kv.Key] = kv.Value;
+        }
+
+        /// <summary>
+        /// Where feet are at a world position: a bridge's deck over its cell, else the ground (never
+        /// below the water's surface). Near the end of a bridge the bank rises or falls to meet the
+        /// deck, so nobody steps up or drops at the first plank.
+        /// </summary>
+        public float WalkHeightAt(Vector3 world)
+        {
+            float ground = HeightAt(world);
+            if (decks.Count == 0) return ground;
+            var (cx, cy) = Grid.CellAt(world);
+            if (decks.TryGetValue((cx, cy), out float deck)) return deck;
+            // Within a metre of a deck's edge: a short ramp onto it.
+            float best = float.MaxValue, at = ground;
+            foreach (var (dx, dy) in Ramps)
+            {
+                if (!decks.TryGetValue((cx + dx, cy + dy), out float d)) continue;
+                var c = Grid.CellCenter(cx + dx, cy + dy);
+                float half = Grid.CellSize * 0.5f;
+                float ox = Mathf.Max(0f, Mathf.Abs(world.x - c.x) - half), oz = Mathf.Max(0f, Mathf.Abs(world.z - c.z) - half);
+                float gap = Mathf.Sqrt(ox * ox + oz * oz);
+                if (gap < best) { best = gap; at = d; }
+            }
+            const float Ramp = 1f;
+            return best < Ramp ? Mathf.Lerp(at, ground, best / Ramp) : ground;
+        }
+
+        public Vector3 OnWalk(Vector3 world) => new Vector3(world.x, WalkHeightAt(world), world.z);
+
+        static readonly (int, int)[] Ramps = { (1, 0), (-1, 0), (0, 1), (0, -1) };
+
         // MARK: - Map classification
 
         /// <summary>Terrain type of any grid cell, including the land around the playable map.</summary>

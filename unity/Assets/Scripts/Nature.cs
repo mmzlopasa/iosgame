@@ -115,7 +115,7 @@ namespace Founders
             }
         }
 
-        public void Draw(Vector3 camera)
+        public void Draw(Vector3 camera, Plane[] frustum = null)
         {
             if (Material == null) return;
             float max2 = MaxDistance * MaxDistance;
@@ -131,6 +131,14 @@ namespace Founders
                 }
                 if (b.Count == 0) continue;
                 if (MaxDistance > 0f && b.Bounds.SqrDistance(camera) > max2) continue;
+                // Patches off screen are not even handed to Unity (it would copy all their matrices
+                // every frame first). Shadow casters a little off screen still throw their shadow in.
+                if (frustum != null)
+                {
+                    var test = b.Bounds;
+                    if (shadows != ShadowCastingMode.Off) test.Expand(30f);
+                    if (!GeometryUtility.TestPlanesAABB(frustum, test)) continue;
+                }
                 Graphics.RenderMeshInstanced(b.Params, Mesh, SubMesh, b.Shown, b.Count);
             }
         }
@@ -194,7 +202,7 @@ namespace Founders
         /// <summary>Kit trees further than this from the camera are drawn with their simple far model.</summary>
         public const float FarDistance = 40f;
         /// <summary>Kit trees further than this are flat cards (and in the fog).</summary>
-        public const float CardDistance = 95f;
+        public const float CardDistance = 80f;
         /// <summary>Nothing of the packs is drawn beyond this (the fog has hidden it).</summary>
         public const float DrawDistance = 310f;
         /// <summary>Kit trees closer than this cast a shadow (a little beyond the shadow distance).</summary>
@@ -357,8 +365,79 @@ namespace Founders
             {
                 rootInverse = card.transform.worldToLocalMatrix;
                 Collect(card.GetComponentsInChildren<MeshRenderer>(true), model.Card, false);
+                // The packs' own card is a white outline (far woods turned into flat silhouettes); the
+                // painted cards (NatureKitSetup.PaintedCardMaterial) are real pictures of the trees.
+                // Without them each card at least takes its own leaves' colour.
+                var leaves = LeafMaterial(model.Near);
+                foreach (var p in model.Card) p.Material = CardMaterial(p.Material, leaves);
             }
             return kitModels[prefab] = model;
+        }
+
+        /// <summary>The leaves (or fir branches) of a kit tree, or null for a bare tree.</summary>
+        static Material LeafMaterial(List<Part> parts)
+        {
+            foreach (var p in parts)
+            {
+                if (p.Material == null) continue;
+                string n = p.Material.name.ToLowerInvariant();
+                if (n.Contains("lea") || n.Contains("branch") || n.Contains("needle")) return p.Material;
+            }
+            return null;
+        }
+
+        static readonly Dictionary<(Material, Material), Material> cardMaterials = new Dictionary<(Material, Material), Material>();
+
+        /// <summary>
+        /// The card of a tree in the colour of its own crown (bare trees in weathered wood). The card is
+        /// flat, so its side away from the sun would turn black: a soft glow, which follows the
+        /// daylight (<see cref="UpdateCardLight"/>), stands in for the light the round crown catches.
+        /// </summary>
+        static Material CardMaterial(Material card, Material leaves)
+        {
+            if (card == null) return null;
+            if (cardMaterials.TryGetValue((card, leaves), out var m) && m != null) return m;
+            if (card.name.StartsWith("Cards_Painted"))
+            {
+                // One shared material: its light is painted in, it only darkens with the evening.
+                if (cardMaterials.TryGetValue((card, null), out m) && m != null) return m;
+                m = new Material(card) { name = "Cards_Painted_Day", enableInstancing = true };
+                cardGlow.Add((m, Color.clear));
+                return cardMaterials[(card, leaves)] = cardMaterials[(card, null)] = m;
+            }
+            var color = leaves != null && leaves.HasProperty("_BaseColor") ? leaves.GetColor("_BaseColor") : new Color(0.42f, 0.36f, 0.29f);
+            m = new Material(card) { name = card.name + "_" + (leaves != null ? leaves.name : "Bare"), enableInstancing = true };
+            if (m.HasProperty("_BaseColor")) m.SetColor("_BaseColor", new Color(color.r * 0.9f, color.g * 0.9f, color.b * 0.9f, 1f));
+            if (m.HasProperty("_EmissionColor"))
+            {
+                m.EnableKeyword("_EMISSION");
+                m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None;
+                m.SetColor("_EmissionColor", color * CardGlow);
+            }
+            cardGlow.Add((m, color));
+            return cardMaterials[(card, leaves)] = m;
+        }
+
+        const float CardGlow = 0.32f;
+        static readonly List<(Material material, Color color)> cardGlow = new List<(Material, Color)>();
+        float nextCardLight, lastDaylight = -1f;
+
+        /// <summary>The cards' glow follows the sun (none at night, when the near crowns are dark too).</summary>
+        void UpdateCardLight()
+        {
+            if (cardGlow.Count == 0 || Time.unscaledTime < nextCardLight) return;
+            nextCardLight = Time.unscaledTime + 0.5f;
+            // Atmosphere's night reaches 0.55 at most (a gentle, moonlit night).
+            float day = 1f - Mathf.Clamp01(Atmosphere.Nightness / 0.55f) * 0.7f;
+            if (Mathf.Abs(day - lastDaylight) < 0.02f) return;
+            lastDaylight = day;
+            foreach (var (m, c) in cardGlow)
+            {
+                if (m == null) continue;
+                // Painted cards (Color.clear): the whole picture dims like the lit crowns near by.
+                if (c.a == 0f) { float v = 0.4f + 0.6f * day; m.SetColor("_BaseColor", new Color(v, v, Mathf.Min(1f, v * 1.08f), 1f)); }
+                else m.SetColor("_EmissionColor", c * (CardGlow * day));
+            }
         }
 
         /// <summary>
@@ -636,29 +715,44 @@ namespace Founders
         /// </summary>
         void UpdateNearCamera()
         {
-            if (Time.unscaledTime < nextCameraCheck) return;
-            nextCameraCheck = Time.unscaledTime + 0.15f;
             var cam = Camera.main;
             if (cam == null) return;
-            var c = cam.transform.position;
-            var fwd = cam.transform.forward;
-            if (!forceCheck && (c - lastCamera).sqrMagnitude < 0.5f && Vector3.Dot(fwd, lastForward) > 0.9995f) return;
-            forceCheck = false;
-            lastCamera = c;
-            lastForward = fwd;
-            foreach (var tv in trees)
+            if (passAt < 0 && Time.unscaledTime >= nextCameraCheck)
             {
-                if (tv.MaxAt > 0f) continue;
-                bool hide = !KeepNearCamera && Occludes(c, fwd, tv.Position, tv.Height);
-                if (hide == tv.NearCamera) continue;
-                tv.NearCamera = hide;
-                Apply(tv);
+                nextCameraCheck = Time.unscaledTime + 0.15f;
+                var c = cam.transform.position;
+                var fwd = cam.transform.forward;
+                if (forceCheck || (c - lastCamera).sqrMagnitude >= 0.5f || Vector3.Dot(fwd, lastForward) <= 0.9995f)
+                {
+                    forceCheck = false;
+                    lastCamera = c;
+                    lastForward = fwd;
+                    passAt = 0;
+                }
             }
-            foreach (var item in kitItems)
+            if (passAt < 0) return;
+            // One pass over every object, spread over a few frames: done in one go it took a few
+            // milliseconds every time the camera moved, a visible hitch at 120 frames a second.
+            int total = trees.Count + kitItems.Count;
+            int end = Mathf.Min(total, passAt + Mathf.Max(2000, total / PassFrames + 1));
+            var cp = lastCamera;
+            var cf = lastForward;
+            for (int i = passAt; i < end; i++)
             {
-                float d = (item.Position - c).magnitude;
+                if (i < trees.Count)
+                {
+                    var tv = trees[i];
+                    if (tv.MaxAt > 0f) continue;
+                    bool hideTree = !KeepNearCamera && Occludes(cp, cf, tv.Position, tv.Height);
+                    if (hideTree == tv.NearCamera) continue;
+                    tv.NearCamera = hideTree;
+                    Apply(tv);
+                    continue;
+                }
+                var item = kitItems[i - trees.Count];
+                float d = (item.Position - cp).magnitude;
                 int tier = d < item.FarAt ? 0 : d < item.CardAt ? 1 : d < item.MaxAt ? 2 : 3;
-                bool hide = item.Tree && tier < 3 && !KeepNearCamera && Occludes(c, fwd, item.Position, item.Height);
+                bool hide = item.Tree && tier < 3 && !KeepNearCamera && Occludes(cp, cf, item.Position, item.Height);
                 bool shadow = item.ShadowSets != null && d < ShadowReach;
                 if (tier == item.Tier && hide == item.NearCamera && shadow == item.Shadow) continue;
                 item.Tier = tier;
@@ -666,14 +760,22 @@ namespace Founders
                 item.Shadow = shadow;
                 Apply(item);
             }
+            passAt = end >= total ? -1 : end;
         }
+
+        /// <summary>Frames one pass over all objects is spread over.</summary>
+        const int PassFrames = 4;
+        int passAt = -1;
+        readonly Plane[] frustum = new Plane[6];
 
         void Update()
         {
             UpdateNearCamera();
+            UpdateCardLight();
             var cam = Camera.main;
             var c = cam != null ? cam.transform.position : Vector3.zero;
-            foreach (var set in drawOrder) set.Draw(c);
+            if (cam != null) GeometryUtility.CalculateFrustumPlanes(cam, frustum);
+            foreach (var set in drawOrder) set.Draw(c, cam != null ? frustum : null);
         }
     }
 }

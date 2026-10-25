@@ -9,6 +9,7 @@ namespace UnityEngine.Rendering
 {
     public class VolumeComponent : ScriptableObject { }
     public class VolumeParameter<T> { public virtual void Override(T x) { } public T value; }
+    public class BoolParameter : VolumeParameter<bool> { }
     public class FloatParameter : VolumeParameter<float> { public FloatParameter(float v, bool o = false) { } }
     public class MinFloatParameter : VolumeParameter<float> { public MinFloatParameter(float v, float min, bool o = false) { } }
     public class ClampedFloatParameter : VolumeParameter<float> { public ClampedFloatParameter(float v, float min, float max, bool o = false) { } }
@@ -54,11 +55,15 @@ namespace UnityEngine.Rendering.Universal
     {
         public bool renderPostProcessing { get; set; }
         public AntialiasingMode antialiasing { get; set; }
+        public AntialiasingQuality antialiasingQuality { get; set; }
         public bool renderShadows { get; set; }
     }
     public class TonemappingModeParameter : VolumeParameter<TonemappingMode> { }
     public sealed class Tonemapping : VolumeComponent { public TonemappingModeParameter mode; }
-    public sealed class Bloom : VolumeComponent { public MinFloatParameter threshold, intensity; public ClampedFloatParameter scatter; }
+    public enum AntialiasingQuality { Low, Medium, High }
+    public enum BloomDownscaleMode { Half, Quarter }
+    public sealed class DownscaleParameter : VolumeParameter<BloomDownscaleMode> { }
+    public sealed class Bloom : VolumeComponent { public MinFloatParameter threshold, intensity; public ClampedFloatParameter scatter; public DownscaleParameter downscale; public BoolParameter highQualityFiltering; }
     public sealed class ColorAdjustments : VolumeComponent { public FloatParameter postExposure; public ClampedFloatParameter contrast, saturation; }
     public sealed class WhiteBalance : VolumeComponent { public ClampedFloatParameter temperature, tint; }
     public sealed class Vignette : VolumeComponent { public ClampedFloatParameter intensity, smoothness; }

@@ -39,6 +39,7 @@ namespace FoundersEditor
             Directory.CreateDirectory(MaterialFolder);
             AssetDatabase.Refresh();
 
+            FixProMaterials();
             var kit = ScriptableObject.CreateInstance<NatureKit>();
             var converted = new Dictionary<Material, Material>();
             var names = new HashSet<string>();
@@ -89,6 +90,77 @@ namespace FoundersEditor
             }
         }
 
+        /// <summary>
+        /// The PRO pack's prefabs in the assets repository point at two of the Starter pack's materials
+        /// (its colour palette and spruce branch). The PRO meshes are unwrapped for PRO's own palette:
+        /// with the Starter one their trunks, logs and stumps came out bright green. PRO's own
+        /// materials go back on them.
+        /// </summary>
+        static void FixProMaterials()
+        {
+            const string pro = "Assets/Innerverse Games";
+            if (!AssetDatabase.IsValidFolder(pro)) return;
+            var swap = new Dictionary<string, Material>();
+            var palette = FindMaterial(new[] { pro }, "Color_Palette");
+            var branch = FindMaterial(new[] { pro }, "Fir_Branch");
+            if (palette != null) swap["UNS_Color_Palette"] = palette;
+            if (branch != null) swap["UNS_Spruce_Tree_Branch"] = branch;
+            if (swap.Count == 0) return;
+            int fixedCount = 0;
+            foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { pro }))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (asset == null || !asset.GetComponentsInChildren<Renderer>(true).Any(r => r.sharedMaterials.Any(m => m != null && swap.ContainsKey(m.name)))) continue;
+                var root = PrefabUtility.LoadPrefabContents(path);
+                foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+                {
+                    var mats = r.sharedMaterials;
+                    for (int i = 0; i < mats.Length; i++)
+                        if (mats[i] != null && swap.TryGetValue(mats[i].name, out var m)) mats[i] = m;
+                    r.sharedMaterials = mats;
+                }
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+                PrefabUtility.UnloadPrefabContents(root);
+                fixedCount++;
+            }
+            Debug.Log($"[FOUNDERS] nature packs: PRO materials restored on {fixedCount} prefabs");
+        }
+
+        /// <summary>
+        /// Painted pictures of the PRO trees, in the layout of the pack's card picture (made in Blender
+        /// by tools/art/bake_tree_cards.py, kept in the private assets repository with the packs).
+        /// The pack's own card picture is only a white outline.
+        /// </summary>
+        const string PaintedCards = "Assets/FoundersBaked/Cards_Painted.png";
+
+        /// <summary>Unlit cards with the painted trees (their light is painted in), or null without the picture.</summary>
+        static Material PaintedCardMaterial(Material src)
+        {
+            if (!File.Exists(PaintedCards)) return null;
+            if (AssetImporter.GetAtPath(PaintedCards) is TextureImporter ti)
+            {
+                ti.alphaIsTransparency = true;
+                ti.mipmapEnabled = true;
+                ti.maxTextureSize = 2048;
+                ti.wrapMode = TextureWrapMode.Clamp;
+                ti.sRGBTexture = true;
+                ti.SaveAndReimport();
+            }
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(PaintedCards);
+            if (tex == null) return null;
+            var m = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { name = "Cards_Painted" };
+            m.SetTexture("_BaseMap", tex);
+            m.SetColor("_BaseColor", Color.white);
+            m.SetFloat("_AlphaClip", 1f);
+            m.SetFloat("_Cutoff", 0.5f);
+            m.SetFloat("_Cull", 0f);
+            BaseShaderGUI.SetMaterialKeywords(m);
+            m.EnableKeyword("_ALPHATEST_ON");
+            m.enableInstancing = true;
+            return SaveMaterial(m, $"{MaterialFolder}/Cards_Painted.mat");
+        }
+
         /// <summary>The sky of the packs (procedural, not the 250 MB HDRI), or null.</summary>
         public static Material FindSky()
         {
@@ -136,64 +208,74 @@ namespace FoundersEditor
         }
 
         /// <summary>
-        /// A URP material for one of the packs' materials, drawn with GPU instancing. URP materials are
-        /// copied as they are; PRO's vegetation shader (a built-in pipeline surface shader) and Standard
-        /// materials become URP/Lit with the same texture, colour, smoothness and leaf cut-out.
+        /// A URP material for one of the packs' materials, drawn with GPU instancing. Every material
+        /// (PRO's built-in-pipeline vegetation and Standard materials as well as the Starter pack's URP
+        /// ones) becomes URP "Simple Lit" with the same texture, colour and leaf cut-out: plain painted
+        /// light with no specular highlight, no reflection and no bump map. Stone can no longer shine
+        /// like glass or a mirror, and the simpler shader is much cheaper for the iPhone.
         /// </summary>
         static Material Convert(Material src)
         {
             string shader = src.shader != null ? src.shader.name : "";
-            string file = AssetDatabase.GenerateUniqueAssetPath($"{MaterialFolder}/{Safe(src.name)}.mat");
-            Material m;
-            if (shader.StartsWith("Universal Render Pipeline/") || shader.StartsWith("Shader Graphs/"))
+            if (src.name == "Cards")
             {
-                m = new Material(src) { name = src.name };
+                var painted = PaintedCardMaterial(src);
+                if (painted != null) return painted;
             }
-            else
+            string file = AssetDatabase.GenerateUniqueAssetPath($"{MaterialFolder}/{Safe(src.name)}.mat");
+            var m = new Material(Shader.Find("Universal Render Pipeline/Simple Lit")) { name = src.name };
+            var tex = Tex(src, "_BaseMap", "_Texture", "_MainTex", "_Albedo", "_AlbedoMap");
+            if (tex != null)
             {
-                m = new Material(Shader.Find("Universal Render Pipeline/Lit")) { name = src.name };
-                var tex = Tex(src, "_Texture", "_MainTex", "_BaseMap", "_Albedo", "_AlbedoMap");
-                if (tex != null)
-                {
-                    m.SetTexture("_BaseMap", tex);
-                    if (src.HasProperty("_MainTex")) m.SetTextureScale("_BaseMap", src.GetTextureScale("_MainTex"));
-                }
-                var color = Col(src, Color.white, "_MainColor", "_Color", "_BaseColor");
-                // PRO's leaves blend from a dark base colour to a light, sunny one up the crown (its own shader);
-                // URP/Lit has one colour: most of the way to the light one, warmed towards Foundation's yellow-green.
-                string leafName = src.name.ToLowerInvariant();
-                if (src.HasProperty("_SecondColor") && (leafName.Contains("lea") || leafName.Contains("branch") || leafName.Contains("grass") ||
-                                                         leafName.Contains("fern") || leafName.Contains("reeds") || leafName.Contains("clover")))
-                {
-                    var light = src.GetColor("_SecondColor");
-                    var mixed = Color.Lerp(color, light, 0.6f) * 1.1f;
-                    color = new Color(Mathf.Min(1f, mixed.r * 1.08f), Mathf.Min(1f, mixed.g * 1.06f), Mathf.Min(1f, mixed.b * 0.75f), 1f);
-                }
-                m.SetColor("_BaseColor", color);
-                var normal = Tex(src, "_BumpMap", "_NormalMap", "_Normal");
-                if (normal != null) { m.SetTexture("_BumpMap", normal); m.SetFloat("_BumpScale", Num(src, 1f, "_BumpScale", "_NormalStrength")); }
-                m.SetFloat("_Metallic", 0f);
-                bool vegetation = shader.Contains("Vegetation");
-                bool cutout = vegetation || src.IsKeywordEnabled("_ALPHATEST_ON") || src.GetTag("RenderType", false) == "TransparentCutout";
-                if (cutout)
-                {
-                    m.SetFloat("_AlphaClip", 1f);
-                    m.SetFloat("_Cutoff", Num(src, 0.5f, "_AlphaCutoff", "_Cutoff"));
-                }
-                // Leaves and grass cards are seen from both sides.
-                if (vegetation) m.SetFloat("_Cull", 0f);
-                if (src.HasProperty("_EmissionColor") && src.IsKeywordEnabled("_EMISSION"))
-                {
-                    m.SetColor("_EmissionColor", src.GetColor("_EmissionColor"));
-                    m.EnableKeyword("_EMISSION");
-                }
-                BaseShaderGUI.SetMaterialKeywords(m, LitGUI.SetMaterialKeywords);
+                m.SetTexture("_BaseMap", tex);
+                if (src.HasProperty("_BaseMap")) m.SetTextureScale("_BaseMap", src.GetTextureScale("_BaseMap"));
+                else if (src.HasProperty("_MainTex")) m.SetTextureScale("_BaseMap", src.GetTextureScale("_MainTex"));
+            }
+            var color = Col(src, Color.white, "_BaseColor", "_MainColor", "_Color");
+            // PRO's leaves blend from a dark base colour to a light, sunny one up the crown (its own shader);
+            // one colour here: most of the way to the light one, warmed towards Foundation's yellow-green.
+            string leafName = src.name.ToLowerInvariant();
+            if (src.HasProperty("_SecondColor") && (leafName.Contains("lea") || leafName.Contains("branch") || leafName.Contains("grass") ||
+                                                     leafName.Contains("fern") || leafName.Contains("reeds") || leafName.Contains("clover")))
+            {
+                var light = src.GetColor("_SecondColor");
+                var mixed = Color.Lerp(color, light, 0.6f) * 1.1f;
+                color = new Color(Mathf.Min(1f, mixed.r * 1.08f), Mathf.Min(1f, mixed.g * 1.06f), Mathf.Min(1f, mixed.b * 0.75f), 1f);
+            }
+            color.a = 1f;
+            m.SetColor("_BaseColor", color);
+            bool vegetation = shader.Contains("Vegetation");
+            bool cutout = vegetation || src.IsKeywordEnabled("_ALPHATEST_ON") || src.GetTag("RenderType", false) == "TransparentCutout" ||
+                          (src.HasProperty("_AlphaClip") && src.GetFloat("_AlphaClip") > 0.5f);
+            if (cutout)
+            {
+                m.SetFloat("_AlphaClip", 1f);
+                m.SetFloat("_Cutoff", Num(src, 0.5f, "_AlphaCutoff", "_Cutoff"));
+            }
+            // Leaves and grass cards are seen from both sides.
+            if (vegetation || (src.HasProperty("_Cull") && src.GetFloat("_Cull") < 0.5f)) m.SetFloat("_Cull", 0f);
+            if (src.HasProperty("_EmissionColor") && src.IsKeywordEnabled("_EMISSION"))
+            {
+                m.SetColor("_EmissionColor", src.GetColor("_EmissionColor"));
+                m.EnableKeyword("_EMISSION");
+            }
+            // Far tree cards glow softly at run time (Nature.cs CardMaterial): keep the emission variant in the build.
+            if (src.name == "Cards")
+            {
+                m.SetColor("_EmissionColor", Color.black);
+                m.EnableKeyword("_EMISSION");
             }
             Matte(m);
+            BaseShaderGUI.SetMaterialKeywords(m);
+            // No specular colour or gloss map: Simple Lit then draws diffuse light only.
+            m.DisableKeyword("_SPECULAR_COLOR");
+            m.DisableKeyword("_SPECGLOSSMAP");
+            m.DisableKeyword("_NORMALMAP");
+            if (src.name == "Cards" || (src.HasProperty("_EmissionColor") && src.IsKeywordEnabled("_EMISSION"))) m.EnableKeyword("_EMISSION");
             // The packs' stone is pale grey (its moss and snow cover needs their own shader): under the
             // blue winter and night light it looked like ice or glass. A darker, warmer stone instead.
             string n = src.name.ToLowerInvariant();
-            if ((n.Contains("rock") || n.Contains("cliff") || n.Contains("mountain") || n.Contains("stone")) && m.HasProperty("_BaseColor"))
+            if (n.Contains("rock") || n.Contains("cliff") || n.Contains("mountain") || n.Contains("stone"))
             {
                 var c = m.GetColor("_BaseColor");
                 m.SetColor("_BaseColor", new Color(c.r * 0.66f, c.g * 0.62f, c.b * 0.56f, 1f));
@@ -208,8 +290,9 @@ namespace FoundersEditor
         /// </summary>
         static void Matte(Material m)
         {
-            if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", Mathf.Min(m.GetFloat("_Smoothness"), 0.08f));
+            if (m.HasProperty("_Smoothness")) m.SetFloat("_Smoothness", 0f);
             if (m.HasProperty("_Metallic")) m.SetFloat("_Metallic", 0f);
+            if (m.HasProperty("_SpecColor")) m.SetColor("_SpecColor", Color.black);
             if (m.HasProperty("_SpecularHighlights")) { m.SetFloat("_SpecularHighlights", 0f); m.EnableKeyword("_SPECULARHIGHLIGHTS_OFF"); }
             if (m.HasProperty("_EnvironmentReflections")) { m.SetFloat("_EnvironmentReflections", 0f); m.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF"); }
         }

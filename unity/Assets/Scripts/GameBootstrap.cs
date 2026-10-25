@@ -14,6 +14,7 @@ namespace Founders
         void Awake()
         {
             Prefs.Apply();
+            gameObject.AddComponent<FrameGovernor>();
             Screen.sleepTimeout = SleepTimeout.NeverSleep;
             // Landscape only, either way round.
             Screen.autorotateToPortrait = false;

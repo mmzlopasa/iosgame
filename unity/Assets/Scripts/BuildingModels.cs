@@ -1472,6 +1472,63 @@ namespace Founders
             }
         }
 
+        /// <summary>
+        /// A stone arch bridge piece: a paved deck between low parapets on an arch of dressed stone.
+        /// Each piece is one arch between two piers; joined pieces share their piers and read as one
+        /// bridge of several arches. The deck is as high as the wooden bridge's (people walk on it).
+        /// </summary>
+        static void StoneBridge(Builder b, int connect, float drop)
+        {
+            bool ew = (connect & (East | West)) != 0, ns = (connect & (North | South)) != 0;
+            bool alongX = ew && (!ns || (connect & (East | West)) == (East | West));
+            bool joinFront = (connect & (alongX ? East : North)) != 0, joinBack = (connect & (alongX ? West : South)) != 0;
+            var g = Parts.Group("StoneBridge", b.T, Vector3.zero, alongX ? 90f : 0f).transform;
+            var sb = new Builder(g, null, b.Effects);
+            float half = Grid.CellSize * 0.5f, w = 0.95f, deckTop = DeckHeight, slab = 0.32f;
+            float bottom = -0.9f - drop;
+            // Paving and its kerbs.
+            sb.Prim(PrimitiveType.Cube, new Vector3(0f, deckTop - slab * 0.5f, 0f), new Vector3(w * 2f, slab, half * 2f + 0.02f), "RockGround");
+            foreach (float x in new[] { -w + 0.11f, w - 0.11f })
+            {
+                // Parapet with a coping stone; it ends in a squat post where the bridge meets the bank.
+                sb.Prim(PrimitiveType.Cube, new Vector3(x, deckTop + 0.22f, 0f), new Vector3(0.22f, 0.44f, half * 2f + 0.02f), "DarkRock");
+                sb.Prim(PrimitiveType.Cube, new Vector3(x, deckTop + 0.47f, 0f), new Vector3(0.28f, 0.07f, half * 2f + 0.04f), "RockGround");
+                if (!joinBack) sb.Prim(PrimitiveType.Cube, new Vector3(x, deckTop + 0.3f, -half + 0.16f), new Vector3(0.34f, 0.6f, 0.32f), "DarkRock");
+                if (!joinFront) sb.Prim(PrimitiveType.Cube, new Vector3(x, deckTop + 0.3f, half - 0.16f), new Vector3(0.34f, 0.6f, 0.32f), "DarkRock");
+            }
+            // The arch: the spandrel fills down to a round opening between the two piers, springing just
+            // above the water (or the ground, which lies `drop` below the deck's origin).
+            float spring = -drop + 0.15f;
+            float crown = deckTop - slab - 0.12f;
+            const int steps = 9;
+            float pier = 0.32f;
+            float span = half - pier;
+            for (int i = 0; i < steps; i++)
+            {
+                float z0 = -span + i * (2f * span / steps), z1 = z0 + 2f * span / steps;
+                float zc = (z0 + z1) * 0.5f;
+                float u = zc / span;
+                float archY = Mathf.Lerp(spring, crown, Mathf.Sqrt(Mathf.Max(0f, 1f - u * u)));
+                float top = deckTop - slab;
+                if (top - archY > 0.02f)
+                    sb.Prim(PrimitiveType.Cube, new Vector3(0f, (top + archY) * 0.5f, zc), new Vector3(w * 2f - 0.08f, top - archY, z1 - z0 + 0.01f), "DarkRock");
+                // The ring of voussoirs, a shade lighter, along the opening.
+                sb.Prim(PrimitiveType.Cube, new Vector3(0f, archY - 0.07f, zc), new Vector3(w * 2f - 0.02f, 0.14f, z1 - z0 + 0.01f), "RockGround");
+            }
+            // Piers at both ends of the arch (shared by joined pieces), with a cutwater against the current.
+            foreach (float z in new[] { -half + pier * 0.5f, half - pier * 0.5f })
+            {
+                sb.Prim(PrimitiveType.Cube, new Vector3(0f, (deckTop - slab + bottom) * 0.5f, z), new Vector3(w * 2f, deckTop - slab - bottom, pier), "DarkRock");
+                foreach (float side in new[] { -1f, 1f })
+                    sb.Prim(PrimitiveType.Cube, new Vector3(side * (w + 0.12f), (spring + bottom) * 0.5f + 0.1f, z), new Vector3(0.34f, spring - bottom + 0.2f, pier * 0.72f),
+                            "DarkRock", new Vector3(0f, 45f, 0f));
+            }
+        }
+
+        /// <summary>Height of a bridge's walking surface above its origin (the crossing height): the
+        /// wooden planks and the stone paving are level, so mixed crossings meet.</summary>
+        public const float DeckHeight = 0.65f;
+
         public static GameObject Decoration(string sprite, Transform parent, Material tint, int rotation, int connect, float drop = 0f)
         {
             if (CustomAssets.HasDecoration(sprite))
@@ -1479,7 +1536,7 @@ namespace Founders
                 // A bridge runs along the neighbours it joins, as the built one does.
                 bool ew = (connect & (East | West)) != 0, ns = (connect & (North | South)) != 0;
                 bool alongX = ew && (!ns || (connect & (East | West)) == (East | West));
-                bool bridge = sprite == "wooden_bridge";
+                bool bridge = sprite == "wooden_bridge" || sprite == "stone_bridge";
                 var custom = CustomAssets.Decoration(sprite, parent, tint, bridge ? (alongX ? 90f : 0f) : rotation * 90f, bridge);
                 if (custom != null) return custom;
             }
@@ -1496,6 +1553,9 @@ namespace Founders
                     break;
                 case "wooden_bridge":
                     Bridge(b, connect, drop);
+                    break;
+                case "stone_bridge":
+                    StoneBridge(b, connect, drop);
                     break;
                 case "torch_post":
                     b.Pole(Vector3.zero, new Vector3(0f, 1.7f, 0f), 0.08f);

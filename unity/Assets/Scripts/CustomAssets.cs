@@ -372,6 +372,20 @@ namespace Founders
                 float smooth = src.HasProperty("_Glossiness") ? src.GetFloat("_Glossiness") : src.HasProperty("_Smoothness") ? src.GetFloat("_Smoothness") : 0.3f;
                 if (metal != null && src.HasProperty("_GlossMapScale")) smooth = src.GetFloat("_GlossMapScale");
                 m.SetFloat("_Smoothness", smooth);
+                // Stone never shines (it looked like wet glass or a mirror): no gloss, highlight or reflection.
+                string low = src.name.ToLowerInvariant();
+                if (low.Contains("rock") || low.Contains("stone") || low.Contains("cliff") || low.Contains("boulder") || low.Contains("pebble") ||
+                    low.Contains("cobble") || low.Contains("brick") || low.Contains("gravel") || low.Contains("slate"))
+                {
+                    m.SetTexture("_MetallicGlossMap", null);
+                    m.DisableKeyword("_METALLICSPECGLOSSMAP");
+                    m.SetFloat("_Smoothness", 0f);
+                    m.SetFloat("_Metallic", 0f);
+                    m.SetFloat("_SpecularHighlights", 0f);
+                    m.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+                    m.SetFloat("_EnvironmentReflections", 0f);
+                    m.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+                }
                 var ao = Tex(src, "_OcclusionMap");
                 if (ao != null) { m.SetTexture("_OcclusionMap", ao); m.EnableKeyword("_OCCLUSIONMAP"); }
                 var emission = Tex(src, "_EmissionMap");

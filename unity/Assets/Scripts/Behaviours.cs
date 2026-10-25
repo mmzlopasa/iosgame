@@ -624,7 +624,7 @@ namespace Founders
             Play(task.WalkClip ?? "Walk");
             var step = to.normalized * speed * (onRoad ? 1.3f : 1f) * Time.deltaTime;
             var next = transform.position + Vector3.ClampMagnitude(step, to.magnitude);
-            if (Ground != null) next.y = Ground.HeightAt(next);
+            if (Ground != null) next.y = Ground.WalkHeightAt(next);
             transform.position = next;
             transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.LookRotation(to), 6f * Time.deltaTime);
             if (anim == null && customAnim == null)
