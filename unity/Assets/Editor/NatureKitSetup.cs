@@ -39,6 +39,7 @@ namespace FoundersEditor
             Directory.CreateDirectory(MaterialFolder);
             AssetDatabase.Refresh();
 
+            FixProMaterials();
             var kit = ScriptableObject.CreateInstance<NatureKit>();
             var converted = new Dictionary<Material, Material>();
             var names = new HashSet<string>();
@@ -87,6 +88,77 @@ namespace FoundersEditor
                 var missing = group.Value.Where(n => !names.Contains(n)).ToList();
                 if (missing.Count == group.Value.Length) Debug.LogWarning($"[FOUNDERS] nature packs: nothing for '{group.Key}' ({string.Join(", ", group.Value)})");
             }
+        }
+
+        /// <summary>
+        /// The PRO pack's prefabs in the assets repository point at two of the Starter pack's materials
+        /// (its colour palette and spruce branch). The PRO meshes are unwrapped for PRO's own palette:
+        /// with the Starter one their trunks, logs and stumps came out bright green. PRO's own
+        /// materials go back on them.
+        /// </summary>
+        static void FixProMaterials()
+        {
+            const string pro = "Assets/Innerverse Games";
+            if (!AssetDatabase.IsValidFolder(pro)) return;
+            var swap = new Dictionary<string, Material>();
+            var palette = FindMaterial(new[] { pro }, "Color_Palette");
+            var branch = FindMaterial(new[] { pro }, "Fir_Branch");
+            if (palette != null) swap["UNS_Color_Palette"] = palette;
+            if (branch != null) swap["UNS_Spruce_Tree_Branch"] = branch;
+            if (swap.Count == 0) return;
+            int fixedCount = 0;
+            foreach (var guid in AssetDatabase.FindAssets("t:Prefab", new[] { pro }))
+            {
+                var path = AssetDatabase.GUIDToAssetPath(guid);
+                var asset = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+                if (asset == null || !asset.GetComponentsInChildren<Renderer>(true).Any(r => r.sharedMaterials.Any(m => m != null && swap.ContainsKey(m.name)))) continue;
+                var root = PrefabUtility.LoadPrefabContents(path);
+                foreach (var r in root.GetComponentsInChildren<Renderer>(true))
+                {
+                    var mats = r.sharedMaterials;
+                    for (int i = 0; i < mats.Length; i++)
+                        if (mats[i] != null && swap.TryGetValue(mats[i].name, out var m)) mats[i] = m;
+                    r.sharedMaterials = mats;
+                }
+                PrefabUtility.SaveAsPrefabAsset(root, path);
+                PrefabUtility.UnloadPrefabContents(root);
+                fixedCount++;
+            }
+            Debug.Log($"[FOUNDERS] nature packs: PRO materials restored on {fixedCount} prefabs");
+        }
+
+        /// <summary>
+        /// Painted pictures of the PRO trees, in the layout of the pack's card picture (made in Blender
+        /// by tools/art/bake_tree_cards.py, kept in the private assets repository with the packs).
+        /// The pack's own card picture is only a white outline.
+        /// </summary>
+        const string PaintedCards = "Assets/FoundersBaked/Cards_Painted.png";
+
+        /// <summary>Unlit cards with the painted trees (their light is painted in), or null without the picture.</summary>
+        static Material PaintedCardMaterial(Material src)
+        {
+            if (!File.Exists(PaintedCards)) return null;
+            if (AssetImporter.GetAtPath(PaintedCards) is TextureImporter ti)
+            {
+                ti.alphaIsTransparency = true;
+                ti.mipmapEnabled = true;
+                ti.maxTextureSize = 2048;
+                ti.wrapMode = TextureWrapMode.Clamp;
+                ti.sRGBTexture = true;
+                ti.SaveAndReimport();
+            }
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(PaintedCards);
+            if (tex == null) return null;
+            var m = new Material(Shader.Find("Universal Render Pipeline/Unlit")) { name = "Cards_Painted" };
+            m.SetTexture("_BaseMap", tex);
+            m.SetColor("_BaseColor", Color.white);
+            m.SetFloat("_AlphaClip", 1f);
+            m.SetFloat("_Cutoff", 0.5f);
+            m.SetFloat("_Cull", 0f);
+            BaseShaderGUI.SetMaterialKeywords(m);
+            m.EnableKeyword("_ALPHATEST_ON");
+            m.enableInstancing = true;
+            return SaveMaterial(m, $"{MaterialFolder}/Cards_Painted.mat");
         }
 
         /// <summary>The sky of the packs (procedural, not the 250 MB HDRI), or null.</summary>
@@ -145,6 +217,11 @@ namespace FoundersEditor
         static Material Convert(Material src)
         {
             string shader = src.shader != null ? src.shader.name : "";
+            if (src.name == "Cards")
+            {
+                var painted = PaintedCardMaterial(src);
+                if (painted != null) return painted;
+            }
             string file = AssetDatabase.GenerateUniqueAssetPath($"{MaterialFolder}/{Safe(src.name)}.mat");
             var m = new Material(Shader.Find("Universal Render Pipeline/Simple Lit")) { name = src.name };
             var tex = Tex(src, "_BaseMap", "_Texture", "_MainTex", "_Albedo", "_AlbedoMap");

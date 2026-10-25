@@ -144,7 +144,9 @@ namespace Founders
             }
 
             RenderSettings.ambientIntensity = Mathf.Lerp(Mathf.Lerp(0.75f, 1f, elevation), 0.82f, nightness);
-            RenderSettings.reflectionIntensity = Mathf.Lerp(1f, 0.3f, nightness);
+            // No sky reflections at all: even matte ground mirrored the pale sky at grazing angles, so the
+            // mountains' slopes shone like wet glass. (The water has its own reflection.)
+            RenderSettings.reflectionIntensity = 0f;
             if (sky != null && sky.HasProperty("_Exposure")) sky.SetFloat("_Exposure", Mathf.Lerp(skyExposure, skyExposure * 0.55f, nightness));
             var fog = id == "winter" ? new Color(0.78f, 0.82f, 0.88f) : SceneEnvironment.FogColor;
             RenderSettings.fogColor = Color.Lerp(fog, NightFog, nightness);

@@ -451,6 +451,9 @@ namespace FoundersEditor
             }
             var terrainMat = new Material(Shader.Find("Universal Render Pipeline/Terrain/Lit")) { name = "TerrainLit" };
             terrainMat.EnableKeyword("_NORMALMAP");
+            // Matte ground: no sun highlight, no sky reflection.
+            terrainMat.EnableKeyword("_SPECULARHIGHLIGHTS_OFF");
+            terrainMat.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
             // Keep the instancing variants in the build (they are stripped unless a material asks for them).
             terrainMat.enableInstancing = true;
             Save(terrainMat, $"{Materials}/TerrainLit.mat");
@@ -580,8 +583,9 @@ namespace FoundersEditor
             {
                 RenderSettings.defaultReflectionMode = DefaultReflectionMode.Custom;
                 RenderSettings.customReflectionTexture = SkyCube;
-                RenderSettings.reflectionIntensity = 1f;
             }
+            // Painted look: nothing mirrors the sky (see Atmosphere).
+            RenderSettings.reflectionIntensity = 0f;
             RenderSettings.ambientMode = AmbientMode.Skybox;
             RenderSettings.ambientIntensity = 1.1f;
         }
