@@ -238,7 +238,10 @@ namespace Founders.UI
             foreach (var s in stats)
             {
                 var c = StatBox(s.icon, s.label, s.value);
+                // StatBox grows from a zero basis, which would override the width: fix both.
                 c.style.flexGrow = 0;
+                c.style.flexShrink = 0;
+                c.style.flexBasis = w;
                 c.style.width = w;
                 grid.Add(c);
             }
