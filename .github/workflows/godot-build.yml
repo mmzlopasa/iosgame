@@ -1,0 +1,120 @@
+name: Godot build (iOS)
+
+# The Godot version of the game (godot/). The Unity version is frozen on the branch unity-archive.
+on:
+  push:
+    paths:
+      - "godot/**"
+      - ".github/workflows/godot-build.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: godot-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  GODOT_VERSION: "4.7.2"
+
+jobs:
+  checks:
+    name: Rules tests + C# compile
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+      - name: dotnet test (game rules)
+        run: dotnet test godot/tests -nologo --logger "console;verbosity=minimal"
+      - name: dotnet build (Godot project)
+        run: dotnet build godot/Founders.csproj -nologo
+
+  ios-ipa:
+    name: iOS IPA (unsigned)
+    needs: checks
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Godot ${{ env.GODOT_VERSION }} (.NET) + export templates
+        run: |
+          set -e
+          BASE="https://github.com/godotengine/godot/releases/download/${GODOT_VERSION}-stable"
+          curl -fsSL -o godot.zip "$BASE/Godot_v${GODOT_VERSION}-stable_mono_macos.universal.zip"
+          unzip -q godot.zip -d "$RUNNER_TEMP/godot"
+          GODOT="$(find "$RUNNER_TEMP/godot" -path '*Contents/MacOS/Godot' -type f | head -1)"
+          echo "GODOT=$GODOT" >> "$GITHUB_ENV"
+          curl -fsSL -o templates.tpz "$BASE/Godot_v${GODOT_VERSION}-stable_mono_export_templates.tpz"
+          unzip -q templates.tpz -d "$RUNNER_TEMP/tpl"
+          DEST="$HOME/Library/Application Support/Godot/export_templates/${GODOT_VERSION}.stable.mono"
+          mkdir -p "$DEST"
+          mv "$RUNNER_TEMP/tpl/templates/"* "$DEST/"
+          ls "$DEST"
+          rm -f godot.zip templates.tpz
+          "$GODOT" --version
+
+      - name: Import the project
+        working-directory: godot
+        run: |
+          "$GODOT" --headless --import || true
+          "$GODOT" --headless --build-solutions --quit || true
+
+      - name: Export the Xcode project
+        working-directory: godot
+        run: |
+          mkdir -p build/ios
+          "$GODOT" --headless --export-release "iOS" build/ios/Founders.ipa 2>&1 | tee export.log
+          ls -la build/ios
+          test -d build/ios/Founders.xcodeproj || { echo "::error::Godot did not write an Xcode project (see export.log)"; exit 1; }
+
+      - name: Build the app (unsigned)
+        working-directory: godot/build/ios
+        run: |
+          set -o pipefail
+          xcodebuild -list -project Founders.xcodeproj
+          xcodebuild -project Founders.xcodeproj -scheme Founders -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath dd \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
+            build | tail -40
+
+      - name: Package Founders-Godot.ipa
+        run: |
+          set -e
+          APP="$(find godot/build/ios/dd/Build/Products -name '*.app' -maxdepth 2 | head -1)"
+          echo "App: $APP"
+          rm -rf Payload && mkdir Payload
+          cp -R "$APP" Payload/
+          zip -qry Founders-Godot.ipa Payload
+          ls -lh Founders-Godot.ipa
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Founders-Godot-ipa
+          path: Founders-Godot.ipa
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: godot-export-log
+          path: godot/export.log
+          if-no-files-found: ignore
+
+      # Cloud sessions cannot reach artifact storage, but release assets download fine.
+      - name: Publish to the "godot-latest" pre-release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: godot-latest
+          name: Godot build (unsigned IPA)
+          prerelease: true
+          target_commitish: ${{ github.sha }}
+          body: |
+            Godot build from `${{ github.ref_name }}` @ ${{ github.sha }}.
+            - **Founders-Godot.ipa**: sign and install with Feather or Sideloadly. It installs next to the Unity app (its own bundle id).
+          files: Founders-Godot.ipa
