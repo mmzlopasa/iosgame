@@ -99,7 +99,7 @@ namespace Founders
             var tree = GetTree();
             async System.Threading.Tasks.Task Wait(double s) => await ToSignal(tree.CreateTimer(s), SceneTreeTimer.SignalName.Timeout);
             await Wait(2);
-            foreach (Panel p in System.Enum.GetValues(typeof(Panel)))
+            foreach (Panel p in System.Enum.GetValues<Panel>())
             {
                 GD.Print($"[SMOKE] panel {p}");
                 session.ActivePanel = p;

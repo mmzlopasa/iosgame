@@ -53,7 +53,7 @@ namespace Founders.Core
 
         public static TerrainType ParseTerrain(string id)
         {
-            foreach (TerrainType t in Enum.GetValues(typeof(TerrainType))) if (t.Id() == id) return t;
+            foreach (TerrainType t in Enum.GetValues<TerrainType>()) if (t.Id() == id) return t;
             throw new FormatException($"Unknown terrain '{id}'.");
         }
 
@@ -75,9 +75,11 @@ namespace Founders.Core
 
         internal static string FirstLower(string s) => string.IsNullOrEmpty(s) ? s : char.ToLowerInvariant(s[0]) + s.Substring(1);
 
-        internal static T ParseEnum<T>(string id) where T : struct
+        // Enum.GetValues<T>() (not GetValues(typeof(T))): iOS builds are compiled ahead of time and cannot make
+        // an enum array type through reflection.
+        internal static T ParseEnum<T>(string id) where T : struct, Enum
         {
-            foreach (T v in Enum.GetValues(typeof(T))) if (FirstLower(v.ToString()) == id) return v;
+            foreach (T v in Enum.GetValues<T>()) if (FirstLower(v.ToString()) == id) return v;
             throw new FormatException($"Unknown {typeof(T).Name} '{id}'.");
         }
     }

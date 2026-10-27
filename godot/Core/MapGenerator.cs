@@ -19,7 +19,7 @@ namespace Founders.Core
         public static readonly int SeedRange = (int)Math.Pow(36, SeedDigits) - 1;
 
         public enum Feature { Lake, River, Island, Mountain, Hill, Forest, Ore }
-        public static readonly Feature[] Features = (Feature[])Enum.GetValues(typeof(Feature));
+        public static readonly Feature[] Features = Enum.GetValues<Feature>();
 
         readonly int[] levels = new int[Features.Length];
         public int Seed;
