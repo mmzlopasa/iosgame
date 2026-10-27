@@ -225,6 +225,31 @@ namespace Founders.UI
             }
         }
 
+        /// <summary>
+        /// Starting failed: the screen stays and says where and why, in words the player can photograph and send
+        /// (the step, the error and where in the code it came from).
+        /// </summary>
+        bool failed;
+
+        public void Fail(string step, System.Exception e)
+        {
+            failed = true;
+            status.text = $"Could not start ({step})";
+            E.Tint(status, Theme.Bad);
+            var where = "";
+            var trace = e.StackTrace ?? "";
+            foreach (var line in trace.Split('\n'))
+            {
+                var t = line.Trim();
+                if (t.Length == 0) continue;
+                where = t.Length > 140 ? t.Substring(0, 140) : t;
+                break;
+            }
+            tip.text = $"{e.GetType().Name}: {e.Message}\n{where}";
+            tip.style.maxWidth = 900;
+            E.Tint(tip, Colors.White);
+        }
+
         /// <summary>The game is ready: the bar fills and the screen fades out.</summary>
         public void Finish()
         {
@@ -365,7 +390,7 @@ namespace Founders.UI
                 chapter.text = "CHAPTER " + Numerals[s];
                 captionTitle.text = Scenes[s].Title;
                 captionLine.text = Scenes[s].Line;
-                tip.text = "Tip · " + Tips[(tipStart + k) % Tips.Length];
+                if (!failed) tip.text = "Tip · " + Tips[(tipStart + k) % Tips.Length];
                 for (int i = 0; i < pips.Length; i++)
                 {
                     pips[i].style.width = i == s ? 18 : 5;
@@ -375,7 +400,7 @@ namespace Founders.UI
             float appear = Smooth((local - 0.25f) / 0.9f) * (1 - Smooth((local - (SceneSeconds - FadeSeconds * 0.9f)) / 0.6f));
             captionBox.style.opacity = appear;
             captionBox.style.translate = new Translate(0, (1 - appear) * 10);
-            tip.style.opacity = 0.35f + 0.65f * appear;
+            tip.style.opacity = failed ? 1f : 0.35f + 0.65f * appear;
 
             // The bar eases towards the real progress so each step glides instead of jumping.
             shown = Mathf.MoveToward(shown + (target - shown) * Mathf.Min(1, dt * 5), target, dt * 0.05f);

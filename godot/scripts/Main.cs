@@ -31,45 +31,65 @@ namespace Founders
             Start();
         }
 
-        void Start()
+        async void Start()
         {
-            var rig = new CameraRig();
-            AddChild(rig);
-            var world = new WorldView { Name = "World" };
-            AddChild(world);
-            var sky = new Atmosphere();
-            AddChild(sky);
-            session = new Session { Name = "Session" };
-            AddChild(session);
-            AddChild(new AudioDirector { Store = session });
-
-            rig.Raycast = (from, dir) =>
-                world.Ground != null && world.Ground.Raycast(from, dir, out var hit) ? (true, hit) : (false, Vector3.Zero);
-            rig.OnTap = session.HandleTap;
-            rig.PaintMode = () => session.PaintMode;
-            rig.OnPaint = session.HandlePaint;
-            rig.OnPaintEnd = session.EndPaintStroke;
-            rig.GrabAt = session.GrabsGhost;
-            rig.OnGrab = session.DragGhost;
-            world.Rebuilt = () =>
+            // In steps, a frame apart, so the bar moves and a failure says where it happened.
+            string step = "camera";
+            try
             {
-                sky.Ground = world.Ground;
-                sky.Plants = world.Plants;
-                sky.Water = world.WaterMaterial;
-            };
-            sky.Camera = rig.Cam;
-            sky.GameOf = () => session.Game;
+                async System.Threading.Tasks.Task Next(float value, string text, string name)
+                {
+                    step = name;
+                    loading.Set(value, text);
+                    await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                    await ToSignal(GetTree(), SceneTree.SignalName.ProcessFrame);
+                }
+                await Next(0.2f, "Waking the valley…", "camera");
+                var rig = new CameraRig();
+                AddChild(rig);
+                var world = new WorldView { Name = "World" };
+                AddChild(world);
+                var sky = new Atmosphere();
+                AddChild(sky);
+                session = new Session { Name = "Session" };
+                AddChild(session);
+                AddChild(new AudioDirector { Store = session });
 
-            session.Init(rig, world);
-            var ui = new GameUi();
-            AddChild(ui);
-            ui.Init(session);
-            rig.Blocks = ui.BlocksPointer;
-            loading.Finish();
-            GD.Print("[FOUNDERS] started");
-            if (System.Array.IndexOf(OS.GetCmdlineUserArgs(), "--smoke") >= 0) Smoke(ui);
+                rig.Raycast = (from, dir) =>
+                    world.Ground != null && world.Ground.Raycast(from, dir, out var hit) ? (true, hit) : (false, Vector3.Zero);
+                rig.OnTap = session.HandleTap;
+                rig.PaintMode = () => session.PaintMode;
+                rig.OnPaint = session.HandlePaint;
+                rig.OnPaintEnd = session.EndPaintStroke;
+                rig.GrabAt = session.GrabsGhost;
+                rig.OnGrab = session.DragGhost;
+                world.Rebuilt = () =>
+                {
+                    sky.Ground = world.Ground;
+                    sky.Plants = world.Plants;
+                    sky.Water = world.WaterMaterial;
+                };
+                sky.Camera = rig.Cam;
+                sky.GameOf = () => session.Game;
+
+                await Next(0.35f, "Raising the hills and forests…", "world");
+                session.Init(rig, world);
+                await Next(0.85f, "Lighting the fires…", "interface");
+                var ui = new GameUi();
+                AddChild(ui);
+                ui.Init(session);
+                rig.Blocks = ui.BlocksPointer;
+                await Next(0.95f, "Almost there…", "first frame");
+                loading.Finish();
+                GD.Print("[FOUNDERS] started");
+                if (System.Array.IndexOf(OS.GetCmdlineUserArgs(), "--smoke") >= 0) Smoke(ui);
+            }
+            catch (System.Exception e)
+            {
+                GD.PrintErr($"[FOUNDERS] start failed at {step}: {e}");
+                loading.Fail(step, e);
+            }
         }
-
         /// <summary>
         /// CI check (godot --headless -- --smoke): opens every window and card once so a mistake in building them
         /// shows in the log, then quits. Nothing is drawn or saved.
