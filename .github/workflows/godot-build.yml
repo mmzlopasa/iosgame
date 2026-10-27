@@ -76,12 +76,13 @@ jobs:
       - name: Build the app (unsigned)
         working-directory: godot/build/ios
         run: |
-          set -o pipefail
           xcodebuild -list -project Founders.xcodeproj
           xcodebuild -project Founders.xcodeproj -scheme Founders -configuration Release \
             -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath dd \
             CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" DEVELOPMENT_TEAM="" \
-            build | tail -40
+            build > "$GITHUB_WORKSPACE/xcodebuild.log" 2>&1 || {
+              grep -n -E "error|Error" "$GITHUB_WORKSPACE/xcodebuild.log" | head -80; exit 1; }
+          tail -20 "$GITHUB_WORKSPACE/xcodebuild.log"
 
       - name: Package Founders-Godot.ipa
         run: |
@@ -99,12 +100,19 @@ jobs:
           path: Founders-Godot.ipa
           if-no-files-found: error
 
-      - uses: actions/upload-artifact@v4
-        if: always()
+      # Cloud sessions cannot read job logs, so on a failure the logs go to the "godot-ci-logs" pre-release.
+      - name: Publish the logs (on failure)
+        if: failure()
+        uses: softprops/action-gh-release@v2
         with:
-          name: godot-export-log
-          path: godot/export.log
-          if-no-files-found: ignore
+          tag_name: godot-ci-logs
+          name: Godot CI logs (last failure)
+          prerelease: true
+          target_commitish: ${{ github.sha }}
+          body: "Logs of the last failed Godot build (${{ github.ref_name }} @ ${{ github.sha }})."
+          files: |
+            godot/export.log
+            xcodebuild.log
 
       # Cloud sessions cannot reach artifact storage, but release assets download fine.
       - name: Publish to the "godot-latest" pre-release
