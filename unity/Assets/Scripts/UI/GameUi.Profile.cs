@@ -238,11 +238,10 @@ namespace Founders.UI
             foreach (var s in stats)
             {
                 var c = StatBox(s.icon, s.label, s.value);
-                // A fixed third of the row: StatBox grows from a zero basis, which with no growth left the
-                // boxes zero wide (their frames squeezed to slivers, the third spilling out of the window).
+                // StatBox grows from a zero basis, which would override the width: fix both.
                 c.style.flexGrow = 0;
                 c.style.flexShrink = 0;
-                c.style.flexBasis = StyleKeyword.Auto;
+                c.style.flexBasis = w;
                 c.style.width = w;
                 grid.Add(c);
             }
