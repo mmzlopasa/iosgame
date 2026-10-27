@@ -67,6 +67,38 @@ namespace Founders
             rig.Blocks = ui.BlocksPointer;
             loading.Finish();
             GD.Print("[FOUNDERS] started");
+            if (System.Array.IndexOf(OS.GetCmdlineUserArgs(), "--smoke") >= 0) Smoke(ui);
+        }
+
+        /// <summary>
+        /// CI check (godot --headless -- --smoke): opens every window and card once so a mistake in building them
+        /// shows in the log, then quits. Nothing is drawn or saved.
+        /// </summary>
+        async void Smoke(GameUi ui)
+        {
+            var tree = GetTree();
+            async System.Threading.Tasks.Task Wait(double s) => await ToSignal(tree.CreateTimer(s), SceneTreeTimer.SignalName.Timeout);
+            await Wait(2);
+            foreach (Panel p in System.Enum.GetValues(typeof(Panel)))
+            {
+                GD.Print($"[SMOKE] panel {p}");
+                session.ActivePanel = p;
+                session.Refresh();
+                await Wait(0.6);
+            }
+            session.ActivePanel = Panel.None;
+            foreach (var b in session.Game.State.Buildings)
+            {
+                GD.Print($"[SMOKE] building {b.DefinitionId}");
+                session.SelectedBuildingId = b.Id;
+                session.Refresh();
+                await Wait(0.4);
+            }
+            session.SelectedBuildingId = null;
+            session.Refresh();
+            await Wait(1);
+            GD.Print($"[SMOKE] done; ui root children {ui.UiRoot.childCount}");
+            tree.Quit();
         }
     }
 }

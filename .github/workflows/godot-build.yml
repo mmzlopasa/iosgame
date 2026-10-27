@@ -104,6 +104,13 @@ jobs:
           "$GODOT" --headless --import || true
           "$GODOT" --headless --build-solutions --quit || true
 
+      # A short headless run that opens every window once (Main.Smoke): errors show in smoke.log. Log only, no pictures.
+      - name: Smoke run (headless)
+        working-directory: godot
+        run: |
+          perl -e 'alarm 240; exec @ARGV' "$GODOT" --headless --path . -- --smoke > "$GITHUB_WORKSPACE/smoke.log" 2>&1 || echo "::warning::smoke run ended with $?"
+          grep -n -E "SMOKE|ERROR|Exception|error" "$GITHUB_WORKSPACE/smoke.log" | head -120 || true
+
       - name: Export the Xcode project
         working-directory: godot
         run: |
@@ -152,6 +159,7 @@ jobs:
           files: |
             godot/export.log
             xcodebuild.log
+            smoke.log
 
       # Cloud sessions cannot reach artifact storage, but release assets download fine.
       - name: Publish to the "godot-latest" pre-release
@@ -164,4 +172,6 @@ jobs:
           body: |
             Godot build from `${{ github.ref_name }}` @ ${{ github.sha }}.
             - **Founders-Godot.ipa**: sign and install with Feather or Sideloadly. It installs next to the Unity app (its own bundle id).
-          files: Founders-Godot.ipa
+          files: |
+            Founders-Godot.ipa
+            smoke.log
