@@ -4,6 +4,7 @@ using Founders.Art;
 using Founders.Core;
 using Founders.World;
 using Godot;
+using Json = Founders.Core.Json;
 
 namespace Founders.People
 {

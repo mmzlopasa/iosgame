@@ -984,7 +984,7 @@ namespace Founders.UI
                         bottom.Add(E.Button("Sign the custom", Act(() => confirmLaw = id), E.Kind.Green, Theme.ButtonH, "customs", 16, null, detailW - 20));
                     break;
             }
-            if (foot != null) { bottom.style.marginTop = 0; foot.Add(bottom); foot.Hidden(bottom.childCount == 0); }
+            if (foot != null) { bottom.style.marginTop = 0; foot.Add(bottom); foot.HiddenIf(bottom.childCount == 0); }
             else card.Add(bottom);
             return card;
         }

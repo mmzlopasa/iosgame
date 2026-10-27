@@ -302,7 +302,7 @@ namespace Founders.UI
             for (int i = 0; i < EmberCount; i++) emberSeed[i] = GD.Randf() * 100f;
             Tick();
             layer.style.opacity = 1;
-            layer.Hidden(false);
+            layer.HiddenIf(false);
         }
 
         public void Set(float value, string text = null)
@@ -324,7 +324,7 @@ namespace Founders.UI
             {
                 if (Showing) return;
                 showing = false;
-                layer.Hidden(true);
+                layer.HiddenIf(true);
                 QueueFree();
             }).StartingIn(560);
         }

@@ -501,7 +501,7 @@ namespace Founders.UI
                 if (n.Ordered) Lead(E.Square("trash", Act(() => store.ToggleHarvest(x, y)), E.Kind.Brown, Theme.ButtonH), foot);
                 foot.Add(Share(E.Button(verb, Act(() => store.SendGatherer(x, y)), E.Kind.Green, Theme.ButtonH, tool, 16, null, CardW - 20 - (n.Ordered ? Theme.ButtonH + 8 : 0)), foot));
             }
-            else foot.Hidden(true);
+            else foot.HiddenIf(true);
         }
 
         /// <summary>A hint in an inset box with an icon.</summary>
@@ -646,7 +646,7 @@ namespace Founders.UI
             if (canLevel)
                 foot.Add(Share(E.Button("Level up", can ? Act(() => store.UpgradeLevel(id)) : null, can ? E.Kind.Orange : E.Kind.Grey, Theme.ButtonH, null, 16,
                                         ready ? SubLine("clock", Fmt.Clock(G.EstimatedSeconds(lv.BuildSeconds))) : SubLine("lock", "Not ready", Theme.Pale)), foot));
-            if (foot.childCount == 0) foot.Hidden(true);
+            if (foot.childCount == 0) foot.HiddenIf(true);
         }
 
         /// <summary>Upgrade Stats: every number the building has, with the next level's value after a green arrow.</summary>

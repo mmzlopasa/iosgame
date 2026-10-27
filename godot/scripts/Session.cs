@@ -4,6 +4,7 @@ using System.Linq;
 using Founders.Core;
 using Founders.World;
 using Godot;
+using Founders.Art;
 
 namespace Founders
 {

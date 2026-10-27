@@ -41,7 +41,7 @@ namespace Founders.UI
         void UpdateDrawer()
         {
             bool d = store.ActivePanel == Panel.Build;
-            drawer.Hidden(!d);
+            drawer.HiddenIf(!d);
             // The world stays bright around the strip; windows dim it a little more.
             var c = d ? new Color(0, 0, 0, 0.08f) : Theme.Scrim;
             if (scrim.style.backgroundColor != c) scrim.style.backgroundColor = c;
@@ -560,7 +560,7 @@ namespace Founders.UI
                     break;
                 }
             }
-            if (foot != null) { bottom.style.marginTop = 0; foot.Add(bottom); foot.Hidden(bottom.childCount == 0); }
+            if (foot != null) { bottom.style.marginTop = 0; foot.Add(bottom); foot.HiddenIf(bottom.childCount == 0); }
             else card.Add(bottom);
             return card;
         }

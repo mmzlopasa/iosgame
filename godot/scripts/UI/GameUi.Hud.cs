@@ -112,7 +112,7 @@ namespace Founders.UI
         void LayoutHud()
         {
             bool sheet = SheetOpen, card = ContextOpen, modal = ModalOpen;
-            toastLayer.Hidden(modal);
+            toastLayer.HiddenIf(modal);
             float l = SafeLeft + 8, r = SafeRight + 8, top = SafeTop;
             topRowCount = Portrait ? TopRows().Count : 2;
             Place(topHost, l, top + 4, r, null);
@@ -125,8 +125,8 @@ namespace Founders.UI
                 Place(timersHost, null, top + RailY, r + TileColW + 8, null);
                 Place(tilesHost, null, top + TilesY, r, null);
                 Place(bottomHost, l, null, SafeRight + 6, BottomPad + 4);
-                tilesHost.Hidden(sheet || modal);
-                bottomHost.Hidden(sheet || modal);
+                tilesHost.HiddenIf(sheet || modal);
+                bottomHost.HiddenIf(sheet || modal);
                 // Notices between whatever occupies the two sides.
                 float leftEdge = l + (card ? CardW : LeftRailW) + 10;
                 float rightEdge = r + TileColW + 8 + (card ? 0 : TimersW + 10);
@@ -137,10 +137,10 @@ namespace Founders.UI
                 Place(contextPanel, l, PopupTop + 4, null, BottomPad + 8);
                 float maxCard = Mathf.Min(PanelH - PopupTop - 4 - BottomPad - 8, 470);
                 contextPanel.style.maxHeight = maxCard;
-                cardBack.Hidden(true);
+                cardBack.HiddenIf(true);
             }
-            leftHost.Hidden(sheet || card || modal);
-            timersHost.Hidden(sheet || card || modal);
+            leftHost.HiddenIf(sheet || card || modal);
+            timersHost.HiddenIf(sheet || card || modal);
             UpdateViewShift(card && !sheet);
         }
 
@@ -160,8 +160,8 @@ namespace Founders.UI
             SetAlign(timersHost, Align.FlexStart);
             Place(tilesHost, null, BarBottom + 4, r, null);
             Place(bottomHost, l, null, SafeRight + 6, BottomPad + 4);
-            tilesHost.Hidden(sheet || card);
-            bottomHost.Hidden(sheet || card);
+            tilesHost.HiddenIf(sheet || card);
+            bottomHost.HiddenIf(sheet || card);
 
             // Above the bottom row: the small buttons and the news over them (or above the top edge of a sheet).
             float toastBottom = card || sheet ? PanelH - CardTopLimit + 8 : BottomPad + 4 + SmallButton * 1.06f + 10 + 30 + 10;
@@ -173,7 +173,7 @@ namespace Founders.UI
             if (!Mathf.IsEqualApprox(contextPanel.style.width.value.value, w)) contextPanel.style.width = w;
             Place(contextPanel, SafeLeft + (SafeWidth - w) / 2, CardTopLimit, null, SheetBottom);
             contextPanel.style.maxHeight = PanelH - CardTopLimit - SheetBottom;
-            cardBack.Hidden(!card || sheet);
+            cardBack.HiddenIf(!card || sheet);
             Place(cardBack, SafeLeft + 6, null, null, BottomPad + 2);
         }
 
@@ -481,7 +481,7 @@ namespace Founders.UI
                     {
                         string s = $"{Fmt.Compact(G.State.Population)}/{Fmt.Compact(G.HousingCapacity())}";
                         if (v.text != s) v.text = s;
-                        idle.Hidden(!(G.IdleWorkers > 0 || G.State.FoodShortage));
+                        idle.HiddenIf(!(G.IdleWorkers > 0 || G.State.FoodShortage));
                     });
                     Tap(c, () => { peopleTab = 0; store.ActivePanel = Panel.People; });
                     return c;

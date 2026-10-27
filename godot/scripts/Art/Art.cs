@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Founders.Core;
 using Founders.World;
 using Godot;
+using Json = Founders.Core.Json;
 
 namespace Founders.Art
 {
@@ -245,6 +246,23 @@ namespace Founders.Art
             for (int i = 0; i < order.Count; i++) m[i] = specs.Has(order[i]) ? MakeMaterial(specs.Obj(order[i])) : Palette.Get("Earth");
             return materials[id] = m;
         }
+
+        static readonly Dictionary<string, Material> tinted = new Dictionary<string, Material>();
+
+        /// <summary>A model's first material recoloured (e.g. rusty iron ore or green copper ore on a boulder).</summary>
+        public static Material Tinted(string modelId, string key, Color color)
+        {
+            if (tinted.TryGetValue(key, out var m) && m != null) return m;
+            var mats = HasModel(modelId) ? Materials(modelId) : null;
+            var src = mats != null && mats.Length > 0 && mats[0] != null ? mats[0] : Palette.Get("Earth");
+            var copy = (Material)src.Duplicate();
+            if (copy is BaseMaterial3D b) b.AlbedoColor = color;
+            return tinted[key] = copy;
+        }
+
+        public static Material IronOre => Tinted("sn_rock_1", "IronOre", new Color(0.95f, 0.58f, 0.42f));
+        public static Material Berry => Tinted("sn_rock_1", "Berry", new Color(0.78f, 0.12f, 0.22f));
+        public static Material CopperOre => Tinted("sn_rock_1", "CopperOre", new Color(0.62f, 0.85f, 0.7f));
 
         /// <summary>A tiling textured surface (Bark, Hide, Thatch, RoughWood, Mud, DarkRock, ...) for shapes and primitives.</summary>
         public static Material Surface(string name)

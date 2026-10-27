@@ -98,8 +98,8 @@ namespace Founders.UI
         {
             if (sheet == null) return;
             bool window = WindowPanel;
-            sheet.Hidden(!window);
-            sheetTabsBottom.Hidden(!window || store.ActivePanel != Panel.Objectives);
+            sheet.HiddenIf(!window);
+            sheetTabsBottom.HiddenIf(!window || store.ActivePanel != Panel.Objectives);
             float w = WindowW;
             // Goals: the window ends above its bottom tabs (the list must never run under them).
             float bottomTabs = store.ActivePanel == Panel.Objectives ? BottomTabsRoom : 0;
@@ -124,10 +124,10 @@ namespace Founders.UI
             Place(sheetTabsBottom, left + (Portrait ? 10 : 16), null, null, bottom - bottomTabs);
             bool roomForBack = Portrait || (SafeWidth - w) / 2 >= 56;
             bool drawerOpen = store.ActivePanel == Panel.Build;
-            backArrow.Hidden(!(window || (Portrait && drawerOpen)) || !roomForBack);
+            backArrow.HiddenIf(!(window || (Portrait && drawerOpen)) || !roomForBack);
             Place(backArrow, SafeLeft + (Portrait ? 6 : 4), null, null, Portrait ? BottomPad + 2 : BottomPad);
-            sheetScroll.Hidden(!window || FixedPanel);
-            sheetFixed.Hidden(!window || !FixedPanel);
+            sheetScroll.HiddenIf(!window || FixedPanel);
+            sheetFixed.HiddenIf(!window || !FixedPanel);
         }
 
         /// <summary>Visibility of layers and the open animation, run once per tick before regions.</summary>
@@ -148,13 +148,13 @@ namespace Founders.UI
             if (open != sheetShown)
             {
                 sheetShown = open;
-                sheetLayer.Hidden(!open);
+                sheetLayer.HiddenIf(!open);
             }
             LayoutHud();
             LayoutSheet();
             UpdateDrawer();
             UpdateHeatOverlay();
-            modalLayer.Hidden(ModalKey() == "");
+            modalLayer.HiddenIf(ModalKey() == "");
         }
 
         /// <summary>The opening animation of a popup: a short rise and fade.</summary>

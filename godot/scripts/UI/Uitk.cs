@@ -1148,8 +1148,8 @@ namespace Founders.UI
 
         protected override bool IsLeaf => true;
 
-        Font FontOf => style.unityFontDefinition ?? Theme.Display;
-        float SizeOf => style.fontSize.IsSet ? style.fontSize.value.value : Theme.Body;
+        Font FontOf => style.unityFontDefinition ?? Founders.UI.Theme.Display;
+        float SizeOf => style.fontSize.IsSet ? style.fontSize.value.value : Founders.UI.Theme.Body;
         public float LineHeight => Mathf.Round(SizeOf * 1.18f);
 
         struct Run { public string Text; public Color? Color; }
@@ -1196,7 +1196,7 @@ namespace Founders.UI
                         {
                             Flush();
                             string v = tag.Substring(6).Trim('"', '\'');
-                            colors.Push(Theme.Hex(v));
+                            colors.Push(Founders.UI.Theme.Hex(v));
                             i = close;
                             continue;
                         }
@@ -1310,7 +1310,7 @@ namespace Founders.UI
             float y0 = padT + (rowA == 0 ? 0 : rowA == 1 ? (innerH - total) / 2 : innerH - total);
             var baseColor = style.color.IsSet ? style.color.value : Colors.White;
             float outline = Outline;
-            var rim = style.unityTextOutlineColor.IsSet ? style.unityTextOutlineColor.value : Theme.Outline;
+            var rim = style.unityTextOutlineColor.IsSet ? style.unityTextOutlineColor.value : Founders.UI.Theme.Outline;
             var shadow = style.textShadow.value;
             bool hasShadow = style.textShadow.set && shadow.color.A > 0;
             int osz = outline > 0 ? Mathf.Max(1, Mathf.RoundToInt(outline * 2f)) : 0;
@@ -1353,9 +1353,9 @@ namespace Founders.UI
         public TextField()
         {
             Edit = new LineEdit { FocusMode = FocusModeEnum.All, MouseFilter = MouseFilterEnum.Stop };
-            Edit.AddThemeFontOverride("font", Theme.Display);
+            Edit.AddThemeFontOverride("font", Founders.UI.Theme.Display);
             Edit.AddThemeFontSizeOverride("font_size", 15);
-            Edit.AddThemeColorOverride("font_color", Theme.Prose);
+            Edit.AddThemeColorOverride("font_color", Founders.UI.Theme.Prose);
             var empty = new StyleBoxEmpty { ContentMarginLeft = 10, ContentMarginRight = 10 };
             Edit.AddThemeStyleboxOverride("normal", empty);
             Edit.AddThemeStyleboxOverride("focus", empty);

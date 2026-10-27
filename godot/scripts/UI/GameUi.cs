@@ -121,8 +121,8 @@ namespace Founders.UI
             topShade = E.Div().Abs(0, 0, 0).Size(null, 84).BgImage(Theme.TopShade).Ignore();
             hudLayer.Add(topShade);
 
-            sheetLayer = E.Div("sheets").Fill().Ignore().Hidden(true);
-            modalLayer = E.Div("modals").Fill().Ignore().Hidden(true);
+            sheetLayer = E.Div("sheets").Fill().Ignore().HiddenIf(true);
+            modalLayer = E.Div("modals").Fill().Ignore().HiddenIf(true);
             root.Add(hudLayer);
             // While the HUD is hidden only this small eye button remains, to bring it back (top right).
             showHud = E.HudSquare("eye", Act(() => store.HudHidden = false), 44).Abs(null, 8, 10);
@@ -247,12 +247,12 @@ namespace Founders.UI
             if (root == null) return;
             UpdateSafeArea();
             if (store?.Game == null) return;
-            hudLayer.Hidden(Hidden || store.HudHidden);
-            showHud?.Hidden(Hidden || !store.HudHidden);
+            hudLayer.HiddenIf(Hidden || store.HudHidden);
+            showHud?.HiddenIf(Hidden || !store.HudHidden);
             // No card on screen to keep the camera's focus clear of.
             if ((Hidden || store.HudHidden) && store.Rig != null) store.Rig.ViewShift = Vector2.Zero;
-            if (Hidden) { sheetLayer.Hidden(true); modalLayer.Hidden(true); return; }
-            if (store.HudHidden) { sheetLayer.Hidden(true); return; }
+            if (Hidden) { sheetLayer.HiddenIf(true); modalLayer.HiddenIf(true); return; }
+            if (store.HudHidden) { sheetLayer.HiddenIf(true); return; }
 
             float now = (float)UiClock.Now;
             if (!dirty && now < nextTick) return;

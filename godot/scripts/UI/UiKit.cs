@@ -440,7 +440,7 @@ namespace Founders.UI
         public static T Opacity<T>(this T e, float o) where T : VisualElement { e.style.opacity = o; return e; }
         public static T Ignore<T>(this T e) where T : VisualElement { e.pickingMode = PickingMode.Ignore; return e; }
 
-        public static T Hidden<T>(this T e, bool hidden) where T : VisualElement
+        public static T HiddenIf<T>(this T e, bool hidden) where T : VisualElement
         {
             var d = hidden ? DisplayStyle.None : DisplayStyle.Flex;
             if (e.style.display != d) e.style.display = d;
@@ -868,7 +868,7 @@ namespace Founders.UI
         {
             var tex = Theme.KitWhole(name);
             if (tex == null) return null;
-            float w = Mathf.Round(size * tex.width / Mathf.Max(1f, tex.height));
+            float w = Mathf.Round(size * tex.GetWidth() / Mathf.Max(1f, tex.GetHeight()));
             var b = Div(name).Size(w, size).BgImage(tex);
             if (onTap != null) b.OnTap(onTap).HitSlop(w, size);
             else b.pickingMode = PickingMode.Position;
@@ -1162,7 +1162,7 @@ namespace Founders.UI
         public static void SetFill(VisualElement fill, double value)
         {
             float v = U.Clamp01((float)value);
-            fill.Hidden(v <= 0.001f);
+            fill.HiddenIf(v <= 0.001f);
             fill.style.width = Length.Percent(v * 100f);
         }
 
@@ -1230,7 +1230,7 @@ namespace Founders.UI
             void Refresh()
             {
                 // What is still hidden below (the list's own bottom padding is only air, not content).
-                float more = s.contentContainer.layout.height - s.contentViewport.layout.height - s.scrollOffset.y
+                float more = s.contentContainer.layout.height - s.contentViewport.layout.height - s.scrollOffset.Y
                              - s.contentContainer.resolvedStyle.paddingBottom;
                 bool show = !float.IsNaN(more) && more > 12;
                 var d = show ? DisplayStyle.Flex : DisplayStyle.None;
