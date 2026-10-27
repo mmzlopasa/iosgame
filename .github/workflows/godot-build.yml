@@ -42,6 +42,15 @@ jobs:
         with:
           dotnet-version: "8.0.x"
 
+      # Godot 4.7's iOS templates link against the iOS 26 SDK: use the newest Xcode on the runner.
+      - name: Newest Xcode
+        run: |
+          ls -d /Applications/Xcode*.app
+          X="$(ls -d /Applications/Xcode_26*.app 2>/dev/null | sort -V | tail -1)"
+          [ -n "$X" ] || X="$(ls -d /Applications/Xcode_*.app | sort -V | tail -1)"
+          sudo xcode-select -s "$X"
+          xcodebuild -version
+
       - name: Godot ${{ env.GODOT_VERSION }} (.NET) + export templates
         run: |
           set -e
