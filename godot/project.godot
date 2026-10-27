@@ -5,6 +5,7 @@ config_version=5
 [application]
 
 config/name="Founders - The Long Rise"
+config/version="2.0"
 run/main_scene="res://scenes/Main.tscn"
 config/features=PackedStringArray("4.7", "C#", "Mobile")
 config/icon="res://icon.png"
@@ -12,8 +13,8 @@ boot_splash/bg_color=Color(0.1255, 0.1529, 0.2039, 1)
 
 [display]
 
-window/size/viewport_width=1920
-window/size/viewport_height=1080
+window/size/viewport_width=1082
+window/size/viewport_height=500
 window/stretch/mode="canvas_items"
 window/stretch/aspect="expand"
 window/handheld/orientation=4
@@ -24,10 +25,18 @@ project/assembly_name="Founders"
 
 [input_devices]
 
-pointing/emulate_mouse_from_touch=false
+pointing/emulate_mouse_from_touch=true
 
 [rendering]
+
+textures/canvas_textures/default_texture_filter=3
 
 renderer/rendering_method="mobile"
 textures/vram_compression/import_etc2_astc=true
 anti_aliasing/quality/msaa_3d=1
+
+[importer_defaults]
+
+texture={
+"mipmaps/generate": true
+}
