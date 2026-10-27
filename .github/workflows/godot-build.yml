@@ -175,3 +175,4 @@ jobs:
           files: |
             Founders-Godot.ipa
             smoke.log
+            godot/export.log
