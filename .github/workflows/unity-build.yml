@@ -175,7 +175,7 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Publish "unity-latest" pre-release
+    name: Publish "unity-final" release (Unity archive)
     needs: [ios-ipa]
     if: github.event_name != 'pull_request'
     runs-on: ubuntu-latest
@@ -186,8 +186,8 @@ jobs:
 
       - uses: softprops/action-gh-release@v2
         with:
-          tag_name: unity-latest
-          name: Unity build (unsigned IPA)
+          tag_name: unity-final
+          name: Unity final (archived, unsigned IPA)
           prerelease: true
           target_commitish: ${{ github.sha }}
           body: |
