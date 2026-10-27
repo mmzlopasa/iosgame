@@ -118,6 +118,7 @@ namespace Founders.UI
     {
         public Texture2D texture;
         public StyleBackground(Texture2D t) { texture = t; }
+        public StyleBackground(StyleKeyword k) { texture = null; }
         public static implicit operator StyleBackground(Texture2D t) => new StyleBackground(t);
         public static implicit operator StyleBackground(StyleKeyword k) => default;
     }
@@ -186,10 +187,13 @@ namespace Founders.UI
         public static implicit operator StyleScale(StyleKeyword k) => default;
     }
 
+    public enum AngleUnit { Degree, Radian }
+
     public struct Angle
     {
         public float value;
         public Angle(float degrees) { value = degrees; }
+        public Angle(float v, AngleUnit unit) { value = unit == AngleUnit.Radian ? Mathf.RadToDeg(v) : v; }
     }
 
     public struct Rotate
@@ -289,7 +293,7 @@ namespace Founders.UI
         readonly VisualElement owner;
         public Scheduler(VisualElement owner) { this.owner = owner; }
 
-        public sealed class FlexItem
+        public sealed class Item
         {
             readonly VisualElement owner;
             readonly Action act;

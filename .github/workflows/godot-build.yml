@@ -27,10 +27,10 @@ jobs:
       - uses: actions/setup-dotnet@v4
         with:
           dotnet-version: "8.0.x"
-      - name: dotnet test (game rules)
-        run: dotnet test godot/tests -nologo --logger "console;verbosity=minimal" 2>&1 | tee test.log; exit ${PIPESTATUS[0]}
       - name: dotnet build (Godot project)
         run: dotnet build godot/Founders.csproj -nologo -clp:NoSummary 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
+      - name: dotnet test (game rules)
+        run: dotnet test godot/tests -nologo --logger "console;verbosity=minimal" 2>&1 | tee test.log; exit ${PIPESTATUS[0]}
       # Cloud sessions cannot read job logs, so on a failure the compiler output goes to the "godot-ci-logs" pre-release.
       - name: Publish the logs (on failure)
         if: failure()

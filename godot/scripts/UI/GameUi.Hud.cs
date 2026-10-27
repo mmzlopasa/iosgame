@@ -776,7 +776,7 @@ namespace Founders.UI
             var left = E.Div().Row(0, Align.FlexEnd).Ignore().NoShrink();
             var compass = E.HudSquare("compass", null, CompassSize);
             var needle = compass.ElementAt(0);
-            Bind(() => needle.style.rotate = new Rotate(new Angle(-(CameraRig.Yaw + 45f), AngleUnit.Degree)));
+            Bind(() => needle.style.rotate = new Rotate(new Angle(CameraRig.Yaw - 45f, AngleUnit.Degree)));
             Tap(compass, () => store.Rig?.ResetView());
             left.Add(compass);
             void Small(VisualElement b) { b.style.marginLeft = 8; left.Add(b); }
