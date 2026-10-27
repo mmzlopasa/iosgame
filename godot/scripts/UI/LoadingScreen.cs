@@ -291,7 +291,7 @@ namespace Founders.UI
             }
         }
 
-        public void Show()
+        public new void Show()
         {
             LoadPaintings();
             showing = true;
@@ -315,7 +315,7 @@ namespace Founders.UI
 
         public float Value => target;
 
-        public void Hide()
+        public new void Hide()
         {
             Showing = false;
             layer.style.opacity = 0;

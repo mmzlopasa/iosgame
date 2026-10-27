@@ -289,7 +289,7 @@ namespace Founders.UI
         readonly VisualElement owner;
         public Scheduler(VisualElement owner) { this.owner = owner; }
 
-        public sealed class Item
+        public sealed class FlexItem
         {
             readonly VisualElement owner;
             readonly Action act;
@@ -676,7 +676,7 @@ namespace Founders.UI
                 if (GetChild(i) is VisualElement v) yield return v;
         }
 
-        sealed class Item
+        sealed class FlexItem
         {
             public VisualElement E;
             public float Basis, Main, Cross, MS, ME, CS, CE, Min, Max;
@@ -684,7 +684,7 @@ namespace Founders.UI
             public bool Frozen;
         }
 
-        static readonly Stack<List<Item>> pool = new Stack<List<Item>>();
+        static readonly Stack<List<FlexItem>> pool = new Stack<List<FlexItem>>();
 
         /// <summary>
         /// Flexbox: lays the in-flow children into the inner box W × H (NaN = auto). <paramref name="defW"/>/<paramref name="defH"/>
@@ -702,13 +702,13 @@ namespace Founders.UI
             float mainAvail = row ? W : H, crossAvail = row ? H : W;
             bool defMain = row ? defW : defH, defCross = row ? defH : defW;
 
-            var items = pool.Count > 0 ? pool.Pop() : new List<Item>();
+            var items = pool.Count > 0 ? pool.Pop() : new List<FlexItem>();
             items.Clear();
             foreach (var c in LayoutChildren())
             {
                 if (!c.InFlow) continue;
                 var s = c.style;
-                var it = new Item { E = c };
+                var it = new FlexItem { E = c };
                 float ml = Res0(s.marginLeft, W), mr = Res0(s.marginRight, W), mt = Res0(s.marginTop, W), mb = Res0(s.marginBottom, W);
                 if (row) { it.MS = ml; it.ME = mr; it.CS = mt; it.CE = mb; }
                 else { it.MS = mt; it.ME = mb; it.CS = ml; it.CE = mr; }
@@ -844,7 +844,7 @@ namespace Founders.UI
             return row ? new Vector2(usedMain, usedCross) : new Vector2(usedCross, usedMain);
         }
 
-        static void Resolve(List<Item> items, int from, int to, float free)
+        static void Resolve(List<FlexItem> items, int from, int to, float free)
         {
             if (Mathf.Abs(free) < 0.01f) return;
             for (int pass = 0; pass < 3 && Mathf.Abs(free) > 0.01f; pass++)
@@ -1056,7 +1056,7 @@ namespace Founders.UI
                     float scale = s.backgroundSize.sizeType == BackgroundSizeType.Cover
                         ? Mathf.Max(Size.X / ts.X, Size.Y / ts.Y) : Mathf.Min(Size.X / ts.X, Size.Y / ts.Y);
                     var sz = ts * scale;
-                    float ax = Anchor(s.backgroundPositionX.keyword), ay = Anchor(s.backgroundPositionY.keyword);
+                    float ax = AnchorOf(s.backgroundPositionX.keyword), ay = AnchorOf(s.backgroundPositionY.keyword);
                     var at = new Vector2((Size.X - sz.X) * ax, (Size.Y - sz.Y) * ay);
                     if (s.backgroundSize.sizeType == BackgroundSizeType.Cover)
                     {
@@ -1070,7 +1070,7 @@ namespace Founders.UI
             }
         }
 
-        static float Anchor(BackgroundPositionKeyword k) => k switch
+        static float AnchorOf(BackgroundPositionKeyword k) => k switch
         {
             BackgroundPositionKeyword.Left or BackgroundPositionKeyword.Top => 0f,
             BackgroundPositionKeyword.Right or BackgroundPositionKeyword.Bottom => 1f,

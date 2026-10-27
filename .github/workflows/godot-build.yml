@@ -28,9 +28,22 @@ jobs:
         with:
           dotnet-version: "8.0.x"
       - name: dotnet test (game rules)
-        run: dotnet test godot/tests -nologo --logger "console;verbosity=minimal"
+        run: dotnet test godot/tests -nologo --logger "console;verbosity=minimal" 2>&1 | tee test.log; exit ${PIPESTATUS[0]}
       - name: dotnet build (Godot project)
-        run: dotnet build godot/Founders.csproj -nologo
+        run: dotnet build godot/Founders.csproj -nologo -clp:NoSummary 2>&1 | tee build.log; exit ${PIPESTATUS[0]}
+      # Cloud sessions cannot read job logs, so on a failure the compiler output goes to the "godot-ci-logs" pre-release.
+      - name: Publish the logs (on failure)
+        if: failure()
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: godot-ci-logs
+          name: Godot CI logs (last failure)
+          prerelease: true
+          target_commitish: ${{ github.sha }}
+          body: "Logs of the last failed Godot build (${{ github.ref_name }} @ ${{ github.sha }})."
+          files: |
+            build.log
+            test.log
 
   ios-ipa:
     name: iOS IPA (unsigned)
@@ -67,6 +80,23 @@ jobs:
           ls "$DEST"
           rm -f godot.zip templates.tpz
           "$GODOT" --version
+
+      # The Asset Store "Adventure UI Kit" is licensed and may not sit in this public repository: it lives in the
+      # private repository mmzlopasa/iosgame-uikit and is fetched with the KIT_TOKEN secret; its chosen pictures
+      # are prepared into godot/art/ui/Kit (not in git). Without the secret the game's own interface look is used.
+      - name: Adventure UI Kit (private repository, optional)
+        env:
+          KIT_TOKEN: ${{ secrets.KIT_TOKEN }}
+        run: |
+          if [ -z "$KIT_TOKEN" ]; then echo "No KIT_TOKEN secret: the game's own interface look is used."; exit 0; fi
+          if ! git clone --depth 1 "https://x-access-token:${KIT_TOKEN}@github.com/mmzlopasa/iosgame-uikit.git" "$RUNNER_TEMP/kit"; then
+            echo "::warning::Could not fetch mmzlopasa/iosgame-uikit: the game's own interface look is used."; exit 0
+          fi
+          MAP=unity/Assets/Custom/AdventureUiKit.txt
+          if [ -f "$RUNNER_TEMP/kit/AdventureUiKit.txt" ]; then MAP="$RUNNER_TEMP/kit/AdventureUiKit.txt"; fi
+          python3 -m pip install --quiet --break-system-packages pillow numpy || python3 -m pip install --quiet pillow numpy
+          python3 tools/godot/kit_skins.py "$RUNNER_TEMP/kit/Kit" "$MAP" godot/art/ui/Kit || echo "::warning::Kit preparation failed: the game's own look is used."
+          rm -rf "$RUNNER_TEMP/kit"
 
       - name: Import the project
         working-directory: godot
