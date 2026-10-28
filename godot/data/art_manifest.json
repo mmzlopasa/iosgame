@@ -738,6 +738,74 @@
    "source": "tools/godot/houses (modelled for the game)",
    "triangles": 998
   },
+  "hw_campfire": {
+   "effects": [
+    {
+     "at": [
+      0.0,
+      0.1,
+      0.0
+     ],
+     "kind": "fire",
+     "scale": 1.0
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_campfire",
+   "size": [
+    2.199,
+    1.027,
+    2.083
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1068
+  },
+  "hw_campfire_ring": {
+   "effects": [
+    {
+     "at": [
+      0.0,
+      0.1,
+      0.0
+     ],
+     "kind": "fire",
+     "scale": 1.1
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_campfire_ring",
+   "size": [
+    2.417,
+    0.353,
+    2.89
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1016
+  },
   "hw_community_circle": {
    "effects": [
     {
@@ -979,6 +1047,110 @@
    ],
    "source": "tools/godot/houses (modelled for the game)",
    "triangles": 4092
+  },
+  "hw_hearth_great": {
+   "effects": [
+    {
+     "at": [
+      0.0,
+      0.12,
+      0.0
+     ],
+     "kind": "fire",
+     "scale": 1.35
+    },
+    {
+     "at": [
+      0.95,
+      1.6,
+      0.95
+     ],
+     "kind": "torch",
+     "scale": 0.25
+    },
+    {
+     "at": [
+      1.35,
+      0.95,
+      1.35
+     ],
+     "kind": "fire",
+     "scale": 0.3
+    },
+    {
+     "at": [
+      -1.35,
+      0.95,
+      -1.35
+     ],
+     "kind": "fire",
+     "scale": 0.3
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_hearth_great",
+   "size": [
+    4.194,
+    3.153,
+    3.751
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 2524
+  },
+  "hw_hearth_pavilion": {
+   "effects": [
+    {
+     "at": [
+      0.0,
+      0.12,
+      0.0
+     ],
+     "kind": "fire",
+     "scale": 1.35
+    },
+    {
+     "at": [
+      0.95,
+      1.6,
+      0.95
+     ],
+     "kind": "torch",
+     "scale": 0.25
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_hearth_pavilion",
+   "size": [
+    3.034,
+    3.153,
+    3.034
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1628
   },
   "hw_herb_garden": {
    "effects": [],
@@ -1802,6 +1974,40 @@
    ],
    "source": "tools/godot/houses (modelled for the game)",
    "triangles": 4006
+  },
+  "hw_village_hearth": {
+   "effects": [
+    {
+     "at": [
+      0.0,
+      0.12,
+      0.0
+     ],
+     "kind": "fire",
+     "scale": 1.35
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_village_hearth",
+   "size": [
+    3.055,
+    0.397,
+    2.516
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1540
   },
   "hw_weavers_hut": {
    "effects": [],

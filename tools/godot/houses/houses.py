@@ -1212,6 +1212,116 @@ def medieval_bathhouse(seed=199):
     return k
 
 
+# MARK: - The fire at the heart of the village
+
+def fire_pit(k, r=0.42, logs=True):
+    for i in range(11):
+        a = 2 * math.pi * i / 11
+        k.box((math.cos(a) * r, 0.08, math.sin(a) * r), (0.2, 0.17, 0.16), R=rot_y(-math.degrees(a)), tile="stone",
+              color=(0.92, 0.9, 0.86), round_=0.7, seg=2, jitter=0.05)
+    k.cyl(v3(0, 0.0, 0), v3(0, 0.03, 0), r * 0.85, sides=12, tile="hide", end_tile="hide", color=(0.25, 0.2, 0.18))
+    if logs:
+        for i in range(5):
+            a = 2 * math.pi * i / 5
+            k.cyl(v3(math.cos(a) * r * 0.75, 0.05, math.sin(a) * r * 0.75), v3(0, 0.3, 0), 0.05, sides=7,
+                  color=(0.75, 0.6, 0.5))
+
+
+def log_seat(k, x, z, yaw, length=1.1, r=0.16):
+    t = v3(math.cos(math.radians(yaw)), 0, -math.sin(math.radians(yaw))) * length / 2
+    k.cyl(v3(x, r, z) - t, v3(x, r, z) + t, r, sides=10, wobble=0.04)
+
+
+def campfire(seed=211):
+    """The first fire: a ring of stones, a log to sit on, a cooking pot on a tripod."""
+    k = Kit(seed)
+    fire_pit(k, 0.42)
+    k.anchor("fire", (0, 0.1, 0), 1.0)
+    log_seat(k, 0.1, 0.95, 10)
+    top = v3(0, 1.0, 0)
+    for a in (30, 150, 270):
+        k.cyl(v3(math.cos(math.radians(a)) * 0.6, 0, math.sin(math.radians(a)) * 0.6), top, 0.03, sides=6)
+    pt.pot(k, -0.85, -0.5, r=0.12)
+    pt.firewood(k, 0.9, -0.55, w=0.5, rows=2, yaw=60)
+    return k
+
+
+def village_hearth(seed=223):
+    """The village hearth: a big stone ring, standing stones around, firewood stacked high."""
+    k = Kit(seed)
+    fire_pit(k, 0.58)
+    k.anchor("fire", (0, 0.12, 0), 1.35)
+    for i in range(9):
+        a = 2 * math.pi * i / 9
+        k.box((math.cos(a) * 1.08, 0.18, math.sin(a) * 1.08), (0.32, 0.36, 0.26), R=rot_y(-math.degrees(a)),
+              tile="stone", color=(0.9, 0.88, 0.85), round_=0.65, seg=2, jitter=0.06)
+    pt.firewood(k, 1.45, 0.9, w=0.7, yaw=40)
+    return k
+
+
+def campfire_ring(seed=227):
+    """The campfire from level 5: a stone ring, logs to sit on all round, a bowl and a pot."""
+    k = Kit(seed)
+    fire_pit(k, 0.46)
+    k.anchor("fire", (0, 0.1, 0), 1.1)
+    for i, yaw in enumerate((0, 72, 144, 216, 288)):
+        a = math.radians(yaw + 36)
+        log_seat(k, math.cos(a) * 1.05, -math.sin(a) * 1.05, yaw + 36 + 90, length=0.9, r=0.14)
+    pt.pot(k, 0.0, -1.5, r=0.1)
+    return k
+
+
+def hearth_pavilion(seed=229):
+    """The hearth from level 15: four carved posts under a thatched roof with a smoke hole."""
+    k = Kit(seed)
+    fire_pit(k, 0.58)
+    k.anchor("fire", (0, 0.12, 0), 1.35)
+    r, h = 0.95, 2.1
+    for (x, z) in ((r, r), (-r, r), (r, -r), (-r, -r)):
+        k.cyl(v3(x, -0.05, z), v3(x * 0.95, h, z * 0.95), 0.1, r2=0.085, sides=10, color=(0.95, 0.8, 0.62))
+        for j, c in enumerate([(1.1, 0.4, 0.3), (1.1, 0.95, 0.5)]):
+            k.cyl(v3(x * 0.97, 0.8 + j * 0.5, z * 0.97), v3(x * 0.97, 0.9 + j * 0.5, z * 0.97), 0.11, sides=10,
+                  tile="cloth_ochre", end_tile="cloth_ochre", color=c)
+    for (a, b) in (((-r, -r), (r, -r)), ((r, -r), (r, r)), ((r, r), (-r, r)), ((-r, r), (-r, -r))):
+        k.beam(v3(a[0] * 0.95, h, a[1] * 0.95), v3(b[0] * 0.95, h, b[1] * 0.95), w=0.12, h=0.12)
+    c = r + 0.45
+    segs = 8
+    for i in range(segs):
+        a0, a1 = 2 * math.pi * (i + 0.5) / segs, 2 * math.pi * (i + 1.5) / segs
+        q0 = v3(math.cos(a0) * c * 1.08, h - 0.1, math.sin(a0) * c * 1.08)
+        q1 = v3(math.cos(a1) * c * 1.08, h - 0.1, math.sin(a1) * c * 1.08)
+        t0 = v3(math.cos(a0) * 0.32, h + 1.0, math.sin(a0) * 0.32)
+        t1 = v3(math.cos(a1) * 0.32, h + 1.0, math.sin(a1) * 0.32)
+        k.quad_slab(q0, q1, t1, t0, 0.2, "thatch", color=THATCH, face_up=True)
+        k.cyl(q0 - v3(0, 0.08, 0), q1 - v3(0, 0.08, 0), 0.12, sides=8, tile="thatch", end_tile="thatch",
+              color=tuple(x * 0.88 for x in THATCH), caps=False)
+    k.anchor("torch", (r, 1.6, r), 0.25)
+    for i in range(4):
+        a = math.radians(45 + i * 90)
+        log_seat(k, math.cos(a) * 1.55, -math.sin(a) * 1.55, 45 + i * 90 + 90, length=0.8, r=0.13)
+    return k
+
+
+def hearth_great(seed=233):
+    """The great hearth from level 25: the pavilion inside a low stone wall, braziers and banners."""
+    k = hearth_pavilion(seed)
+    for i in range(18):
+        if i % 9 in (4, 5):
+            continue  # two gaps to walk through
+        a = 2 * math.pi * i / 18
+        k.box((math.cos(a) * 1.9, 0.22, math.sin(a) * 1.9), (0.4, 0.44, 0.34), R=rot_y(-math.degrees(a)), tile="stone",
+              color=(0.9, 0.88, 0.85), round_=0.6, seg=2, jitter=0.05)
+    for (x, z) in ((1.9, 0), (-1.9, 0)):
+        k.cyl(v3(x, -0.05, z), v3(x, 3.0, z), 0.06, sides=8)
+        k.quad_slab(v3(x, 2.9, z + 0.04), v3(x, 2.9, z + 0.42), v3(x, 2.0, z + 0.42), v3(x, 2.0, z + 0.04), 0.02,
+                    "cloth_red", color=(1, 1, 1))
+    for (x, z) in ((1.35, 1.35), (-1.35, -1.35)):
+        k.cyl(v3(x, 0, z), v3(x, 0.8, z), 0.05, sides=7, tile="iron", end_tile="iron", color=(0.6, 0.6, 0.65))
+        k.cyl(v3(x, 0.8, z), v3(x, 0.95, z), 0.18, r2=0.22, sides=10, tile="iron", end_tile="iron", color=(0.55, 0.55, 0.6))
+        k.anchor("fire", (x, 0.95, z), 0.3)
+    return k
+
+
 BUILDINGS = {
     "daub_house": daub_house,
     "shelter": shelter,
@@ -1254,4 +1364,9 @@ BUILDINGS = {
     "medieval_scriptorium": medieval_scriptorium,
     "medieval_carpenter": medieval_carpenter,
     "medieval_bathhouse": medieval_bathhouse,
+    "campfire": campfire,
+    "village_hearth": village_hearth,
+    "campfire_ring": campfire_ring,
+    "hearth_pavilion": hearth_pavilion,
+    "hearth_great": hearth_great,
 }
