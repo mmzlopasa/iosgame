@@ -637,7 +637,85 @@
    "toon": true,
    "triangles": 3000
   },
+  "hw_ancestor_shrine": {
+   "effects": [
+    {
+     "at": [
+      0.0,
+      0.05,
+      -0.55
+     ],
+     "kind": "fire",
+     "scale": 0.35
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_ancestor_shrine",
+   "size": [
+    3.164,
+    2.325,
+    3.17
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 2300
+  },
+  "hw_apiary": {
+   "effects": [],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_apiary",
+   "size": [
+    1.841,
+    1.359,
+    1.637
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1892
+  },
   "hw_bronze_workshop": {
+   "effects": [
+    {
+     "at": [
+      -0.45,
+      0.62,
+      0.35
+     ],
+     "kind": "fire",
+     "scale": 0.3
+    },
+    {
+     "at": [
+      -0.45,
+      1.98,
+      0.55
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    }
+   ],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -660,7 +738,52 @@
    "source": "tools/godot/houses (modelled for the game)",
    "triangles": 998
   },
+  "hw_community_circle": {
+   "effects": [
+    {
+     "at": [
+      0.0,
+      0.08,
+      0.0
+     ],
+     "kind": "fire",
+     "scale": 0.75
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_community_circle",
+   "size": [
+    4.203,
+    2.65,
+    3.258
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1176
+  },
   "hw_copper_smelter": {
+   "effects": [
+    {
+     "at": [
+      0.0,
+      1.3,
+      0.0
+     ],
+     "kind": "fire",
+     "scale": 0.45
+    }
+   ],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -684,6 +807,17 @@
    "triangles": 2576
   },
   "hw_daub_house": {
+   "effects": [
+    {
+     "at": [
+      0.6,
+      3.21,
+      0.42
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    }
+   ],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -706,7 +840,52 @@
    "source": "tools/godot/houses (modelled for the game)",
    "triangles": 5892
   },
+  "hw_drying_rack": {
+   "effects": [
+    {
+     "at": [
+      0.0,
+      0.05,
+      -0.85
+     ],
+     "kind": "fire",
+     "scale": 0.35
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_drying_rack",
+   "size": [
+    2.226,
+    1.518,
+    1.577
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1456
+  },
   "hw_elders_lodge": {
+   "effects": [
+    {
+     "at": [
+      -0.55,
+      3.48,
+      0.45
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    }
+   ],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -730,6 +909,7 @@
    "triangles": 7232
   },
   "hw_foraging_camp": {
+   "effects": [],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -753,6 +933,7 @@
    "triangles": 1752
   },
   "hw_granary": {
+   "effects": [],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -768,14 +949,15 @@
    },
    "resource": "Models/hw_granary",
    "size": [
-    2.618,
-    3.318,
+    2.527,
+    3.282,
     2.59
    ],
    "source": "tools/godot/houses (modelled for the game)",
    "triangles": 2796
   },
   "hw_healers_hut": {
+   "effects": [],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -798,7 +980,32 @@
    "source": "tools/godot/houses (modelled for the game)",
    "triangles": 4092
   },
+  "hw_herb_garden": {
+   "effects": [],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_herb_garden",
+   "size": [
+    1.98,
+    0.53,
+    2.278
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1332
+  },
   "hw_hunters_lodge": {
+   "effects": [],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -822,6 +1029,7 @@
    "triangles": 5232
   },
   "hw_longhouse": {
+   "effects": [],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -845,6 +1053,7 @@
    "triangles": 5840
   },
   "hw_lookout_tower": {
+   "effects": [],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -867,7 +1076,513 @@
    "source": "tools/godot/houses (modelled for the game)",
    "triangles": 1160
   },
+  "hw_medieval_bakery": {
+   "effects": [
+    {
+     "at": [
+      -0.8,
+      4.32,
+      0.55
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    },
+    {
+     "at": [
+      1.85,
+      0.15,
+      -0.45
+     ],
+     "kind": "fire",
+     "scale": 0.25
+    },
+    {
+     "at": [
+      1.95,
+      1.5,
+      0.45
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_bakery",
+   "size": [
+    4.273,
+    4.331,
+    3.495
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 10708
+  },
+  "hw_medieval_barn": {
+   "effects": [],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_barn",
+   "size": [
+    5.976,
+    4.623,
+    4.882
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 11604
+  },
+  "hw_medieval_bathhouse": {
+   "effects": [
+    {
+     "at": [
+      0.7,
+      4.37,
+      0.5
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    },
+    {
+     "at": [
+      1.3,
+      0.25,
+      -1.6
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_bathhouse",
+   "size": [
+    4.146,
+    4.374,
+    3.673
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 10104
+  },
+  "hw_medieval_carpenter": {
+   "effects": [],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_carpenter",
+   "size": [
+    4.671,
+    3.44,
+    3.279
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 6428
+  },
+  "hw_medieval_church": {
+   "effects": [],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_church",
+   "size": [
+    3.978,
+    8.998,
+    7.922
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 11368
+  },
+  "hw_medieval_cottage": {
+   "effects": [
+    {
+     "at": [
+      0.85,
+      4.49,
+      0.55
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_cottage",
+   "size": [
+    3.92,
+    4.504,
+    3.608
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 8816
+  },
+  "hw_medieval_house": {
+   "effects": [
+    {
+     "at": [
+      -0.9,
+      5.57,
+      0.5
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_house",
+   "size": [
+    4.0,
+    5.578,
+    3.59
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 12820
+  },
+  "hw_medieval_market": {
+   "effects": [],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_market",
+   "size": [
+    5.85,
+    2.051,
+    4.888
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 2960
+  },
+  "hw_medieval_mill": {
+   "effects": [],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_mill",
+   "size": [
+    5.672,
+    7.386,
+    3.598
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 2516
+  },
+  "hw_medieval_scriptorium": {
+   "effects": [
+    {
+     "at": [
+      0.6,
+      1.5,
+      -1.6
+     ],
+     "kind": "lantern",
+     "scale": 0.3
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_scriptorium",
+   "size": [
+    3.9,
+    6.198,
+    3.655
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 9796
+  },
+  "hw_medieval_smithy": {
+   "effects": [
+    {
+     "at": [
+      0.55,
+      0.95,
+      1.6
+     ],
+     "kind": "fire",
+     "scale": 0.35
+    },
+    {
+     "at": [
+      0.55,
+      3.85,
+      1.85
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_smithy",
+   "size": [
+    3.978,
+    3.86,
+    5.06
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 7042
+  },
+  "hw_medieval_tavern": {
+   "effects": [
+    {
+     "at": [
+      1.1,
+      5.74,
+      0.5
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_tavern",
+   "size": [
+    4.4,
+    5.75,
+    4.096
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 14284
+  },
+  "hw_medieval_townhouse": {
+   "effects": [
+    {
+     "at": [
+      0.8,
+      7.13,
+      1.0
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_townhouse",
+   "size": [
+    4.447,
+    7.146,
+    5.74
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 18596
+  },
+  "hw_medieval_warehouse": {
+   "effects": [],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_medieval_warehouse",
+   "size": [
+    5.216,
+    5.542,
+    4.77
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 12794
+  },
+  "hw_mine": {
+   "effects": [
+    {
+     "at": [
+      0.5,
+      1.25,
+      -0.4
+     ],
+     "kind": "torch",
+     "scale": 0.35
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_mine",
+   "size": [
+    2.771,
+    2.136,
+    2.631
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1084
+  },
   "hw_pottery_kiln": {
+   "effects": [
+    {
+     "at": [
+      -0.3,
+      0.12,
+      -0.55
+     ],
+     "kind": "fire",
+     "scale": 0.3
+    },
+    {
+     "at": [
+      -0.3,
+      1.3,
+      0.1
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    }
+   ],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -891,6 +1606,7 @@
    "triangles": 1120
   },
   "hw_sawpit": {
+   "effects": [],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -914,6 +1630,17 @@
    "triangles": 634
   },
   "hw_shelter": {
+   "effects": [
+    {
+     "at": [
+      0.0,
+      0.04,
+      -1.85
+     ],
+     "kind": "fire",
+     "scale": 0.3
+    }
+   ],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -929,14 +1656,25 @@
    },
    "resource": "Models/hw_shelter",
    "size": [
-    2.575,
+    2.582,
     2.624,
-    2.89
+    3.671
    ],
    "source": "tools/godot/houses (modelled for the game)",
-   "triangles": 1160
+   "triangles": 1544
   },
   "hw_smokehouse": {
+   "effects": [
+    {
+     "at": [
+      0.0,
+      3.35,
+      0.0
+     ],
+     "kind": "smoke",
+     "scale": 1.0
+    }
+   ],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -960,6 +1698,7 @@
    "triangles": 3576
   },
   "hw_stone_site": {
+   "effects": [],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -983,6 +1722,7 @@
    "triangles": 970
   },
   "hw_storage_pit": {
+   "effects": [],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -1006,6 +1746,7 @@
    "triangles": 1248
   },
   "hw_toolmaker": {
+   "effects": [],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -1028,7 +1769,42 @@
    "source": "tools/godot/houses (modelled for the game)",
    "triangles": 958
   },
+  "hw_toolsmith": {
+   "effects": [
+    {
+     "at": [
+      -0.45,
+      0.62,
+      -1.05
+     ],
+     "kind": "fire",
+     "scale": 0.25
+    }
+   ],
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_toolsmith",
+   "size": [
+    2.505,
+    2.674,
+    2.689
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 4006
+  },
   "hw_weavers_hut": {
+   "effects": [],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -1052,6 +1828,7 @@
    "triangles": 3584
   },
   "hw_wood_camp": {
+   "effects": [],
    "format": "glb",
    "materialOrder": [
     "Atlas"
@@ -1075,6 +1852,7 @@
    "triangles": 1344
   },
   "hw_woven_shelter": {
+   "effects": [],
    "format": "glb",
    "materialOrder": [
     "Atlas"

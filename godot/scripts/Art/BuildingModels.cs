@@ -21,7 +21,7 @@ namespace Founders.Art
             var b = new Builder(root, tint, tint == null);
             // A monument: its plot and the parts that stand ("lords_manor+great_hall+manor_kitchen").
             if (Monument(b, sprite)) return root;
-            if (Detailed(b, sprite)) return root;
+            if (Detailed(b, sprite, footprintMetres)) return root;
             switch (sprite)
             {
                 case "campfire": Campfire(b); break;
@@ -152,9 +152,9 @@ namespace Founders.Art
         /// building, every plank, log end and roof shingle modelled, painted with the shared atlas.
         /// They replace the assembled look whenever the model "bw_&lt;sprite&gt;" is in the art manifest.
         /// </summary>
-        static bool Detailed(Builder b, string sprite)
+        static bool Detailed(Builder b, string sprite, float footprintMetres)
         {
-            if (Painted(b, sprite)) return true;
+            if (Painted(b, sprite, footprintMetres)) return true;
             string id = "bw_" + sprite;
             if (!ModelLibrary.HasModel(id)) return false;
             b.Model(id, Vector3.Zero, 1f);
@@ -173,21 +173,35 @@ namespace Founders.Art
         /// timber frames, shutters and flower boxes, made for the Godot version as "hw_&lt;sprite&gt;".
         /// Positions below are Unity-space (x mirrored from the model files).
         /// </summary>
-        static bool Painted(Builder b, string sprite)
+        static bool Painted(Builder b, string sprite, float footprintMetres)
         {
             string id = "hw_" + sprite;
             if (!ModelLibrary.HasModel(id)) return false;
-            b.Model(id, Vector3.Zero, 1f);
-            if (!b.Effects) return true;
-            switch (sprite)
+            // The town's buildings are modelled for their own plot; a hut that grew into a house shows them smaller.
+            float k = 1f;
+            if (sprite.StartsWith("medieval_"))
             {
-                case "shelter": b.Fire(new Vector3(0f, 0.04f, -1.85f), 0.3f); break;
-                case "daub_house": Founders.Art.Effects.Chimney(b.T, new Vector3(-0.6f, 3.1f, 0.42f)); break;
-                case "elders_lodge": Founders.Art.Effects.Chimney(b.T, new Vector3(0.55f, 3.35f, 0.45f)); break;
-                case "smokehouse": Founders.Art.Effects.Chimney(b.T, new Vector3(0f, 3.25f, 0f)); break;
-                case "pottery_kiln": b.Fire(new Vector3(0.3f, 0.12f, -0.55f), 0.3f); break;
-                case "copper_smelter": b.Fire(new Vector3(0f, 1.3f, 0f), 0.45f); break;
-                case "bronze_workshop": b.Fire(new Vector3(0.45f, 0.62f, 0.35f), 0.3f); break;
+                float native = sprite == "medieval_market" || sprite == "medieval_church" || sprite == "medieval_barn" ? 6f : 4f;
+                k = Mathf.Min(1f, footprintMetres / native);
+            }
+            var g = k < 0.999f ? b.Sub("Painted", Vector3.Zero) : b;
+            if (k < 0.999f) g.T.Scale = Vector3.One * k;
+            g.Model(id, Vector3.Zero, 1f);
+            if (!g.Effects) return true;
+            // Fire and chimney smoke where the model file marks them (x mirrored into Unity space).
+            var model = ModelLibrary.Manifest.Obj("models").Obj(id);
+            foreach (var e in model.Has("effects") ? model.Objs("effects") : new System.Collections.Generic.List<Founders.Core.JObj>())
+            {
+                var a = e.Arr("at");
+                var at = new Vector3(-(float)(double)a[0], (float)(double)a[1], (float)(double)a[2]);
+                float scale = (float)(e.OptNum("scale") ?? 1.0);
+                switch (e.Str("kind"))
+                {
+                    case "fire": g.Fire(at, scale); break;
+                    case "torch": g.Torch(at, scale); break;
+                    case "lantern": g.Torch(at, scale, true); break;
+                    default: Founders.Art.Effects.Chimney(g.T, at); break;
+                }
             }
             return true;
         }

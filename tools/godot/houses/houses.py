@@ -76,6 +76,8 @@ def shelter(seed=5):
     k.box((0, 0.55, -L + 0.0), (0.5, 1.0, 0.04), tile="planks", color=pt.DARK, vary=0)
     pt.firewood(k, 1.05, -0.9, w=0.55, yaw=0, rows=2)
     pt.pot(k, -0.9, -1.25)
+    stones_ring(k, 0.0, -1.85)
+    k.anchor("fire", (0.0, 0.04, -1.85), 0.3)
     pt.sack(k, -1.15, -0.95, s=0.26)
     return k
 
@@ -326,6 +328,13 @@ def granary(seed=29):
     return k
 
 
+def stones_ring(k, x, z, r=0.32):
+    for i in range(8):
+        a = 2 * math.pi * i / 8
+        k.box((x + math.cos(a) * r, 0.06, z + math.sin(a) * r), (0.16, 0.12, 0.13), R=rot_y(-math.degrees(a)),
+              tile="stone", color=(0.9, 0.9, 0.9), round_=0.7, seg=2, jitter=0.04)
+
+
 def lean_to(k, x0, x1, z0, z1, y_hi, y_lo, tile="planks", color=(0.9, 0.8, 0.7), posts=True, thatch=False):
     """A sloped roof on posts: high along z0, low along z1 (x0..x1 wide)."""
     col = THATCH if thatch else color
@@ -523,6 +532,7 @@ def smokehouse(seed=59):
     # louvre on the ridge
     k.box((0, ridge + 0.42, 0), (0.4, 0.22, 0.5), tile="planks", color=pt.DARK, vary=0)
     k.box((0, ridge + 0.6, 0), (0.6, 0.06, 0.7), tile="planks", color=(0.7, 0.62, 0.55))
+    k.anchor("smoke", (0, ridge + 0.65, 0))
     # drying rack with fish
     rx = 1.15
     for z in (-0.5, 0.5):
@@ -542,6 +552,8 @@ def pottery_kiln(seed=61):
     k.cyl(v3(-0.3, 0.8, 0.1), v3(-0.3, 1.25, 0.1), 0.18, r2=0.14, sides=10, tile="hide", end_tile="stone",
           color=(0.95, 0.65, 0.5))
     k.box((-0.3, 0.2, -0.5), (0.36, 0.3, 0.15), tile="planks", color=(1.4, 0.6, 0.2), vary=0)
+    k.anchor("fire", (-0.3, 0.12, -0.55), 0.3)
+    k.anchor("smoke", (-0.3, 1.3, 0.1))
     k.box((-0.3, 0.38, -0.53), (0.5, 0.08, 0.14), tile="stone", color=(0.9, 0.9, 0.9), round_=0.5, seg=2)
     k.box((0.75, 0.55, 0.35), (0.25, 0.05, 1.0), tile="planks", color=(0.95, 0.75, 0.55), grain=2)
     for z in (-0.05, 0.75):
@@ -567,6 +579,7 @@ def copper_smelter(seed=67):
     k.cyl(v3(0, 0.85, 0), v3(0, 1.4, 0), 0.25, r2=0.17, sides=12, tile="hide", end_tile="stone",
           color=(1.0, 0.7, 0.55))
     k.box((0, 0.2, -0.5), (0.25, 0.22, 0.12), tile="planks", color=(1.4, 0.55, 0.15), vary=0)
+    k.anchor("fire", (0, 1.3, 0), 0.45)
     # bellows
     k.box((0.75, 0.2, -0.1), (0.4, 0.14, 0.3), tile="hide", color=(1.0, 0.85, 0.7), round_=0.8, seg=2)
     k.cyl(v3(0.55, 0.22, -0.1), v3(0.4, 0.24, -0.1), 0.03, sides=6, tile="iron", color=(0.7, 0.6, 0.5))
@@ -583,6 +596,8 @@ def bronze_workshop(seed=71):
     # hearth
     k.box((-0.45, 0.3, 0.35), (0.7, 0.6, 0.6), tile="stone", color=(0.9, 0.88, 0.86), round_=0.4, seg=3)
     k.box((-0.45, 0.62, 0.35), (0.45, 0.06, 0.38), tile="planks", color=(1.4, 0.6, 0.2), vary=0)
+    k.anchor("fire", (-0.45, 0.62, 0.35), 0.3)
+    k.anchor("smoke", (-0.45, 1.98, 0.55))
     k.box((-0.45, 1.3, 0.55), (0.35, 1.3, 0.3), tile="stone", color=(0.88, 0.86, 0.85), round_=0.3, seg=2)
     # anvil on a stump
     stump(k, 0.45, 0.1, r=0.18, h=0.38)
@@ -639,6 +654,564 @@ def lookout_tower(seed=73):
     return k
 
 
+# MARK: - The medieval town (native footprints: 4 m, barn / church / market 6 m)
+
+def joist_ends(k, w, d, y, step=0.32):
+    """Floor joists poking out under a jettied storey."""
+    for s in (-1, 1):
+        n = int(w / step)
+        for i in range(n):
+            x = -w / 2 + (i + 0.5) * w / n
+            k.box((x, y, s * (d / 2 + 0.06)), (0.1, 0.1, 0.24), tile="log", color=pt.TIMBER)
+
+
+def town_house(k, w, d, floors=2, roof="shingle_red", ridge_axis="x", plaster=(1.0, 0.95, 0.84), shutters=(0.32, 0.45, 0.62),
+               stone_ground=True, jetty=0.22, storey=1.55, roof_h=1.7, door_x=0.0, chimney_at=None, flowers=True):
+    base = 0.3
+    pt.plinth(k, w + 0.12, d + 0.12, h=base, stone=0.34)
+    y = base
+    for f in range(floors):
+        ww, dd = w + 2 * jetty * f, d + 2 * jetty * f
+        y1 = y + storey
+        if f == 0 and stone_ground:
+            hw, hd = ww / 2, dd / 2
+            for a, b in (((-hw, -hd), (hw, -hd)), ((hw, -hd), (hw, hd)), ((hw, hd), (-hw, hd)), ((-hw, hd), (-hw, -hd))):
+                pt.wall_plaster(k, a, b, y, y1, thick=0.2, tile="stone", color=(0.92, 0.85, 0.74), posts=False)
+            for (x, z) in ((-hw, -hd), (hw, -hd), (hw, hd), (-hw, hd)):
+                k.box((x, (y + y1) / 2, z), (0.3, y1 - y, 0.3), tile="stone", color=(0.85, 0.85, 0.85), round_=0.3, seg=2)
+        else:
+            walls_box(k, ww, dd, y, y1, color=plaster)
+        if f > 0:
+            joist_ends(k, ww - 2 * jetty, dd - 2 * jetty, y - 0.02)
+        # openings on the front and back
+        if f == 0:
+            pt.door(k, (door_x, -dd / 2 - (0.05 if stone_ground else 0)), (0, -1), w=0.7, h=1.25, y0=y, color=(0.6, 0.4, 0.28))
+            for x in (-ww / 3, ww / 3):
+                if abs(x - door_x) > 0.6:
+                    pt.window(k, (x, -dd / 2 - (0.05 if stone_ground else 0)), (0, -1), y + 0.6, w=0.42, h=0.42,
+                              shutters=shutters, flowers=FLOWERS if flowers else None)
+        else:
+            for x in (-ww / 3, 0, ww / 3) if ww > 3.5 else (-ww / 4, ww / 4):
+                pt.window(k, (x, -dd / 2), (0, -1), y + 0.5, w=0.42, h=0.46, shutters=shutters,
+                          flowers=FLOWERS if (flowers and x > 0) else None)
+        for x in (-ww / 4, ww / 4):
+            pt.window(k, (x, dd / 2), (0, 1), y + 0.55, w=0.4, h=0.42, shutters=shutters)
+        for zz in (0,):
+            pt.window(k, (ww / 2, zz), (1, 0), y + 0.55, w=0.4, h=0.42, shutters=shutters)
+            pt.window(k, (-ww / 2, zz), (-1, 0), y + 0.55, w=0.4, h=0.42, shutters=shutters)
+        y = y1
+    ww, dd = w + 2 * jetty * (floors - 1), d + 2 * jetty * (floors - 1)
+    eave, ridge = y, y + roof_h
+    pt.gable_ends(k, ww, dd, eave, ridge, ridge_axis=ridge_axis, tile="plaster", color=plaster)
+    kind = "thatch" if roof == "thatch" else "shingle"
+    pt.gable_roof(k, ww, dd, eave, ridge, over=0.34, over_end=0.3, kind=kind, ridge_axis=ridge_axis,
+                  shingle_tile=roof if roof != "thatch" else "shingle", color=THATCH if roof == "thatch" else (1.05, 0.95, 0.9))
+    if chimney_at:
+        pt.chimney(k, chimney_at[0], chimney_at[1], eave - 0.4, ridge + 0.6)
+    return eave, ridge
+
+
+def medieval_cottage(seed=101):
+    """A stone-and-plaster cottage under deep thatch, a dormer, a fenced herb plot."""
+    k = Kit(seed)
+    eave, ridge = town_house(k, 3.0, 2.5, floors=1, roof="thatch", storey=1.75, roof_h=1.65, door_x=-0.5,
+                             chimney_at=(0.85, 0.55), shutters=(0.42, 0.56, 0.42))
+    # dormer
+    k.box((0.2, eave + 0.55, -0.95), (0.7, 0.6, 0.5), tile="plaster", color=(1.0, 0.95, 0.84))
+    pt.window(k, (0.2, -1.2), (0, -1), eave + 0.38, w=0.36, h=0.32, shutters=None)
+    k.quad_slab(v3(-0.25, eave + 0.8, -1.4), v3(0.2, eave + 1.15, -1.4), v3(0.2, eave + 1.15, -0.6),
+                v3(-0.25, eave + 0.8, -0.6), 0.14, "thatch", color=THATCH)
+    k.quad_slab(v3(0.2, eave + 1.15, -1.4), v3(0.65, eave + 0.8, -1.4), v3(0.65, eave + 0.8, -0.6),
+                v3(0.2, eave + 1.15, -0.6), 0.14, "thatch", color=THATCH)
+    # garden fence
+    for i in range(7):
+        x = 0.4 + i * 0.22
+        pt.post(k, x, -1.85, 0.55, r=0.035)
+    k.beam(v3(0.35, 0.42, -1.85), v3(1.8, 0.42, -1.85), w=0.04, h=0.04)
+    k.beam(v3(1.8, 0.42, -1.85), v3(1.8, 0.42, -1.4), w=0.04, h=0.04)
+    pt.flower_patch(k, 1.1, -1.55, FLOWERS, n=8, spread=0.3)
+    pt.barrel(k, -1.85, -0.6)
+    pt.firewood(k, -1.85, 0.5, w=0.8, yaw=90)
+    return k
+
+
+def medieval_house(seed=103):
+    """A two-storey timber-framed house, the upper floor jutting out, red shingles, a chimney."""
+    k = Kit(seed)
+    town_house(k, 2.9, 2.4, floors=2, roof="shingle_red", storey=1.5, roof_h=1.55, door_x=-0.45,
+               chimney_at=(-0.9, 0.5))
+    pt.bench(k, 0.7, -1.55)
+    pt.barrel(k, 1.75, -1.0)
+    pt.flower_patch(k, -1.6, -1.45, FLOWERS, n=5)
+    return k
+
+
+def medieval_townhouse(seed=107):
+    """A tall narrow townhouse (gable to the street), three storeys, a shop window with an awning."""
+    k = Kit(seed)
+    eave, ridge = town_house(k, 2.8, 4.2, floors=3, roof="shingle", ridge_axis="z", storey=1.35, roof_h=1.9,
+                             plaster=(0.98, 0.9, 0.78), shutters=(0.62, 0.32, 0.26), door_x=0.6, chimney_at=(0.8, 1.0))
+    # awning over the shop window
+    k.quad_slab(v3(-1.35, 1.75, -2.85), v3(0.15, 1.75, -2.85), v3(0.15, 2.05, -2.15), v3(-1.35, 2.05, -2.15), 0.03,
+                "cloth_red", color=(1, 1, 1))
+    k.box((-0.6, 0.85, -2.45), (1.2, 0.08, 0.4), tile="planks", color=(0.95, 0.75, 0.55), grain=0)
+    for i in range(4):
+        pt.pot(k, -1.05 + i * 0.3, -2.45, r=0.08, h=0.14)
+    # sign
+    k.beam(v3(1.6, 2.6, -2.35), v3(1.6, 2.6, -1.75), w=0.05, h=0.05)
+    k.box((1.6, 2.32, -2.15), (0.05, 0.42, 0.42), tile="planks", color=(0.85, 0.65, 0.45), grain=1)
+    pt.crate(k, 1.75, -1.0, s=0.34)
+    pt.sack(k, 1.75, -0.55)
+    return k
+
+
+def medieval_barn(seed=109):
+    """A big plank barn with a deep roof, open doors full of hay, bales stacked outside."""
+    k = Kit(seed)
+    w, d = 4.6, 3.6
+    eave, ridge = 2.2, 4.3
+    pt.plinth(k, w + 0.1, d + 0.1, h=0.22, stone=0.4)
+    walls_box(k, w, d, 0.2, eave, front=pt.wall_planks, color=(0.95, 0.62, 0.48), board=0.3)
+    for x in (-w / 2, -w / 6, w / 6, w / 2):
+        for z in (-d / 2, d / 2):
+            k.beam(v3(x, 0.15, z + (0.06 if z > 0 else -0.06)), v3(x, eave + 0.05, z + (0.06 if z > 0 else -0.06)),
+                   w=0.16, h=0.16, color=pt.TIMBER_DARK)
+    # big doorway with open doors and hay inside
+    k.box((0, 1.05, -d / 2 - 0.02), (1.6, 1.7, 0.06), tile="planks", color=pt.DARK, vary=0)
+    for s in (-1, 1):
+        k.box((s * 1.25, 1.0, -d / 2 - 0.45), (0.8, 1.6, 0.07), R=rot_y(s * 70), tile="planks",
+              color=(0.9, 0.55, 0.42), grain=1)
+    k.box((0, 0.45, -d / 2 + 0.2), (1.3, 0.8, 0.5), tile="straw", color=(1.1, 0.95, 0.65), round_=0.8, seg=3, jitter=0.08)
+    pt.gable_ends(k, w, d, eave, ridge, tile="planks", color=(0.92, 0.6, 0.47))
+    pt.gable_roof(k, w, d, eave, ridge, over=0.4, over_end=0.35, kind="shingle", shingle_tile="shingle",
+                  color=(0.85, 0.78, 0.72))
+    k.box((0, ridge - 0.65, -d / 2 - 0.05), (0.5, 0.45, 0.06), tile="planks", color=pt.DARK, vary=0)
+    for i, (x, z) in enumerate(((2.75, -1.2), (2.75, -0.4), (2.75, 0.4))):
+        k.box((x, 0.28, z), (0.6, 0.55, 0.75), tile="straw", color=(1.1, 0.95, 0.65), round_=0.6, seg=2)
+    k.box((2.75, 0.83, -0.8), (0.6, 0.55, 0.75), tile="straw", color=(1.05, 0.9, 0.62), round_=0.6, seg=2)
+    k.cyl(v3(-2.9, 0.0, -1.3), v3(-2.9, 0.9, -1.3), 0.03, sides=6)
+    return k
+
+
+def medieval_smithy(seed=113):
+    """The smithy: a stone forge with a tall chimney under an open-sided shed, anvil and quench tub."""
+    k = Kit(seed)
+    w, d = 3.2, 4.4
+    eave, ridge = 2.0, 3.4
+    for x in (-w / 2, w / 2):
+        for z in (-d / 2, 0, d / 2):
+            pt.post(k, x, z, eave + 0.05, r=0.11)
+    k.beam(v3(-w / 2, eave, -d / 2), v3(-w / 2, eave, d / 2), w=0.14, h=0.16)
+    k.beam(v3(w / 2, eave, -d / 2), v3(w / 2, eave, d / 2), w=0.14, h=0.16)
+    pt.wall_plaster(k, (w / 2, d / 2), (-w / 2, d / 2), 0, eave, tile="stone", color=(0.92, 0.9, 0.88), posts=False)
+    pt.gable_ends(k, w, d, eave, ridge, ridge_axis="z", tile="planks_old", color=(1, 1, 1))
+    pt.gable_roof(k, w, d, eave, ridge, over=0.35, over_end=0.3, kind="shingle", ridge_axis="z",
+                  shingle_tile="shingle", color=(0.8, 0.75, 0.72))
+    # forge
+    k.box((0.55, 0.45, 1.6), (1.2, 0.9, 0.9), tile="stone", color=(0.88, 0.86, 0.84), round_=0.35, seg=3)
+    k.box((0.55, 0.92, 1.6), (0.8, 0.06, 0.55), tile="planks", color=(1.4, 0.55, 0.15), vary=0)
+    k.anchor("fire", (0.55, 0.95, 1.6), 0.35)
+    k.anchor("smoke", (0.55, 3.85, 1.85))
+    k.box((0.55, 2.3, 1.85), (0.6, 2.8, 0.5), tile="stone", color=(0.85, 0.83, 0.82), round_=0.25, seg=2)
+    k.box((0.55, 3.75, 1.85), (0.7, 0.12, 0.6), tile="stone", color=(0.8, 0.8, 0.8))
+    # anvil, tub, rack
+    stump(k, -0.4, 0.3, r=0.22, h=0.45)
+    k.box((-0.4, 0.55, 0.3), (0.45, 0.14, 0.2), tile="iron", color=(0.75, 0.78, 0.85), round_=0.3, seg=2)
+    k.box((-0.15, 0.57, 0.3), (0.18, 0.08, 0.12), tile="iron", color=(0.75, 0.78, 0.85), round_=0.4, seg=2)
+    k.cyl(v3(-1.0, 0, -0.6), v3(-1.0, 0.45, -0.6), 0.3, sides=14, tile="planks", end_tile="stone", color=(0.85, 0.7, 0.55))
+    k.box((-1.0, 0.44, -0.6), (0.5, 0.02, 0.5), tile="iron", color=(0.35, 0.45, 0.55), vary=0)
+    for i in range(4):
+        k.cyl(v3(-1.45, 0.3 + i * 0.32, 1.2), v3(-1.45, 0.3 + i * 0.32, 2.0), 0.02, sides=5, tile="iron",
+              color=(0.7, 0.72, 0.8))
+    pt.crate(k, 1.3, -1.6, s=0.36)
+    pt.barrel(k, 1.35, -1.0)
+    stone_heap(k, -1.2, -1.7, n=6, spread=0.25, size=0.15, tint=(0.4, 0.4, 0.45))
+    return k
+
+
+def medieval_bakery(seed=127):
+    """A bakery: a cottage with a domed bread oven at its side and loaves cooling on a table."""
+    k = Kit(seed)
+    town_house(k, 2.7, 2.3, floors=1, roof="shingle_red", storey=1.75, roof_h=1.5, door_x=-0.4,
+               plaster=(1.0, 0.92, 0.78), shutters=(0.55, 0.42, 0.3), chimney_at=(-0.8, 0.55))
+    k.box((1.85, 0.5, 0.2), (1.1, 1.0, 1.2), tile="hide", color=(0.85, 0.6, 0.48), round_=0.95, seg=5)
+    k.box((1.85, 0.25, -0.4), (0.4, 0.32, 0.12), tile="planks", color=(1.4, 0.6, 0.2), vary=0)
+    k.anchor("fire", (1.85, 0.15, -0.45), 0.25)
+    k.anchor("smoke", (1.95, 1.5, 0.45))
+    k.cyl(v3(1.95, 0.85, 0.45), v3(1.95, 1.45, 0.45), 0.13, r2=0.11, sides=10, tile="stone", end_tile="stone")
+    k.box((0.9, 0.62, -1.75), (1.0, 0.07, 0.45), tile="planks", color=(0.95, 0.75, 0.55), grain=0)
+    for x in (0.5, 1.3):
+        k.box((x, 0.3, -1.75), (0.07, 0.6, 0.38), tile="planks", color=pt.TIMBER_DARK)
+    for i in range(5):
+        k.box((0.55 + i * 0.18, 0.7, -1.75 + (i % 2) * 0.1), (0.15, 0.09, 0.24), tile="hide", color=(1.15, 0.8, 0.5),
+              round_=0.9, seg=2)
+    pt.sack(k, -1.75, -1.0)
+    pt.sack(k, -1.75, -0.6, s=0.27)
+    pt.firewood(k, 1.9, 1.2, w=0.7, yaw=0)
+    return k
+
+
+def medieval_tavern(seed=131):
+    """The tavern: a wide two-storey house with a hanging sign, barrels and benches out front."""
+    k = Kit(seed)
+    town_house(k, 3.3, 2.5, floors=2, roof="shingle", storey=1.5, roof_h=1.6, door_x=0.0,
+               plaster=(1.0, 0.9, 0.72), shutters=(0.38, 0.52, 0.32), chimney_at=(1.1, 0.5))
+    k.beam(v3(-1.0, 2.75, -1.55), v3(-1.0, 2.75, -2.15), w=0.06, h=0.06)
+    k.box((-1.0, 2.42, -2.0), (0.06, 0.48, 0.5), tile="planks", color=(0.9, 0.7, 0.45), grain=1)
+    k.box((-1.03, 2.42, -2.0), (0.02, 0.22, 0.22), tile="cloth_ochre", color=(1.2, 1.05, 0.6), vary=0)
+    for x in (-1.2, 1.1):
+        pt.bench(k, x, -2.05)
+    pt.barrel(k, 1.95, -1.3)
+    pt.barrel(k, 1.95, -0.9, r=0.15, h=0.36)
+    pt.barrel(k, 1.95, -1.1, y=0.42, lying=True, r=0.14, h=0.34, yaw=90)
+    return k
+
+
+def medieval_church(seed=137):
+    """A small stone church: a long nave, a square tower with a spire, round-headed windows."""
+    k = Kit(seed)
+    w, d = 3.4, 5.6
+    eave, ridge = 2.8, 4.6
+    pt.plinth(k, w + 0.2, d + 0.2, h=0.3, stone=0.4)
+    hw, hd = w / 2, d / 2
+    for a, b in (((-hw, -hd), (hw, -hd)), ((hw, -hd), (hw, hd)), ((hw, hd), (-hw, hd)), ((-hw, hd), (-hw, -hd))):
+        pt.wall_plaster(k, a, b, 0.28, eave, thick=0.26, tile="stone", color=(0.95, 0.88, 0.78), posts=False)
+    for z in (-1.6, 0, 1.6):
+        for s in (-1, 1):
+            k.box((s * (hw + 0.1), 1.6, z), (0.12, 1.1, 0.4), tile="cloth_ochre", color=(0.75, 0.85, 1.2), vary=0)
+            k.box((s * (hw + 0.14), 2.2, z), (0.1, 0.12, 0.52), tile="stone", color=(0.85, 0.85, 0.85), round_=0.5, seg=2)
+            k.box((s * (hw + 0.12), 1.4, z + 0.55), (0.3, 2.3, 0.3), tile="stone", color=(0.9, 0.9, 0.9), round_=0.3, seg=2)
+    pt.gable_ends(k, w, d, eave, ridge, ridge_axis="z", tile="stone", color=(1.0, 0.97, 0.93), beams=False, thick=0.26)
+    pt.gable_roof(k, w, d, eave, ridge, over=0.25, over_end=0.2, kind="shingle", ridge_axis="z",
+                  shingle_tile="shingle_red", color=(0.95, 0.88, 0.85))
+    # tower at the front
+    t = 1.7
+    tz = -hd - t / 2 + 0.2
+    for a, b in (((-t / 2, tz - t / 2), (t / 2, tz - t / 2)), ((t / 2, tz - t / 2), (t / 2, tz + t / 2)),
+                 ((t / 2, tz + t / 2), (-t / 2, tz + t / 2)), ((-t / 2, tz + t / 2), (-t / 2, tz - t / 2))):
+        pt.wall_plaster(k, a, b, 0.0, 6.0, thick=0.28, tile="stone", color=(0.92, 0.85, 0.75), posts=False)
+    pt.door(k, (0, tz - t / 2 - 0.05), (0, -1), w=0.7, h=1.4, y0=0.0, color=(0.55, 0.32, 0.22))
+    for s in (-1, 1):
+        k.box((0, 5.0, tz + s * (t / 2 + 0.1)), (0.45, 0.8, 0.12), tile="planks", color=pt.DARK, vary=0)
+        k.box((s * (t / 2 + 0.1), 5.0, tz), (0.12, 0.8, 0.45), tile="planks", color=pt.DARK, vary=0)
+    k.box((0, 6.05, tz), (t + 0.25, 0.14, t + 0.25), tile="stone", color=(0.88, 0.88, 0.88))
+    apex = v3(0, 8.4, tz)
+    c = t / 2 + 0.08
+    corners = [v3(-c, 6.1, tz - c), v3(c, 6.1, tz - c), v3(c, 6.1, tz + c), v3(-c, 6.1, tz + c)]
+    for i in range(4):
+        a, b = corners[i], corners[(i + 1) % 4]
+        k.quad_slab(a, b, apex + (b - apex) * 0.02, apex + (a - apex) * 0.02, 0.1, "shingle_red", color=(0.95, 0.88, 0.85))
+    k.cyl(apex - v3(0, 0.1, 0), apex + v3(0, 0.55, 0), 0.03, sides=6, tile="iron", end_tile="iron", color=(1.2, 0.95, 0.5))
+    k.box((0, 8.82, tz), (0.28, 0.04, 0.04), tile="iron", color=(1.2, 0.95, 0.5), vary=0)
+    return k
+
+
+def medieval_mill(seed=139):
+    """A windmill: a round stone tower, a wooden cap and four big sails."""
+    k = Kit(seed)
+    k.cyl(v3(0, -0.05, 0), v3(0, 4.2, 0), 1.5, r2=1.05, sides=20, tile="stone", end_tile="stone", rings=3,
+          color=(0.95, 0.88, 0.78))
+    for i in range(20):
+        a = 2 * math.pi * i / 20
+        k.box((math.sin(a) * 1.5, 0.15, math.cos(a) * 1.5), (0.4, 0.32, 0.26), R=rot_y(math.degrees(a)), tile="stone",
+              color=(0.85, 0.85, 0.85), round_=0.6, seg=2, jitter=0.05)
+    pt.door(k, (0, -1.47), (0, -1), w=0.7, h=1.3, y0=0.0, color=(0.55, 0.38, 0.28))
+    pt.window(k, (0, -1.25), (0, -1), 2.4, w=0.4, h=0.42, shutters=(0.42, 0.56, 0.62))
+    # cap
+    k.box((0, 4.45, 0), (2.3, 0.6, 2.4), tile="planks", color=(0.9, 0.75, 0.6), round_=0.4, seg=3)
+    k.box((0, 4.9, 0), (1.6, 0.5, 2.2), tile="shingle", color=(0.85, 0.8, 0.75), round_=0.85, seg=3)
+    hub = v3(0, 4.5, -1.35)
+    k.cyl(v3(0, 4.5, -0.9), hub, 0.12, sides=10, tile="log")
+    for i in range(4):
+        a = math.radians(i * 90 + 20)
+        dirv = v3(math.cos(a), math.sin(a), 0)
+        side = v3(-math.sin(a), math.cos(a), 0)
+        tip = hub + dirv * 3.0
+        k.beam(hub, tip, w=0.1, h=0.1)
+        for j in range(6):
+            t0 = 0.25 + j * 0.12
+            p = hub + dirv * (3.0 * t0)
+            k.beam(p, p + side * 0.62, w=0.04, h=0.04, up=(0, 0, 1))
+        a0, a1 = hub + dirv * 0.75, tip
+        k.quad_slab(a0 + side * 0.05 - v3(0, 0, 0.03), a1 + side * 0.05 - v3(0, 0, 0.03), a1 + side * 0.6 - v3(0, 0, 0.03),
+                    a0 + side * 0.6 - v3(0, 0, 0.03), 0.015, "cloth_ochre", color=(1.25, 1.2, 1.1))
+    for i in range(3):
+        pt.sack(k, 1.5 + i * 0.3, -1.2 + (i % 2) * 0.2, s=0.3)
+    return k
+
+
+def medieval_market(seed=149):
+    """A market square: a well in the middle and four striped stalls with goods."""
+    k = Kit(seed)
+    for i in range(10):
+        a = 2 * math.pi * i / 10
+        k.box((math.sin(a) * 0.55, 0.3, math.cos(a) * 0.55), (0.3, 0.6, 0.22), R=rot_y(math.degrees(a)), tile="stone",
+              color=(0.95, 0.95, 0.95), round_=0.6, seg=2, jitter=0.04)
+    k.cyl(v3(0, 0.55, 0), v3(0, 0.56, 0), 0.45, sides=12, tile="iron", end_tile="iron", color=(0.3, 0.4, 0.5), caps=True)
+    for s in (-1, 1):
+        k.beam(v3(s * 0.55, 0.5, 0), v3(s * 0.55, 1.6, 0), w=0.08, h=0.08)
+    k.beam(v3(-0.65, 1.55, 0), v3(0.65, 1.55, 0), w=0.1, h=0.1)
+    for s in (-1, 1):
+        k.quad_slab(v3(-0.7, 1.55, s * 0.65), v3(0.7, 1.55, s * 0.65), v3(0.7, 1.95, 0), v3(-0.7, 1.95, 0), 0.06,
+                    "shingle", color=(0.9, 0.82, 0.75)) if s < 0 else             k.quad_slab(v3(0.7, 1.55, s * 0.65), v3(-0.7, 1.55, s * 0.65), v3(-0.7, 1.95, 0), v3(0.7, 1.95, 0), 0.06,
+                        "shingle", color=(0.9, 0.82, 0.75))
+    goods = [[(0.85, 0.15, 0.2), (1.0, 0.6, 0.15)], [(0.95, 0.85, 0.5)], [(0.5, 0.75, 0.35), (0.9, 0.3, 0.2)],
+             [(0.75, 0.55, 0.4)]]
+    cloths = ["cloth_red", "cloth_ochre", "cloth_red", "cloth_ochre"]
+    for i, (x, z, yaw) in enumerate(((-1.9, -1.7, 0), (1.9, -1.7, 0), (-1.9, 1.7, 180), (1.9, 1.7, 180))):
+        k.place((x, 0, z), yaw)
+        for px in (-0.6, 0.6):
+            for pz in (-0.35, 0.35):
+                pt.post(k, px, pz, 1.7 if pz > 0 else 1.45, r=0.04)
+        k.quad_slab(v3(-0.75, 1.42, -0.55), v3(0.75, 1.42, -0.55), v3(0.75, 1.72, 0.45), v3(-0.75, 1.72, 0.45), 0.02,
+                    cloths[i], color=(1, 1, 1))
+        k.box((0, 0.7, -0.15), (1.3, 0.08, 0.55), tile="planks", color=(0.95, 0.75, 0.55), grain=0)
+        k.box((0, 0.35, -0.15), (1.2, 0.6, 0.45), tile="planks", color=(0.75, 0.58, 0.42), grain=1)
+        for j in range(6):
+            c = goods[i][j % len(goods[i])]
+            k.box((-0.45 + j * 0.18, 0.79, -0.15 + (j % 2) * 0.12), (0.13, 0.11, 0.13), tile="cloth_red", color=c,
+                  round_=0.9, seg=2)
+        pt.crate(k, 0.85, 0.25, s=0.3)
+        k.place()
+    pt.barrel(k, 0.0, -2.3)
+    pt.sack(k, 0.4, 2.3)
+    return k
+
+
+# MARK: - Yards, shrines and the rest of the town
+
+def drying_rack(seed=151):
+    """Racks of fish and strips of meat drying over a smoky fire pit."""
+    k = Kit(seed)
+    for x in (-0.85, 0.85):
+        for z in (-0.35, 0.35):
+            k.cyl(v3(x, -0.05, z), v3(x * 0.98, 1.45, 0), 0.04, sides=7)
+    for y in (1.35, 0.95):
+        k.cyl(v3(-1.0, y, 0), v3(1.0, y, 0), 0.03, sides=6)
+        for i in range(7):
+            x = -0.7 + i * 0.23
+            k.box((x, y - 0.17, 0), (0.08, 0.3, 0.13), tile="hide", color=(1.1, 0.75, 0.55) if y > 1 else (1.0, 0.9, 0.7),
+                  round_=0.85, seg=2)
+    stones_ring(k, 0.0, -0.85, r=0.26)
+    k.anchor("fire", (0.0, 0.05, -0.85), 0.35)
+    pt.firewood(k, 0.95, -0.75, w=0.5, rows=2)
+    pt.pot(k, -0.9, -0.7)
+    return k
+
+
+def herb_garden(seed=157):
+    """Raised beds of herbs and flowers inside a little wattle fence, a watering pot."""
+    k = Kit(seed)
+    greens = [(0.45, 0.72, 0.32), (0.35, 0.6, 0.35), (0.6, 0.78, 0.38)]
+    blooms = [(0.75, 0.55, 1.0), (1.0, 0.9, 0.4), (1.0, 0.5, 0.45), (1.0, 1.0, 0.95)]
+    for j, z in enumerate((-0.45, 0.45)):
+        k.box((0, 0.1, z), (1.5, 0.2, 0.6), tile="planks", color=(0.8, 0.6, 0.45), grain=0)
+        k.box((0, 0.2, z), (1.42, 0.04, 0.52), tile="hide", color=(0.55, 0.38, 0.28), vary=0)
+        for i in range(7):
+            x = -0.6 + i * 0.2
+            g = greens[(i + j) % 3]
+            k.box((x, 0.3, z + k.rng.uniform(-0.1, 0.1)), (0.2, 0.22, 0.2), tile="straw", color=g, round_=0.9, seg=2,
+                  jitter=0.12)
+            if (i + j) % 2 == 0:
+                k.box((x, 0.44, z), (0.08, 0.08, 0.08), tile="cloth_red", color=blooms[(i + j) % 4], round_=0.9, seg=2)
+    for (a, b) in (((-0.95, -0.95), (0.95, -0.95)), ((0.95, -0.95), (0.95, 0.95)), ((0.95, 0.95), (-0.95, 0.95)),
+                   ((-0.95, 0.95), (-0.95, -0.95))):
+        pt.wall_plaster(k, a, b, 0.0, 0.38, thick=0.05, tile="wattle", color=(1, 1, 1), posts=False)
+    for (x, z) in ((-0.95, -0.95), (0.95, -0.95), (0.95, 0.95), (-0.95, 0.95)):
+        pt.post(k, x, z, 0.48, r=0.04)
+    pt.pot(k, 0.6, -1.15, color=(0.8, 0.5, 0.35))
+    return k
+
+
+def apiary(seed=163):
+    """Straw bee skeps on a plank stand under a tiny roof, wildflowers around."""
+    k = Kit(seed)
+    k.box((0, 0.45, 0), (1.6, 0.06, 0.6), tile="planks", color=(0.95, 0.75, 0.55), grain=0)
+    for x in (-0.7, 0.7):
+        for z in (-0.25, 0.25):
+            k.box((x, 0.22, z), (0.07, 0.45, 0.07), tile="planks", color=pt.TIMBER_DARK)
+    for i, x in enumerate((-0.5, 0.0, 0.5)):
+        for j in range(4):
+            r = 0.22 - j * 0.045
+            k.cyl(v3(x, 0.48 + j * 0.1, 0), v3(x, 0.58 + j * 0.1, 0), r, r2=r - 0.03, sides=12, tile="straw",
+                  end_tile="straw", color=(1.15, 0.95, 0.6))
+        k.box((x, 0.53, -0.21), (0.08, 0.06, 0.03), tile="planks", color=pt.DARK, vary=0)
+    lean_to(k, -0.9, 0.9, 0.45, -0.45, 1.25, 1.05, tile="planks", color=(0.85, 0.72, 0.6))
+    pt.flower_patch(k, -0.6, -0.85, FLOWERS, n=6, spread=0.25)
+    pt.flower_patch(k, 0.7, -0.8, FLOWERS, n=5, spread=0.2)
+    return k
+
+
+def ancestor_shrine(seed=167):
+    """Standing stones in a ring around a carved post, offerings and an ever-burning fire."""
+    k = Kit(seed)
+    r = 1.5
+    for i in range(8):
+        a = 2 * math.pi * (i + 0.5) / 8
+        h = k.rng.uniform(0.9, 1.4)
+        k.box((math.sin(a) * r, h / 2 - 0.05, math.cos(a) * r), (0.4, h, 0.28), R=rot_y(math.degrees(a)), tile="stone",
+              color=(0.92, 0.9, 0.86), round_=0.55, seg=3, jitter=0.06)
+    k.cyl(v3(0, 0, 0.35), v3(0, 2.1, 0.35), 0.16, r2=0.13, sides=10, color=(0.9, 0.75, 0.6))
+    for j, c in enumerate([(1.1, 0.4, 0.3), (0.5, 0.7, 1.0), (1.1, 0.95, 0.5)]):
+        k.cyl(v3(0, 0.6 + j * 0.45, 0.35), v3(0, 0.75 + j * 0.45, 0.35), 0.175, sides=10, tile="cloth_ochre",
+              end_tile="cloth_ochre", color=c)
+    k.box((0, 2.15, 0.35), (0.7, 0.12, 0.12), tile="log", color=(0.9, 0.75, 0.6))
+    stones_ring(k, 0.0, -0.55, r=0.28)
+    k.anchor("fire", (0.0, 0.05, -0.55), 0.35)
+    for i in range(4):
+        pt.pot(k, -0.5 + i * 0.32, 0.85, r=0.08, h=0.14, color=(0.95, 0.6, 0.42))
+    pt.flower_patch(k, 0.6, 0.0, FLOWERS, n=5, spread=0.2)
+    return k
+
+
+def toolsmith(seed=173):
+    """A toolsmith's hut: plaster walls, a forge under the eaves, tools hanging by the door."""
+    k = Kit(seed)
+    w, d = 1.8, 1.5
+    base, eave, ridge = 0.2, 1.45, 2.35
+    pt.plinth(k, w + 0.08, d + 0.08, h=base)
+    walls_box(k, w, d, base, eave, color=(0.98, 0.92, 0.82))
+    pt.door(k, (0.35, -d / 2), (0, -1), w=0.52, h=1.0, y0=base, color=(0.55, 0.38, 0.28))
+    pt.gable_ends(k, w, d, eave, ridge, tile="plaster", color=(0.98, 0.92, 0.82))
+    pt.gable_roof(k, w, d, eave, ridge, over=0.45, over_end=0.25, kind="shingle", shingle_tile="shingle_red",
+                  color=(1.0, 0.92, 0.88))
+    k.box((-0.45, 0.35, -1.05), (0.6, 0.55, 0.45), tile="stone", color=(0.88, 0.86, 0.84), round_=0.4, seg=3)
+    k.box((-0.45, 0.63, -1.05), (0.4, 0.04, 0.3), tile="planks", color=(1.4, 0.6, 0.2), vary=0)
+    k.anchor("fire", (-0.45, 0.62, -1.05), 0.25)
+    stump(k, 0.4, -1.3, r=0.16, h=0.36)
+    k.box((0.4, 0.43, -1.3), (0.3, 0.1, 0.13), tile="iron", color=(0.78, 0.8, 0.88), round_=0.3, seg=2)
+    for i in range(3):
+        x = 0.75 - i * 0.12
+        k.cyl(v3(x, 0.55, -0.8), v3(x, 1.1, -0.8), 0.018, sides=5, tile="planks", color=(0.95, 0.75, 0.55))
+        k.box((x, 1.08, -0.81), (0.1, 0.06, 0.03), tile="iron", color=(0.85, 0.85, 0.9), vary=0)
+    pt.crate(k, -1.15, 0.3, s=0.3)
+    return k
+
+
+def mine(seed=179):
+    """A mine mouth in a rocky hill: a timbered entrance, rails, an ore cart and a lantern."""
+    k = Kit(seed)
+    for (x, z, sx, sy, sz) in ((-0.55, 0.35, 1.3, 1.5, 1.3), (0.6, 0.45, 1.2, 1.3, 1.2), (0.0, 0.75, 1.6, 1.9, 1.0),
+                               (-0.9, -0.3, 0.7, 0.7, 0.7), (0.95, -0.25, 0.6, 0.55, 0.6)):
+        k.box((x, sy * 0.38, z), (sx, sy, sz), R=rot_y(k.rng.uniform(0, 40)), tile="stone", color=(0.85, 0.82, 0.78),
+              round_=0.6, seg=3, jitter=0.1)
+    k.box((0, 0.6, -0.1), (0.8, 1.2, 0.3), tile="planks", color=pt.DARK, vary=0)
+    for x in (-0.45, 0.45):
+        k.beam(v3(x, 0, -0.3), v3(x, 1.3, -0.3), w=0.14, h=0.14)
+    k.beam(v3(-0.6, 1.3, -0.3), v3(0.6, 1.3, -0.3), w=0.16, h=0.16)
+    for x in (-0.2, 0.2):
+        k.beam(v3(x, 0.03, -0.3), v3(x, 0.03, -1.3), w=0.04, h=0.04, color=(0.7, 0.7, 0.75))
+    for i in range(5):
+        z = -0.4 - i * 0.22
+        k.beam(v3(-0.3, 0.015, z), v3(0.3, 0.015, z), w=0.08, h=0.03, up=(0, 0, 1))
+    k.box((0, 0.3, -1.0), (0.45, 0.3, 0.55), tile="planks", color=(0.75, 0.6, 0.45))
+    for (x, z) in ((-0.2, -0.8), (0.2, -0.8), (-0.2, -1.2), (0.2, -1.2)):
+        k.cyl(v3(x - 0.04 if x < 0 else x + 0.04, 0.1, z), v3(x - 0.08 if x < 0 else x + 0.08, 0.1, z), 0.08, sides=10,
+              tile="iron", end_tile="iron", color=(0.5, 0.5, 0.55))
+    stone_heap(k, 0.0, -1.0, n=5, spread=0.12, size=0.12, tint=(1.0, 0.65, 0.5))
+    k.anchor("torch", (0.5, 1.25, -0.4), 0.35)
+    return k
+
+
+def community_circle(seed=181):
+    """The gathering place: log benches in a ring around a big fire, a carved pole with banners."""
+    k = Kit(seed)
+    for i in range(6):
+        a = 2 * math.pi * i / 6
+        c = v3(math.sin(a) * 1.35, 0, math.cos(a) * 1.35)
+        t = v3(math.cos(a), 0, -math.sin(a)) * 0.55
+        k.cyl(c - t + v3(0, 0.2, 0), c + t + v3(0, 0.2, 0), 0.17, sides=10, wobble=0.04)
+    stones_ring(k, 0.0, 0.0, r=0.48)
+    k.anchor("fire", (0.0, 0.08, 0.0), 0.75)
+    k.cyl(v3(1.6, -0.05, 1.3), v3(1.6, 2.6, 1.3), 0.09, r2=0.07, sides=9, color=(0.9, 0.75, 0.6))
+    for j, c in enumerate(["cloth_red", "cloth_ochre"]):
+        k.quad_slab(v3(1.62, 2.5 - j * 0.6, 1.3), v3(2.1, 2.45 - j * 0.6, 1.3), v3(2.05, 2.15 - j * 0.6, 1.3),
+                    v3(1.62, 2.1 - j * 0.6, 1.3), 0.015, c, color=(1, 1, 1))
+    pt.firewood(k, -1.7, 1.1, w=0.7, yaw=40)
+    pt.pot(k, 1.0, -1.6)
+    return k
+
+
+def medieval_warehouse(seed=191):
+    """A big storehouse: stone ground floor, a hoist beam over the loft door, crates and barrels."""
+    k = Kit(seed)
+    eave, ridge = town_house(k, 4.4, 3.6, floors=2, roof="shingle", storey=1.55, roof_h=1.8, door_x=0.0,
+                             plaster=(0.95, 0.88, 0.76), shutters=(0.45, 0.4, 0.35), flowers=False, jetty=0.0)
+    k.beam(v3(0, eave - 0.1, -1.6), v3(0, eave - 0.1, -2.5), w=0.14, h=0.14)
+    k.cyl(v3(0, eave - 0.15, -2.4), v3(0, 1.4, -2.4), 0.012, sides=5, tile="straw", color=(1, 0.9, 0.7), caps=False)
+    pt.crate(k, 0.0, -2.4, s=0.3, y=1.1)
+    for i in range(3):
+        pt.crate(k, -1.9 + i * 0.4, -2.35, s=0.36, yaw=k.rng.uniform(-10, 10))
+    pt.crate(k, -1.7, -2.35, s=0.32, y=0.36)
+    for i in range(3):
+        pt.barrel(k, 1.4 + i * 0.38, -2.3)
+    pt.sack(k, 2.55, -1.6)
+    return k
+
+
+def medieval_scriptorium(seed=193):
+    """A scholars' house of pale stone with tall windows, a lantern by the door, a small bell cote."""
+    k = Kit(seed)
+    eave, ridge = town_house(k, 3.0, 2.6, floors=2, roof="shingle_red", storey=1.5, roof_h=1.7, door_x=0.0,
+                             plaster=(0.98, 0.96, 0.9), shutters=(0.3, 0.42, 0.6), jetty=0.12)
+    k.box((0, ridge + 0.45, 0), (0.45, 0.6, 0.45), tile="planks", color=(0.9, 0.78, 0.62))
+    k.box((0, ridge + 0.45, -0.24), (0.25, 0.35, 0.04), tile="planks", color=pt.DARK, vary=0)
+    for i in range(4):
+        a = v3([(-0.3, 0, -0.3), (0.3, 0, -0.3), (0.3, 0, 0.3), (-0.3, 0, 0.3)][i]) + v3(0, ridge + 0.75, 0)
+        k.quad_slab(a, v3([(0.3, 0, -0.3), (0.3, 0, 0.3), (-0.3, 0, 0.3), (-0.3, 0, -0.3)][i]) + v3(0, ridge + 0.75, 0),
+                    v3(0, ridge + 1.15, 0), v3(0, ridge + 1.15, 0) + (a - v3(0, ridge + 1.15, 0)) * 0.02, 0.05,
+                    "shingle_red", color=(0.95, 0.88, 0.85), face_up=True)
+    k.anchor("lantern", (0.6, 1.5, -1.6), 0.3)
+    pt.bench(k, -0.9, -1.7)
+    return k
+
+
+def medieval_carpenter(seed=197):
+    """A carpenter's yard: a workshop with a wide open front, sawhorses, planks and logs."""
+    k = Kit(seed)
+    w, d = 3.0, 2.2
+    eave, ridge = 1.9, 3.1
+    pt.plinth(k, w + 0.1, d + 0.1, h=0.2)
+    hw, hd = w / 2, d / 2
+    for a, b in (((hw, -hd), (hw, hd)), ((hw, hd), (-hw, hd)), ((-hw, hd), (-hw, -hd))):
+        pt.wall_planks(k, a, b, 0.18, eave, color=(0.98, 0.82, 0.65))
+    for x in (-hw, 0, hw):
+        pt.post(k, x, -hd, eave + 0.05, r=0.1)
+    k.beam(v3(-hw, eave, -hd), v3(hw, eave, -hd), w=0.14, h=0.16)
+    pt.gable_ends(k, w, d, eave, ridge, tile="planks", color=(0.95, 0.8, 0.62))
+    pt.gable_roof(k, w, d, eave, ridge, over=0.35, over_end=0.3, kind="shingle", color=(0.95, 0.88, 0.8))
+    k.box((0.2, 0.62, 0.4), (1.6, 0.08, 0.5), tile="planks", color=(0.95, 0.75, 0.55), grain=0)
+    for x in (-0.5, 0.9):
+        k.box((x, 0.3, 0.4), (0.08, 0.6, 0.42), tile="planks", color=pt.TIMBER_DARK)
+    for x in (-0.6, 0.6):
+        for z in (-1.75, -1.35):
+            k.beam(v3(x - 0.15, 0, z), v3(x, 0.55, z), w=0.05, h=0.05)
+            k.beam(v3(x + 0.15, 0, z), v3(x, 0.55, z), w=0.05, h=0.05)
+        k.beam(v3(x, 0.55, -1.8), v3(x, 0.55, -1.3), w=0.06, h=0.06)
+    k.box((0, 0.62, -1.55), (1.6, 0.05, 0.26), tile="planks", color=(1.05, 0.88, 0.68), grain=0)
+    log_pile(k, 2.1, 0.0, length=1.4, rows=2, yaw=0, r=0.13)
+    for i in range(4):
+        k.box((-2.05, 0.04 + i * 0.05, 0.2), (0.24, 0.045, 1.6), tile="planks", color=(1.05, 0.88, 0.68), grain=2)
+    return k
+
+
+def medieval_bathhouse(seed=199):
+    """A bathhouse: a plastered house with a steaming pool outside, a stove with a chimney."""
+    k = Kit(seed)
+    eave, ridge = town_house(k, 2.6, 2.2, floors=1, roof="shingle_red", storey=1.8, roof_h=1.5, door_x=0.45,
+                             plaster=(0.96, 0.95, 0.92), shutters=(0.3, 0.55, 0.6), chimney_at=(0.7, 0.5))
+    for i in range(12):
+        a = 2 * math.pi * i / 12
+        k.box((1.3 + math.sin(a) * 0.62, 0.1, -1.6 + math.cos(a) * 0.5), (0.28, 0.22, 0.2), R=rot_y(math.degrees(a)),
+              tile="stone", color=(0.92, 0.9, 0.88), round_=0.6, seg=2, jitter=0.04)
+    k.cyl(v3(1.3, 0.12, -1.6), v3(1.3, 0.13, -1.6), 0.55, sides=14, tile="iron", end_tile="iron",
+          color=(0.45, 0.75, 0.85))
+    k.anchor("smoke", (1.3, 0.25, -1.6))
+    pt.bench(k, -1.0, -1.65)
+    pt.barrel(k, -1.95, -0.9)
+    return k
+
+
 BUILDINGS = {
     "daub_house": daub_house,
     "shelter": shelter,
@@ -660,4 +1233,25 @@ BUILDINGS = {
     "copper_smelter": copper_smelter,
     "bronze_workshop": bronze_workshop,
     "lookout_tower": lookout_tower,
+    "medieval_cottage": medieval_cottage,
+    "medieval_house": medieval_house,
+    "medieval_townhouse": medieval_townhouse,
+    "medieval_barn": medieval_barn,
+    "medieval_smithy": medieval_smithy,
+    "medieval_bakery": medieval_bakery,
+    "medieval_tavern": medieval_tavern,
+    "medieval_church": medieval_church,
+    "medieval_mill": medieval_mill,
+    "medieval_market": medieval_market,
+    "drying_rack": drying_rack,
+    "herb_garden": herb_garden,
+    "apiary": apiary,
+    "ancestor_shrine": ancestor_shrine,
+    "toolsmith": toolsmith,
+    "mine": mine,
+    "community_circle": community_circle,
+    "medieval_warehouse": medieval_warehouse,
+    "medieval_scriptorium": medieval_scriptorium,
+    "medieval_carpenter": medieval_carpenter,
+    "medieval_bathhouse": medieval_bathhouse,
 }

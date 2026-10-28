@@ -77,6 +77,12 @@ class Kit:
         # Moves every later part (set with place()).
         self.R = np.eye(3)
         self.T = np.zeros(3)
+        # Where the game adds fire and smoke: (kind, position, scale).
+        self.anchors = []
+
+    def anchor(self, kind, at, scale=1.0):
+        p = v3(at) @ self.R.T + self.T
+        self.anchors.append({"kind": kind, "at": [round(float(x), 3) for x in p], "scale": scale})
 
     # MARK: - low level
 
@@ -284,10 +290,14 @@ class Kit:
                 self._emit(cp @ R.T + a, n @ R.T, self._to_atlas(end_tile, uv, (0, 0, 1, 1)),
                            self._color(len(cp), color, vary), ci)
 
-    def quad_slab(self, p00, p10, p11, p01, thick, tile, color=(1, 1, 1), vary=0.05, grain_v=True):
-        """A thick panel on the quad p00-p10-p11-p01 (u along p00→p10, v along p00→p01), extruded inward."""
+    def quad_slab(self, p00, p10, p11, p01, thick, tile, color=(1, 1, 1), vary=0.05, grain_v=True, face_up=False):
+        """A thick panel on the quad p00-p10-p11-p01 (u along p00→p10, v along p00→p01), extruded inward.
+        face_up: the outer face is turned to look up (roofs), whatever the corners' order."""
         p = [v3(x) for x in (p00, p10, p11, p01)]
         n = norm(np.cross(p[1] - p[0], p[3] - p[0]))
+        if face_up and n[1] < 0:
+            p = [p[1], p[0], p[3], p[2]]
+            n = -n
         top = np.array(p)
         bot = top - n * thick
         L_u = float(np.linalg.norm(p[1] - p[0]))
@@ -334,7 +344,9 @@ class Kit:
         UV = np.concatenate(self.UV)
         C = np.concatenate(self.C)
         I = np.concatenate(self.I).astype(np.uint32)
-        return Mesh(P, Nm, UV, C, I)
+        m = Mesh(P, Nm, UV, C, I)
+        m.anchors = self.anchors
+        return m
 
 
 class Mesh:

@@ -207,9 +207,9 @@ def gable_roof(k, w, d, eave, ridge, over=0.3, over_end=0.25, kind="thatch", thi
                 return P(a, s * S * t, ridge + lift + up + (y_low - ridge) * t)
 
             if s < 0:
-                k.quad_slab(at(L, t1), at(-L, t1), at(-L, t0), at(L, t0), thick, tile, color=col)
+                k.quad_slab(at(L, t1), at(-L, t1), at(-L, t0), at(L, t0), thick, tile, color=col, face_up=True)
             else:
-                k.quad_slab(at(-L, t1), at(L, t1), at(L, t0), at(-L, t0), thick, tile, color=col)
+                k.quad_slab(at(-L, t1), at(L, t1), at(L, t0), at(-L, t0), thick, tile, color=col, face_up=True)
             if thatch and rolls:
                 lip = at(0, t1)
                 y = lip[1] - thick * 0.55
@@ -257,10 +257,10 @@ def shingles(k, P, s, L, S, y_top, y_low, tile, color, row_h=0.2, w_sh=0.24):
             col = tuple(c * g for c in color)
             if s < 0:
                 k.quad_slab(q(a1, min(t1, 1.0) + 0.02, 0), q(a0, min(t1, 1.0) + 0.02, 0), q(a0, t0, 0.0),
-                            q(a1, t0, 0.0), 0.035, tile, color=col, vary=0.03)
+                            q(a1, t0, 0.0), 0.035, tile, color=col, vary=0.03, face_up=True)
             else:
                 k.quad_slab(q(a0, min(t1, 1.0) + 0.02, 0), q(a1, min(t1, 1.0) + 0.02, 0), q(a1, t0, 0.0),
-                            q(a0, t0, 0.0), 0.035, tile, color=col, vary=0.03)
+                            q(a0, t0, 0.0), 0.035, tile, color=col, vary=0.03, face_up=True)
 
 
 def gable_ends(k, w, d, eave, ridge, ridge_axis="x", tile="planks", color=(1, 1, 1), thick=0.08, beams=True,
@@ -330,6 +330,7 @@ def chimney(k, x, z, y0, y1, w=0.38, color=(1, 1, 1)):
         y += h
         i += 1
     k.box((x, y + 0.03, z), (w + 0.1, 0.07, w + 0.1), tile="stone", color=(0.82, 0.82, 0.82))
+    k.anchor("smoke", (x, y + 0.12, z))
     k.box((x, y + 0.05, z), (w * 0.5, 0.06, w * 0.5), tile="stone", color=(0.15, 0.13, 0.12), vary=0)
 
 

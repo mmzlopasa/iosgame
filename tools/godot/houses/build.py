@@ -54,6 +54,7 @@ def main():
             "size": [round(float(x), 3) for x in hi - lo],
             "source": "tools/godot/houses (modelled for the game)",
             "triangles": tris,
+            "effects": mesh.anchors,
         }
         if not a.no_pictures:
             pic = render(mesh, atlas, size=512).resize((256, 256), Image.LANCZOS)
