@@ -1,0 +1,9 @@
+.godot/
+.mono/
+bin/
+obj/
+tests/bin/
+tests/obj/
+build/
+*.translation
+art/ui/Kit/

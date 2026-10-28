@@ -1,0 +1,305 @@
+{
+ "source": "Quaternius Universal Base Characters + Modular Character Outfits - Fantasy (CC0)",
+ "people": [
+  {
+   "model": "Models/Person_Farmer_Male",
+   "gender": "male",
+   "age": "adult",
+   "textures": {
+    "albedo": "Art/Textures/People/Person_Farmer_Male_painted.jpg",
+    "normal": "Art/Textures/People/Person_Farmer_Male_normal.jpg",
+    "mask": "Art/Textures/People/Person_Farmer_Male_mask.png",
+    "source": "Art/Textures/People/Person_Farmer_Male_albedo.jpg"
+   },
+   "skin": [
+    0.3843,
+    0.1778,
+    0.0836
+   ],
+   "main": [
+    0.78,
+    0.72,
+    0.58
+   ],
+   "hair": [
+    0.22,
+    0.14,
+    0.08
+   ],
+   "neutral": 0.5,
+   "dye": true,
+   "tris": 7391,
+   "lodTris": 2400
+  },
+  {
+   "model": "Models/Person_Woodcutter_Male",
+   "gender": "male",
+   "age": "adult",
+   "textures": {
+    "albedo": "Art/Textures/People/Person_Woodcutter_Male_painted.jpg",
+    "normal": "Art/Textures/People/Person_Woodcutter_Male_normal.jpg",
+    "mask": "Art/Textures/People/Person_Woodcutter_Male_mask.png",
+    "source": "Art/Textures/People/Person_Woodcutter_Male_albedo.jpg"
+   },
+   "skin": [
+    0.3843,
+    0.1778,
+    0.0836
+   ],
+   "main": [
+    0.36,
+    0.42,
+    0.25
+   ],
+   "hair": [
+    0.22,
+    0.14,
+    0.08
+   ],
+   "neutral": 0.5,
+   "dye": true,
+   "tris": 7394,
+   "lodTris": 2399
+  },
+  {
+   "model": "Models/Person_Hunter_Male",
+   "gender": "male",
+   "age": "adult",
+   "textures": {
+    "albedo": "Art/Textures/People/Person_Hunter_Male_painted.jpg",
+    "normal": "Art/Textures/People/Person_Hunter_Male_normal.jpg",
+    "mask": "Art/Textures/People/Person_Hunter_Male_mask.png",
+    "source": "Art/Textures/People/Person_Hunter_Male_albedo.jpg"
+   },
+   "skin": [
+    0.3657,
+    0.171,
+    0.0819
+   ],
+   "main": [
+    0.42,
+    0.28,
+    0.17
+   ],
+   "hair": [
+    0.22,
+    0.14,
+    0.08
+   ],
+   "neutral": 0.5,
+   "dye": false,
+   "tris": 7389,
+   "lodTris": 2400
+  },
+  {
+   "model": "Models/Person_Hooded_Male",
+   "gender": "male",
+   "age": "adult",
+   "textures": {
+    "albedo": "Art/Textures/People/Person_Hooded_Male_painted.jpg",
+    "normal": "Art/Textures/People/Person_Hooded_Male_normal.jpg",
+    "mask": "Art/Textures/People/Person_Hooded_Male_mask.png",
+    "source": "Art/Textures/People/Person_Hooded_Male_albedo.jpg"
+   },
+   "skin": [
+    0.3657,
+    0.171,
+    0.0819
+   ],
+   "main": [
+    0.55,
+    0.33,
+    0.2
+   ],
+   "hair": [
+    0.22,
+    0.14,
+    0.08
+   ],
+   "neutral": 0.5,
+   "dye": false,
+   "tris": 7390,
+   "lodTris": 2400
+  },
+  {
+   "model": "Models/Person_Elder_Male",
+   "gender": "male",
+   "age": "elder",
+   "textures": {
+    "albedo": "Art/Textures/People/Person_Elder_Male_painted.jpg",
+    "normal": "Art/Textures/People/Person_Elder_Male_normal.jpg",
+    "mask": "Art/Textures/People/Person_Elder_Male_mask.png",
+    "source": "Art/Textures/People/Person_Elder_Male_albedo.jpg"
+   },
+   "skin": [
+    0.3843,
+    0.1778,
+    0.0836
+   ],
+   "main": [
+    0.56,
+    0.53,
+    0.48
+   ],
+   "hair": [
+    0.78,
+    0.77,
+    0.74
+   ],
+   "neutral": 0.5,
+   "dye": true,
+   "tris": 7394,
+   "lodTris": 2399
+  },
+  {
+   "model": "Models/Person_Farmer_Female",
+   "gender": "female",
+   "age": "adult",
+   "textures": {
+    "albedo": "Art/Textures/People/Person_Farmer_Female_painted.jpg",
+    "normal": "Art/Textures/People/Person_Farmer_Female_normal.jpg",
+    "mask": "Art/Textures/People/Person_Farmer_Female_mask.png",
+    "source": "Art/Textures/People/Person_Farmer_Female_albedo.jpg"
+   },
+   "skin": [
+    0.3849,
+    0.1871,
+    0.0872
+   ],
+   "main": [
+    0.3,
+    0.4,
+    0.54
+   ],
+   "hair": [
+    0.22,
+    0.14,
+    0.08
+   ],
+   "neutral": 0.5,
+   "dye": true,
+   "tris": 7572,
+   "lodTris": 2400
+  },
+  {
+   "model": "Models/Person_Weaver_Female",
+   "gender": "female",
+   "age": "adult",
+   "textures": {
+    "albedo": "Art/Textures/People/Person_Weaver_Female_painted.jpg",
+    "normal": "Art/Textures/People/Person_Weaver_Female_normal.jpg",
+    "mask": "Art/Textures/People/Person_Weaver_Female_mask.png",
+    "source": "Art/Textures/People/Person_Weaver_Female_albedo.jpg"
+   },
+   "skin": [
+    0.3849,
+    0.1871,
+    0.0872
+   ],
+   "main": [
+    0.56,
+    0.25,
+    0.18
+   ],
+   "hair": [
+    0.22,
+    0.14,
+    0.08
+   ],
+   "neutral": 0.5,
+   "dye": true,
+   "tris": 7573,
+   "lodTris": 2399
+  },
+  {
+   "model": "Models/Person_Hunter_Female",
+   "gender": "female",
+   "age": "adult",
+   "textures": {
+    "albedo": "Art/Textures/People/Person_Hunter_Female_painted.jpg",
+    "normal": "Art/Textures/People/Person_Hunter_Female_normal.jpg",
+    "mask": "Art/Textures/People/Person_Hunter_Female_mask.png",
+    "source": "Art/Textures/People/Person_Hunter_Female_albedo.jpg"
+   },
+   "skin": [
+    0.3859,
+    0.183,
+    0.0856
+   ],
+   "main": [
+    0.36,
+    0.42,
+    0.25
+   ],
+   "hair": [
+    0.22,
+    0.14,
+    0.08
+   ],
+   "neutral": 0.5,
+   "dye": false,
+   "tris": 7390,
+   "lodTris": 2400
+  },
+  {
+   "model": "Models/Person_Gatherer_Female",
+   "gender": "female",
+   "age": "adult",
+   "textures": {
+    "albedo": "Art/Textures/People/Person_Gatherer_Female_painted.jpg",
+    "normal": "Art/Textures/People/Person_Gatherer_Female_normal.jpg",
+    "mask": "Art/Textures/People/Person_Gatherer_Female_mask.png",
+    "source": "Art/Textures/People/Person_Gatherer_Female_albedo.jpg"
+   },
+   "skin": [
+    0.3859,
+    0.183,
+    0.0856
+   ],
+   "main": [
+    0.7,
+    0.55,
+    0.28
+   ],
+   "hair": [
+    0.22,
+    0.14,
+    0.08
+   ],
+   "neutral": 0.5,
+   "dye": true,
+   "tris": 7572,
+   "lodTris": 2400
+  },
+  {
+   "model": "Models/Person_Elder_Female",
+   "gender": "female",
+   "age": "elder",
+   "textures": {
+    "albedo": "Art/Textures/People/Person_Elder_Female_painted.jpg",
+    "normal": "Art/Textures/People/Person_Elder_Female_normal.jpg",
+    "mask": "Art/Textures/People/Person_Elder_Female_mask.png",
+    "source": "Art/Textures/People/Person_Elder_Female_albedo.jpg"
+   },
+   "skin": [
+    0.3849,
+    0.1871,
+    0.0872
+   ],
+   "main": [
+    0.24,
+    0.18,
+    0.13
+   ],
+   "hair": [
+    0.78,
+    0.77,
+    0.74
+   ],
+   "neutral": 0.5,
+   "dye": true,
+   "tris": 7572,
+   "lodTris": 2399
+  }
+ ]
+}
