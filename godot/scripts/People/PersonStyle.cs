@@ -173,8 +173,8 @@ namespace Founders.People
                 normals[s] = arrays[s][(int)Mesh.ArrayType.Normal].AsVector3Array();
                 for (int v = 0; v < pos[s].Length; v++)
                 {
-                    var p = pos[s][v];
-                    var key = (Mathf.RoundToInt(p.X / step), Mathf.RoundToInt(p.Y / step), Mathf.RoundToInt(p.Z / step));
+                    var at = pos[s][v];
+                    var key = (Mathf.RoundToInt(at.X / step), Mathf.RoundToInt(at.Y / step), Mathf.RoundToInt(at.Z / step));
                     if (!ids.TryGetValue(key, out int id)) ids[key] = id = ids.Count;
                     of[s][v] = id;
                 }

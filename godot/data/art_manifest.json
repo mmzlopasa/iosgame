@@ -637,6 +637,52 @@
    "toon": true,
    "triangles": 3000
   },
+  "hw_bronze_workshop": {
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_bronze_workshop",
+   "size": [
+    2.457,
+    2.105,
+    1.935
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 998
+  },
+  "hw_copper_smelter": {
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_copper_smelter",
+   "size": [
+    2.167,
+    1.405,
+    1.558
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 2576
+  },
   "hw_daub_house": {
    "format": "glb",
    "materialOrder": [
@@ -682,6 +728,29 @@
    ],
    "source": "tools/godot/houses (modelled for the game)",
    "triangles": 7232
+  },
+  "hw_foraging_camp": {
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_foraging_camp",
+   "size": [
+    2.1,
+    1.55,
+    1.588
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1752
   },
   "hw_granary": {
    "format": "glb",
@@ -775,6 +844,75 @@
    "source": "tools/godot/houses (modelled for the game)",
    "triangles": 5840
   },
+  "hw_lookout_tower": {
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_lookout_tower",
+   "size": [
+    2.31,
+    5.805,
+    2.31
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1160
+  },
+  "hw_pottery_kiln": {
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_pottery_kiln",
+   "size": [
+    2.151,
+    1.321,
+    1.718
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1120
+  },
+  "hw_sawpit": {
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_sawpit",
+   "size": [
+    2.74,
+    1.84,
+    2.145
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 634
+  },
   "hw_shelter": {
    "format": "glb",
    "materialOrder": [
@@ -798,6 +936,98 @@
    "source": "tools/godot/houses (modelled for the game)",
    "triangles": 1160
   },
+  "hw_smokehouse": {
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_smokehouse",
+   "size": [
+    2.51,
+    3.38,
+    2.017
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 3576
+  },
+  "hw_stone_site": {
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_stone_site",
+   "size": [
+    2.491,
+    2.234,
+    2.282
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 970
+  },
+  "hw_storage_pit": {
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_storage_pit",
+   "size": [
+    2.513,
+    1.574,
+    2.257
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1248
+  },
+  "hw_toolmaker": {
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_toolmaker",
+   "size": [
+    2.735,
+    1.905,
+    1.693
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 958
+  },
   "hw_weavers_hut": {
    "format": "glb",
    "materialOrder": [
@@ -820,6 +1050,29 @@
    ],
    "source": "tools/godot/houses (modelled for the game)",
    "triangles": 3584
+  },
+  "hw_wood_camp": {
+   "format": "glb",
+   "materialOrder": [
+    "Atlas"
+   ],
+   "materials": {
+    "Atlas": {
+     "albedo": "Art/Textures/bw_atlas_albedo.png",
+     "alphaClip": false,
+     "doubleSided": true,
+     "normal": "Art/Textures/bw_atlas_normal.png",
+     "vertexColor": true
+    }
+   },
+   "resource": "Models/hw_wood_camp",
+   "size": [
+    2.737,
+    1.94,
+    2.293
+   ],
+   "source": "tools/godot/houses (modelled for the game)",
+   "triangles": 1344
   },
   "hw_woven_shelter": {
    "format": "glb",
