@@ -235,9 +235,10 @@ namespace Founders.World
             return true;
         }
 
-        public void SetSeason(Color leafTint, float snow, float wind)
+        public void SetSeason(Color leafTint, float snow, float wind, float autumn)
         {
             if (material == null) return;
+            material.SetShaderParameter("autumn", autumn);
             material.SetShaderParameter("leaf_tint", new Vector3(leafTint.R, leafTint.G, leafTint.B));
             material.SetShaderParameter("snow", snow);
             material.SetShaderParameter("wind", wind);

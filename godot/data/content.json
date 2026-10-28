@@ -301,7 +301,7 @@
     "unlimitedSlots": false
    }
   ],
-  "seasonSeconds": 21600,
+  "seasonSeconds": 3600,
   "seasons": [
    {
     "id": "spring",
@@ -397,8 +397,8 @@
     "winter": -8
    },
    "dailySwing": 4,
-   "daySeconds": 21600,
-   "periodSeconds": 1800,
+   "daySeconds": 1200,
+   "periodSeconds": 600,
    "noise": 2.5,
    "forecastPeriods": 8,
    "coldSnaps": [

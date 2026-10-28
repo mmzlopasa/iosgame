@@ -571,7 +571,7 @@ namespace Founders.UI
             store.ActivePanel = Panel.Build;
         }
 
-        /// <summary>The hour of the game clock (one day lasts six real hours).</summary>
+        /// <summary>The hour of the game clock (one day lasts twenty real minutes).</summary>
         string ShortClock()
         {
             double t = G.State.SimTime / Atmosphere.DayLength;

@@ -74,6 +74,8 @@ namespace Founders
 
                 await Next(0.35f, "Raising the hills and forests…", "world");
                 session.Init(rig, world);
+                double daySeconds = session.Game?.Content.Balance.Climate?.DaySeconds ?? 0;
+                if (daySeconds > 0) Atmosphere.DayLength = (float)daySeconds;
                 await Next(0.85f, "Lighting the fires…", "interface");
                 var ui = new GameUi();
                 AddChild(ui);
