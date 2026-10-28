@@ -29,7 +29,7 @@ namespace Founders.Tests
             double sum = 0;
             int n = 0;
             double year = g.Content.Balance.SeasonSeconds * 4;
-            for (double t = 0; t < 8 * year; t += 600)
+            for (double t = 0; t < 8 * year; t += 37)
                 if (pick(t)) { sum += g.TemperatureAt(t); n++; }
             return sum / n;
         }
