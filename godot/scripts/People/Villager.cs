@@ -410,6 +410,8 @@ namespace Founders.People
                 inst.RotateY(Mathf.Pi);
                 holder.AddChild(inst);
                 v.body = holder;
+                // Chunky, soft painted figures (bigger heads and hands, rounded shapes).
+                PersonStyle.Apply(inst);
 
                 var skin = SkinTones[rng.Next(SkinTones.Length)];
                 var cloth = HideTints[rng.Next(HideTints.Length)];

@@ -154,6 +154,7 @@ namespace Founders.Art
         /// </summary>
         static bool Detailed(Builder b, string sprite)
         {
+            if (Painted(b, sprite)) return true;
             string id = "bw_" + sprite;
             if (!ModelLibrary.HasModel(id)) return false;
             b.Model(id, Vector3.Zero, 1f);
@@ -163,6 +164,26 @@ namespace Founders.Art
                 case "pottery_kiln": b.Fire(new Vector3(-0.45f, 0.12f, -0.45f), 0.4f); break;
                 case "copper_smelter": b.Fire(new Vector3(0f, 1.3f, 0.2f), 0.5f); break;
                 case "bronze_workshop": b.Fire(new Vector3(0.45f, 0.64f, 0.3f), 0.3f); break;
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// The redesigned village (tools/godot/houses): chunky painted cottages, thatch laid in courses,
+        /// timber frames, shutters and flower boxes, made for the Godot version as "hw_&lt;sprite&gt;".
+        /// Positions below are Unity-space (x mirrored from the model files).
+        /// </summary>
+        static bool Painted(Builder b, string sprite)
+        {
+            string id = "hw_" + sprite;
+            if (!ModelLibrary.HasModel(id)) return false;
+            b.Model(id, Vector3.Zero, 1f);
+            if (!b.Effects) return true;
+            switch (sprite)
+            {
+                case "shelter": b.Fire(new Vector3(0f, 0.04f, -1.85f), 0.3f); break;
+                case "daub_house": Founders.Art.Effects.Chimney(b.T, new Vector3(-0.6f, 3.1f, 0.42f)); break;
+                case "elders_lodge": Founders.Art.Effects.Chimney(b.T, new Vector3(0.55f, 3.35f, 0.45f)); break;
             }
             return true;
         }

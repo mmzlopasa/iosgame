@@ -233,6 +233,8 @@ namespace Founders.Art
                 m.AlphaScissorThreshold = 0.45f;
             }
             if (spec.Has("doubleSided") && spec.Bool("doubleSided")) m.CullMode = BaseMaterial3D.CullModeEnum.Disabled;
+            // Painted shading and part colours baked into the vertices (tools/godot/houses).
+            if (spec.Has("vertexColor") && spec.Bool("vertexColor")) m.VertexColorUseAsAlbedo = true;
             return m;
         }
 
@@ -286,8 +288,11 @@ namespace Founders.Art
         static PackedScene Scene(string id)
         {
             if (scenes.TryGetValue(id, out var s)) return s;
-            string path = $"res://art/models/{id}.fbx";
+            // Models made for the Godot version are glTF (tools/godot/houses); the rest FBX.
+            string path = $"res://art/models/{id}.glb";
+            if (!ResourceLoader.Exists(path)) path = $"res://art/models/{id}.fbx";
             s = ResourceLoader.Exists(path) ? GD.Load<PackedScene>(path) : null;
+            if (s == null) GD.Print($"[FOUNDERS] model {id} missing.");
             return scenes[id] = s;
         }
 
@@ -764,6 +769,23 @@ namespace Founders.Art
             };
             U.Put(light, parent, at + new Vector3(0, 0.6f * scale, 0), Basis.Identity, Vector3.One);
             light.AddChild(new Flicker { Light = light, Base = light.LightEnergy });
+        }
+
+        /// <summary>A lazy thread of smoke from a chimney (Unity-space position on the parent).</summary>
+        public static void Chimney(Node3D parent, Vector3 at)
+        {
+            var smoke = System(parent, "ChimneySmoke", at, Colors.White, Colors.White, false, 0.45f);
+            smoke.Amount = 14;
+            smoke.Lifetime = 6f;
+            smoke.Preprocess = 5f;
+            smoke.ProcessMaterial = new ParticleProcessMaterial
+            {
+                Direction = Vector3.Up, Spread = 5f, Gravity = new Vector3(0.18f, 0.04f, 0.08f),
+                InitialVelocityMin = 0.35f, InitialVelocityMax = 0.6f,
+                AngleMin = 0f, AngleMax = 360f,
+                ScaleCurve = new CurveTexture { Curve = Curve(0.5f, 3f) },
+                ColorRamp = new GradientTexture1D { Gradient = Ramp((0f, new Color(0.5f, 0.48f, 0.47f, 0f)), (0.15f, new Color(0.62f, 0.61f, 0.6f, 0.4f)), (1f, new Color(0.85f, 0.85f, 0.87f, 0f))) },
+            };
         }
 
         public static void Torch(Node3D parent, Vector3 at, float scale, bool lantern)
